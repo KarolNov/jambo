@@ -16,4 +16,12 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Board"] }],
   "observability": { "enabled": true },
+  // Pull-request previews (Workers Builds runs `wrangler preview`). Each preview gets its own
+  // isolated Board namespace and storage; this block only makes `env.Board` exist there.
+  "previews": {
+    "durable_objects": {
+      "bindings": [{ "name": "Board", "class_name": "Board" }],
+    },
+    "observability": { "enabled": true },
+  },
 }
