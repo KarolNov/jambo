@@ -83,6 +83,7 @@ describe('apply', () => {
     ['unknown quantize', { op: 'setTrack', id: 't1', patch: { quantize: 0.3 } }],
     ['missing track', { op: 'removeTrack', id: 'nope' }],
     ['missing pad', { op: 'assignPad', padId: 'nope', soundId: 'kick' }],
+    ['unknown sound', { op: 'assignPad', padId: 'r0c0', soundId: 'kik' }],
     ['tempo out of range', { op: 'setTempo', bpm: 400 }],
   ])('rejects %s and changes nothing', (_name, op) => {
     const doc = seededDoc()
@@ -101,6 +102,14 @@ describe('apply', () => {
       ok: false,
       issues: [{ message: expect.stringContaining('locked') }],
     })
+  })
+
+  it('does not let unreadable tracks lock the tempo', () => {
+    const doc = seededDoc()
+    const legacy = new Y.Map<unknown>()
+    legacy.set('name', new Y.Text('old toy track'))
+    tracksOf(doc).set('legacy', legacy)
+    expect(apply(doc, [{ op: 'setTempo', bpm: 90 }], me)).toEqual([{ ok: true }])
   })
 
   it('writes a batch as one transaction tagged with its origin', () => {

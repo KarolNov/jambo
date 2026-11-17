@@ -15,6 +15,8 @@ interface Playing {
   track: Track
   startAt: number
   gain: GainNode
+  /** For a track this client just recorded: schedule from here once, so hits missed since its loop came round still sound. */
+  catchUpFrom?: number
 }
 
 /**
@@ -30,6 +32,9 @@ export class Engine {
   private scheduledUntil = 0
   private timer?: ReturnType<typeof setInterval>
   private bpm = 100
+  /** The board's tempo; it reaches `bpm` only between takes, so a take keeps one tempo. */
+  private boardBpm = 100
+  private starting?: Promise<void>
   private pads = new Map<string, string>()
   private playing = new Map<string, Playing>()
   /** Start times claimed for tracks this client just recorded, so they keep looping seamlessly. */
@@ -54,12 +59,19 @@ export class Engine {
   /** Starts audio. Browsers only allow it from a user gesture, so call it from a click or key. */
   async unlock() {
     if (this.ctx) return this.ctx.resume()
+    this.starting ??= this.start()
+    return this.starting
+  }
+
+  /** Creates the context (still inside the gesture), renders the kit, then goes live all at once. */
+  private async start() {
     const ctx = new AudioContext({ latencyHint: 'interactive' })
-    this.ctx = ctx
-    this.master = ctx.createGain()
-    this.master.gain.value = 0.8
-    this.master.connect(ctx.destination)
+    const master = ctx.createGain()
+    master.gain.value = 0.8
+    master.connect(ctx.destination)
     this.buffers = await renderKit(ctx.sampleRate)
+    this.ctx = ctx
+    this.master = master
     this.origin = ctx.currentTime + 0.05
     this.scheduledUntil = this.origin
     for (const p of this.playing.values()) this.attach(p)
@@ -84,20 +96,13 @@ export class Engine {
 
   /** Feeds the board's current state: tempo, pad sounds, and every readable track by id. */
   update(state: { bpm: number; pads: Map<string, string>; tracks: Map<string, Track> }) {
-    if (
-      state.bpm !== this.bpm &&
-      this.ctx &&
-      this.playing.size === 0 &&
-      this.recorder.phase === 'idle'
-    ) {
-      // Nothing is looping, so the grid can restart at the new tempo right away.
-      this.origin = this.ctx.currentTime + 0.05
-    }
-    this.bpm = state.bpm
+    this.boardBpm = state.bpm
+    if (this.recorder.phase === 'idle') this.applyBpm()
     this.pads = state.pads
     for (const [id, p] of this.playing) {
       if (!state.tracks.has(id)) {
-        p.gain.disconnect()
+        // Tracks added before audio started have no gain node yet.
+        p.gain?.disconnect()
         this.playing.delete(id)
       }
     }
@@ -108,11 +113,20 @@ export class Engine {
         this.setGain(existing)
         continue
       }
-      const p: Playing = { track, startAt: this.claimed.get(id) ?? Infinity, gain: undefined! }
+      const claimed = this.claimed.get(id)
+      const p: Playing = { track, startAt: claimed ?? Infinity, gain: undefined! }
+      if (claimed !== undefined) p.catchUpFrom = claimed + track.bars * barSeconds(this.bpm)
       this.claimed.delete(id)
       this.playing.set(id, p)
       if (this.ctx) this.attach(p)
     }
+  }
+
+  /** Takes the board's tempo; with nothing looping, the grid restarts at it right away. */
+  private applyBpm() {
+    if (this.boardBpm === this.bpm) return
+    if (this.ctx && this.playing.size === 0) this.origin = this.ctx.currentTime + 0.05
+    this.bpm = this.boardBpm
   }
 
   private attach(p: Playing) {
@@ -181,8 +195,9 @@ export class Engine {
     this.emit()
     if (!ctx || rec.phase === 'idle') return null
     const elapsedBeats = (ctx.currentTime - rec.recordStart) / beatSeconds(this.bpm)
-    if (elapsedBeats <= 0) return null
-    const take = finishTake(this.takeHits, elapsedBeats)
+    const take = elapsedBeats > 0 ? finishTake(this.takeHits, elapsedBeats) : null
+    // A tempo change that arrived during the take applies now.
+    this.applyBpm()
     return take && { ...take, startAt: rec.recordStart }
   }
 
@@ -220,8 +235,11 @@ export class Engine {
     const to = ctx.currentTime + LOOKAHEAD
     if (to <= from) return
     for (const p of this.playing.values()) {
+      // A just-recorded track's next loop may have begun before it was added: play what it missed now.
+      const start = Math.min(from, p.catchUpFrom ?? from)
+      p.catchUpFrom = undefined
       if (!p.gain || p.track.mute) continue
-      for (const hit of hitsInWindow(p.track, p.startAt, this.bpm, from, to)) {
+      for (const hit of hitsInWindow(p.track, p.startAt, this.bpm, start, to)) {
         this.play(this.pads.get(hit.padId), hit.time, p.gain)
       }
     }

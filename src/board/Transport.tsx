@@ -1,5 +1,5 @@
 import { useAtomValue } from 'jotai'
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { BPM, newId } from '../../shared/board'
 import { bpmAtom, tracksAtom } from './model'
 import { isTyping } from './Pads'
@@ -19,7 +19,9 @@ export function Transport() {
   )
   // The tempo being typed; it is applied on Enter or when the field loses focus.
   const [draft, setDraft] = useState<string>()
-  const locked = tracks.size > 0
+  // Set on Escape, so the blur that follows doesn't apply the draft.
+  const cancelled = useRef(false)
+  const locked = tracks.size > 0 || state.phase !== 'idle'
 
   const toggle = async () => {
     if (!engine.ready) await engine.unlock()
@@ -106,6 +108,7 @@ export function Transport() {
           onKeyDown={(e) => {
             if (e.key === 'Enter') e.currentTarget.blur()
             if (e.key === 'Escape') {
+              cancelled.current = true
               setDraft(undefined)
               e.currentTarget.blur()
             }
@@ -115,7 +118,10 @@ export function Transport() {
             }
           }}
           onBlur={() => {
-            if (draft !== undefined) setTempo(Number(draft))
+            if (cancelled.current || !draft) {
+              cancelled.current = false
+              setDraft(undefined)
+            } else setTempo(Number(draft))
           }}
         />
         <button

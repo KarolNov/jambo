@@ -1,4 +1,4 @@
-import { create, read } from 'duratom/core'
+import { create, read, write } from 'duratom/core'
 import type * as Y from 'yjs'
 import { DEFAULT_LAYOUT, PAD_KEYS, padId } from '../sounds'
 import { BPM, Meta, Pad, ROOTS, SHAPES } from './schema'
@@ -11,7 +11,8 @@ export function seedBoard(doc: Y.Doc) {
   doc.transact(
     () => {
       const meta = doc.getMap<unknown>(ROOTS.meta)
-      if (!read(Meta, SHAPES.meta, meta) || meta.size === 0) meta.set('bpm', BPM.default)
+      const current = read(Meta, SHAPES.meta, meta)
+      if (!current || current.issues) write(Meta, SHAPES.meta, meta, { bpm: BPM.default })
       const pads = doc.getMap<unknown>(ROOTS.pads)
       if (pads.size > 0) return
       DEFAULT_LAYOUT.forEach((row, r) =>

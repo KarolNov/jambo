@@ -65,8 +65,9 @@ function TrackRow({ id, track }: { id: string; track: Track }) {
           aria-invalid={!!error}
           value={draft ?? track.name}
           onChange={(e) => {
+            // Keep the typed text until blur: the stored name reads back trimmed.
             setDraft(e.target.value)
-            if (set({ name: e.target.value })) setDraft(undefined)
+            set({ name: e.target.value })
           }}
           onBlur={() => {
             setDraft(undefined)
