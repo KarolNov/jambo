@@ -1,5 +1,5 @@
 import { useAtomValue } from 'jotai'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { BPM, newId } from '../../shared/board'
 import { bpmAtom, tracksAtom } from './model'
 import { isTyping } from './Pads'
@@ -13,7 +13,12 @@ export function Transport() {
   const tracks = useAtomValue(tracksAtom)
   const state = useRecorderState()
   const [message, setMessage] = useState<string>()
-  const [metronome, setMetronome] = useState(engine.metronome)
+  const metronome = useSyncExternalStore(
+    (l) => engine.subscribe(l),
+    () => engine.metronome,
+  )
+  // The tempo being typed; it is applied on Enter or when the field loses focus.
+  const [draft, setDraft] = useState<string>()
   const locked = tracks.size > 0
 
   const toggle = async () => {
@@ -56,8 +61,17 @@ export function Transport() {
   })
 
   const setTempo = (value: number) => {
-    const r = board.tempo(value)
-    setMessage(r.ok ? undefined : r.issues[0]?.message)
+    setDraft(undefined)
+    if (!Number.isFinite(value) || value === bpm) return
+    const clamped = Math.round(Math.min(BPM.max, Math.max(BPM.min, value)))
+    const r = board.tempo(clamped)
+    setMessage(
+      r.ok
+        ? clamped !== value
+          ? `Tempo is ${BPM.min}–${BPM.max} BPM`
+          : undefined
+        : r.issues[0]?.message,
+    )
   }
 
   const label = { idle: '● Record', 'count-in': 'Count-in… (stop)', recording: '■ Stop' }[
@@ -74,28 +88,51 @@ export function Transport() {
       >
         {label}
       </button>
-      <label
-        className="tempo"
-        title={locked ? 'Tempo is locked while the jam has tracks' : undefined}
-      >
+      <div className="tempo" title={locked ? 'Tempo is locked while the jam has loops' : undefined}>
+        <button
+          type="button"
+          aria-label="Slower"
+          disabled={locked || bpm <= BPM.min}
+          onClick={() => setTempo(bpm - 1)}
+        >
+          −
+        </button>
         <input
-          type="number"
-          min={BPM.min}
-          max={BPM.max}
-          value={bpm}
+          aria-label="Tempo in BPM"
+          inputMode="numeric"
+          value={draft ?? String(bpm)}
           disabled={locked}
-          onChange={(e) => setTempo(Number(e.target.value))}
+          onChange={(e) => setDraft(e.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur()
+            if (e.key === 'Escape') {
+              setDraft(undefined)
+              e.currentTarget.blur()
+            }
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+              e.preventDefault()
+              setTempo(bpm + (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1))
+            }
+          }}
+          onBlur={() => {
+            if (draft !== undefined) setTempo(Number(draft))
+          }}
         />
-        BPM {locked && <span aria-label="locked">🔒</span>}
-      </label>
+        <button
+          type="button"
+          aria-label="Faster"
+          disabled={locked || bpm >= BPM.max}
+          onClick={() => setTempo(bpm + 1)}
+        >
+          +
+        </button>
+        <span>BPM {locked && <span aria-label="locked">🔒</span>}</span>
+      </div>
       <label className="metronome">
         <input
           type="checkbox"
           checked={metronome}
-          onChange={(e) => {
-            engine.metronome = e.target.checked
-            setMetronome(e.target.checked)
-          }}
+          onChange={(e) => engine.setMetronome(e.target.checked)}
         />
         Click
       </label>

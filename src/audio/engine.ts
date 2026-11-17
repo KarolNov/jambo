@@ -36,8 +36,11 @@ export class Engine {
   private claimed = new Map<string, number>()
   private recorder: RecorderState = { phase: 'idle' }
   private takeHits: Hit[] = []
-  private metronomeFrom = Infinity
-  metronome = true
+  /** The count-in's first click; clicks sound from here to the take's start even with the metronome off. */
+  private countFrom = Infinity
+  private countUntil = -Infinity
+  /** The metronome clicks every beat of this client's bar grid while it is on. */
+  metronome = loadMetronome()
   private listeners = new Set<() => void>()
 
   get ready() {
@@ -81,6 +84,15 @@ export class Engine {
 
   /** Feeds the board's current state: tempo, pad sounds, and every readable track by id. */
   update(state: { bpm: number; pads: Map<string, string>; tracks: Map<string, Track> }) {
+    if (
+      state.bpm !== this.bpm &&
+      this.ctx &&
+      this.playing.size === 0 &&
+      this.recorder.phase === 'idle'
+    ) {
+      // Nothing is looping, so the grid can restart at the new tempo right away.
+      this.origin = this.ctx.currentTime + 0.05
+    }
     this.bpm = state.bpm
     this.pads = state.pads
     for (const [id, p] of this.playing) {
@@ -123,7 +135,10 @@ export class Engine {
     if (!ctx) return
     this.play(this.pads.get(padId), ctx.currentTime, this.master!)
     if (this.recorder.phase !== 'idle') {
-      const beat = (ctx.currentTime - this.recorder.recordStart) / beatSeconds(this.bpm)
+      // People play to what they hear, which reaches them after the output latency: subtract it,
+      // so a hit right on a click they heard lands on that click's beat.
+      const heard = ctx.currentTime - (ctx.outputLatency || 0) - ctx.baseLatency
+      const beat = (heard - this.recorder.recordStart) / beatSeconds(this.bpm)
       this.takeHits.push({ padId, beat })
     }
   }
@@ -141,10 +156,14 @@ export class Engine {
   record() {
     const ctx = this.ctx
     if (!ctx || this.recorder.phase !== 'idle') return
+    // With nothing looping, the count-in starts right away and the grid restarts with it; with loops
+    // playing, it waits for their next bar so the new take stays in phase with them.
+    if (this.playing.size === 0) this.origin = ctx.currentTime + 0.1
     const countStart = nextBar(this.origin, this.bpm, ctx.currentTime + 0.05)
     const recordStart = countStart + barSeconds(this.bpm)
     this.takeHits = []
-    this.metronomeFrom = countStart
+    this.countFrom = countStart
+    this.countUntil = recordStart
     this.recorder = { phase: 'count-in', recordStart }
     this.emit()
   }
@@ -157,13 +176,25 @@ export class Engine {
     const ctx = this.ctx
     const rec = this.recorder
     this.recorder = { phase: 'idle' }
-    this.metronomeFrom = Infinity
+    this.countFrom = Infinity
+    this.countUntil = -Infinity
     this.emit()
     if (!ctx || rec.phase === 'idle') return null
     const elapsedBeats = (ctx.currentTime - rec.recordStart) / beatSeconds(this.bpm)
     if (elapsedBeats <= 0) return null
     const take = finishTake(this.takeHits, elapsedBeats)
     return take && { ...take, startAt: rec.recordStart }
+  }
+
+  /** Turns the metronome on or off; remembered in this browser. */
+  setMetronome(on: boolean) {
+    this.metronome = on
+    try {
+      localStorage.setItem(METRONOME_KEY, on ? '1' : '0')
+    } catch {
+      // Not remembered; fine.
+    }
+    this.emit()
   }
 
   /** Makes a track this client recorded keep looping from where its take started. */
@@ -194,15 +225,24 @@ export class Engine {
         this.play(this.pads.get(hit.padId), hit.time, p.gain)
       }
     }
-    if (this.metronome && this.metronomeFrom < to) {
-      const beat = beatSeconds(this.bpm)
-      const first = Math.ceil(
-        (Math.max(from, this.metronomeFrom) - this.metronomeFrom) / beat - 1e-9,
-      )
-      for (let n = first; this.metronomeFrom + n * beat < to; n++) {
-        click(ctx, this.master!, this.metronomeFrom + n * beat, n % BEATS_PER_BAR === 0)
-      }
+    // Clicks on every beat of the grid: always during the count-in, otherwise only with the metronome on.
+    const beat = beatSeconds(this.bpm)
+    const first = Math.ceil((from - this.origin) / beat - 1e-9)
+    for (let n = Math.max(0, first); this.origin + n * beat < to; n++) {
+      const at = this.origin + n * beat
+      const counting = at >= this.countFrom - 1e-6 && at < this.countUntil - 1e-6
+      if (this.metronome || counting) click(ctx, this.master!, at, n % BEATS_PER_BAR === 0)
     }
     this.scheduledUntil = to
+  }
+}
+
+const METRONOME_KEY = 'jambo.metronome'
+
+function loadMetronome(): boolean {
+  try {
+    return localStorage.getItem(METRONOME_KEY) !== '0'
+  } catch {
+    return true
   }
 }

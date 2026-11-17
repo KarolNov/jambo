@@ -141,9 +141,24 @@ button:hover {
   color: #1a0b12;
 }
 
+.tempo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tempo button {
+  padding: 2px 10px;
+}
+
+.tempo button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .tempo input {
-  width: 64px;
-  margin-right: 6px;
+  width: 52px;
+  text-align: center;
   font: inherit;
   color: var(--text);
   background: var(--panel);
