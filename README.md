@@ -2,7 +2,7 @@
 
 A collaborative music board: open a jam, share its link, and arrange tracks together in real time. Built on Cloudflare Workers and [duratom](https://github.com/KarolNov/duratom) (Jotai atoms over a Yjs doc).
 
-Work in progress. The scaffold syncs a list of named tracks; clips, audio, presence and export come next.
+Live at [jambo.karolnovljakovic.workers.dev](https://jambo.karolnovljakovic.workers.dev). Work in progress: the scaffold syncs a list of named tracks; clips, audio, presence and export come next.
 
 ## How it fits together
 
