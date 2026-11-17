@@ -2,6 +2,7 @@ import { docAtom } from 'duratom'
 import { createStore } from 'jotai'
 import YProvider from 'y-partyserver/provider'
 import * as Y from 'yjs'
+import { BOARD_PARTY } from '../../shared/parties'
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'offline'
 
@@ -17,7 +18,7 @@ export interface JamSession {
  */
 export function openJam(slug: string): JamSession {
   const doc = new Y.Doc()
-  const provider = new YProvider(window.location.host, slug, doc, { party: 'board' })
+  const provider = new YProvider(window.location.host, slug, doc, { party: BOARD_PARTY })
   const store = createStore()
   store.set(docAtom, doc)
   return {

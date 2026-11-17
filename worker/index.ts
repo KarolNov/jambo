@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { partyserverMiddleware } from 'hono-party'
+import { BOARD_CLASS } from '../shared/parties'
 import { isJamSlug, newJamSlug } from '../shared/slug'
 
 export { Board } from './board'
@@ -20,7 +21,7 @@ app.use(
   partyserverMiddleware<AppEnv>({
     options: {
       onBeforeConnect: (_req, lobby) => {
-        if (lobby.className !== 'Board' || !isJamSlug(lobby.name)) {
+        if (lobby.className !== BOARD_CLASS || !isJamSlug(lobby.name)) {
           return new Response('Not found', { status: 404 })
         }
       },

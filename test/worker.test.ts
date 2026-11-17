@@ -2,6 +2,7 @@ import { evictDurableObject, listDurableObjectIds } from 'cloudflare:test'
 import { env, exports } from 'cloudflare:workers'
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
+import { BOARD_CLASS, BOARD_PARTY, boardPath } from '../shared/parties'
 import { isJamSlug } from '../shared/slug'
 import { connectBoard, until } from './client'
 
@@ -38,7 +39,7 @@ describe('malformed jam links', () => {
   })
 
   it('refuses a board connection for a malformed slug, creating no board', async () => {
-    const res = await fetchApp('/parties/board/not-a-slug', { headers: { Upgrade: 'websocket' } })
+    const res = await fetchApp(boardPath('not-a-slug'), { headers: { Upgrade: 'websocket' } })
     expect(res.status).toBe(404)
     expect(res.webSocket).toBeNull()
     const ids = await listDurableObjectIds(env.Board)
@@ -53,7 +54,14 @@ describe('malformed jam links', () => {
   })
 
   it('refuses plain HTTP requests to a board', async () => {
-    expect((await fetchApp('/parties/board/funky-otter-k7q2')).status).toBe(404)
+    expect((await fetchApp(boardPath('funky-otter-k7q2'))).status).toBe(404)
+  })
+})
+
+describe('board party name', () => {
+  it('is the Board binding in kebab case, as partyserver routes it', () => {
+    expect(BOARD_PARTY).toBe(BOARD_CLASS.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase())
+    expect(env[BOARD_CLASS]).toBeDefined()
   })
 })
 

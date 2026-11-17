@@ -3,6 +3,7 @@ import * as decoding from 'lib0/decoding'
 import * as encoding from 'lib0/encoding'
 import * as sync from 'y-protocols/sync'
 import * as Y from 'yjs'
+import { boardPath } from '../shared/parties'
 
 const MESSAGE_SYNC = 0
 const REMOTE = Symbol('remote')
@@ -12,7 +13,7 @@ const REMOTE = Symbol('remote')
  * YProvider sends, without awareness. Good enough to prove two peers converge through a Board.
  */
 export async function connectBoard(slug: string) {
-  const res = await exports.default.fetch(`http://jambo.test/parties/board/${slug}`, {
+  const res = await exports.default.fetch(`http://jambo.test${boardPath(slug)}`, {
     headers: { Upgrade: 'websocket' },
   })
   const ws = res.webSocket
