@@ -2,6 +2,7 @@ import { evictDurableObject, listDurableObjectIds } from 'cloudflare:test'
 import { env, exports } from 'cloudflare:workers'
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
+import { apply, ROOTS, type Track } from '../shared/board'
 import { BOARD_CLASS, BOARD_PARTY, boardPath } from '../shared/parties'
 import { isJamSlug } from '../shared/slug'
 import { connectBoard, until } from './client'
@@ -125,3 +126,40 @@ async function stubStorage(stub: DurableObjectStub) {
   const { runInDurableObject } = await import('cloudflare:test')
   return runInDurableObject(stub, (_instance, state) => state.storage.get<Uint8Array>('doc'))
 }
+
+describe('looper board', () => {
+  const loop = (name: string): Track => ({
+    name,
+    author: 'a',
+    color: '#2ab7ca',
+    bars: 1,
+    hits: [{ padId: 'r0c0', beat: 0 }],
+    gain: 1,
+    mute: false,
+    quantize: 0.25,
+    effects: [],
+  })
+  const loops = (doc: Y.Doc) =>
+    [...doc.getMap<Y.Map<unknown>>(ROOTS.tracks).values()].map((t) => t.get('name')).sort()
+
+  it('starts a new jam with the default tempo and 16 pads', async () => {
+    const a = await connectBoard('sunny-bongo-eeee')
+    expect(a.doc.getMap(ROOTS.meta).get('bpm')).toBe(100)
+    expect(a.doc.getMap(ROOTS.pads).size).toBe(16)
+    a.close()
+  })
+
+  it('keeps loops two people record at the same time, and syncs controls', async () => {
+    const a = await connectBoard('sunny-bongo-ffff')
+    const b = await connectBoard('sunny-bongo-ffff')
+    apply(a.doc, [{ op: 'addTrack', id: '1', track: loop('A 1') }], { kind: 'user', id: 'a' })
+    apply(b.doc, [{ op: 'addTrack', id: '2', track: loop('B 1') }], { kind: 'user', id: 'b' })
+    await until(() => loops(a.doc).length === 2 && loops(b.doc).length === 2)
+    expect(loops(b.doc)).toEqual(['A 1', 'B 1'])
+
+    apply(b.doc, [{ op: 'setTrack', id: '1', patch: { mute: true } }], { kind: 'user', id: 'b' })
+    await until(() => a.doc.getMap<Y.Map<unknown>>(ROOTS.tracks).get('1')?.get('mute') === true)
+    a.close()
+    b.close()
+  })
+})

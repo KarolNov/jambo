@@ -1,0 +1,40 @@
+import type * as Y from 'yjs'
+import { apply, type Origin } from './apply'
+import type { Op, OpResult, TrackPatch } from './ops'
+import type { Track } from './schema'
+
+/**
+ * The board SDK: a thin, fluent way to write operations. Every method emits exactly one
+ * operation through `apply`, so what any caller did is always a readable list of operations.
+ *
+ * ```ts
+ * const b = board(doc, { kind: 'user', id: me })
+ * b.tempo(110)
+ * b.pad('r0c0').assign('kick')
+ * b.track(id).set({ mute: true })
+ * ```
+ */
+export function board(doc: Y.Doc, origin: Origin) {
+  const one = (op: Op): OpResult => apply(doc, [op], origin)[0]!
+  return {
+    /** Applies several operations as one change. */
+    apply: (ops: readonly Op[]) => apply(doc, ops, origin),
+    tempo: (bpm: number) => one({ op: 'setTempo', bpm }),
+    pad: (padId: string) => ({
+      assign: (soundId: string) => one({ op: 'assignPad', padId, soundId }),
+    }),
+    addTrack: (id: string, track: Track) => one({ op: 'addTrack', id, track }),
+    track: (id: string) => ({
+      set: (patch: TrackPatch) => one({ op: 'setTrack', id, patch }),
+      remove: () => one({ op: 'removeTrack', id }),
+    }),
+  }
+}
+
+export type Board = ReturnType<typeof board>
+
+/** A time-sortable id, so a collection's sorted ids are creation order. */
+export function newId(now = Date.now()): string {
+  const random = crypto.getRandomValues(new Uint8Array(4))
+  return `${now.toString(36).padStart(9, '0')}-${Array.from(random, (b) => b.toString(16).padStart(2, '0')).join('')}`
+}

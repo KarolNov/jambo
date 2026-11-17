@@ -1,8 +1,8 @@
 # jambo
 
-A collaborative music board: open a jam, share its link, and arrange tracks together in real time. Built on Cloudflare Workers and [duratom](https://github.com/KarolNov/duratom) (Jotai atoms over a Yjs doc).
+A collaborative looper: open a jam, share its link, play a 4×4 pad board and stack loops together in real time. Built on Cloudflare Workers and [duratom](https://github.com/KarolNov/duratom) (Jotai atoms over a Yjs doc).
 
-Live at [jambo.karolnovljakovic.workers.dev](https://jambo.karolnovljakovic.workers.dev). Work in progress: the scaffold syncs a list of named tracks; clips, audio, presence and export come next.
+Live at [jambo.karolnovljakovic.workers.dev](https://jambo.karolnovljakovic.workers.dev). Work in progress: v1 is a multi-track looper with a synthesized sound kit; effects, a timeline and AI-written loops come next.
 
 ## How it fits together
 
@@ -17,7 +17,13 @@ flowchart LR
 - **One Worker** (`worker/index.ts`): Hono serves `/api/*`, routes `/parties/board/:slug` to a `Board` Durable Object through `hono-party`, and serves the React app as static assets.
 - **Jams** are links like `/jam/funky-otter-k7q2` (`shared/slug.ts`). The link is the access: anyone who has it can edit. Every board connection passes `onBeforeConnect`, which checks the slug today and is where accounts would be checked later.
 - **Board** (`worker/board.ts`): one Durable Object per jam, extending `YServer`. It relays Yjs updates between everyone in the jam and saves a snapshot of the doc to its own storage.
-- **Client** (`src/board/`): one `Y.Doc` and one Jotai store per jam, the doc in duratom's `docAtom`, connected with `YProvider`. Components read and write the doc only through duratom atoms; `src/board/model.ts` holds the schemas.
+- **Board model and SDK** (`shared/board/`): zod schemas for the jam's tempo, pads and loop tracks; every change is a plain-data operation (`setTempo`, `assignPad`, `addTrack`, `setTrack`, `removeTrack`) applied by `apply(doc, ops, origin)` in one transaction. `board(doc, origin)` is the fluent SDK over it. Nothing else writes to the doc, so the UI, tests and later AI-written code share one validated write path.
+- **Looper** (`shared/looper.ts`, `src/audio/`): tracks store pad hits in beats, not audio. Each browser renders the kit (`src/audio/synth.ts`) into buffers and a lookahead scheduler loops every track on its own bar grid; recording counts in one bar, captures hits and rounds the take up to whole bars.
+- **Client** (`src/board/`): one `Y.Doc` and one Jotai store per jam, connected with `YProvider`. Components read through duratom atoms (`src/board/model.ts`) and write through the SDK.
+
+## Playing
+
+Tap to start audio, then play pads by clicking or with `1234 / QWER / ASDF / ZXCV`. Space (or Record) starts a one-bar count-in, records what you play, and Space again turns it into a loop for everyone in the jam. Each loop has mute, level and snap (quantize); "Change sounds" reassigns pads for everyone.
 
 ## Develop
 

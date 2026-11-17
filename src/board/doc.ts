@@ -7,6 +7,7 @@ import { BOARD_PARTY } from '../../shared/parties'
 export type ConnectionStatus = 'connecting' | 'connected' | 'offline'
 
 export interface JamSession {
+  doc: Y.Doc
   store: ReturnType<typeof createStore>
   provider: YProvider
   destroy: () => void
@@ -22,6 +23,7 @@ export function openJam(slug: string): JamSession {
   const store = createStore()
   store.set(docAtom, doc)
   return {
+    doc,
     store,
     provider,
     destroy: () => {
