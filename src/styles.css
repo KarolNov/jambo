@@ -1,0 +1,147 @@
+:root {
+  --bg: #15121f;
+  --panel: #1f1b2e;
+  --line: #322c48;
+  --text: #ece8f6;
+  --muted: #9b93b5;
+  --accent: #f5a524;
+  --ok: #5bd1d7;
+  --bad: #ff6b9d;
+  color-scheme: dark;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+a {
+  color: var(--accent);
+}
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+.center {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: var(--muted);
+}
+
+.board {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.board-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 20px;
+  text-decoration: none;
+}
+
+.slug {
+  font-family: ui-monospace, monospace;
+  color: var(--muted);
+}
+
+.status {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.status-connected {
+  color: var(--ok);
+}
+
+.status-offline {
+  color: var(--bad);
+}
+
+.tracks {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.track {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+}
+
+.track input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+
+.track input:focus {
+  outline: none;
+  border-color: var(--line);
+}
+
+.track input[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+
+.track .error {
+  width: 100%;
+  font-size: 13px;
+  color: var(--bad);
+}
+
+.track-broken {
+  color: var(--bad);
+  justify-content: space-between;
+}
+
+.empty {
+  color: var(--muted);
+}

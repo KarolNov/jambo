@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jambo",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-11-17",
+  "compatibility_flags": ["nodejs_compat"],
+  // The React app, built by Vite. Unknown paths fall back to index.html so /jam/:slug loads the SPA;
+  // /api/* and /parties/* always reach the Worker first.
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/parties/*", "/jam/*"],
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "Board", "class_name": "Board" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Board"] }],
+  "observability": { "enabled": true },
+}
