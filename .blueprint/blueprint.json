@@ -1,0 +1,52 @@
+{
+  "docs": {
+    "backend": "notion",
+    "location": {
+      "root": "https://app.notion.com/p/41b43cce21f281a8aedffc816ffb7b69",
+      "specs": "collection://41b43cce-21f2-8102-822f-000bd6fa648e",
+      "blueprints": "collection://41b43cce-21f2-8140-b21a-000b427b0d47"
+    }
+  },
+  "tickets": {
+    "tracker": "notion",
+    "location": {
+      "tasks": "collection://41b43cce-21f2-81d9-9667-000b932fd74b"
+    }
+  },
+  "project": "https://app.notion.com/p/41b43cce21f281bc9d12e875f6557087",
+  "specs": {
+    "jams": {
+      "ref": null,
+      "anchors": [
+        "shared/**",
+        "worker/index.ts",
+        "src/App.tsx"
+      ]
+    },
+    "room": {
+      "ref": null,
+      "anchors": [
+        "worker/board.ts",
+        "worker/index.ts",
+        "src/board/doc.ts"
+      ]
+    },
+    "board": {
+      "ref": null,
+      "anchors": [
+        "src/board/**",
+        "!src/board/doc.ts"
+      ]
+    }
+  },
+  "changes": {
+    "scaffold-jambo": {
+      "brief": "https://app.notion.com/p/41b43cce21f281e89302ef7348ab087c",
+      "review": "https://app.notion.com/p/41b43cce21f281128d68d29302b3a60d",
+      "tickets": "https://app.notion.com/p/41b43cce21f281128d68d29302b3a60d",
+      "status": "building",
+      "baseCommit": null,
+      "branch": "kn/scaffold-jambo"
+    }
+  }
+}

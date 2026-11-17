@@ -1,0 +1,51 @@
+{
+  "name": "jambo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Collaborative music board: arrange tracks together in real time, on Cloudflare Workers and duratom.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "pnpm build && wrangler deploy",
+    "typecheck": "wrangler types && tsc -b",
+    "test": "vitest run",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "duratom": "^0.1.0",
+    "hono": "^4.13.19",
+    "hono-party": "^2.1.0",
+    "jotai": "^3.0.2",
+    "jotai-family": "^1.1.0",
+    "partyserver": "^0.5.10",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "y-partyserver": "^2.2.0",
+    "yjs": "^13.6.33",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.70.0",
+    "@cloudflare/vitest-plugin": "^1.8.4",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.3.0",
+    "lib0": "^0.2.117",
+    "oxfmt": "^0.71.0",
+    "typescript": "^5.9",
+    "vite": "^8",
+    "vitest": "^4.1.0",
+    "wrangler": "^4.164.0",
+    "y-protocols": "^1.0.7"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@9.12.3"
+}
