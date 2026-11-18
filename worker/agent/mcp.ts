@@ -3,6 +3,7 @@ import { createMcpHandler } from 'agents/mcp/server'
 import { getServerByName } from 'partyserver'
 import { z } from 'zod'
 import {
+  AGENT_AUTHOR_PREFIX,
   AGENT_LIMITS,
   AgentCall,
   DEFAULT_KIND,
@@ -12,6 +13,7 @@ import {
 } from '../../shared/agent'
 import { BPM, LIMITS, QUANTIZE } from '../../shared/board'
 import { COLOR_NAMES, toColorName } from '../../shared/colors'
+import { UPLOADS } from '../../shared/sounds'
 import type { AgentHello } from './roster'
 
 /** Tool calls per minute per address: the AGENT_RUNS limit in `wrangler.jsonc`, keep them equal. */
@@ -23,7 +25,7 @@ const AGENT_CALLS_PER_MINUTE = 20
  */
 export const INSTRUCTIONS = `jambo is a collaborative music board. Each jam has a link like https://<host>/jam/funky-otter-k7q2; the link (or its slug) is the only key.
 
-Tools: join, run, leave. join and run put you in the jam's "Who's here"; ${AGENT_LIMITS.idleMs / 60_000} minutes without a call takes you out, and leave does it at once. Every tool takes jam (link or slug) and optional agentKey, kind (your type, one word like Claude), name and color (one of ${COLOR_NAMES.join(', ')}). join and run answer agent: { agentKey, id, kind, name, color }; pass agent.agentKey to every later call to stay the same agent, or each call without it joins as a new one. leave answers { jam, left }. A jam seats at most ${AGENT_LIMITS.perJam} agents, ${AGENT_LIMITS.perAddress} from one address; an agent already in it always gets back in with its agentKey. Your name is an adjective and your kind, like "Groovy Claude"; pass the same name and color each time to keep them while free.
+Tools: join, run, upload_sound, leave. join, run and upload_sound put you in the jam's "Who's here"; ${AGENT_LIMITS.idleMs / 60_000} minutes without a call takes you out, and leave does it at once. Every tool takes jam (link or slug) and optional agentKey, kind (your type, one word like Claude), name and color (one of ${COLOR_NAMES.join(', ')}). join, run and upload_sound answer agent: { agentKey, id, kind, name, color }; pass agent.agentKey to every later call to stay the same agent, or each call without it joins as a new one. leave answers { jam, left }. A jam seats at most ${AGENT_LIMITS.perJam} agents, ${AGENT_LIMITS.perAddress} from one address; an agent already in it always gets back in with its agentKey. Your name is an adjective and your kind, like "Groovy Claude"; pass the same name and color each time to keep them while free.
 
 join returns board, the jam as it is now:
   bpm: tempo (${BPM.min}-${BPM.max})
@@ -41,6 +43,8 @@ run takes ops, a JSON array of 1-${AGENT_LIMITS.ops} operations, and summary (1-
   { op: 'setTrack', id, patch: { name?, gain?, mute?, quantize? } }
   { op: 'removeTrack', id }
 Tracks hit pads, so to use a sound, assign it to a pad and hit that pad. The operations apply in order as one change; each gets a result { op, ok, issues?, id? } (id: the new track's), and refused ones change nothing. If any operation doesn't fit the schema, nothing applies. run answers { summary, ops, agent }.
+
+upload_sound takes soundName and wav (base64 of a mono 16-bit ${UPLOADS.sampleRate} Hz WAV, up to ${UPLOADS.maxSeconds} s) and answers its id; a run can then assign it to a pad. leave takes you out of the jam.
 
 Calls are limited to ${AGENT_CALLS_PER_MINUTE} a minute per address.`
 
@@ -117,6 +121,22 @@ async function resolve(input: Who, address: string): Promise<{ slug: string; hel
   }
 }
 
+/** Decodes base64 (standard or URL-safe, whitespace ignored), or undefined if it isn't. */
+function fromBase64(text: string): ArrayBuffer | undefined {
+  // Never decode more than an upload can be.
+  if (text.length > Math.ceil((UPLOADS.maxBytes * 4) / 3) + 1024)
+    return new ArrayBuffer(UPLOADS.maxBytes + 1)
+  try {
+    const clean = text.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/')
+    const bin = atob(clean)
+    const bytes = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+    return bytes.buffer
+  } catch {
+    return undefined
+  }
+}
+
 /** Builds the MCP server for one request; `address` is the caller's, for the rate limit. */
 export function jamboMcpServer(env: Env, address: string) {
   const server = new McpServer(
@@ -187,6 +207,39 @@ export function jamboMcpServer(env: Env, address: string) {
         ops: result.ops,
         agent: identity(result.agent),
       })
+    }),
+  )
+
+  server.registerTool(
+    'upload_sound',
+    {
+      description: `Upload a sound to the jam: a mono 16-bit ${UPLOADS.sampleRate} Hz WAV up to ${UPLOADS.maxSeconds} s, base64. Answers its id, which a run can assign to a pad.`,
+      inputSchema: z.object({
+        ...who,
+        soundName: z.string().describe("The sound's name, up to 40 characters"),
+        wav: z.string().describe('The WAV file, base64'),
+      }),
+    },
+    tool('upload_sound', async (input) => {
+      const { slug, hello } = await resolve(input, address)
+      // Uploads spend the same budget as the browser's: 10 writes a minute per address.
+      const { success } = await env.SOUND_WRITES.limit({ key: address })
+      if (!success) return refuse('Too many uploads, try again in a minute')
+      const wav = fromBase64(input.wav)
+      if (!wav) return refuse('wav is not base64')
+      if (wav.byteLength > UPLOADS.maxBytes) return refuse('The file is too big')
+      const r = await room(slug)
+      const agent = await r.agentJoin(hello)
+      if ('error' in agent) return refuse(agent.error)
+      const result = await r.uploadSound({
+        wav,
+        name: input.soundName,
+        author: AGENT_AUTHOR_PREFIX + agent.id,
+        authorName: agent.name,
+        color: agent.color,
+      })
+      if (!result.ok) return refuse(result.error, { agent: identity(agent) })
+      return reply({ id: result.id, sound: result.sound, agent: identity(agent) })
     }),
   )
 

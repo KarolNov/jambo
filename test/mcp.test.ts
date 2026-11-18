@@ -1,7 +1,9 @@
-import { exports } from 'cloudflare:workers'
+import { env, exports } from 'cloudflare:workers'
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 import { ROOTS } from '../shared/board'
+import { UPLOADS } from '../shared/sounds'
+import { encodeWav } from '../shared/wav'
 import type { AgentView } from '../worker/agent/roster'
 import { connectBoard, until } from './client'
 
@@ -148,7 +150,7 @@ describe('the MCP server', () => {
   })
 
   it('refuses a run of more than 64 operations', async () => {
-    const slug = 'funky-otter-mc06'
+    const slug = 'funky-otter-mc09'
     const ops = Array.from({ length: 65 }, () => ({ op: 'setTempo', bpm: 120 }))
     expect(await refused('run', { jam: slug, summary: 'Lots', ops })).toBe(true)
     const person = await connectBoard(slug)
@@ -191,5 +193,92 @@ describe('the MCP server', () => {
       isError: true,
       body: { error: 'too many requests, try again in a minute' },
     })
+  })
+})
+
+const base64 = (bytes: Uint8Array) => {
+  let bin = ''
+  for (const b of bytes) bin += String.fromCharCode(b)
+  return btoa(bin)
+}
+
+const monoWav = (seconds: number) =>
+  encodeWav(
+    Float32Array.from({ length: Math.round(seconds * UPLOADS.sampleRate) }, (_, i) =>
+      Math.sin(i / 10),
+    ),
+    UPLOADS.sampleRate,
+  )
+
+/** A 16-bit stereo WAV header with a little silence: the room takes mono only. */
+function stereoWav() {
+  const data = 4 * 1000
+  const buf = new ArrayBuffer(44 + data)
+  const v = new DataView(buf)
+  const text = (at: number, s: string) =>
+    [...s].forEach((c, i) => v.setUint8(at + i, c.charCodeAt(0)))
+  text(0, 'RIFF')
+  v.setUint32(4, 36 + data, true)
+  text(8, 'WAVE')
+  text(12, 'fmt ')
+  v.setUint32(16, 16, true)
+  v.setUint16(20, 1, true)
+  v.setUint16(22, 2, true)
+  v.setUint32(24, UPLOADS.sampleRate, true)
+  v.setUint32(28, UPLOADS.sampleRate * 4, true)
+  v.setUint16(32, 4, true)
+  v.setUint16(34, 16, true)
+  text(36, 'data')
+  v.setUint32(40, data, true)
+  return new Uint8Array(buf)
+}
+
+describe('agent uploads', () => {
+  it('uploads a WAV the agent is author of, which a run can put on a pad', async () => {
+    const slug = 'funky-otter-mc06'
+    const person = await connectBoard(slug)
+    const up = await call('upload_sound', {
+      jam: slug,
+      kind: 'claude',
+      soundName: 'Vox',
+      wav: base64(monoWav(2)),
+    })
+    expect(up.isError).toBe(false)
+    expect(up.body.sound).toMatchObject({
+      name: 'Vox',
+      author: `agent:${up.body.agent.id}`,
+      authorName: up.body.agent.name,
+      color: up.body.agent.color,
+      durationMs: 2000,
+    })
+    await until(() => person.doc.getMap(ROOTS.sounds).has(up.body.id))
+    const run = await call('run', {
+      jam: slug,
+      agentKey: up.body.agent.agentKey,
+      summary: 'Vox on Q',
+      ops: [{ op: 'assignPad', padId: 'r1c0', soundId: up.body.id }],
+    })
+    expect(run.body.ops).toEqual([{ op: 'assignPad', ok: true }])
+    person.close()
+  })
+
+  it('refuses a stereo WAV and stores nothing', async () => {
+    const slug = 'funky-otter-mc07'
+    const out = await call('upload_sound', {
+      jam: slug,
+      soundName: 'Wide',
+      wav: base64(stereoWav()),
+    })
+    expect(out.isError).toBe(true)
+    const person = await connectBoard(slug)
+    expect(person.doc.getMap(ROOTS.sounds).size).toBe(0)
+    const listed = await env.SOUND_FILES.list({ prefix: `jams/${slug}/` })
+    expect(listed.objects).toEqual([])
+    person.close()
+  })
+
+  it('refuses something that is not base64', async () => {
+    const out = await call('upload_sound', { jam: 'funky-otter-mc08', soundName: 'X', wav: '%%%' })
+    expect(out).toMatchObject({ isError: true, body: { error: 'wav is not base64' } })
   })
 })
