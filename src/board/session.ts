@@ -1,13 +1,14 @@
 import { createContext, useContext } from 'react'
 import { board, type Board } from '../../shared/board'
 import type { Engine } from '../audio/engine'
-import type { Identity } from './identity'
+import type { Me } from './seat'
 import type { JamSession } from './doc'
 
 export interface Session {
   jam: JamSession
   engine: Engine
-  me: Identity
+  /** This person here: their id, and their colour in this jam. */
+  me: Me
   /** The board SDK, writing as this browser. */
   board: Board
 }
@@ -20,5 +21,5 @@ export function useSession(): Session {
   return session
 }
 
-export const makeBoard = (jam: JamSession, me: Identity) =>
+export const makeBoard = (jam: JamSession, me: { id: string }) =>
   board(jam.doc, { kind: 'user', id: me.id })

@@ -8,6 +8,7 @@ import { type ConnectionStatus, onStatus, openJam } from './doc'
 import { identity } from './identity'
 import { bpmAtom, padsAtom, soundsAtom, tracksAtom } from './model'
 import { joinPresence } from './presence'
+import { Me, takeSeat } from './seat'
 import { makeBoard, type Session, SessionContext } from './session'
 
 /** One jam: its doc, connection and audio engine, for as long as the page shows it. */
@@ -19,12 +20,14 @@ export function Jam({ slug }: { slug: string }) {
     const jam = openJam(slug)
     const clock = new JamClock(jam.provider)
     const engine = new Engine(clock, new SampleLoader(slug))
-    const me = identity()
+    const me = new Me(identity())
     setSession({ jam, engine, me, board: makeBoard(jam, me) })
     const stop = onStatus(jam.provider, setStatus)
+    const unseat = takeSeat(jam.provider, me)
     const leave = joinPresence(jam.awareness, me)
     return () => {
       leave()
+      unseat()
       stop()
       engine.dispose()
       clock.dispose()

@@ -26,11 +26,24 @@ export function listPeople(states: Iterable<unknown>, me: Person): Person[] {
   return [me, ...others.values()]
 }
 
-/** Puts this person into the jam's awareness for as long as the jam is open. */
-export function joinPresence(awareness: Awareness, me: Person) {
-  const person = { id: me.id, color: me.color }
-  awareness.setLocalState({ ...awareness.getLocalState(), person })
-  return () => awareness.setLocalState(null)
+/**
+ * Puts this person into the jam's awareness for as long as the jam is open, and keeps their colour
+ * there current when the room seats them with another.
+ */
+export function joinPresence(
+  awareness: Awareness,
+  me: Person & { subscribe?: (l: () => void) => () => void },
+) {
+  const publish = () => {
+    const person = { id: me.id, color: me.color }
+    awareness.setLocalState({ ...awareness.getLocalState(), person })
+  }
+  publish()
+  const stop = me.subscribe?.(publish)
+  return () => {
+    stop?.()
+    awareness.setLocalState(null)
+  }
 }
 
 /** Everyone in the jam, re-rendering as people come and go. */

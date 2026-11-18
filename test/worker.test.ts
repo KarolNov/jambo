@@ -6,6 +6,7 @@ import { apply, ROOTS, type Track } from '../shared/board'
 import { BOARD_CLASS, BOARD_PARTY, boardPath } from '../shared/parties'
 import { isJamSlug } from '../shared/slug'
 import { parseClockMessage, ping } from '../shared/clock'
+import { hello, parseSeatMessage } from '../shared/seats'
 import { connectBoard, until } from './client'
 
 const fetchApp = (path: string, init?: RequestInit) =>
@@ -180,6 +181,47 @@ describe('jam clock', () => {
     expect(a.custom).toHaveLength(1)
     expect(b.custom).toEqual([])
     a.close()
+    b.close()
+  })
+})
+
+describe('seats', () => {
+  const seatOf = (client: { custom: string[] }) => {
+    const last = client.custom
+      .map(parseSeatMessage)
+      .filter((m) => m?.t === 'seat')
+      .at(-1)
+    return last?.t === 'seat' ? last.color : undefined
+  }
+  const join = async (slug: string, id: string, color: 'sky' | 'teal') => {
+    const c = await connectBoard(slug)
+    c.sendCustom(hello(id, color))
+    await until(() => seatOf(c) !== undefined)
+    return c
+  }
+
+  it('seats people who share a usual colour in different colours', async () => {
+    const a = await join('groovy-otter-mmmm', 'a', 'sky')
+    const b = await join('groovy-otter-mmmm', 'b', 'sky')
+    const c = await join('groovy-otter-mmmm', 'c', 'sky')
+    expect([seatOf(a), seatOf(b), seatOf(c)]).toEqual(['sky', 'teal', 'coral'])
+    for (const x of [a, b, c]) x.close()
+  })
+
+  it('gives a second tab the colour the person already has', async () => {
+    const a = await join('groovy-otter-nnnn', 'a', 'sky')
+    const b = await join('groovy-otter-nnnn', 'b', 'sky')
+    const b2 = await join('groovy-otter-nnnn', 'b', 'sky')
+    expect(seatOf(b2)).toBe(seatOf(b))
+    for (const x of [a, b, b2]) x.close()
+  })
+
+  it('frees a colour when its person leaves', async () => {
+    const a = await join('groovy-otter-pppp', 'a', 'sky')
+    a.close()
+    await new Promise((r) => setTimeout(r, 50))
+    const b = await join('groovy-otter-pppp', 'b', 'sky')
+    expect(seatOf(b)).toBe('sky')
     b.close()
   })
 })
