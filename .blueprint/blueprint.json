@@ -73,10 +73,11 @@
       "syncedCommit": "a3f33b84d7280fdbc7f0ea8f28982926017fda14"
     },
     "board/ops": {
-      "ref": null,
+      "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
       "anchors": [
         "shared/board/**"
-      ]
+      ],
+      "specVersion": "f1e2cafedebe6341"
     },
     "looper": {
       "ref": "https://app.notion.com/p/41c43cce21f2816ba415d28e60bf80d5",
@@ -95,17 +96,19 @@
       "syncedCommit": "d21cedbd50af62403e4580e64a7e466acce1c01a"
     },
     "pads": {
-      "ref": null,
+      "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
       "anchors": [
         "src/board/Pads.tsx"
-      ]
+      ],
+      "specVersion": "4e4eedb8b4c59c29"
     },
     "sounds": {
-      "ref": null,
+      "ref": "https://app.notion.com/p/41c43cce21f2810f8bb0f1ed9935a67d",
       "anchors": [
         "shared/sounds.ts",
-        "public/sounds/**"
-      ]
+        "src/audio/synth.ts"
+      ],
+      "specVersion": "6aa2ed1da6a8ff71"
     }
   },
   "changes": {
