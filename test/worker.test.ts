@@ -132,7 +132,7 @@ describe('looper board', () => {
   const loop = (name: string): Track => ({
     name,
     author: 'a',
-    color: '#2ab7ca',
+    color: 'teal',
     bars: 1,
     hits: [{ padId: 'r0c0', beat: 0 }],
     gain: 1,
@@ -191,8 +191,8 @@ describe('presence', () => {
   it('passes presence to everyone in the jam, and drops it when a client disconnects', async () => {
     const a = await connectBoard('groovy-panda-hhhh')
     const b = await connectBoard('groovy-panda-hhhh')
-    a.awareness.setLocalState({ person: { id: 'a', color: '#2ab7ca', colorName: 'Teal' } })
-    b.awareness.setLocalState({ person: { id: 'b', color: '#ff6b6b', colorName: 'Coral' } })
+    a.awareness.setLocalState({ person: { id: 'a', color: 'teal' } })
+    b.awareness.setLocalState({ person: { id: 'b', color: 'coral' } })
     await until(() => people(a.awareness).includes('b') && people(b.awareness).includes('a'))
 
     // A late joiner sees who is already here.

@@ -9,7 +9,7 @@ const me = { kind: 'user', id: 'me' } as const
 const track = (over: Partial<Track> = {}): Track => ({
   name: 'Teal 1',
   author: 'me',
-  color: '#2ab7ca',
+  color: 'teal',
   bars: 1,
   hits: [{ padId: 'r0c0', beat: 0 }],
   gain: 1,
@@ -54,6 +54,26 @@ describe('apply', () => {
       v(read(Pad, SHAPES.pad, doc.getMap<Y.Map<unknown>>(ROOTS.pads).get('r0c0')))?.soundId,
     ).toBe('snare')
     expect(v(readTrack(doc, 't1'))).toMatchObject({ mute: true, name: 'Beat' })
+  })
+
+  it('stores colours by name, reads legacy hexes as names, and refuses anything else', () => {
+    const doc = seededDoc()
+    const results = apply(
+      doc,
+      [
+        { op: 'addTrack', id: 't1', track: track() },
+        { op: 'addTrack', id: 't2', track: track({ color: 'pink' }) },
+        { op: 'addTrack', id: 't3', track: track({ color: '#123456' as never }) },
+      ],
+      me,
+    )
+    expect(results.map((r) => r.ok)).toEqual([true, true, false])
+    expect(v(readTrack(doc, 't1'))?.color).toBe('teal')
+    expect(v(readTrack(doc, 't2'))?.color).toBe('pink')
+    expect(tracksOf(doc).has('t3')).toBe(false)
+    // Jams recorded before colour names hold a hex; it reads as its name.
+    tracksOf(doc).get('t1')!.set('color', '#2AB7CA')
+    expect(v(readTrack(doc, 't1'))?.color).toBe('teal')
   })
 
   it('keeps the jam bar a track was recorded on, which no patch can change', () => {
@@ -190,7 +210,7 @@ describe('board SDK', () => {
 const sound = (over: Partial<Sound> = {}): Sound => ({
   name: 'Vox',
   author: 'me',
-  color: '#2ab7ca',
+  color: 'teal',
   durationMs: 1200,
   bytes: 105_884,
   createdAt: 1_700_000_000_000,

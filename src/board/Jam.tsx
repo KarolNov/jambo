@@ -5,6 +5,8 @@ import { Engine } from '../audio/engine'
 import { SampleLoader } from '../audio/samples'
 import { Debug } from './Debug'
 import { type ConnectionStatus, onStatus, openJam } from './doc'
+import { colorLabel } from '../../shared/colors'
+import { swatch } from './colors'
 import { identity } from './identity'
 import { bpmAtom, padsAtom, soundsAtom, tracksAtom } from './model'
 import { Pads } from './Pads'
@@ -70,8 +72,12 @@ function Presence() {
   return (
     <ul className="presence" aria-label="Who's here">
       {people.map((p) => (
-        <li key={p.id} className={p.id === me.id ? 'me' : undefined} style={{ color: p.color }}>
-          ● {p.colorName}
+        <li
+          key={p.id}
+          className={p.id === me.id ? 'me' : undefined}
+          style={{ color: swatch(p.color) }}
+        >
+          ● {colorLabel(p.color)}
           {p.id === me.id && <span className="you"> (you)</span>}
         </li>
       ))}

@@ -1,6 +1,7 @@
 import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { BPM, newId } from '../../shared/board'
+import { colorLabel } from '../../shared/colors'
 import { bpmAtom, tracksAtom } from './model'
 import { isTyping } from './Pads'
 import { useSession } from './session'
@@ -44,7 +45,7 @@ export function Transport() {
     const mine = [...tracks.values()].filter((t) => t.author === me.id).length
     engine.claim(id)
     const r = board.addTrack(id, {
-      name: `${me.colorName} ${mine + 1}`,
+      name: `${colorLabel(me.color)} ${mine + 1}`,
       author: me.id,
       color: me.color,
       bars: take.bars,

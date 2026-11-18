@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { Color } from '../colors'
 import { UPLOADS } from '../sounds'
 
 /** Limits that keep a jam's doc small. */
@@ -43,7 +44,8 @@ export const Track = z
       .min(1, 'A track needs a name')
       .max(40, 'Keep names under 40 characters'),
     author: z.string().min(1).max(64),
-    color: z.string().regex(/^#[0-9a-f]{6}$/i),
+    /** The recorder's colour, by name; the UI decides what it looks like. */
+    color: Color,
     bars: z.number().int().min(1).max(LIMITS.bars),
     hits: z.array(Hit).min(1).max(LIMITS.hitsPerTrack),
     gain: z.number().min(0).max(1.5),
@@ -69,7 +71,8 @@ export type Track = z.infer<typeof Track>
 export const Sound = z.object({
   name: z.string().trim().min(1, 'A sound needs a name').max(40, 'Keep names under 40 characters'),
   author: z.string().min(1).max(64),
-  color: z.string().regex(/^#[0-9a-f]{6}$/i),
+  /** The uploader's colour, by name. */
+  color: Color,
   durationMs: z
     .number()
     .int()
