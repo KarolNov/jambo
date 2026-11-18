@@ -158,9 +158,10 @@
       "brief": "https://app.notion.com/p/41c43cce21f281ae97e7e7b204cc7eec",
       "review": "https://app.notion.com/p/41c43cce21f2817c9036e4b148d1d014",
       "tickets": "https://app.notion.com/p/41c43cce21f2817c9036e4b148d1d014",
-      "status": "building",
+      "status": "applied",
       "baseCommit": "32415a7e06e2302fbc825ef4d02ecb20ce9226b4",
-      "branch": "kn/shared-transport"
+      "branch": "kn/shared-transport",
+      "pr": "https://github.com/KarolNov/jambo/pull/6"
     }
   }
 }
