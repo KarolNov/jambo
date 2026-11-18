@@ -23,8 +23,9 @@ describe('palette', () => {
     expect(contrast(t.text, t.bg)).toBeGreaterThanOrEqual(7)
     expect(contrast(t.text, t.flat)).toBeGreaterThanOrEqual(7)
     expect(contrast(t.muted, t.bg)).toBeGreaterThanOrEqual(4.5)
-    expect(contrast(t.accent, t.bg)).toBeGreaterThanOrEqual(3)
-    expect(contrast(t.accent2, t.bg)).toBeGreaterThanOrEqual(3)
+    // Both accents also colour small text (errors, Muted, Live, the recorder's phase): 4.5:1.
+    expect(contrast(t.accent, t.bg)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(t.accent2, t.bg)).toBeGreaterThanOrEqual(4.5)
   })
 
   it('publishes tokens under the CSS names the styles use', () => {

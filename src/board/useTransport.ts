@@ -3,7 +3,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import { BPM, newId } from '../../shared/board'
 import { colorLabel } from '../../shared/colors'
 import { bpmAtom, tracksAtom } from './model'
-import { isTyping } from './Pads'
+import { isTyping } from './typing'
 import { useSession } from './session'
 import { useRecorderState } from './useEngineState'
 

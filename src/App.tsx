@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { isJamSlug } from '../shared/slug'
 import { Jam } from './board/Jam'
+import { useThemedPage } from './theme/theme'
 
 /** Routes `/` to a new jam and `/jam/:slug` to its board. No router library: two routes. */
 export function App() {
+  useThemedPage()
   const path = window.location.pathname
   const match = /^\/jam\/([^/]+)\/?$/.exec(path)
   if (match) {

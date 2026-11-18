@@ -5,7 +5,7 @@ import { SOUND_IDS, SOUNDS, soundName } from '../../../shared/sounds'
 import { Button, type Group, OptionList, Popover } from '../../ui'
 import { useSwatch } from '../colors'
 import { padsAtom, soundsAtom, tracksAtom } from '../model'
-import { isTyping } from '../Pads'
+import { isTyping } from '../typing'
 import { useSession } from '../session'
 import {
   PausedNotice,

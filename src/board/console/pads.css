@@ -89,6 +89,13 @@
   line-height: 1.15;
   position: relative;
   z-index: 1;
+  /* Long names (uploads take up to 40 characters) wrap, then end in an ellipsis on line three */
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
 }
 
 /* Change sounds: pads stay raised; a badge marks them, a click opens the sound menu */
@@ -134,10 +141,61 @@
   color: var(--accent);
 }
 
-/* The upload dialog and uploads list, softened */
-:root[data-theme] {
-  --panel: var(--bg);
-  --bad: var(--accent);
+/* The upload dialog and uploads list */
+:root[data-theme] .console-sounds .upload-dialog {
+  display: grid;
+}
+:root[data-theme] .console-sounds .upload-dialog p,
+:root[data-theme] .console-sounds .paused p {
+  margin: 0;
+}
+:root[data-theme] .console-sounds .paused p + p {
+  margin-top: 4px;
+}
+:root[data-theme] .console-sounds .upload-actions {
+  display: flex;
+  align-items: center;
+}
+:root[data-theme] .console-sounds .uploads-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+:root[data-theme] .console-sounds .uploads ul {
+  display: grid;
+  list-style: none;
+  padding: 0;
+}
+:root[data-theme] .console-sounds .uploads li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+:root[data-theme] .console-sounds .upload-name {
+  overflow-wrap: anywhere;
+}
+:root[data-theme] .console-sounds .upload-buttons {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+:root[data-theme] .console-sounds .message {
+  color: var(--accent);
+  font-size: 14px;
+}
+:root[data-theme] .console-sounds .paused {
+  padding: 8px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font-size: 14px;
+}
+/* Secondary actions (Cancel, Replace, Remove): accent text on a raised chip */
+:root[data-theme] .console-sounds .link {
+  color: var(--accent);
+}
+:root[data-theme] .console-sounds .link:disabled {
+  color: var(--muted);
+  cursor: default;
 }
 :root[data-theme] .console-sounds {
   display: grid;
@@ -227,8 +285,8 @@
   color: var(--accent);
 }
 
-/* The upload dialog and uploads list are shared with the current board and use plain buttons:
-   give them the soft look here, at zero specificity so ui-kit controls keep theirs. */
+/* The upload dialog and uploads list use plain buttons: give them the soft look here, at zero
+   specificity so ui-kit controls keep theirs. */
 :where(.console-sounds) button {
   font: inherit;
   color: var(--text);
