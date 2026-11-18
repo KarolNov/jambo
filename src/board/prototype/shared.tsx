@@ -5,6 +5,7 @@
 import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { BEATS_PER_BAR } from '../../../shared/board'
+import { type ColorName, colorLabel } from '../../../shared/colors'
 import { SOUND_IDS, SOUNDS, soundName } from '../../../shared/sounds'
 import type { ConnectionStatus } from '../doc'
 import { padsAtom, soundsAtom, tracksAtom } from '../model'
@@ -31,34 +32,31 @@ export const STATUS_LABEL: Record<ConnectionStatus, string> = {
 }
 
 /**
- * Collaborator colours, by the hex the board stores (identity.ts's list): their name, and the
- * deeper shade used on the light theme so dots, hits and rings keep ≥3:1 against the sand. The
- * dark theme uses the stored, brighter hex as is.
+ * What each collaborator colour looks like here. The doc stores the name; on the dark theme it is
+ * the bright swatch, on the light theme a deeper shade of the same hue, so dots, hits and rings
+ * keep at least 3:1 against the sand.
  */
-const COLORS: Record<string, { name: string; light: string }> = {
-  '#2ab7ca': { name: 'Teal', light: '#13808e' },
-  '#ff6b6b': { name: 'Coral', light: '#d64545' },
-  '#f5a524': { name: 'Amber', light: '#a86400' },
-  '#8bd346': { name: 'Lime', light: '#4c8519' },
-  '#a78bfa': { name: 'Violet', light: '#7650e0' },
-  '#ff6b9d': { name: 'Pink', light: '#cc3870' },
-  '#5bb4f5': { name: 'Sky', light: '#1d72c4' },
-  '#4fd1a5': { name: 'Mint', light: '#17845e' },
+const PALETTE: Record<ColorName, { dark: string; light: string }> = {
+  teal: { dark: '#2ab7ca', light: '#13808e' },
+  coral: { dark: '#ff6b6b', light: '#d64545' },
+  amber: { dark: '#f5a524', light: '#a86400' },
+  lime: { dark: '#8bd346', light: '#4c8519' },
+  violet: { dark: '#a78bfa', light: '#7650e0' },
+  pink: { dark: '#ff6b9d', light: '#cc3870' },
+  sky: { dark: '#5bb4f5', light: '#1d72c4' },
+  mint: { dark: '#4fd1a5', light: '#17845e' },
 }
 
-/** A collaborator colour as this theme shows it. Unknown colours pass through. */
-export function useShade(): (hex: string) => string {
+/** A collaborator colour as this theme paints it. */
+export function useShade(): (c: ColorName) => string {
   const theme = useTheme()
-  return (hex) => (theme === 'light' ? (COLORS[hex.toLowerCase()]?.light ?? hex) : hex)
+  return (c) => PALETTE[c][theme]
 }
 
 /** Who uploaded a sound, for its dot's tooltip. */
-function useUploader(): (sound: { author: string; color: string }) => string {
+function useUploader(): (sound: { author: string; color: ColorName }) => string {
   const { me } = useSession()
-  return (s) =>
-    s.author === me.id
-      ? 'Uploaded by you'
-      : `Uploaded by ${COLORS[s.color.toLowerCase()]?.name ?? 'someone'}`
+  return (s) => (s.author === me.id ? 'Uploaded by you' : `Uploaded by ${colorLabel(s.color)}`)
 }
 
 const CATEGORIES = [...new Set(SOUNDS.map((s) => s.category))]
@@ -68,7 +66,7 @@ const UPLOAD_OPTION = '__upload'
  * Calls `flash(padId, color)` whenever a playing loop passes one of its hits, worked out from
  * each track's playhead (the engine has no hit event yet).
  */
-function useLoopHits(flash: (padId: string, color: string) => void) {
+function useLoopHits(flash: (padId: string, color: ColorName) => void) {
   const { engine } = useSession()
   const tracks = useAtomValue(tracksAtom)
   const latest = useRef({ tracks, flash })
@@ -177,7 +175,7 @@ export function PadGrid({
   useEffect(() => setPicking(undefined), [editing])
 
   const shade = useShade()
-  const flash = (padId: string, color: string, cls: string) => {
+  const flash = (padId: string, color: ColorName, cls: string) => {
     const el = els.current.get(padId)
     if (!el) return
     el.style.setProperty('--glow', shade(color))
@@ -386,10 +384,13 @@ export function Header({ slug, status }: { slug: string; status: ConnectionStatu
       </button>
       <ul className="n-people" aria-label="Who's here">
         {people.map((p) => (
-          <li key={p.id} title={p.id === me.id ? `${p.colorName} (you)` : p.colorName}>
+          <li
+            key={p.id}
+            title={p.id === me.id ? `${colorLabel(p.color)} (you)` : colorLabel(p.color)}
+          >
             <span className="n-person" style={{ background: shade(p.color) }} />
             <span className="n-person-name">
-              {p.colorName}
+              {colorLabel(p.color)}
               {p.id === me.id && ' (you)'}
             </span>
           </li>
