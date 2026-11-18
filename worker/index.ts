@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { partyserverMiddleware } from 'hono-party'
 import { BOARD_CLASS } from '../shared/parties'
 import { isJamSlug, newJamSlug } from '../shared/slug'
+import { sounds } from './sounds'
 
 export { Board } from './board'
 
@@ -13,6 +14,9 @@ app.get('/api/health', (c) => c.json({ ok: true }))
 
 /** Creates a jam: today a jam is just a fresh slug; its board appears on first connect. */
 app.post('/api/jams', (c) => c.json({ slug: newJamSlug() }, 201))
+
+// A jam's uploaded sounds: upload, fetch and remove.
+app.route('/api/jams', sounds)
 
 // Board WebSockets: /parties/board/:slug, one Board Durable Object per slug.
 // onBeforeConnect is the one gate every connection passes; accounts would be checked here too.
