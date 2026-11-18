@@ -41,13 +41,14 @@ export function assignColor(
 /**
  * The name for person `id` joining a jam where `others` are already seated: the one they already
  * have in another tab; else their usual name if nobody here has it; else a fresh one nobody here
- * has, from `pick`.
+ * has, from `pick`, then from `all` in order.
  */
 export function assignName(
   others: Iterable<Pick<Seat, 'id' | 'name'>>,
   id: string,
   preferred: string,
   pick: () => string = randomName,
+  all: () => Iterable<string> = allNames,
 ): string {
   const taken = new Set<string>()
   for (const seat of others) {
@@ -61,19 +62,23 @@ export function assignName(
     const name = pick()
     if (free(name)) return name
   }
-  for (const name of allNames()) if (free(name)) return name
+  for (const name of all()) if (free(name)) return name
   for (let n = 2; ; n++) if (free(`${preferred} ${n}`)) return `${preferred} ${n}`
 }
 
-/** A person's seat in a jam, given who is already seated. */
+/**
+ * A person's or agent's seat in a jam, given who is already seated. Agents pass their own `pick`
+ * and `all`, so their fresh names keep their kind.
+ */
 export const assignSeat = (
   others: readonly Seat[],
   id: string,
   usual: { name: string; color: ColorName },
   pick?: () => string,
+  all?: () => Iterable<string>,
 ): Seat => ({
   id,
-  name: assignName(others, id, usual.name, pick),
+  name: assignName(others, id, usual.name, pick, all),
   color: assignColor(others, id, usual.color),
 })
 
