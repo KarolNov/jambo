@@ -16,34 +16,77 @@
   "project": "https://app.notion.com/p/41b43cce21f281bc9d12e875f6557087",
   "specs": {
     "jams": {
-      "ref": null,
+      "ref": "https://app.notion.com/p/41c43cce21f281fdb0c0e24fec1ec10e",
       "anchors": [
         "shared/**",
         "worker/index.ts",
         "src/App.tsx"
-      ]
+      ],
+      "specVersion": "2fb8113bc610e301",
+      "anchorsFiles": {
+        "shared/board/apply.ts": "0bf62eb5e23e",
+        "shared/board/index.ts": "7aa4c76f3296",
+        "shared/board/ops.ts": "c14b87e85e4a",
+        "shared/board/schema.ts": "034c3cf9c99d",
+        "shared/board/sdk.ts": "ec96fbef672a",
+        "shared/board/seed.ts": "d5eb014f0cd8",
+        "shared/looper.ts": "d8f614e05f2f",
+        "shared/parties.ts": "f686acc22693",
+        "shared/slug.ts": "93fbc4b73dd9",
+        "shared/sounds.ts": "37747cf60d71",
+        "shared/words.ts": "7f1c29eda1b3",
+        "src/App.tsx": "73dcf24dbe28",
+        "worker/index.ts": "809c62e25d69"
+      },
+      "syncedCommit": "a3f33b84d7280fdbc7f0ea8f28982926017fda14"
     },
     "room": {
-      "ref": null,
+      "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
       "anchors": [
         "worker/board.ts",
         "worker/index.ts",
         "src/board/doc.ts"
-      ]
+      ],
+      "specVersion": "6c8433a630d40b26",
+      "anchorsFiles": {
+        "src/board/doc.ts": "878594687779",
+        "worker/board.ts": "11798d14d337",
+        "worker/index.ts": "809c62e25d69"
+      },
+      "syncedCommit": "a3f33b84d7280fdbc7f0ea8f28982926017fda14"
     },
     "board": {
-      "ref": null,
+      "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
       "anchors": [
         "src/board/model.ts",
-        "src/board/Board.tsx",
-        "src/board/Jam.tsx"
-      ]
+        "src/board/Jam.tsx",
+        "src/board/identity.ts",
+        "src/board/session.ts"
+      ],
+      "specVersion": "1814cece56800710",
+      "anchorsFiles": {
+        "src/board/Jam.tsx": "901192fc720d",
+        "src/board/identity.ts": "ad8784c9a32a",
+        "src/board/model.ts": "0c80a186531b",
+        "src/board/session.ts": "c48c16e24b76"
+      },
+      "syncedCommit": "a3f33b84d7280fdbc7f0ea8f28982926017fda14"
     },
     "board/ops": {
-      "ref": null,
+      "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
       "anchors": [
         "shared/board/**"
-      ]
+      ],
+      "specVersion": "f1e2cafedebe6341",
+      "anchorsFiles": {
+        "shared/board/apply.ts": "0bf62eb5e23e",
+        "shared/board/index.ts": "7aa4c76f3296",
+        "shared/board/ops.ts": "c14b87e85e4a",
+        "shared/board/schema.ts": "034c3cf9c99d",
+        "shared/board/sdk.ts": "ec96fbef672a",
+        "shared/board/seed.ts": "d5eb014f0cd8"
+      },
+      "syncedCommit": "4a578d9a2b4a26267c84ca8143679568ff67ff2a"
     },
     "looper": {
       "ref": "https://app.notion.com/p/41c43cce21f2816ba415d28e60bf80d5",
@@ -62,17 +105,28 @@
       "syncedCommit": "d21cedbd50af62403e4580e64a7e466acce1c01a"
     },
     "pads": {
-      "ref": null,
+      "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
       "anchors": [
         "src/board/Pads.tsx"
-      ]
+      ],
+      "specVersion": "4e4eedb8b4c59c29",
+      "anchorsFiles": {
+        "src/board/Pads.tsx": "a65f6c04296e"
+      },
+      "syncedCommit": "4a578d9a2b4a26267c84ca8143679568ff67ff2a"
     },
     "sounds": {
-      "ref": null,
+      "ref": "https://app.notion.com/p/41c43cce21f2810f8bb0f1ed9935a67d",
       "anchors": [
         "shared/sounds.ts",
-        "public/sounds/**"
-      ]
+        "src/audio/synth.ts"
+      ],
+      "specVersion": "6aa2ed1da6a8ff71",
+      "anchorsFiles": {
+        "shared/sounds.ts": "37747cf60d71",
+        "src/audio/synth.ts": "bbba5b7d5b5b"
+      },
+      "syncedCommit": "4a578d9a2b4a26267c84ca8143679568ff67ff2a"
     }
   },
   "changes": {
@@ -80,7 +134,7 @@
       "brief": "https://app.notion.com/p/41b43cce21f281e89302ef7348ab087c",
       "review": "https://app.notion.com/p/41b43cce21f281128d68d29302b3a60d",
       "tickets": "https://app.notion.com/p/41b43cce21f281128d68d29302b3a60d",
-      "status": "building",
+      "status": "applied",
       "baseCommit": null,
       "branch": "kn/scaffold-jambo"
     },
@@ -88,7 +142,7 @@
       "brief": "https://app.notion.com/p/41b43cce21f281afa448e564e5c0ff27",
       "review": "https://app.notion.com/p/41b43cce21f2811cade1fd5f84b0db30",
       "tickets": "https://app.notion.com/p/41b43cce21f2811cade1fd5f84b0db30",
-      "status": "building",
+      "status": "applied",
       "baseCommit": "7e16840ec3a7f114265c6324f61545e2bb587216",
       "branch": "kn/looper-v1"
     }
