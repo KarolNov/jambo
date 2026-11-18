@@ -20,11 +20,15 @@ A jam SHALL have a 4×4 grid of pads, each with a sound and a keyboard key, the 
 
 ### Requirement: Assign a sound
 
-Anyone in the jam SHALL be able to assign any sound from the kit to any pad, and the change SHALL reach everyone.
+Anyone in the jam SHALL be able to assign any sound from the kit or the jam's uploads to any pad, and the change SHALL reach everyone.
 
 - **Scenario: Reassign**
   - **WHEN** someone chooses Change sounds and picks the clap for the pad on key `Q`
   - **THEN** every client plays the clap on `Q`, including in existing tracks that use that pad
+- **Scenario: Pick an upload**
+  - **GIVEN** a jam with an upload called Vox
+  - **WHEN** someone picks Vox for the pad on key `A`
+  - **THEN** every client plays Vox on `A` once it has loaded
 
 ### Requirement: Default layout
 

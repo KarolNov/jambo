@@ -79,3 +79,41 @@ The room SHALL pass each client's presence to everyone else in the jam, and SHAL
   - **GIVEN** two clients in a jam
   - **WHEN** one closes its connection
   - **THEN** the other stops seeing its presence within a few seconds
+
+### Requirement: Sound storage
+
+The room SHALL store each upload's audio outside the board, list it on the board only after the audio is stored, serve it to anyone with the jam's link, and delete it after its listing is removed or the jam goes 90 days unvisited. Served files SHALL be cacheable for a day, so a deleted file stops being served within a day. It SHALL refuse bodies over 900,000 bytes, anything other than 10 s or less of mono 16-bit 44.1 kHz WAV, more than 10 writes per minute from one address, more than 120 downloads that miss the edge cache per minute from one address, and uploads while it is deleting the jam's expired audio.
+
+- **Scenario: Serve**
+  - **WHEN** a client requests a listed upload
+  - **THEN** it gets the WAV, marked cacheable for a day
+- **Scenario: Bad file**
+  - **WHEN** someone posts a file that isn't a valid WAV of the right format
+  - **THEN** it is refused and nothing is stored or listed
+- **Scenario: Too many writes**
+  - **WHEN** one address uploads an 11th sound within a minute
+  - **THEN** it is refused with "too many requests"
+- **Scenario: Too many downloads**
+  - **WHEN** one address makes a 121st download that misses the edge cache within a minute
+  - **THEN** it is refused with "too many downloads"
+- **Scenario: Clearing old sounds**
+  - **GIVEN** the room is deleting a jam's audio after 90 days unvisited
+  - **WHEN** someone uploads a sound to that jam
+  - **THEN** it is refused, nothing is stored or listed, and they are told to try again in a moment
+
+### Requirement: Sound budget
+
+Uploaded sounds SHALL use at most a fixed share of R2's monthly free tier (10 GB-month stored, 1 million writes, 10 million reads), counted across all jams: 24% in production and 0.1% in each preview, so production and up to ten previews stay under 25%. Uploads SHALL be refused while storage could not fit one more upload or 90% of the month's write budget is used (the rest stays for retention). Downloads that miss the edge cache SHALL be refused once the month's read budget is used. Removing uploads SHALL always be allowed, and SHALL give its storage back. Write and read budgets SHALL start again each calendar month (UTC).
+
+- **Scenario: Storage full**
+  - **GIVEN** stored sounds within one upload of the storage budget
+  - **WHEN** someone uploads a sound
+  - **THEN** it is refused, nothing is stored, and they are told uploads are paused because storage is full
+- **Scenario: Reads spent**
+  - **GIVEN** this month's read budget is used
+  - **WHEN** a client requests an upload that isn't in the edge cache
+  - **THEN** it is refused, and a cached upload is still served
+- **Scenario: New month**
+  - **GIVEN** last month's write budget was used up
+  - **WHEN** a new month starts
+  - **THEN** uploads are open again, and stored bytes still count

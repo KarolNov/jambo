@@ -46,13 +46,44 @@ A jam SHALL hold at most 32 readable tracks. A track SHALL have 1 to 16 bars, 1 
   - **WHEN** an operation adds another
   - **THEN** it is refused
 
-### Requirement: Pad sounds from the kit
+### Requirement: Pad sounds from the kit or uploads
 
-Assigning a sound SHALL need an existing pad and a sound from the kit.
+Assigning a sound SHALL need an existing pad and a sound from the kit or one of the jam's listed uploads.
 
 - **Scenario: Unknown sound**
   - **WHEN** an operation assigns the sound `kik` to a pad
   - **THEN** it is refused and the pad keeps its sound
+- **Scenario: Upload**
+  - **GIVEN** a jam listing the upload `u-abc123def456`
+  - **WHEN** an operation assigns it to a pad
+  - **THEN** the pad's sound changes
+
+### Requirement: Upload list
+
+Only the room SHALL add, remove or expire uploads; the same operations from anyone else SHALL be refused. Adding an upload SHALL need a new upload-form id and room in the jam (at most 32). Removing one SHALL be refused while any pad names it, including a pad that does not pass the schema. Expiring SHALL remove every upload from the list.
+
+- **Scenario: Remove in use**
+  - **GIVEN** an upload on one pad
+  - **WHEN** an operation removes it
+  - **THEN** it is refused and the upload stays
+- **Scenario: Kit id**
+  - **WHEN** an operation adds an upload with the id `kick`
+  - **THEN** it is refused
+- **Scenario: Not the room**
+  - **WHEN** a client, not the room, applies an operation that adds an upload
+  - **THEN** it is refused and the upload list is unchanged
+
+### Requirement: Replace a sound
+
+Moving every pad from one sound to another SHALL be one operation. The new sound SHALL be from the kit or one of the jam's listed uploads; otherwise the operation SHALL be refused and no pad SHALL change.
+
+- **Scenario: Two pads**
+  - **GIVEN** an upload on two pads
+  - **WHEN** an operation replaces it with the clap
+  - **THEN** both pads change to the clap in one change, and the other pads keep their sounds
+- **Scenario: Unknown sound**
+  - **WHEN** an operation replaces a sound with one the jam does not list, even one no pad uses
+  - **THEN** it is refused
 
 ### Requirement: Editable track fields
 
