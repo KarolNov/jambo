@@ -1,8 +1,8 @@
 import type { Hit, Track } from '../../shared/board'
 import { BEATS_PER_BAR } from '../../shared/board'
 import { barSeconds, beatSeconds, finishTake, hitsInWindow, nextBar } from '../../shared/looper'
-import { keepAwake, preferPlayback } from './session'
 import { click, renderKit } from './synth'
+import { keepAwake, preferPlayback } from './session'
 
 const LOOKAHEAD = 0.12 // seconds of audio scheduled ahead
 const TICK_MS = 25
