@@ -103,7 +103,8 @@
         "src/board/Transport.tsx",
         "src/board/Tracks.tsx",
         "shared/clock.ts",
-        "src/board/Debug.tsx"
+        "src/board/Debug.tsx",
+        "src/board/useEngineState.ts"
       ],
       "specVersion": "81b7d6a03e14a54f",
       "anchorsFiles": {
@@ -116,9 +117,10 @@
         "src/audio/upload.ts": "72fe8ef240b6",
         "src/board/Debug.tsx": "80d7db772bb5",
         "src/board/Tracks.tsx": "25f839a4ccce",
-        "src/board/Transport.tsx": "f5b53a3f71af"
+        "src/board/Transport.tsx": "f5b53a3f71af",
+        "src/board/useEngineState.ts": "f06f1956d95d"
       },
-      "syncedCommit": "527c51b4fdff119d45382e59f4383871e510dcf0"
+      "syncedCommit": "3fa749a8033cb831621eff599d5ba95999c3dab5"
     },
     "pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
