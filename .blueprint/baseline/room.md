@@ -80,6 +80,30 @@ The room SHALL pass each client's presence to everyone else in the jam, and SHAL
   - **WHEN** one closes its connection
   - **THEN** the other stops seeing its presence within a few seconds
 
+### Requirement: Seats
+
+The room SHALL give each person in a jam a name nobody else there has, and a colour nobody else there has while one of the eight is free. It SHALL know a person by a key private to their browser, never by the id others in the jam can see. A person SHALL get the name and colour they already have in another tab. Otherwise they SHALL get the name they ask for if nobody here has it, else a fresh adjective and animal nobody here has, comparing names without case; and the colour they ask for if it is free, else the first free one, and past eight people the least used colour. Names and colours SHALL be free again once everyone holding them has left.
+
+- **Scenario: Shared usual name and colour**
+  - **GIVEN** three people who ask for Groovy Otter and Sky
+  - **WHEN** they join one jam, one after another
+  - **THEN** they get Sky, Teal and Coral, the first stays Groovy Otter, and all three names differ
+- **Scenario: Second tab**
+  - **WHEN** a person opens the jam in a second tab
+  - **THEN** it gets the name and colour they already have
+- **Scenario: Someone leaves**
+  - **GIVEN** Groovy Otter in Sky has left the jam
+  - **WHEN** someone asking for Groovy Otter and Sky joins
+  - **THEN** they get Groovy Otter and Sky
+- **Scenario: Someone else's id**
+  - **GIVEN** Groovy Otter in Sky is in the jam
+  - **WHEN** another person asks for a seat using Groovy Otter's id
+  - **THEN** they get a name and colour of their own
+- **Scenario: Nine people**
+  - **GIVEN** eight people in a jam, one per colour
+  - **WHEN** a ninth joins
+  - **THEN** they get the least used colour, the one they asked for on a tie, and a name nobody else there has
+
 ### Requirement: Sound storage
 
 The room SHALL store each upload's audio outside the board, list it on the board only after the audio is stored, serve it to anyone with the jam's link, and delete it after its listing is removed or the jam goes 90 days unvisited. Served files SHALL be cacheable for a day, so a deleted file stops being served within a day. It SHALL refuse bodies over 900,000 bytes, anything other than 10 s or less of mono 16-bit 44.1 kHz WAV, more than 10 writes per minute from one address, more than 120 downloads that miss the edge cache per minute from one address, and uploads while it is deleting the jam's expired audio.

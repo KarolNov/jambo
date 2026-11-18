@@ -4,6 +4,7 @@ import { IconButton } from '../../ui'
 import { useSwatch } from '../colors'
 import type { ConnectionStatus } from '../doc'
 import { usePeople } from '../presence'
+import { useSeat } from '../seat'
 import { useSession } from '../session'
 import { namesPeople, personName } from './people'
 import { jamLink, shareLink, type ShareResult } from './share'
@@ -80,6 +81,7 @@ function ShareButton({ slug }: { slug: string }) {
 /** Everyone in the jam as a dot in their colour, you first; named while there are few. */
 function People() {
   const { jam, me } = useSession()
+  useSeat(me) // your own entry reads `me`, so re-render when the room seats you
   const people = usePeople(jam.awareness, me)
   const swatch = useSwatch()
   const named = namesPeople(people.length)

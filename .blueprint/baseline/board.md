@@ -31,11 +31,19 @@ The board SHALL show whether it is live, connecting or offline, and stay editabl
 
 ### Requirement: Your identity
 
-Each browser SHALL have an anonymous identity, an id and one of eight named colours, kept across visits, and the board SHALL show its colour, named while three or fewer people are here and in a tooltip after that.
+Each browser SHALL have an anonymous identity: an id, a key only it and the room know, and a usual name and colour, kept across visits. A name SHALL be a fun adjective and an animal, like Groovy Otter; a colour, one of eight. In a jam, a person SHALL have the name and colour the room seats them with, and their usual ones until it answers or while offline. On joining they SHALL ask the room for their usual ones; on reconnecting, for the ones they have. The board SHALL show their name and colour.
 
 - **Scenario: Come back**
+  - **GIVEN** nobody else in either jam has their usual name or colour
   - **WHEN** someone opens a jam, closes the tab and opens another jam in the same browser
-  - **THEN** the board shows the same colour both times
+  - **THEN** the board shows the same name and colour both times
+- **Scenario: Same usual name and colour**
+  - **WHEN** two people whose usual name is Groovy Otter and usual colour is Sky open one jam
+  - **THEN** they show with different names and different colours, on both boards
+- **Scenario: Connection blip**
+  - **GIVEN** someone seated as Sunny Puffin because another person has their usual name
+  - **WHEN** their connection drops and comes back
+  - **THEN** they are still Sunny Puffin
 - **Scenario: Storage blocked**
   - **WHEN** the browser blocks local storage
   - **THEN** the board still opens with a fresh identity for that page
@@ -57,7 +65,7 @@ The board SHALL show the jam's slug, a logo that starts a new jam, and a control
 
 ### Requirement: Who's here
 
-The board SHALL list everyone connected to the jam, one entry per identity, each as a dot in their colour, with this person first and marked as you. While three or fewer people are here each dot SHALL carry its colour name; past three, only the dots, each naming its person in a tooltip.
+The board SHALL list everyone connected to the jam, one entry per identity, each as a dot in their colour, with this person first and marked as you. Others SHALL list a person only once the room has seated them, so nobody is shown with a name or colour someone else holds. While three or fewer people are here each dot SHALL carry its person's name; past three, only the dots, each naming its person in a tooltip. A client older than names SHALL show by its colour name.
 
 - **Scenario: Someone joins**
   - **GIVEN** one person in a jam

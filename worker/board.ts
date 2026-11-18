@@ -4,6 +4,8 @@ import * as Y from 'yjs'
 import { apply, countUploads, ROOTS, Sound, type Origin } from '../shared/board'
 import { seedBoard } from '../shared/board/seed'
 import { parseClockMessage, pong } from '../shared/clock'
+import type { ColorName } from '../shared/colors'
+import { assignSeat, parseSeatMessage, type Seat, seated } from '../shared/seats'
 import { newUploadId, PAUSED_MESSAGES, UPLOADS } from '../shared/sounds'
 import { parseUploadWav } from '../shared/wav'
 import { quota } from './quota'
@@ -24,6 +26,10 @@ export const SOUND_RETENTION_MS = 90 * DAY_MS
 
 const ROOM: Origin = { kind: 'system', id: 'room' }
 
+/** Where a connection's seat (who holds it, and their colour here) lives in its state. */
+const SEAT_KEY = 'seat'
+type SeatState = { [SEAT_KEY]?: Seat } & Record<string, unknown>
+
 /** Where an upload's audio lives in R2: under the jam's prefix, so a jam's audio can go at once. */
 export const soundPrefix = (slug: string) => `jams/${slug}/`
 export const soundKey = (slug: string, id: string) => `${soundPrefix(slug)}${id}.wav`
@@ -37,12 +43,15 @@ export interface UploadInput {
   wav: ArrayBuffer
   name: string
   author: string
+  /** The uploader's name in the jam; older clients send none. */
+  authorName?: string
   color: string
 }
 
 /**
  * One Durable Object per jam: holds the jam's board doc, relays edits and presence between everyone
  * connected, keeps a snapshot of the doc in its own SQLite-backed storage, and is the jam's clock.
+ * It seats each person with a name nobody else in the jam has, and a colour while one is free.
  * It also lists and unlists uploaded sounds, storing their audio in R2, and deletes that audio
  * once the jam goes unvisited for `SOUND_RETENTION_MS`.
  */
@@ -81,11 +90,27 @@ export class Board extends YServer<Env> {
     this.ctx.waitUntil(this.keepSounds())
   }
 
-  // The jam clock: answers a ping, to that client alone, with its own timestamp and the room's time.
-  // Each message is its own event, so Date.now() is fresh.
   override onCustomMessage(connection: Connection, message: string) {
+    // The jam clock: answers a ping, to that client alone, with its own timestamp and the room's
+    // time. Each message is its own event, so Date.now() is fresh.
     const msg = parseClockMessage(message)
-    if (msg?.t === 'ping') this.sendCustomMessage(connection, pong(msg.c, Date.now()))
+    if (msg?.t === 'ping') return this.sendCustomMessage(connection, pong(msg.c, Date.now()))
+    // A client saying who it is: seat it with a name nobody else in the jam has, and a colour
+    // nobody else has while one is free.
+    const seat = parseSeatMessage(message)
+    if (seat?.t === 'hello') this.seat(connection, seat.key, seat)
+  }
+
+  private seat(connection: Connection, key: string, usual: { name: string; color: ColorName }) {
+    const others: Seat[] = []
+    for (const c of this.getConnections<SeatState>()) {
+      const s = c.state?.[SEAT_KEY]
+      if (c.id !== connection.id && s) others.push(s)
+    }
+    const seat = assignSeat(others, key, usual)
+    // Merged in: y-partyserver keeps its own fields in the connection's state.
+    connection.setState((prev: SeatState | null) => ({ ...prev, [SEAT_KEY]: seat }))
+    this.sendCustomMessage(connection, seated(seat))
   }
 
   /**
@@ -98,6 +123,7 @@ export class Board extends YServer<Env> {
     const parsed = Sound.safeParse({
       name: input.name,
       author: input.author,
+      authorName: input.authorName,
       color: input.color,
       durationMs: info.durationMs,
       bytes: input.wav.byteLength,

@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { getServerByName } from 'partyserver'
 import { isJamSlug } from '../shared/slug'
+import { toName } from '../shared/names'
 import { isUploadId, PAUSED_MESSAGES, UPLOAD_HEADERS, UPLOADS } from '../shared/sounds'
 import { soundKey } from './board'
 import { quota } from './quota'
@@ -77,6 +78,7 @@ sounds.post('/:slug/sounds', async (c) => {
     wav,
     name: header(UPLOAD_HEADERS.name),
     author: header(UPLOAD_HEADERS.author),
+    authorName: toName(header(UPLOAD_HEADERS.authorName)),
     color: header(UPLOAD_HEADERS.color),
   })
   if (!result.ok) return c.json({ error: result.error }, result.status)

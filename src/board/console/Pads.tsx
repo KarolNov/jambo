@@ -28,7 +28,11 @@ const PRESS_MS = 110
 const GLOW_MS = 160
 
 /** Who uploaded a sound, for its dot's tooltip. */
-function useUploader(): (sound: { author: string; color: ColorName }) => string {
+function useUploader(): (sound: {
+  author: string
+  authorName?: string
+  color: ColorName
+}) => string {
   const { me } = useSession()
   return (s) => uploadedBy(s, me.id)
 }

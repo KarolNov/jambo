@@ -34,9 +34,9 @@ Anyone in the jam SHALL be able to assign any sound from the kit or the jam's up
   - **WHEN** someone picks Vox for the pad on key `A`
   - **THEN** every client plays Vox on `A` once it has loaded
 - **Scenario: Who uploaded it**
-  - **GIVEN** a pad holding Vox, uploaded by Coral
+  - **GIVEN** a pad holding Vox, uploaded by Misty Yak
   - **WHEN** someone points at the dot beside its name
-  - **THEN** it says "Uploaded by Coral", or "Uploaded by you" for Coral
+  - **THEN** it says "Uploaded by Misty Yak", or "Uploaded by you" for its uploader; a sound uploaded before names says the uploader's colour
 
 ### Requirement: Default layout
 

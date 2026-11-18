@@ -71,6 +71,19 @@ describe('uploading a sound', () => {
     other.close()
   })
 
+  it("keeps the uploader's name, and accepts uploads from clients older than names", async () => {
+    const slug = 'funky-otter-sp0a'
+    const named = await upload(slug, {
+      headers: { [UPLOAD_HEADERS.authorName]: encodeURIComponent('Groovy Otter') },
+    })
+    expect(((await named.json()) as { sound: object }).sound).toMatchObject({
+      authorName: 'Groovy Otter',
+    })
+    const older = await upload(slug, { name: 'Old' })
+    expect(older.status).toBe(201)
+    expect(((await older.json()) as { sound: object }).sound).not.toHaveProperty('authorName')
+  })
+
   it('refuses a file that is not a WAV of the upload format, storing nothing', async () => {
     const slug = 'funky-otter-sp02'
     const res = await upload(slug, { body: encodeWav(new Float32Array(100), 48_000) })

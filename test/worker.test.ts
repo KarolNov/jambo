@@ -6,6 +6,7 @@ import { apply, ROOTS, type Track } from '../shared/board'
 import { BOARD_CLASS, BOARD_PARTY, boardPath } from '../shared/parties'
 import { isJamSlug } from '../shared/slug'
 import { parseClockMessage, ping } from '../shared/clock'
+import { hello, parseSeatMessage } from '../shared/seats'
 import { connectBoard, until } from './client'
 
 const fetchApp = (path: string, init?: RequestInit) =>
@@ -180,6 +181,50 @@ describe('jam clock', () => {
     expect(a.custom).toHaveLength(1)
     expect(b.custom).toEqual([])
     a.close()
+    b.close()
+  })
+})
+
+describe('seats', () => {
+  const seatOf = (client: { custom: string[] }) => {
+    const last = client.custom
+      .map(parseSeatMessage)
+      .filter((m) => m?.t === 'seat')
+      .at(-1)
+    return last?.t === 'seat' ? { name: last.name, color: last.color } : undefined
+  }
+  const join = async (slug: string, key: string, name = 'Groovy Otter') => {
+    const c = await connectBoard(slug)
+    c.sendCustom(hello(key, name, 'sky'))
+    await until(() => seatOf(c) !== undefined)
+    return c
+  }
+
+  it('seats people who share a usual name and colour with different ones', async () => {
+    const a = await join('groovy-otter-mmmm', 'a')
+    const b = await join('groovy-otter-mmmm', 'b')
+    const c = await join('groovy-otter-mmmm', 'c')
+    const seats = [a, b, c].map(seatOf)
+    expect(seats.map((s) => s?.color)).toEqual(['sky', 'teal', 'coral'])
+    expect(seats[0]?.name).toBe('Groovy Otter')
+    expect(new Set(seats.map((s) => s?.name)).size).toBe(3)
+    for (const x of [a, b, c]) x.close()
+  })
+
+  it('gives a second tab the name and colour the person already has', async () => {
+    const a = await join('groovy-otter-nnnn', 'a')
+    const b = await join('groovy-otter-nnnn', 'b')
+    const b2 = await join('groovy-otter-nnnn', 'b')
+    expect(seatOf(b2)).toEqual(seatOf(b))
+    for (const x of [a, b, b2]) x.close()
+  })
+
+  it('frees a name and colour when their person leaves', async () => {
+    const a = await join('groovy-otter-pppp', 'a')
+    a.close()
+    await new Promise((r) => setTimeout(r, 50))
+    const b = await join('groovy-otter-pppp', 'b')
+    expect(seatOf(b)).toEqual({ name: 'Groovy Otter', color: 'sky' })
     b.close()
   })
 })
