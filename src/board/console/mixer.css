@@ -1,0 +1,198 @@
+/* The mixer tray: an inset well holding one raised row per loop. */
+:root[data-theme] .console-mixer {
+  display: grid;
+  margin: 40px 24px 0;
+  padding: 22px;
+  border-radius: 28px;
+  box-shadow: var(--inset);
+  min-height: 110px;
+}
+:root[data-theme] .console-mixer-empty {
+  margin: auto;
+  color: var(--muted);
+}
+:root[data-theme] .console-channels {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One loop: ring · name · pattern · level · snap · mute · remove */
+:root[data-theme] .console-channel {
+  display: grid;
+  grid-template-columns:
+    36px minmax(80px, 150px) minmax(140px, 1fr) minmax(80px, 130px)
+    auto auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px 12px 12px;
+  border-radius: 20px;
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+}
+:root[data-theme] .console-channel.is-muted .console-ring,
+:root[data-theme] .console-channel.is-muted .console-channel-title,
+:root[data-theme] .console-channel.is-muted .console-pattern {
+  opacity: 0.4;
+}
+
+/* How far the loop has played, as a ring in the loop's colour */
+:root[data-theme] .console-ring {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--bg) 55%, transparent 57%),
+    conic-gradient(var(--c) calc(var(--p, 0) * 360deg), var(--line) 0);
+  box-shadow: var(--raise-sm);
+}
+:root[data-theme] .console-channel[data-playing='false'] .console-ring {
+  background: radial-gradient(circle, var(--bg) 55%, transparent 57%), var(--line);
+}
+
+:root[data-theme] .console-channel-title {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+/* The name reads as text; it becomes an inset well when you point at it or type in it */
+:root[data-theme] .console-channel-name {
+  width: 100%;
+  min-width: 0;
+  margin: -3px -6px;
+  padding: 3px 6px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 750;
+  color: var(--text);
+  text-overflow: ellipsis;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+}
+:root[data-theme] .console-channel-name:hover,
+:root[data-theme] .console-channel-name:focus-visible {
+  background: var(--bg);
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .console-channel-name:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--accent-2);
+}
+:root[data-theme] .console-channel-name[aria-invalid='true'] {
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--accent);
+}
+:root[data-theme] .console-channel-size {
+  font-size: 12px;
+  color: var(--muted);
+}
+:root[data-theme] .console-channel-error {
+  grid-column: 2 / -1;
+  margin: -6px 0 0;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+/* The pattern sits on a flat, high-contrast plate so hits read clearly */
+:root[data-theme] .console-pattern {
+  position: relative;
+  height: 30px;
+  border-radius: 10px;
+  background: var(--flat);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+:root[data-theme] .console-beat {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: var(--line);
+}
+:root[data-theme] .console-beat.is-bar {
+  top: 0;
+  bottom: 0;
+}
+:root[data-theme] .console-hit {
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  width: 5px;
+  margin-left: -2px;
+  border-radius: 3px;
+  background: var(--c);
+}
+:root[data-theme] .console-head {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text);
+  left: calc(var(--p, 0) * 100%);
+}
+:root[data-theme] .console-channel[data-playing='false'] .console-head {
+  opacity: 0;
+}
+
+:root[data-theme] .console-snap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+:root[data-theme] .console-mute {
+  min-width: 76px;
+}
+:root[data-theme] .console-mute[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+/* Phone width: name and remove on top, then the pattern, the level, and snap beside mute */
+@media (max-width: 760px) {
+  :root[data-theme] .console-mixer {
+    margin: 28px 16px 0;
+    padding: 14px;
+  }
+  :root[data-theme] .console-channel {
+    grid-template-columns: 36px 1fr auto;
+    grid-template-areas:
+      'ring title remove'
+      'pattern pattern pattern'
+      'fader fader fader'
+      'snap snap mute';
+    gap: 12px;
+  }
+  :root[data-theme] .console-ring {
+    grid-area: ring;
+  }
+  :root[data-theme] .console-channel-title {
+    grid-area: title;
+  }
+  :root[data-theme] .console-remove {
+    grid-area: remove;
+  }
+  :root[data-theme] .console-pattern {
+    grid-area: pattern;
+  }
+  :root[data-theme] .console-fader {
+    grid-area: fader;
+  }
+  :root[data-theme] .console-snap {
+    grid-area: snap;
+  }
+  :root[data-theme] .console-mute {
+    grid-area: mute;
+  }
+  :root[data-theme] .console-channel-error {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+}
