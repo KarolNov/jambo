@@ -5,7 +5,19 @@ import type { Identity } from '../board/identity'
 import { soundUrl } from './samples'
 
 /** Why an upload didn't happen, in words for the person who tried. */
-export class UploadError extends Error {}
+export class UploadError extends Error {
+  /** The HTTP status that refused it, when the jam refused it. */
+  constructor(
+    message: string,
+    readonly status?: number,
+  ) {
+    super(message)
+  }
+}
+
+/** Drops unpaired surrogates, which a cut at a length can leave and `encodeURIComponent` rejects. */
+const wellFormed = (text: string) =>
+  text.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
 
 /** A sample ready to upload: what the room stores, and how long it is. */
 export interface Prepared {
@@ -18,7 +30,8 @@ export const defaultName = (fileName: string) =>
   fileName
     .replace(/\.[^.]+$/, '')
     .trim()
-    .slice(0, 40) || 'Sound'
+    .slice(0, 40)
+    .replace(/[\uD800-\uDBFF]$/, '') || 'Sound'
 
 /**
  * Turns a picked file into what the room stores: decoded and resampled to the upload rate, mixed
@@ -48,14 +61,14 @@ export async function prepareSample(file: Blob): Promise<Prepared> {
 }
 
 async function failure(res: Response, fallback: string): Promise<UploadError> {
-  if (res.status === 413) return new UploadError('That sample is too big')
+  if (res.status === 413) return new UploadError('That sample is too big', res.status)
   try {
     const body = (await res.json()) as { error?: string }
-    if (body.error) return new UploadError(body.error)
+    if (body.error) return new UploadError(body.error, res.status)
   } catch {
     // Not JSON: use the fallback.
   }
-  return new UploadError(fallback)
+  return new UploadError(fallback, res.status)
 }
 
 /** Uploads a prepared sample to the jam; the room lists it on the board for everyone. */
@@ -72,7 +85,7 @@ export async function uploadSound(
       body: sample.wav,
       headers: {
         'Content-Type': 'audio/wav',
-        [UPLOAD_HEADERS.name]: encodeURIComponent(name.trim()),
+        [UPLOAD_HEADERS.name]: encodeURIComponent(wellFormed(name.trim())),
         [UPLOAD_HEADERS.author]: encodeURIComponent(me.id),
         [UPLOAD_HEADERS.color]: encodeURIComponent(me.color),
       },

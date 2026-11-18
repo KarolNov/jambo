@@ -32,6 +32,8 @@ export function Pads({ slug }: { slug: string }) {
   const target = useRef<UploadTarget>({ kind: 'list' })
   const picker = useFilePicker((file) => setPending({ file, target: target.current }))
   const pick = (t: UploadTarget) => {
+    // One upload at a time: a new pick would unmount a dialog whose upload is still running.
+    if (pending) return
     target.current = t
     picker.open()
   }
@@ -103,7 +105,7 @@ export function Pads({ slug }: { slug: string }) {
                     ))}
                   </optgroup>
                 )}
-                <option value={UPLOAD_OPTION} disabled={!uploadsOpen}>
+                <option value={UPLOAD_OPTION} disabled={!uploadsOpen || !!pending}>
                   {uploadsOpen ? 'Upload a sound…' : 'Uploads paused'}
                 </option>
               </select>
@@ -129,7 +131,7 @@ export function Pads({ slug }: { slug: string }) {
           onClose={() => setPending(undefined)}
         />
       )}
-      {editing && <UploadsList slug={slug} onPick={pick} />}
+      {editing && <UploadsList slug={slug} onPick={pick} uploading={!!pending} />}
       {!editing && sounds.size > 0 && <PausedNotice uploads={false} />}
     </div>
   )

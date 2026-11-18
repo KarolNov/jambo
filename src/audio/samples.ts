@@ -8,10 +8,18 @@ interface Entry {
   buffer?: AudioBuffer
   /** Set when the jam stops listing it, so a late fetch or decode is dropped. */
   dropped?: boolean
+  /** This client's own upload: its WAV came from here, so it is never fetched. */
+  seeded?: boolean
+  /** Whether the jam has listed it yet; a seeded entry waits for that before it can be dropped. */
+  listed?: boolean
+  /** Cancels a fetch in flight. */
+  abort?: AbortController
 }
 
 const CONCURRENCY = 4
 const RETRY_MS = [500, 1000, 2000]
+/** How long a sample that couldn't load waits before it is tried again (rate limits last a minute). */
+const RECOVER_MS = 60_000
 
 /** The URL of an upload's file. */
 export const soundUrl = (slug: string, id: string) =>
@@ -55,14 +63,20 @@ export class SampleLoader {
   sync(ids: ReadonlySet<string>) {
     let changed = false
     for (const [id, entry] of this.entries) {
-      if (ids.has(id)) continue
+      if (ids.has(id)) {
+        entry.listed = true
+        continue
+      }
+      // Seeded before the room's listing reached this board: keep it until it arrives.
+      if (entry.seeded && !entry.listed) continue
       entry.dropped = true
+      entry.abort?.abort()
       this.entries.delete(id)
       changed = true
     }
     for (const id of ids) {
       if (this.entries.has(id)) continue
-      this.entries.set(id, { state: 'loading' })
+      this.entries.set(id, { state: 'loading', listed: true })
       this.queue.push(id)
       changed = true
     }
@@ -75,6 +89,8 @@ export class SampleLoader {
     const entry = this.entries.get(id) ?? { state: 'loading' as const }
     if (entry.buffer) return
     this.queue = this.queue.filter((q) => q !== id)
+    entry.seeded = true
+    entry.abort?.abort()
     entry.bytes = wav
     this.entries.set(id, entry)
     this.decode(id, entry)
@@ -95,7 +111,7 @@ export class SampleLoader {
     while (this.active < CONCURRENCY && this.queue.length > 0) {
       const id = this.queue.shift()!
       const entry = this.entries.get(id)
-      if (!entry || entry.bytes || entry.buffer) continue
+      if (!entry || entry.seeded || entry.bytes || entry.buffer) continue
       this.active++
       void this.fetchOne(id, entry).finally(() => {
         this.active--
@@ -105,21 +121,40 @@ export class SampleLoader {
   }
 
   private async fetchOne(id: string, entry: Entry) {
+    const stale = () => entry.dropped || entry.seeded || this.disposed
     for (let attempt = 0; ; attempt++) {
-      if (entry.dropped || this.disposed) return
+      if (stale()) return
       try {
-        const res = await fetch(soundUrl(this.slug, id))
-        // Gone, or downloads paused by the app's budget: retrying won't help.
-        if (res.status === 404 || res.status === 503) return this.settle(entry, 'missing')
+        entry.abort = new AbortController()
+        const res = await fetch(soundUrl(this.slug, id), { signal: entry.abort.signal })
+        // Gone from storage: retrying won't help.
+        if (res.status === 404) return this.settle(entry, 'missing')
+        // Anything else (rate limit, paused downloads, a network blip) may pass: retry.
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        entry.bytes = await res.arrayBuffer()
+        const bytes = await res.arrayBuffer()
+        if (stale()) return
+        entry.bytes = bytes
+        if (entry.state === 'missing') this.settle(entry, 'loading')
         this.decode(id, entry)
         return
       } catch {
-        if (attempt >= RETRY_MS.length) return this.settle(entry, 'missing')
+        if (stale()) return
+        if (attempt >= RETRY_MS.length) return this.recoverLater(id, entry)
         await new Promise((r) => setTimeout(r, RETRY_MS[attempt]))
+      } finally {
+        entry.abort = undefined
       }
     }
+  }
+
+  /** Marks `id` missing for now and queues it again later, so a passing failure isn't final. */
+  private recoverLater(id: string, entry: Entry) {
+    this.settle(entry, 'missing')
+    setTimeout(() => {
+      if (entry.dropped || entry.seeded || this.disposed || entry.bytes || entry.buffer) return
+      this.queue.push(id)
+      this.pump()
+    }, RECOVER_MS)
   }
 
   private decode(_id: string, entry: Entry) {

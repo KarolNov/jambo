@@ -1,6 +1,6 @@
 import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { ROOTS, type Pad } from '../../shared/board'
+import type { Pad } from '../../shared/board'
 import {
   PAD_KEYS,
   PAUSED_MESSAGES,
@@ -17,6 +17,7 @@ import {
   uploadSound,
 } from '../audio/upload'
 import { padsAtom, soundsAtom } from './model'
+import type { JamSession } from './doc'
 import { useSession } from './session'
 
 /** Where a new upload goes once it is listed: onto a pad, in place of another upload, or nowhere. */
@@ -110,22 +111,20 @@ export function useFilePicker(onFile: (file: File) => void) {
   return { element, open: () => input.current?.click() }
 }
 
-/** Resolves once the local doc lists `id`, so pads can be assigned to it. */
-function listed(doc: import('yjs').Doc, id: string, timeout = 10_000): Promise<void> {
-  const sounds = doc.getMap(ROOTS.sounds)
-  if (sounds.has(id)) return Promise.resolve()
+/** Resolves once the board lists `id` as a readable sound, so pads can be assigned to it. */
+function listed(store: JamSession['store'], id: string, timeout = 10_000): Promise<void> {
+  if (store.get(soundsAtom).has(id)) return Promise.resolve()
   return new Promise((resolve, reject) => {
-    const done = () => {
-      if (!sounds.has(id)) return
-      sounds.unobserve(done)
+    const stop = store.sub(soundsAtom, () => {
+      if (!store.get(soundsAtom).has(id)) return
+      stop()
       clearTimeout(timer)
       resolve()
-    }
+    })
     const timer = setTimeout(() => {
-      sounds.unobserve(done)
+      stop()
       reject(new UploadError('The upload is stored but has not reached this board yet'))
     }, timeout)
-    sounds.observe(done)
   })
 }
 
@@ -135,7 +134,8 @@ async function removeWhenFree(slug: string, id: string) {
     try {
       return await removeSound(slug, id)
     } catch (e) {
-      if (attempt >= 5 || !(e instanceof UploadError) || !/ is on pad/.test(e.message)) throw e
+      // 409: the room still sees it on a pad, until the pad changes made here reach it.
+      if (attempt >= 5 || !(e instanceof UploadError) || e.status !== 409) throw e
       await new Promise((r) => setTimeout(r, 300))
     }
   }
@@ -162,6 +162,8 @@ export function UploadDialog({
   const [name, setName] = useState(() => defaultName(file.name))
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
+  // The upload this dialog already stored, so trying again after a later step fails doesn't store it twice.
+  const uploaded = useRef<string>(undefined)
 
   useEffect(() => {
     let live = true
@@ -175,7 +177,8 @@ export function UploadDialog({
   }, [file])
 
   const replacing = target.kind === 'replace' ? sounds.get(target.soundId) : undefined
-  const full = target.kind !== 'replace' && sounds.size >= UPLOADS.perJam
+  // Replace stores the new sound before removing the old one, so it needs a free slot too.
+  const full = !uploaded.current && sounds.size >= UPLOADS.perJam
   const paused = useBudget().uploads !== 'open'
 
   const submit = async (e: React.FormEvent) => {
@@ -184,9 +187,13 @@ export function UploadDialog({
     setBusy(true)
     setError(undefined)
     try {
-      const { id } = await uploadSound(slug, prepared, name, me)
-      engine.samples.seed(id, prepared.wav.buffer.slice(0))
-      await listed(jam.doc, id)
+      let id = uploaded.current
+      if (!id) {
+        id = (await uploadSound(slug, prepared, name, me)).id
+        uploaded.current = id
+        engine.samples.seed(id, prepared.wav.buffer)
+      }
+      await listed(jam.store, id)
       if (target.kind === 'pad') board.pad(target.padId).assign(id)
       if (target.kind === 'replace') {
         board.replaceSound(target.soundId, id)
@@ -226,7 +233,10 @@ export function UploadDialog({
       )}
       {!error && <PausedNotice />}
       <div className="upload-actions">
-        <button type="submit" disabled={!prepared || busy || full || paused || !name.trim()}>
+        <button
+          type="submit"
+          disabled={!prepared || busy || full || (paused && !uploaded.current) || !name.trim()}
+        >
           {busy ? 'Uploading…' : replacing ? 'Replace' : 'Upload'}
         </button>
         <button type="button" className="link" onClick={onClose} disabled={busy}>
@@ -241,26 +251,33 @@ export function UploadDialog({
 export function UploadsList({
   slug,
   onPick,
+  uploading,
 }: {
   slug: string
   onPick: (target: UploadTarget) => void
+  /** An upload dialog is open: finish or cancel it before picking another file. */
+  uploading: boolean
 }) {
   const sounds = useAtomValue(soundsAtom)
   const pads = useAtomValue(padsAtom)
   const onPads = padKeysBySound(pads)
   const [error, setError] = useState<string>()
-  const [removing, setRemoving] = useState<string>()
+  const [removing, setRemoving] = useState<ReadonlySet<string>>(new Set())
   const paused = useBudget().uploads !== 'open'
 
   const remove = async (id: string) => {
-    setRemoving(id)
+    setRemoving((r) => new Set(r).add(id))
     setError(undefined)
     try {
       await removeSound(slug, id)
     } catch (e) {
       setError(e instanceof UploadError ? e.message : "Couldn't remove it")
     } finally {
-      setRemoving(undefined)
+      setRemoving((r) => {
+        const next = new Set(r)
+        next.delete(id)
+        return next
+      })
     }
   }
 
@@ -276,7 +293,7 @@ export function UploadsList({
         <button
           type="button"
           className="link"
-          disabled={sounds.size >= UPLOADS.perJam || paused}
+          disabled={sounds.size >= UPLOADS.perJam || paused || uploading}
           onClick={() => onPick({ kind: 'list' })}
         >
           Upload a sound…
@@ -301,7 +318,7 @@ export function UploadsList({
                 <button
                   type="button"
                   className="link"
-                  disabled={paused}
+                  disabled={sounds.size >= UPLOADS.perJam || paused || uploading}
                   onClick={() => onPick({ kind: 'replace', soundId: id })}
                 >
                   Replace…
@@ -309,7 +326,7 @@ export function UploadsList({
                 <button
                   type="button"
                   className="link"
-                  disabled={keys.length > 0 || removing === id}
+                  disabled={keys.length > 0 || removing.has(id)}
                   title={
                     keys.length > 0
                       ? `On ${keys.length === 1 ? 'pad' : 'pads'} ${keys.join(', ')}: change ${keys.length === 1 ? 'it' : 'them'} first`
@@ -317,7 +334,7 @@ export function UploadsList({
                   }
                   onClick={() => void remove(id)}
                 >
-                  {removing === id ? 'Removing…' : 'Remove'}
+                  {removing.has(id) ? 'Removing…' : 'Remove'}
                 </button>
               </span>
             </li>
