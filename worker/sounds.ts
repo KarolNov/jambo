@@ -77,6 +77,7 @@ sounds.post('/:slug/sounds', async (c) => {
     wav,
     name: header(UPLOAD_HEADERS.name),
     author: header(UPLOAD_HEADERS.author),
+    authorName: header(UPLOAD_HEADERS.authorName) || undefined,
     color: header(UPLOAD_HEADERS.color),
   })
   if (!result.ok) return c.json({ error: result.error }, result.status)

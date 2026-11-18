@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react'
 import type { Awareness } from 'y-protocols/awareness'
 import { type ColorName, toColorName } from '../../shared/colors'
+import { toName } from '../../shared/names'
 
 /** A person in the jam, as their awareness state carries them: the parts of their identity others see. */
 export interface Person {
   id: string
+  /** Their name in this jam; undefined from clients older than names. */
+  name?: string
   /** Their colour, by name. */
   color: ColorName
 }
 
 /** The person an awareness state carries, if it carries a valid one (legacy hex colours read as names). */
 const toPerson = (v: unknown): Person | undefined => {
-  const p = v as { id?: unknown; color?: unknown } | null
+  const p = v as { id?: unknown; name?: unknown; color?: unknown } | null
   const color = toColorName(p?.color)
-  return typeof p?.id === 'string' && color ? { id: p.id, color } : undefined
+  if (typeof p?.id !== 'string' || !color) return undefined
+  const name = toName(p.name)
+  return name ? { id: p.id, name, color } : { id: p.id, color }
 }
 
 /** Everyone in `states`, once per identity (two tabs of one browser are one person), `me` first. */
@@ -35,7 +40,7 @@ export function joinPresence(
   me: Person & { subscribe?: (l: () => void) => () => void },
 ) {
   const publish = () => {
-    const person = { id: me.id, color: me.color }
+    const person = { id: me.id, name: me.name, color: me.color }
     awareness.setLocalState({ ...awareness.getLocalState(), person })
   }
   publish()

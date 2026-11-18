@@ -1,19 +1,18 @@
 /** The transport's rules, kept apart from React so they can be tested. */
 import { BPM } from '../../shared/board'
-import { type ColorName, colorLabel } from '../../shared/colors'
 
 /**
- * What a new take is called: the recorder's colour and their count of tracks, so their third is
- * "Teal 3". Counts only tracks they recorded, whatever colour those were recorded in.
+ * What a new take is called: the recorder's name and their count of tracks, so their third is
+ * "Groovy Otter 3". Counts only tracks they recorded, whatever they were called then.
  */
 export function takeName(
-  color: ColorName,
+  name: string,
   author: string,
   tracks: Iterable<{ author: string }>,
 ): string {
   let mine = 0
   for (const t of tracks) if (t.author === author) mine++
-  return `${colorLabel(color)} ${mine + 1}`
+  return `${name} ${mine + 1}`
 }
 
 /**

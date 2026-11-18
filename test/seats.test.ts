@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { COLOR_NAMES } from '../shared/colors'
-import { assignColor, hello, parseSeatMessage, seated } from '../shared/seats'
+import { ANIMALS, NAME_MAX, randomName, toName } from '../shared/names'
+import {
+  assignColor,
+  assignName,
+  assignSeat,
+  hello,
+  parseSeatMessage,
+  seated,
+} from '../shared/seats'
+import { ADJECTIVES } from '../shared/words'
 
 const seat = (id: string, color: (typeof COLOR_NAMES)[number]) => ({ id, color })
 
@@ -32,18 +41,88 @@ describe('assigning a colour', () => {
   })
 })
 
+describe('assigning a name', () => {
+  const picks =
+    (...names: string[]) =>
+    () =>
+      names.shift() ?? 'Out Of Names'
+
+  it('gives your usual name when nobody here has it', () => {
+    expect(assignName([{ id: 'a', name: 'Jolly Owl' }], 'me', 'Groovy Otter')).toBe('Groovy Otter')
+  })
+
+  it('picks another name nobody here has when yours is taken, ignoring case', () => {
+    const others = [
+      { id: 'a', name: 'Groovy Otter' },
+      { id: 'b', name: 'Jolly Owl' },
+    ]
+    expect(assignName(others, 'me', 'groovy otter', picks('Jolly Owl', 'Misty Yak'))).toBe(
+      'Misty Yak',
+    )
+  })
+
+  it('gives the name you already have in another tab', () => {
+    expect(assignName([{ id: 'me', name: 'Misty Yak' }], 'me', 'Groovy Otter')).toBe('Misty Yak')
+  })
+
+  it('never repeats a name, even when colours have to', () => {
+    const others = COLOR_NAMES.map((c, i) => ({ id: `p${i}`, name: `Name ${i}`, color: c }))
+    const mine = assignSeat(
+      others,
+      'me',
+      { name: 'Name 3', color: 'sky' },
+      picks('Name 5', 'Fresh'),
+    )
+    expect(mine).toEqual({ id: 'me', name: 'Fresh', color: 'sky' })
+  })
+})
+
+describe('names', () => {
+  it('are a fun adjective and an animal', () => {
+    expect(randomName(() => 0)).toBe('Funky Otter')
+    const name = randomName()
+    const [adjective, animal] = name.toLowerCase().split(' ')
+    expect(ADJECTIVES).toContain(adjective)
+    expect(ANIMALS).toContain(animal)
+  })
+
+  it('always fit', () => {
+    const longest =
+      Math.max(...ADJECTIVES.map((a) => a.length)) + 1 + Math.max(...ANIMALS.map((a) => a.length))
+    expect(longest).toBeLessThanOrEqual(NAME_MAX)
+  })
+
+  it('read only when they fit', () => {
+    expect(toName('  Groovy Otter ')).toBe('Groovy Otter')
+    expect(toName('')).toBeUndefined()
+    expect(toName('x'.repeat(NAME_MAX + 1))).toBeUndefined()
+    expect(toName(7)).toBeUndefined()
+  })
+})
+
 describe('seat messages', () => {
   it('round-trip', () => {
-    expect(parseSeatMessage(hello('me', 'sky'))).toEqual({ t: 'hello', id: 'me', color: 'sky' })
-    expect(parseSeatMessage(seated('teal'))).toEqual({ t: 'seat', color: 'teal' })
+    expect(parseSeatMessage(hello('me', 'Groovy Otter', 'sky'))).toEqual({
+      t: 'hello',
+      id: 'me',
+      name: 'Groovy Otter',
+      color: 'sky',
+    })
+    expect(parseSeatMessage(seated({ name: 'Misty Yak', color: 'teal' }))).toEqual({
+      t: 'seat',
+      name: 'Misty Yak',
+      color: 'teal',
+    })
   })
 
   it('reject anything else', () => {
+    const msg = (m: object) => JSON.stringify(m)
     expect(parseSeatMessage('not json')).toBeUndefined()
     expect(
-      parseSeatMessage(JSON.stringify({ t: 'hello', id: 'me', color: 'beige' })),
+      parseSeatMessage(msg({ t: 'hello', id: 'me', name: 'A B', color: 'beige' })),
     ).toBeUndefined()
-    expect(parseSeatMessage(JSON.stringify({ t: 'hello', id: '', color: 'sky' }))).toBeUndefined()
-    expect(parseSeatMessage(JSON.stringify({ t: 'ping', c: 1 }))).toBeUndefined()
+    expect(parseSeatMessage(msg({ t: 'hello', id: '', name: 'A B', color: 'sky' }))).toBeUndefined()
+    expect(parseSeatMessage(msg({ t: 'hello', id: 'me', color: 'sky' }))).toBeUndefined()
+    expect(parseSeatMessage(msg({ t: 'ping', c: 1 }))).toBeUndefined()
   })
 })

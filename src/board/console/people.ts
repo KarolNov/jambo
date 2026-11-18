@@ -7,10 +7,18 @@ export const NAMED_PEOPLE = 3
 /** Whether the header names everyone, or shows only dots. */
 export const namesPeople = (count: number) => count <= NAMED_PEOPLE
 
-/** A person as the header names them: their colour, marked when it is you. */
-export const personName = (p: { id: string; color: ColorName }, meId: string) =>
-  `${colorLabel(p.color)}${p.id === meId ? ' (you)' : ''}`
+/**
+ * A person as the header names them: their name in this jam, marked when it is you. Clients older
+ * than names show as their colour.
+ */
+export const personName = (p: { id: string; name?: string; color: ColorName }, meId: string) =>
+  `${p.name ?? colorLabel(p.color)}${p.id === meId ? ' (you)' : ''}`
 
-/** Who uploaded a sound, for its dot's tooltip. */
-export const uploadedBy = (sound: { author: string; color: ColorName }, meId: string) =>
-  sound.author === meId ? 'Uploaded by you' : `Uploaded by ${colorLabel(sound.color)}`
+/** Who uploaded a sound, for its dot's tooltip. Sounds uploaded before names show the colour. */
+export const uploadedBy = (
+  sound: { author: string; authorName?: string; color: ColorName },
+  meId: string,
+) =>
+  sound.author === meId
+    ? 'Uploaded by you'
+    : `Uploaded by ${sound.authorName ?? colorLabel(sound.color)}`

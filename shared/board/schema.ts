@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { NAME_MAX } from '../names'
 import { Color } from '../colors'
 import { UPLOADS } from '../sounds'
 
@@ -71,6 +72,8 @@ export type Track = z.infer<typeof Track>
 export const Sound = z.object({
   name: z.string().trim().min(1, 'A sound needs a name').max(40, 'Keep names under 40 characters'),
   author: z.string().min(1).max(64),
+  /** The uploader's name at upload time; sounds uploaded before names have none. */
+  authorName: z.string().trim().min(1).max(NAME_MAX).optional(),
   /** The uploader's colour, by name. */
   color: Color,
   durationMs: z

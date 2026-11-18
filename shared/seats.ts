@@ -1,12 +1,15 @@
 /**
- * Each person's colour in a jam, assigned by the room: it sees everyone connected and handles one
- * message at a time, so two people joining together never get the same colour.
+ * Each person's name and colour in a jam, assigned by the room: it sees everyone connected and
+ * handles one message at a time, so two people joining together never get the same name. Names are
+ * always unique; colours are, while one of the eight is free.
  */
 import { COLOR_NAMES, type ColorName, toColorName } from './colors'
+import { randomName, toName } from './names'
 
-/** Who holds a connection, and their colour in this jam. */
+/** Who holds a connection, and their name and colour in this jam. */
 export interface Seat {
   id: string
+  name: string
   color: ColorName
 }
 
@@ -15,7 +18,11 @@ export interface Seat {
  * have in another tab; else their usual colour if nobody here has it; else the first free colour;
  * past eight people, the least used (their usual one on a tie).
  */
-export function assignColor(others: Iterable<Seat>, id: string, preferred: ColorName): ColorName {
+export function assignColor(
+  others: Iterable<Pick<Seat, 'id' | 'color'>>,
+  id: string,
+  preferred: ColorName,
+): ColorName {
   const people = new Map<string, ColorName>()
   for (const seat of others) if (!people.has(seat.id)) people.set(seat.id, seat.color)
   const own = people.get(id)
@@ -28,23 +35,60 @@ export function assignColor(others: Iterable<Seat>, id: string, preferred: Color
   return best
 }
 
-/** Seat messages over the board connection: a client says who it is, the room gives its colour. */
-export type SeatMessage =
-  | { t: 'hello'; id: string; color: ColorName }
-  | { t: 'seat'; color: ColorName }
+/**
+ * The name for person `id` joining a jam where `others` are already seated: the one they already
+ * have in another tab; else their usual name if nobody here has it; else a fresh one nobody here
+ * has, from `pick`.
+ */
+export function assignName(
+  others: Iterable<Pick<Seat, 'id' | 'name'>>,
+  id: string,
+  preferred: string,
+  pick: () => string = randomName,
+): string {
+  const taken = new Set<string>()
+  for (const seat of others) {
+    if (seat.id === id) return seat.name
+    taken.add(seat.name.toLowerCase())
+  }
+  let name = preferred
+  // 64 adjectives × 48 animals: a free name turns up within a few picks.
+  for (let i = 0; taken.has(name.toLowerCase()) && i < 1000; i++) name = pick()
+  return name
+}
 
-export const hello = (id: string, color: ColorName) => JSON.stringify({ t: 'hello', id, color })
-export const seated = (color: ColorName) => JSON.stringify({ t: 'seat', color })
+/** A person's seat in a jam, given who is already seated. */
+export const assignSeat = (
+  others: readonly Seat[],
+  id: string,
+  usual: { name: string; color: ColorName },
+  pick?: () => string,
+): Seat => ({
+  id,
+  name: assignName(others, id, usual.name, pick),
+  color: assignColor(others, id, usual.color),
+})
+
+/** Seat messages over the board connection: a client says who it is, the room seats it. */
+export type SeatMessage =
+  | { t: 'hello'; id: string; name: string; color: ColorName }
+  | { t: 'seat'; name: string; color: ColorName }
+
+export const hello = (id: string, name: string, color: ColorName) =>
+  JSON.stringify({ t: 'hello', id, name, color })
+export const seated = (seat: { name: string; color: ColorName }) =>
+  JSON.stringify({ t: 'seat', name: seat.name, color: seat.color })
 
 /** A seat message, or undefined for anything else. */
 export function parseSeatMessage(message: string): SeatMessage | undefined {
   try {
-    const m = JSON.parse(message) as { t?: unknown; id?: unknown; color?: unknown }
+    const m = JSON.parse(message) as { t?: unknown; id?: unknown; name?: unknown; color?: unknown }
     const color = toColorName(m.color)
-    if (!color) return undefined
-    if (m.t === 'seat') return { t: 'seat', color }
+    const name = toName(m.name)
+    if (!color || !name) return undefined
+    if (m.t === 'seat') return { t: 'seat', name, color }
     if (m.t === 'hello' && typeof m.id === 'string' && m.id.length > 0 && m.id.length <= 64)
-      return { t: 'hello', id: m.id, color }
+      return { t: 'hello', id: m.id, name, color }
   } catch {
     // Not JSON: not a seat message.
   }

@@ -30,15 +30,34 @@ describe('listPeople', () => {
   })
 })
 
+describe('reading people', () => {
+  it('reads a name, and a person from a client older than names without one', () => {
+    const named = { person: { id: 'n', name: 'Misty Yak', color: 'teal' } }
+    expect(listPeople([named, { person: coral }], me)).toEqual([
+      me,
+      { id: 'n', name: 'Misty Yak', color: 'teal' },
+      coral,
+    ])
+  })
+})
+
 describe('joinPresence', () => {
-  it('shows the colour the room seats you with, and leaves when you do', () => {
+  it('shows the name and colour the room seats you with, and leaves when you do', () => {
     const awareness = new Awareness(new Y.Doc())
-    const me = new Me({ id: 'me', color: 'sky' })
+    const me = new Me({ id: 'me', name: 'Groovy Otter', color: 'sky' })
     const leave = joinPresence(awareness, me)
-    expect(awareness.getLocalState()?.person).toEqual({ id: 'me', color: 'sky' })
-    me.setColor('teal')
-    expect(awareness.getLocalState()?.person).toEqual({ id: 'me', color: 'teal' })
-    expect(me.usual).toBe('sky')
+    expect(awareness.getLocalState()?.person).toEqual({
+      id: 'me',
+      name: 'Groovy Otter',
+      color: 'sky',
+    })
+    me.seat({ name: 'Misty Yak', color: 'teal' })
+    expect(awareness.getLocalState()?.person).toEqual({
+      id: 'me',
+      name: 'Misty Yak',
+      color: 'teal',
+    })
+    expect(me.usual).toEqual({ name: 'Groovy Otter', color: 'sky' })
     leave()
     expect(awareness.getLocalState()).toBeNull()
   })

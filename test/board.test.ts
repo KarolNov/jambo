@@ -261,6 +261,25 @@ describe('uploaded sounds', () => {
     expect(padSound(doc, 'r0c0')).toBe(id)
   })
 
+  it("keeps the uploader's name, and reads sounds uploaded before names", () => {
+    const doc = seededDoc()
+    const named = sound({ authorName: 'Groovy Otter' })
+    const results = apply(
+      doc,
+      [
+        { op: 'addSound', id, sound: named },
+        { op: 'addSound', id: 'u-bbbbbbbbbbbb', sound: sound() },
+        { op: 'addSound', id: 'u-cccccccccccc', sound: sound({ authorName: 'x'.repeat(41) }) },
+      ],
+      room,
+    )
+    expect(results.map((r) => r.ok)).toEqual([true, true, false])
+    expect(v(read(Sound, SHAPES.sound, soundsOf(doc).get(id)))).toEqual(named)
+    expect(
+      v(read(Sound, SHAPES.sound, soundsOf(doc).get('u-bbbbbbbbbbbb')))?.authorName,
+    ).toBeUndefined()
+  })
+
   it('refuses a pad on an upload the jam does not list', () => {
     const doc = seededDoc()
     const [r] = apply(doc, [{ op: 'assignPad', padId: 'r0c0', soundId: id }], me)

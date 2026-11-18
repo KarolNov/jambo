@@ -191,37 +191,40 @@ describe('seats', () => {
       .map(parseSeatMessage)
       .filter((m) => m?.t === 'seat')
       .at(-1)
-    return last?.t === 'seat' ? last.color : undefined
+    return last?.t === 'seat' ? { name: last.name, color: last.color } : undefined
   }
-  const join = async (slug: string, id: string, color: 'sky' | 'teal') => {
+  const join = async (slug: string, id: string, name = 'Groovy Otter') => {
     const c = await connectBoard(slug)
-    c.sendCustom(hello(id, color))
+    c.sendCustom(hello(id, name, 'sky'))
     await until(() => seatOf(c) !== undefined)
     return c
   }
 
-  it('seats people who share a usual colour in different colours', async () => {
-    const a = await join('groovy-otter-mmmm', 'a', 'sky')
-    const b = await join('groovy-otter-mmmm', 'b', 'sky')
-    const c = await join('groovy-otter-mmmm', 'c', 'sky')
-    expect([seatOf(a), seatOf(b), seatOf(c)]).toEqual(['sky', 'teal', 'coral'])
+  it('seats people who share a usual name and colour with different ones', async () => {
+    const a = await join('groovy-otter-mmmm', 'a')
+    const b = await join('groovy-otter-mmmm', 'b')
+    const c = await join('groovy-otter-mmmm', 'c')
+    const seats = [a, b, c].map(seatOf)
+    expect(seats.map((s) => s?.color)).toEqual(['sky', 'teal', 'coral'])
+    expect(seats[0]?.name).toBe('Groovy Otter')
+    expect(new Set(seats.map((s) => s?.name)).size).toBe(3)
     for (const x of [a, b, c]) x.close()
   })
 
-  it('gives a second tab the colour the person already has', async () => {
-    const a = await join('groovy-otter-nnnn', 'a', 'sky')
-    const b = await join('groovy-otter-nnnn', 'b', 'sky')
-    const b2 = await join('groovy-otter-nnnn', 'b', 'sky')
-    expect(seatOf(b2)).toBe(seatOf(b))
+  it('gives a second tab the name and colour the person already has', async () => {
+    const a = await join('groovy-otter-nnnn', 'a')
+    const b = await join('groovy-otter-nnnn', 'b')
+    const b2 = await join('groovy-otter-nnnn', 'b')
+    expect(seatOf(b2)).toEqual(seatOf(b))
     for (const x of [a, b, b2]) x.close()
   })
 
-  it('frees a colour when its person leaves', async () => {
-    const a = await join('groovy-otter-pppp', 'a', 'sky')
+  it('frees a name and colour when their person leaves', async () => {
+    const a = await join('groovy-otter-pppp', 'a')
     a.close()
     await new Promise((r) => setTimeout(r, 50))
-    const b = await join('groovy-otter-pppp', 'b', 'sky')
-    expect(seatOf(b)).toBe('sky')
+    const b = await join('groovy-otter-pppp', 'b')
+    expect(seatOf(b)).toEqual({ name: 'Groovy Otter', color: 'sky' })
     b.close()
   })
 })

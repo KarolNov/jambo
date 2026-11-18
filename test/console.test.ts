@@ -4,14 +4,14 @@ import { namesPeople, personName, uploadedBy } from '../src/board/console/people
 import { TEMPO_RANGE, takeName, tempoFor } from '../src/board/transport'
 
 describe('naming a take', () => {
-  it("counts the recorder's own tracks", () => {
+  it("is the recorder's name and their count of tracks", () => {
     const tracks = [{ author: 'me' }, { author: 'you' }, { author: 'me' }]
-    expect(takeName('teal', 'me', tracks)).toBe('Teal 3')
-    expect(takeName('coral', 'you', tracks)).toBe('Coral 2')
+    expect(takeName('Groovy Otter', 'me', tracks)).toBe('Groovy Otter 3')
+    expect(takeName('Misty Yak', 'you', tracks)).toBe('Misty Yak 2')
   })
 
   it('starts at 1', () => {
-    expect(takeName('sky', 'me', [])).toBe('Sky 1')
+    expect(takeName('Groovy Otter', 'me', [])).toBe('Groovy Otter 1')
   })
 })
 
@@ -39,15 +39,29 @@ describe("who's here", () => {
     expect(namesPeople(4)).toBe(false)
   })
 
-  it('names each person by colour and marks you', () => {
-    expect(personName({ id: 'me', color: 'teal' }, 'me')).toBe('Teal (you)')
+  it('names each person and marks you', () => {
+    expect(personName({ id: 'me', name: 'Groovy Otter', color: 'teal' }, 'me')).toBe(
+      'Groovy Otter (you)',
+    )
+    expect(personName({ id: 'them', name: 'Misty Yak', color: 'coral' }, 'me')).toBe('Misty Yak')
+  })
+
+  it('names a client older than names by its colour', () => {
     expect(personName({ id: 'them', color: 'coral' }, 'me')).toBe('Coral')
   })
 })
 
 describe('uploaded sounds', () => {
   it('say who uploaded them', () => {
+    expect(uploadedBy({ author: 'them', authorName: 'Misty Yak', color: 'coral' }, 'me')).toBe(
+      'Uploaded by Misty Yak',
+    )
+    expect(uploadedBy({ author: 'me', authorName: 'Groovy Otter', color: 'teal' }, 'me')).toBe(
+      'Uploaded by you',
+    )
+  })
+
+  it('uploaded before names say the colour', () => {
     expect(uploadedBy({ author: 'them', color: 'coral' }, 'me')).toBe('Uploaded by Coral')
-    expect(uploadedBy({ author: 'me', color: 'teal' }, 'me')).toBe('Uploaded by you')
   })
 })

@@ -46,6 +46,7 @@ export const UPLOADS = {
 export const UPLOAD_HEADERS = {
   name: 'X-Sound-Name',
   author: 'X-Sound-Author',
+  authorName: 'X-Sound-Author-Name',
   color: 'X-Sound-Color',
 } as const
 
