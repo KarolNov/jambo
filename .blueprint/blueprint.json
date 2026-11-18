@@ -185,8 +185,14 @@
       "tickets": "https://app.notion.com/p/41c43cce21f281a8bbd6fcc8f4e344db",
       "status": "applied",
       "baseCommit": "4d56dcfaf6e073101c786daef6cdd850a6459f77",
-      "branch": "kn/sound-uploads",
-      "pr": "https://github.com/KarolNov/jambo/pull/9"
+      "branch": "kn/sound-uploads-1-board",
+      "pr": "https://github.com/KarolNov/jambo/pull/10",
+      "stack": [
+        "https://github.com/KarolNov/jambo/pull/10",
+        "https://github.com/KarolNov/jambo/pull/11",
+        "https://github.com/KarolNov/jambo/pull/12",
+        "https://github.com/KarolNov/jambo/pull/13"
+      ]
     }
   }
 }
