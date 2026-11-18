@@ -67,11 +67,15 @@ A take with no hits SHALL be discarded.
 
 ### Requirement: Every take is a track
 
-Each take SHALL become its own track, named after the recorder's name in the jam and their count of tracks (for example `Groovy Otter 3`), at full level, unmuted, snapping to 1/16. Takes recorded at the same time by different people SHALL all be kept.
+Each take SHALL become its own track, named after the recorder's name in the jam and the next number after the jam's takes with that name (for example `Groovy Otter 3` after `Groovy Otter 2`), at full level, unmuted, snapping to 1/16. Takes recorded at the same time by different people SHALL all be kept.
 
 - **Scenario: Two people record**
   - **WHEN** two people in a jam record and stop at overlapping times
   - **THEN** the jam has two new tracks, one from each
+- **Scenario: A name passed on**
+  - **GIVEN** a track `Groovy Otter 1` by someone who has left
+  - **WHEN** someone else, now seated as Groovy Otter, records a take
+  - **THEN** their track is `Groovy Otter 2`
 
 ### Requirement: Loop playback
 
