@@ -17,6 +17,10 @@ export function Transport() {
     (l) => engine.subscribe(l),
     () => engine.metronome,
   )
+  const synced = useSyncExternalStore(
+    (l) => engine.subscribe(l),
+    () => engine.synced,
+  )
   // The tempo being typed; it is applied on Enter or when the field loses focus.
   const [draft, setDraft] = useState<string>()
   // Set on Escape, so the blur that follows doesn't apply the draft.
@@ -27,7 +31,8 @@ export function Transport() {
     if (!engine.ready) await engine.unlock()
     if (engine.state.phase === 'idle') {
       setMessage(undefined)
-      engine.record()
+      // Takes go on the jam's grid, so they wait until this client's clock agrees with the jam.
+      if (engine.synced) engine.record()
       return
     }
     const take = engine.stop()
@@ -37,13 +42,14 @@ export function Transport() {
     }
     const id = newId()
     const mine = [...tracks.values()].filter((t) => t.author === me.id).length
-    engine.claim(id, take.startAt)
+    engine.claim(id)
     const r = board.addTrack(id, {
       name: `${me.colorName} ${mine + 1}`,
       author: me.id,
       color: me.color,
       bars: take.bars,
       hits: take.hits,
+      startBar: take.startBar,
       gain: 1,
       mute: false,
       quantize: 0.25,
@@ -76,15 +82,22 @@ export function Transport() {
     )
   }
 
-  const label = { idle: '● Record', 'count-in': 'Count-in… (stop)', recording: '■ Stop' }[
-    state.phase
-  ]
+  const label =
+    state.phase === 'idle' && !synced
+      ? 'Syncing…'
+      : {
+          idle: '● Record',
+          waiting: 'Waiting for the bar… (stop)',
+          'count-in': 'Count-in… (stop)',
+          recording: '■ Stop',
+        }[state.phase]
 
   return (
     <div className="transport">
       <button
         type="button"
-        className={`record record-${state.phase}`}
+        className={`record record-${state.phase === 'waiting' ? 'count-in' : state.phase}`}
+        aria-busy={state.phase === 'idle' && !synced}
         onClick={() => void toggle()}
         aria-keyshortcuts="Space"
       >
