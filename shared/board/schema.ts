@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { UPLOADS } from '../sounds'
 
 /** Limits that keep a jam's doc small. */
 export const LIMITS = { tracks: 32, hitsPerTrack: 512, bars: 16 } as const
@@ -61,12 +62,31 @@ export const Track = z
   })
 export type Track = z.infer<typeof Track>
 
+/**
+ * A sound someone uploaded to the jam, in the root map `sounds` keyed by its upload id. Only
+ * details live here; the audio is stored by the room and fetched by id.
+ */
+export const Sound = z.object({
+  name: z.string().trim().min(1, 'A sound needs a name').max(40, 'Keep names under 40 characters'),
+  author: z.string().min(1).max(64),
+  color: z.string().regex(/^#[0-9a-f]{6}$/i),
+  durationMs: z
+    .number()
+    .int()
+    .min(1)
+    .max(UPLOADS.maxSeconds * 1000),
+  bytes: z.number().int().min(1).max(UPLOADS.maxBytes),
+  createdAt: z.number().int().min(0),
+})
+export type Sound = z.infer<typeof Sound>
+
 /** Which fields of each node are shared types. Tracks' hits are a plain value, written once. */
 export const SHAPES = {
   meta: {},
   pad: {},
   track: {},
+  sound: {},
 } as const
 
 /** Root maps of a board doc. */
-export const ROOTS = { meta: 'meta', pads: 'pads', tracks: 'tracks' } as const
+export const ROOTS = { meta: 'meta', pads: 'pads', tracks: 'tracks', sounds: 'sounds' } as const

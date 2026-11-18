@@ -1,7 +1,9 @@
 import type * as Y from 'yjs'
 import { apply, type Origin } from './apply'
 import type { Op, OpResult, TrackPatch } from './ops'
-import type { Track } from './schema'
+import { isMap } from 'duratom'
+import { read } from 'duratom/core'
+import { Pad, ROOTS, SHAPES, type Track } from './schema'
 
 /**
  * The board SDK: a thin, fluent way to write operations. Every method emits exactly one
@@ -23,6 +25,19 @@ export function board(doc: Y.Doc, origin: Origin) {
     pad: (padId: string) => ({
       assign: (soundId: string) => one({ op: 'assignPad', padId, soundId }),
     }),
+    /**
+     * Moves every pad on sound `from` to sound `to`, as one change: one `assignPad` per pad.
+     * Tracks follow, since they hit pads, not sounds.
+     */
+    replaceSound: (from: string, to: string) => {
+      const ops: Op[] = []
+      doc.getMap<unknown>(ROOTS.pads).forEach((node, padId) => {
+        const p = isMap(node) ? read(Pad, SHAPES.pad, node) : undefined
+        if (p && !p.issues && p.value.soundId === from)
+          ops.push({ op: 'assignPad', padId, soundId: to })
+      })
+      return apply(doc, ops, origin)
+    },
     addTrack: (id: string, track: Track) => one({ op: 'addTrack', id, track }),
     track: (id: string) => ({
       set: (patch: TrackPatch) => one({ op: 'setTrack', id, patch }),

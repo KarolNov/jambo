@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Track } from './schema'
+import { Sound, Track } from './schema'
 
 /** The fields of a track anyone can change after it is recorded. */
 export const TrackPatch = z
@@ -22,6 +22,12 @@ export const Op = z.discriminatedUnion('op', [
   z.object({ op: z.literal('addTrack'), id: z.string().min(1).max(64), track: z.custom<Track>() }),
   z.object({ op: z.literal('setTrack'), id: z.string(), patch: TrackPatch }),
   z.object({ op: z.literal('removeTrack'), id: z.string() }),
+  /** Lists an upload whose audio the room has stored. Only the room applies it. */
+  z.object({ op: z.literal('addSound'), id: z.string(), sound: z.custom<Sound>() }),
+  /** Unlists an upload no pad uses. Only the room applies it, then deletes the audio. */
+  z.object({ op: z.literal('removeSound'), id: z.string() }),
+  /** Unlists every upload, whatever uses it: the room's retention, after it deleted the audio. */
+  z.object({ op: z.literal('expireSounds') }),
 ])
 export type Op = z.infer<typeof Op>
 
