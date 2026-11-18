@@ -1,16 +1,14 @@
 /**
- * PROTOTYPE (neumorphism, throwaway): pads, sound editing, header and helpers for the console.
- * Lives on the `prototype/neumorphism` branch only; see ./Neumo.tsx.
+ * The redesign's pads, sound editing and helpers, still in prototype form; see ./Neumo.tsx.
+ * The header moved to ../console/Header.tsx.
  */
 import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { BEATS_PER_BAR } from '../../../shared/board'
 import { type ColorName, colorLabel } from '../../../shared/colors'
 import { SOUND_IDS, SOUNDS, soundName } from '../../../shared/sounds'
-import type { ConnectionStatus } from '../doc'
 import { padsAtom, soundsAtom, tracksAtom } from '../model'
 import { isTyping } from '../Pads'
-import { usePeople } from '../presence'
 import { useSession } from '../session'
 import {
   PausedNotice,
@@ -22,15 +20,8 @@ import {
   useFilePicker,
   useSampleState,
 } from '../Uploads'
-import { Button, type Group, IconButton, OptionList, Popover } from '../../ui'
-import { ThemeToggle } from '../../theme/ThemeToggle'
+import { Button, type Group, OptionList, Popover } from '../../ui'
 import { useSwatch } from '../colors'
-
-export const STATUS_LABEL: Record<ConnectionStatus, string> = {
-  connected: 'Live',
-  connecting: 'Connecting…',
-  offline: 'Offline',
-}
 
 /** Who uploaded a sound, for its dot's tooltip. */
 function useUploader(): (sound: { author: string; color: ColorName }) => string {
@@ -315,69 +306,5 @@ export function Unlock() {
     <Button tone="primary" className="n-unlock" onClick={() => void engine.unlock()}>
       Tap to start audio
     </Button>
-  )
-}
-
-/** Logo, link, people and connection. */
-export function Header({ slug, status }: { slug: string; status: ConnectionStatus }) {
-  const { jam, me } = useSession()
-  const people = usePeople(jam.awareness, me)
-  const shade = useSwatch()
-  const [copied, setCopied] = useState(false)
-  return (
-    <header className="n-header">
-      <a className="n-logo" href="/">
-        jambo
-      </a>
-      <span className="n-slug">{slug}</span>
-      <IconButton
-        className="n-share"
-        label={copied ? 'Link copied' : 'Share this jam'}
-        title="Share this jam"
-        onClick={async () => {
-          const url = window.location.href.replace(/\?.*$/, '')
-          // The system share sheet where there is one (phones, Safari); otherwise copy the link.
-          if (navigator.share) {
-            try {
-              await navigator.share({ title: `jambo · ${slug}`, url })
-              return
-            } catch (e) {
-              if ((e as Error).name === 'AbortError') return
-            }
-          }
-          await navigator.clipboard.writeText(url)
-          setCopied(true)
-          setTimeout(() => setCopied(false), 1500)
-        }}
-      >
-        <svg viewBox="0 0 24 24" aria-hidden>
-          <path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" />
-          <path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16" />
-        </svg>
-        {copied && (
-          <span className="n-share-tip" role="status">
-            Link copied
-          </span>
-        )}
-      </IconButton>
-      <ul className="n-people" aria-label="Who's here">
-        {people.map((p) => (
-          <li
-            key={p.id}
-            title={p.id === me.id ? `${colorLabel(p.color)} (you)` : colorLabel(p.color)}
-          >
-            <span className="n-person" style={{ background: shade(p.color) }} />
-            <span className="n-person-name">
-              {colorLabel(p.color)}
-              {p.id === me.id && ' (you)'}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <span className={`n-status n-status-${status}`} role="status">
-        {STATUS_LABEL[status]}
-      </span>
-      <ThemeToggle />
-    </header>
   )
 }

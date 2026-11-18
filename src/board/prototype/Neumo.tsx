@@ -16,7 +16,8 @@ import { useRecorderState } from '../useEngineState'
 import { Button, IconButton, Range, Select } from '../../ui'
 import { useSwatch } from '../colors'
 import { useThemedPage } from '../../theme/theme'
-import { Header, SoundEditor, Unlock, usePlayhead } from './shared'
+import { Header } from '../console/Header'
+import { SoundEditor, Unlock, usePlayhead } from './shared'
 import './neumo.css'
 
 export default function Neumo({ slug, status }: { slug: string; status: ConnectionStatus }) {
