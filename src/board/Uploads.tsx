@@ -1,7 +1,12 @@
 import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { ROOTS, type Pad } from '../../shared/board'
-import { PAD_KEYS, UPLOADS } from '../../shared/sounds'
+import {
+  PAD_KEYS,
+  PAUSED_MESSAGES,
+  type UploadStatus as Budget,
+  UPLOADS,
+} from '../../shared/sounds'
 import type { SampleState } from '../audio/samples'
 import {
   defaultName,
@@ -19,6 +24,49 @@ export type UploadTarget =
   | { kind: 'pad'; padId: string }
   | { kind: 'replace'; soundId: string }
   | { kind: 'list' }
+
+let budget: Budget = { uploads: 'open', reads: 'open' }
+const budgetListeners = new Set<() => void>()
+
+/** Asks the app whether its sound budget allows uploads and downloads right now. */
+export async function refreshBudget() {
+  try {
+    const res = await fetch('/api/sounds/status')
+    if (!res.ok) return
+    budget = (await res.json()) as Budget
+    for (const l of budgetListeners) l()
+  } catch {
+    // Offline: keep the last answer.
+  }
+}
+
+/** The app's sound budget as last fetched; uploads are disabled while it is paused. */
+export function useBudget(): Budget {
+  return useSyncExternalStore(
+    (l) => {
+      budgetListeners.add(l)
+      return () => budgetListeners.delete(l)
+    },
+    () => budget,
+  )
+}
+
+/** Why uploads or downloads are paused, if they are. */
+export function PausedNotice({ uploads = true }: { uploads?: boolean }) {
+  const b = useBudget()
+  const reasons = [
+    ...(uploads && b.uploads !== 'open' ? [PAUSED_MESSAGES[b.uploads]] : []),
+    ...(b.reads !== 'open' ? [PAUSED_MESSAGES.reads] : []),
+  ]
+  if (reasons.length === 0) return null
+  return (
+    <div className="paused" role="status">
+      {reasons.map((r) => (
+        <p key={r}>{r}</p>
+      ))}
+    </div>
+  )
+}
 
 /** This client's loading state for an upload, kept current. */
 export function useSampleState(id: string): SampleState | undefined {
@@ -128,6 +176,7 @@ export function UploadDialog({
 
   const replacing = target.kind === 'replace' ? sounds.get(target.soundId) : undefined
   const full = target.kind !== 'replace' && sounds.size >= UPLOADS.perJam
+  const paused = useBudget().uploads !== 'open'
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -147,6 +196,8 @@ export function UploadDialog({
     } catch (err) {
       setError(err instanceof UploadError ? err.message : 'The upload failed')
       setBusy(false)
+      // A refusal may mean the app's budget ran out: show it everywhere.
+      void refreshBudget()
     }
   }
 
@@ -173,8 +224,9 @@ export function UploadDialog({
           {error}
         </p>
       )}
+      {!error && <PausedNotice />}
       <div className="upload-actions">
-        <button type="submit" disabled={!prepared || busy || full || !name.trim()}>
+        <button type="submit" disabled={!prepared || busy || full || paused || !name.trim()}>
           {busy ? 'Uploading…' : replacing ? 'Replace' : 'Upload'}
         </button>
         <button type="button" className="link" onClick={onClose} disabled={busy}>
@@ -198,6 +250,7 @@ export function UploadsList({
   const onPads = padKeysBySound(pads)
   const [error, setError] = useState<string>()
   const [removing, setRemoving] = useState<string>()
+  const paused = useBudget().uploads !== 'open'
 
   const remove = async (id: string) => {
     setRemoving(id)
@@ -223,13 +276,14 @@ export function UploadsList({
         <button
           type="button"
           className="link"
-          disabled={sounds.size >= UPLOADS.perJam}
+          disabled={sounds.size >= UPLOADS.perJam || paused}
           onClick={() => onPick({ kind: 'list' })}
         >
           Upload a sound…
         </button>
       </div>
-      {sounds.size === 0 && (
+      <PausedNotice />
+      {sounds.size === 0 && !paused && (
         <p className="muted">
           Add your own samples: up to {UPLOADS.maxSeconds} s each, {UPLOADS.perJam} per jam.
         </p>
@@ -250,6 +304,7 @@ export function UploadsList({
                 <button
                   type="button"
                   className="link"
+                  disabled={paused}
                   onClick={() => onPick({ kind: 'replace', soundId: id })}
                 >
                   Replace…

@@ -109,7 +109,8 @@ export class SampleLoader {
       if (entry.dropped || this.disposed) return
       try {
         const res = await fetch(soundUrl(this.slug, id))
-        if (res.status === 404) return this.settle(entry, 'missing')
+        // Gone, or downloads paused by the app's budget: retrying won't help.
+        if (res.status === 404 || res.status === 503) return this.settle(entry, 'missing')
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         entry.bytes = await res.arrayBuffer()
         this.decode(id, entry)

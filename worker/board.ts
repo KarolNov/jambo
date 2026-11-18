@@ -1,11 +1,14 @@
 import type { Connection, ConnectionContext } from 'partyserver'
 import { YServer } from 'y-partyserver'
 import * as Y from 'yjs'
-import { apply, ROOTS, Sound, type Origin } from '../shared/board'
+import { isMap } from 'duratom'
+import { read } from 'duratom/core'
+import { apply, ROOTS, SHAPES, Sound, type Origin } from '../shared/board'
 import { seedBoard } from '../shared/board/seed'
 import { parseClockMessage, pong } from '../shared/clock'
-import { newUploadId, UPLOADS } from '../shared/sounds'
+import { newUploadId, PAUSED_MESSAGES, UPLOADS } from '../shared/sounds'
 import { parseUploadWav } from '../shared/wav'
+import { quota } from './quota'
 
 const SNAPSHOT_KEY = 'doc'
 /** Set by the retention alarm when the doc wasn't loaded, so the next load unlists the uploads. */
@@ -26,7 +29,7 @@ export const soundKey = (slug: string, id: string) => `${soundPrefix(slug)}${id}
 /** What an upload or removal came to: a result, or an HTTP status and a message for people. */
 export type SoundResult<T extends object = object> =
   | ({ ok: true } & T)
-  | { ok: false; status: 400 | 404 | 409; error: string }
+  | { ok: false; status: 400 | 404 | 409 | 503; error: string }
 
 export interface UploadInput {
   wav: ArrayBuffer
@@ -102,15 +105,25 @@ export class Board extends YServer<Env> {
     if (sounds.size >= UPLOADS.perJam)
       return { ok: false, status: 409, error: `This jam already has ${UPLOADS.perJam} sounds` }
 
+    // The app-wide budget: refused once storage or this month's writes run low.
+    const verdict = await quota(this.env).reserveUpload(input.wav.byteLength)
+    if (verdict !== 'open') return { ok: false, status: 503, error: PAUSED_MESSAGES[verdict] }
+
     let id = newUploadId()
     while (sounds.has(id) || (await this.ctx.storage.get(ISSUED_PREFIX + id))) id = newUploadId()
     await this.ctx.storage.put(ISSUED_PREFIX + id, true)
 
     const key = soundKey(this.name, id)
-    await this.env.SOUND_FILES.put(key, input.wav, { httpMetadata: { contentType: 'audio/wav' } })
+    try {
+      await this.env.SOUND_FILES.put(key, input.wav, { httpMetadata: { contentType: 'audio/wav' } })
+    } catch (e) {
+      await quota(this.env).release(input.wav.byteLength)
+      throw e
+    }
     const [result] = apply(this.document, [{ op: 'addSound', id, sound: parsed.data }], ROOM)
     if (!result?.ok) {
       await this.env.SOUND_FILES.delete(key)
+      await quota(this.env).release(input.wav.byteLength)
       return { ok: false, status: 409, error: result?.issues[0]?.message ?? 'Not added' }
     }
     await this.keepSounds()
@@ -119,12 +132,15 @@ export class Board extends YServer<Env> {
 
   /** Unlists an upload no pad uses, then deletes its audio. */
   async removeSound(id: string): Promise<SoundResult> {
-    if (!this.document.getMap<unknown>(ROOTS.sounds).has(id))
-      return { ok: false, status: 404, error: 'No such sound' }
+    const node = this.document.getMap<unknown>(ROOTS.sounds).get(id)
+    if (node === undefined) return { ok: false, status: 404, error: 'No such sound' }
+    // The room wrote the listing, so its size is the stored file's.
+    const listed = isMap(node) ? read(Sound, SHAPES.sound, node) : undefined
     const [result] = apply(this.document, [{ op: 'removeSound', id }], ROOM)
     if (!result?.ok)
       return { ok: false, status: 409, error: result?.issues[0]?.message ?? 'In use' }
     await this.env.SOUND_FILES.delete(soundKey(this.name, id))
+    if (listed && !listed.issues) await quota(this.env).release(listed.value.bytes)
     return { ok: true }
   }
 
@@ -147,11 +163,18 @@ export class Board extends YServer<Env> {
     }
     const prefix = soundPrefix(this.name)
     let cursor: string | undefined
+    let lists = 0
+    let freed = 0
     do {
       const page = await this.env.SOUND_FILES.list({ prefix, cursor })
+      lists++
       if (page.objects.length > 0) await this.env.SOUND_FILES.delete(page.objects.map((o) => o.key))
+      for (const o of page.objects) freed += o.size
       cursor = page.truncated ? page.cursor : undefined
     } while (cursor)
+    const budget = quota(this.env)
+    await budget.countLists(lists)
+    if (freed > 0) await budget.release(freed)
     if (this.loaded) {
       apply(this.document, [{ op: 'expireSounds' }], ROOM)
       await this.onSave()

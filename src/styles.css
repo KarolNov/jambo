@@ -359,6 +359,23 @@ button:hover {
   gap: 10px;
 }
 
+.paused {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.paused p {
+  margin: 0;
+}
+
+.paused p + p {
+  margin-top: 4px;
+}
+
 .link:disabled {
   color: var(--muted);
   cursor: default;

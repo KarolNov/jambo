@@ -34,11 +34,11 @@
         "shared/looper.ts": "7567f1bf8543",
         "shared/parties.ts": "f686acc22693",
         "shared/slug.ts": "93fbc4b73dd9",
-        "shared/sounds.ts": "52a7e0036d55",
+        "shared/sounds.ts": "81c5ac9e8e99",
         "shared/wav.ts": "b018d429d7f8",
         "shared/words.ts": "7f1c29eda1b3",
         "src/App.tsx": "73dcf24dbe28",
-        "worker/index.ts": "902240abeb9e"
+        "worker/index.ts": "6a8239beef94"
       },
       "syncedCommit": "c899c41a331d5fc2e778b53d88ec9efb55e73e76"
     },
@@ -48,14 +48,16 @@
         "worker/board.ts",
         "worker/index.ts",
         "src/board/doc.ts",
-        "worker/sounds.ts"
+        "worker/sounds.ts",
+        "worker/quota.ts"
       ],
       "specVersion": "2ff7d17cf81f604d",
       "anchorsFiles": {
         "src/board/doc.ts": "f03410fb7517",
-        "worker/board.ts": "44ec1b9932fe",
-        "worker/index.ts": "902240abeb9e",
-        "worker/sounds.ts": "2bd15c56b8ca"
+        "worker/board.ts": "20ae875809d4",
+        "worker/index.ts": "6a8239beef94",
+        "worker/quota.ts": "fa0709c13df2",
+        "worker/sounds.ts": "5747baabfd9e"
       },
       "syncedCommit": "c899c41a331d5fc2e778b53d88ec9efb55e73e76"
     },
@@ -108,7 +110,7 @@
         "shared/clock.ts": "f72f7a2e8ca6",
         "src/audio/clock.ts": "c0378e84a7cb",
         "src/audio/engine.ts": "7e9d3b3c7463",
-        "src/audio/samples.ts": "afec45203cff",
+        "src/audio/samples.ts": "c3dad0c3392b",
         "src/audio/session.ts": "2e1ec86333d1",
         "src/audio/synth.ts": "bbba5b7d5b5b",
         "src/audio/upload.ts": "9d20ca33fa35",
@@ -126,8 +128,8 @@
       ],
       "specVersion": "4e4eedb8b4c59c29",
       "anchorsFiles": {
-        "src/board/Pads.tsx": "0a929d9e02d6",
-        "src/board/Uploads.tsx": "ddf7e9b01640"
+        "src/board/Pads.tsx": "a8ec9ea04371",
+        "src/board/Uploads.tsx": "69034e6b1e6f"
       },
       "syncedCommit": "c899c41a331d5fc2e778b53d88ec9efb55e73e76"
     },
@@ -142,9 +144,9 @@
       ],
       "specVersion": "6aa2ed1da6a8ff71",
       "anchorsFiles": {
-        "shared/sounds.ts": "52a7e0036d55",
+        "shared/sounds.ts": "81c5ac9e8e99",
         "shared/wav.ts": "b018d429d7f8",
-        "src/audio/samples.ts": "afec45203cff",
+        "src/audio/samples.ts": "c3dad0c3392b",
         "src/audio/synth.ts": "bbba5b7d5b5b",
         "src/audio/upload.ts": "9d20ca33fa35"
       },

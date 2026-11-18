@@ -49,6 +49,24 @@ export const UPLOAD_HEADERS = {
   color: 'X-Sound-Color',
 } as const
 
+/**
+ * Whether the app's sound budget allows uploads and downloads. Uploads pause when storage is
+ * nearly full or this month's writes are nearly spent; downloads pause when this month's reads are.
+ */
+export interface UploadStatus {
+  uploads: 'open' | 'storage' | 'writes'
+  reads: 'open' | 'reads'
+}
+
+/** What to tell people while uploads or downloads are paused. */
+export const PAUSED_MESSAGES = {
+  storage:
+    'Uploads are paused: jambo’s sound storage is full. Removing unused uploads frees space.',
+  writes: 'Uploads are paused until next month: jambo has used this month’s upload budget.',
+  reads:
+    'Uploaded sounds can’t load until next month: jambo has used this month’s download budget.',
+} as const
+
 const UPLOAD_ID = /^u-[a-z2-7]{12}$/
 const BASE32 = 'abcdefghijklmnopqrstuvwxyz234567'
 

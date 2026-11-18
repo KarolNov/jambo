@@ -2,9 +2,11 @@ import { Hono } from 'hono'
 import { partyserverMiddleware } from 'hono-party'
 import { BOARD_CLASS } from '../shared/parties'
 import { isJamSlug, newJamSlug } from '../shared/slug'
+import { quota } from './quota'
 import { sounds } from './sounds'
 
 export { Board } from './board'
+export { SoundQuota } from './quota'
 
 type AppEnv = { Bindings: Env }
 
@@ -14,6 +16,9 @@ app.get('/api/health', (c) => c.json({ ok: true }))
 
 /** Creates a jam: today a jam is just a fresh slug; its board appears on first connect. */
 app.post('/api/jams', (c) => c.json({ slug: newJamSlug() }, 201))
+
+// Whether the app's sound budget allows uploads and downloads right now.
+app.get('/api/sounds/status', async (c) => c.json(await quota(c.env).status()))
 
 // A jam's uploaded sounds: upload, fetch and remove.
 app.route('/api/jams', sounds)

@@ -4,6 +4,9 @@ import { SOUND_IDS, SOUNDS, soundName } from '../../shared/sounds'
 import { padsAtom, soundsAtom } from './model'
 import { useSession } from './session'
 import {
+  PausedNotice,
+  refreshBudget,
+  useBudget,
   UploadDialog,
   UploadsList,
   type UploadTarget,
@@ -32,6 +35,11 @@ export function Pads({ slug }: { slug: string }) {
     target.current = t
     picker.open()
   }
+  const uploadsOpen = useBudget().uploads === 'open'
+  // Check the app's sound budget on opening the jam and on each switch into Change sounds.
+  useEffect(() => {
+    void refreshBudget()
+  }, [editing])
   const known = (id: string) => SOUND_IDS.has(id) || sounds.has(id)
 
   const hit = (padId: string) => {
@@ -95,7 +103,9 @@ export function Pads({ slug }: { slug: string }) {
                     ))}
                   </optgroup>
                 )}
-                <option value={UPLOAD_OPTION}>Upload a sound…</option>
+                <option value={UPLOAD_OPTION} disabled={!uploadsOpen}>
+                  {uploadsOpen ? 'Upload a sound…' : 'Uploads paused'}
+                </option>
               </select>
             ) : (
               <button type="button" onPointerDown={() => hit(id)}>
@@ -120,6 +130,7 @@ export function Pads({ slug }: { slug: string }) {
         />
       )}
       {editing && <UploadsList slug={slug} onPick={pick} />}
+      {!editing && sounds.size > 0 && <PausedNotice uploads={false} />}
     </div>
   )
 }

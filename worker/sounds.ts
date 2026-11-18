@@ -1,8 +1,9 @@
 import { Hono } from 'hono'
 import { getServerByName } from 'partyserver'
 import { isJamSlug } from '../shared/slug'
-import { isUploadId, UPLOAD_HEADERS, UPLOADS } from '../shared/sounds'
+import { isUploadId, PAUSED_MESSAGES, UPLOAD_HEADERS, UPLOADS } from '../shared/sounds'
 import { soundKey } from './board'
+import { quota } from './quota'
 
 type AppEnv = { Bindings: Env }
 
@@ -54,9 +55,15 @@ sounds.post('/:slug/sounds', async (c) => {
 sounds.get('/:slug/sounds/:id', async (c) => {
   const id = c.req.param('id')
   if (!isUploadId(id)) return c.notFound()
+  // Files never change, so the edge cache answers repeat requests without an R2 read.
+  const cache = caches.default
+  const cacheKey = new Request(new URL(c.req.url).toString(), { method: 'GET' })
+  const hit = await cache.match(cacheKey)
+  if (hit) return hit
+  if (!(await quota(c.env).read())) return c.json({ error: PAUSED_MESSAGES.reads }, 503)
   const object = await c.env.SOUND_FILES.get(soundKey(c.req.param('slug'), id))
   if (!object) return c.notFound()
-  return new Response(object.body, {
+  const res = new Response(object.body, {
     headers: {
       'Content-Type': 'audio/wav',
       'Content-Length': String(object.size),
@@ -64,6 +71,8 @@ sounds.get('/:slug/sounds/:id', async (c) => {
       ETag: object.httpEtag,
     },
   })
+  c.executionCtx.waitUntil(cache.put(cacheKey, res.clone()))
+  return res
 })
 
 sounds.delete('/:slug/sounds/:id', async (c) => {
