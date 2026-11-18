@@ -14,7 +14,8 @@
     "test": "vitest run",
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "sounds:clean-preview": "node scripts/clean-preview-sounds.mjs"
   },
   "dependencies": {
     "duratom": "^0.1.0",
