@@ -5,6 +5,7 @@ import * as Y from 'yjs'
 import { apply, ROOTS, type Track } from '../shared/board'
 import { BOARD_CLASS, BOARD_PARTY, boardPath } from '../shared/parties'
 import { isJamSlug } from '../shared/slug'
+import { parseClockMessage, ping } from '../shared/clock'
 import { connectBoard, until } from './client'
 
 const fetchApp = (path: string, init?: RequestInit) =>
@@ -161,5 +162,46 @@ describe('looper board', () => {
     await until(() => a.doc.getMap<Y.Map<unknown>>(ROOTS.tracks).get('1')?.get('mute') === true)
     a.close()
     b.close()
+  })
+})
+
+describe('jam clock', () => {
+  it('answers a ping, to the pinging client alone, with its timestamp and the room time', async () => {
+    const a = await connectBoard('groovy-otter-gggg')
+    const b = await connectBoard('groovy-otter-gggg')
+    const before = Date.now()
+    a.sendCustom(ping(12.5))
+    await until(() => a.custom.length > 0)
+    const msg = parseClockMessage(a.custom[0]!)
+    expect(msg).toMatchObject({ t: 'pong', c: 12.5 })
+    expect(msg?.t === 'pong' && msg.s).toBeGreaterThanOrEqual(before)
+    a.sendCustom('not a clock message')
+    await new Promise((r) => setTimeout(r, 50))
+    expect(a.custom).toHaveLength(1)
+    expect(b.custom).toEqual([])
+    a.close()
+    b.close()
+  })
+})
+
+describe('presence', () => {
+  const people = (awareness: { getStates: () => Map<number, Record<string, unknown>> }) =>
+    [...awareness.getStates().values()].map((s) => (s.person as { id?: string } | undefined)?.id)
+
+  it('passes presence to everyone in the jam, and drops it when a client disconnects', async () => {
+    const a = await connectBoard('groovy-panda-hhhh')
+    const b = await connectBoard('groovy-panda-hhhh')
+    a.awareness.setLocalState({ person: { id: 'a', color: '#2ab7ca', colorName: 'Teal' } })
+    b.awareness.setLocalState({ person: { id: 'b', color: '#ff6b6b', colorName: 'Coral' } })
+    await until(() => people(a.awareness).includes('b') && people(b.awareness).includes('a'))
+
+    // A late joiner sees who is already here.
+    const c = await connectBoard('groovy-panda-hhhh')
+    await until(() => people(c.awareness).includes('a') && people(c.awareness).includes('b'))
+
+    a.close()
+    await until(() => !people(b.awareness).includes('a') && !people(c.awareness).includes('a'))
+    b.close()
+    c.close()
   })
 })
