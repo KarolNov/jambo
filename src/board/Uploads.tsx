@@ -293,9 +293,6 @@ export function UploadsList({
           const keys = onPads.get(id) ?? []
           return (
             <li key={id}>
-              <span className="dot" style={{ color: s.color }} aria-hidden>
-                ●
-              </span>
               <span className="upload-name">{s.name}</span>
               <span className="muted">{seconds(s.durationMs)}</span>
               <UploadStatus id={id} />
