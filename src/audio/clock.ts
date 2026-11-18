@@ -75,9 +75,11 @@ export class JamClock {
   }
 
   private onMessage = (message: string) => {
+    // Stamp arrival before parsing, so decoding doesn't count as part of the trip.
+    const receivedAt = clientNow()
     const msg = parseClockMessage(message)
     if (msg?.t !== 'pong') return
-    this.samples.push(sampleFrom(msg.c, msg.s, clientNow()))
+    this.samples.push(sampleFrom(msg.c, msg.s, receivedAt))
     this.samples = this.samples.slice(-SAMPLE_WINDOW)
     const best = bestSample(this.samples)!
     const offset = nextOffset(this.offset, best.offset)
