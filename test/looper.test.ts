@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  barAt,
   barStart,
   finishTake,
   hitsInWindow,
-  nextBar,
+  ceilNear,
   nextJamBar,
   playBeat,
   trackStart,
@@ -77,9 +76,6 @@ describe('hitsInWindow', () => {
 describe('jam grid', () => {
   // 120 bpm: a bar is 2000 ms of room time, bar 0 at the Unix epoch.
   it('numbers bars from the epoch', () => {
-    expect(barAt(0, 120)).toBe(0)
-    expect(barAt(1999, 120)).toBe(0)
-    expect(barAt(2000, 120)).toBe(1)
     expect(barStart(5, 120)).toBe(10_000)
   })
 
@@ -91,8 +87,19 @@ describe('jam grid', () => {
 
   it('agrees at present-day room times', () => {
     const bar = 897_500_000
-    expect(barAt(barStart(bar, 120), 120)).toBe(bar)
+    expect(nextJamBar(barStart(bar, 120), 120)).toBe(bar)
     expect(nextJamBar(barStart(bar, 120) + 1, 120)).toBe(bar + 1)
+  })
+
+  it('keeps a bar line on its own bar at tempos whose bar is not a whole ms', () => {
+    for (const bpm of [70, 97, 133])
+      for (let bar = 750_000_000; bar < 750_000_500; bar++)
+        expect(nextJamBar(barStart(bar, bpm), bpm)).toBe(bar)
+  })
+
+  it('rounds up, except within rounding error of a whole number', () => {
+    expect(ceilNear(3.2)).toBe(4)
+    expect(ceilNear(3_000_000_000 + 4.8e-7)).toBe(3_000_000_000)
   })
 
   it('starts a track on its take bar, or on bar 0 without one', () => {
@@ -108,12 +115,5 @@ describe('jam grid', () => {
     const b = hitsInWindow(track, start, 120, 17.9, 23).map((x) => x.time)
     expect(a).toEqual([14, 18, 22])
     expect(b).toEqual([18, 22])
-  })
-})
-
-describe('nextBar', () => {
-  it('finds the next bar line, or the time itself on a line', () => {
-    expect(nextBar(1, 120, 2.5)).toBe(3)
-    expect(nextBar(1, 120, 3)).toBe(3)
   })
 })

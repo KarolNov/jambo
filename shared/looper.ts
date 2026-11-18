@@ -77,14 +77,21 @@ export function hitsInWindow(
  */
 export const barMs = (bpm: number) => barSeconds(bpm) * 1000
 
-/** The jam bar under room time `roomMs`. */
-export const barAt = (roomMs: number, bpm: number) => Math.floor(roomMs / barMs(bpm) + 1e-9)
-
 /** When jam bar `bar` starts, in room ms. */
 export const barStart = (bar: number, bpm: number) => bar * barMs(bpm)
 
 /** The first jam bar starting at or after room time `roomMs`. */
-export const nextJamBar = (roomMs: number, bpm: number) => Math.ceil(roomMs / barMs(bpm) - 1e-9)
+export const nextJamBar = (roomMs: number, bpm: number) => ceilNear(roomMs / barMs(bpm))
+
+/**
+ * `Math.ceil`, but a value within rounding error of a whole number is that number. The tolerance
+ * is relative: room times since the epoch put bar and beat counts around 1e9, where a fixed 1e-9
+ * is far below one unit in the last place.
+ */
+export function ceilNear(x: number): number {
+  const r = Math.round(x)
+  return Math.abs(x - r) <= Math.abs(x) * 1e-14 ? r : Math.ceil(x)
+}
 
 /**
  * Where a track's loop cycles start, in room ms: its take's jam bar, repeating every length.
@@ -92,9 +99,3 @@ export const nextJamBar = (roomMs: number, bpm: number) => Math.ceil(roomMs / ba
  */
 export const trackStart = (track: Pick<Track, 'startBar'>, bpm: number) =>
   barStart(track.startBar ?? 0, bpm)
-
-/** The first bar line at or after `time`, on a grid whose bar 0 starts at `origin`. */
-export function nextBar(origin: number, bpm: number, time: number): number {
-  const bar = barSeconds(bpm)
-  return origin + Math.ceil((time - origin) / bar - 1e-9) * bar
-}

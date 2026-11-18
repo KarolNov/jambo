@@ -5,6 +5,7 @@ import {
   barMs,
   barStart,
   beatSeconds,
+  ceilNear,
   finishTake,
   hitsInWindow,
   nextJamBar,
@@ -22,7 +23,13 @@ const TICK_MS = 25
  */
 export type RecorderState =
   | { phase: 'idle' }
-  | { phase: 'waiting' | 'count-in' | 'recording'; countStart: number; recordStart: number }
+  | {
+      phase: 'waiting' | 'count-in' | 'recording'
+      countStart: number
+      recordStart: number
+      /** The jam bar the take begins on (`recordStart`'s bar). */
+      recordBar: number
+    }
 
 interface Playing {
   track: Track
@@ -55,8 +62,10 @@ export class Engine {
   private starting?: Promise<void>
   private pads = new Map<string, string>()
   private playing = new Map<string, Playing>()
-  /** Tracks this client just recorded, so they keep looping seamlessly. */
-  private claimed = new Set<string>()
+  /** Tracks this client just recorded, by the tempo their take ran at, so they keep looping seamlessly. */
+  private claimed = new Map<string, number>()
+  /** The tempo of the last take `stop` returned. */
+  private takeBpm?: number
   private recorder: RecorderState = { phase: 'idle' }
   private takeHits: Hit[] = []
   /** While it is on, the metronome clicks every beat of a take. */
@@ -140,7 +149,10 @@ export class Engine {
       // Someone else's track plays from its current point in its loop; one this client just
       // recorded also plays what its second cycle has already passed.
       const p: Playing = { track, gain: undefined! }
-      if (this.claimed.delete(id))
+      const takeBpm = this.claimed.get(id)
+      this.claimed.delete(id)
+      // A take whose tempo changed under it has no second cycle on this grid to catch up with.
+      if (takeBpm === this.bpm)
         p.catchUpFrom = trackStart(track, this.bpm) + track.bars * barMs(this.bpm)
       this.playing.set(id, p)
       if (this.ctx) this.attach(p)
@@ -163,10 +175,10 @@ export class Engine {
     const ctx = this.ctx
     if (!ctx) return
     this.play(this.pads.get(padId), ctx.currentTime, this.master!)
-    const now = this.clock.now()
+    const now = this.heardNow()
     if (this.recorder.phase !== 'idle' && now !== undefined) {
-      // People play to what they hear. The room's time now is when what they hear now was
-      // scheduled for, so a hit right on a click they heard lands on that click's beat.
+      // People play to what they hear: the room time of what is leaving the speakers now, on the
+      // same shift the clicks were scheduled with, so a hit right on a click lands on its beat.
       const beat = (now - this.recorder.recordStart) / (beatSeconds(this.bpm) * 1000)
       this.takeHits.push({ padId, beat })
     }
@@ -188,13 +200,15 @@ export class Engine {
   record() {
     const ctx = this.ctx
     if (!ctx || this.recorder.phase !== 'idle' || !this.ensureShift()) return
-    const earliest = audioToRoom(ctx.currentTime + 0.05, this.shift!)
+    // Not before what is already scheduled, or the count-in's first click would be skipped.
+    const earliest = Math.max(this.scheduledUntil, audioToRoom(ctx.currentTime + 0.05, this.shift!))
     const countBar = nextJamBar(earliest, this.bpm)
     this.takeHits = []
     this.recorder = {
       phase: 'waiting',
       countStart: barStart(countBar, this.bpm),
       recordStart: barStart(countBar + 1, this.bpm),
+      recordBar: countBar + 1,
     }
     this.advanceRecorder()
     this.emit()
@@ -208,15 +222,14 @@ export class Engine {
     const rec = this.recorder
     this.recorder = { phase: 'idle' }
     this.emit()
-    const now = this.clock.now()
+    const now = this.heardNow()
     if (rec.phase === 'idle' || now === undefined) return null
-    const bar = barMs(this.bpm)
-    const elapsedBeats = (now - rec.recordStart) / (bar / BEATS_PER_BAR)
+    const elapsedBeats = (now - rec.recordStart) / (barMs(this.bpm) / BEATS_PER_BAR)
     const take = elapsedBeats > 0 ? finishTake(this.takeHits, elapsedBeats) : null
-    const startBar = Math.round(rec.recordStart / bar)
+    this.takeBpm = this.bpm
     // A tempo change that arrived during the take applies now.
     this.bpm = this.boardBpm
-    return take && { ...take, startBar }
+    return take && { ...take, startBar: rec.recordBar }
   }
 
   /** Turns the metronome on or off; remembered in this browser. */
@@ -232,14 +245,14 @@ export class Engine {
 
   /** Marks a track as one this client just recorded, so it keeps looping from where its take started. */
   claim(trackId: string) {
-    this.claimed.add(trackId)
+    if (this.takeBpm !== undefined) this.claimed.set(trackId, this.takeBpm)
   }
 
   /** Where each track is in its loop, from 0 to 1, as heard; undefined before it starts. */
   position(trackId: string): number | undefined {
     const p = this.playing.get(trackId)
-    const now = this.clock.now()
-    if (!p || !this.ctx || this.shift === undefined || now === undefined) return undefined
+    const now = this.heardNow()
+    if (!p || now === undefined) return undefined
     const start = trackStart(p.track, this.bpm)
     if (now < start) return undefined
     const loop = p.track.bars * barMs(this.bpm)
@@ -261,9 +274,17 @@ export class Engine {
     if (ts?.contextTime && ts.performanceTime)
       return { contextTime: ts.contextTime, performanceTime: ts.performanceTime }
     return {
-      contextTime: ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0),
+      contextTime: ctx.currentTime - (ctx.outputLatency || 0) - ctx.baseLatency,
       performanceTime: performance.now(),
     }
+  }
+
+  /** The room time of what is leaving the speakers now, on the current shift; undefined without one. */
+  private heardNow(): number | undefined {
+    const ctx = this.ctx
+    if (!ctx || this.shift === undefined) return undefined
+    const h = this.heard(ctx)
+    return audioToRoom(h.contextTime + (performance.now() - h.performanceTime) / 1000, this.shift)
   }
 
   /** Sets the first shift once the clock is agreed. Returns whether there is one. */
@@ -307,7 +328,10 @@ export class Engine {
         this.schedule(from, line)
         this.shift = this.pendingShift
         this.pendingShift = undefined
-        from = line
+        // Everything before the line is scheduled. A forward jump (audio suspended, a big offset
+        // correction) skips what is already past instead of playing it all at once.
+        from = Math.max(line, audioToRoom(ctx.currentTime, this.shift))
+        this.scheduledUntil = from
         to = audioToRoom(ctx.currentTime + LOOKAHEAD, this.shift)
       }
     }
@@ -335,7 +359,8 @@ export class Engine {
     const rec = this.recorder
     if (rec.phase === 'idle') return
     const beat = beatSeconds(this.bpm) * 1000
-    for (let n = Math.ceil(from / beat - 1e-9); n * beat < to; n++) {
+    // Beat indices, not times, bound the window, so a beat on the edge falls in exactly one.
+    for (let n = ceilNear(from / beat), end = ceilNear(to / beat); n < end; n++) {
       const at = n * beat
       const counting = at >= rec.countStart - 1e-3 && at < rec.recordStart - 1e-3
       const recording = at >= rec.recordStart - 1e-3

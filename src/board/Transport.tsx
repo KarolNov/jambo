@@ -31,8 +31,8 @@ export function Transport() {
     if (!engine.ready) await engine.unlock()
     if (engine.state.phase === 'idle') {
       setMessage(undefined)
-      // Takes go on the jam's grid, so they wait until this client's clock agrees with the jam.
-      if (engine.synced) engine.record()
+      // Takes go on the jam's grid; record() waits until this client's clock agrees with the jam.
+      engine.record()
       return
     }
     const take = engine.stop()
