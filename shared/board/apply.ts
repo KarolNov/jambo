@@ -1,9 +1,9 @@
 import { isMap } from 'duratom'
 import { create, read, write } from 'duratom/core'
 import * as Y from 'yjs'
-import { SOUND_IDS } from '../sounds'
+import { isUploadId, PAD_KEYS, SOUND_IDS, UPLOADS } from '../sounds'
 import { type Issue, Op, type OpResult } from './ops'
-import { LIMITS, Meta, Pad, ROOTS, SHAPES, Track } from './schema'
+import { LIMITS, Meta, Pad, ROOTS, SHAPES, Sound, Track } from './schema'
 
 /** Who made a change: tagged on the transaction, so undo and presence can tell people apart. */
 export type Origin = { kind: 'user' | 'ai' | 'system'; id: string }
@@ -39,6 +39,9 @@ export function apply(doc: Y.Doc, ops: readonly unknown[], origin: Origin): OpRe
   return results
 }
 
+const KEY_ORDER = PAD_KEYS.join('').toUpperCase()
+const keyOrder = (key: string) => KEY_ORDER.indexOf(key)
+
 function applyOne(doc: Y.Doc, raw: unknown): OpResult {
   const parsed = Op.safeParse(raw)
   if (!parsed.success) {
@@ -51,6 +54,17 @@ function applyOne(doc: Y.Doc, raw: unknown): OpResult {
   const meta = doc.getMap<unknown>(ROOTS.meta)
   const pads = doc.getMap<unknown>(ROOTS.pads)
   const tracks = doc.getMap<unknown>(ROOTS.tracks)
+  const sounds = doc.getMap<unknown>(ROOTS.sounds)
+  const isListed = (id: string) => {
+    const node = sounds.get(id)
+    const s = isMap(node) ? read(Sound, SHAPES.sound, node) : undefined
+    return !!s && !s.issues
+  }
+  const uploadCount = () => {
+    let n = 0
+    sounds.forEach((_, id) => isListed(id) && n++)
+    return n
+  }
   // Only readable tracks count: the UI can't see or remove the rest.
   const trackCount = () => {
     let n = 0
@@ -69,7 +83,8 @@ function applyOne(doc: Y.Doc, raw: unknown): OpResult {
     case 'assignPad': {
       const node = pads.get(op.padId)
       if (!isMap(node)) return fail(`No pad ${op.padId}`, ['padId'])
-      if (!SOUND_IDS.has(op.soundId)) return fail(`No sound ${op.soundId}`, ['soundId'])
+      if (!SOUND_IDS.has(op.soundId) && !isListed(op.soundId))
+        return fail(`No sound ${op.soundId}`, ['soundId'])
       const current = read(Pad, SHAPES.pad, node)
       if (!current || current.issues) return fail(`Pad ${op.padId} is unreadable`, ['padId'])
       return fromResult(write(Pad, SHAPES.pad, node, { ...current.value, soundId: op.soundId }))
@@ -91,6 +106,34 @@ function applyOne(doc: Y.Doc, raw: unknown): OpResult {
     case 'removeTrack': {
       if (!tracks.has(op.id)) return fail(`No track ${op.id}`, ['id'])
       tracks.delete(op.id)
+      return { ok: true }
+    }
+    case 'addSound': {
+      if (!isUploadId(op.id)) return fail(`${op.id} is not an upload id`, ['id'])
+      if (sounds.has(op.id)) return fail(`Sound ${op.id} already exists`, ['id'])
+      if (uploadCount() >= UPLOADS.perJam)
+        return fail(`A jam holds at most ${UPLOADS.perJam} uploads`)
+      return fromResult(create(Sound, SHAPES.sound, sounds, op.id, op.sound))
+    }
+    case 'removeSound': {
+      if (!sounds.has(op.id)) return fail(`No sound ${op.id}`, ['id'])
+      const keys: string[] = []
+      pads.forEach((node) => {
+        const p = isMap(node) ? read(Pad, SHAPES.pad, node) : undefined
+        if (p && !p.issues && p.value.soundId === op.id) keys.push(p.value.key.toUpperCase())
+      })
+      if (keys.length > 0) {
+        keys.sort((a, b) => keyOrder(a) - keyOrder(b))
+        return fail(
+          `Sound ${op.id} is on ${keys.length === 1 ? 'pad' : 'pads'} ${keys.join(', ')}`,
+          ['id'],
+        )
+      }
+      sounds.delete(op.id)
+      return { ok: true }
+    }
+    case 'expireSounds': {
+      for (const id of [...sounds.keys()]) sounds.delete(id)
       return { ok: true }
     }
   }

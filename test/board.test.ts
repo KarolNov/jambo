@@ -1,7 +1,8 @@
 import { read } from 'duratom/core'
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
-import { apply, board, Meta, Pad, ROOTS, SHAPES, Track, type Op } from '../shared/board'
+import { apply, board, Meta, Pad, ROOTS, SHAPES, Sound, Track, type Op } from '../shared/board'
+import { isUploadId, newUploadId, SOUNDS, UPLOADS } from '../shared/sounds'
 
 const me = { kind: 'user', id: 'me' } as const
 
@@ -183,5 +184,176 @@ describe('board SDK', () => {
     expect(b.track('t1').remove()).toEqual({ ok: true })
     expect(seen).toHaveLength(5)
     expect(tracksOf(doc).size).toBe(0)
+  })
+})
+
+const sound = (over: Partial<Sound> = {}): Sound => ({
+  name: 'Vox',
+  author: 'me',
+  color: '#2ab7ca',
+  durationMs: 1200,
+  bytes: 105_884,
+  createdAt: 1_700_000_000_000,
+  ...over,
+})
+
+const room = { kind: 'system', id: 'room' } as const
+const soundsOf = (doc: Y.Doc) => doc.getMap<Y.Map<unknown>>(ROOTS.sounds)
+const padSound = (doc: Y.Doc, id: string) =>
+  v(read(Pad, SHAPES.pad, doc.getMap<Y.Map<unknown>>(ROOTS.pads).get(id)))?.soundId
+
+function twoPadDoc() {
+  const doc = seededDoc()
+  const pad = new Y.Map<unknown>()
+  for (const [k, val] of Object.entries({ row: 0, col: 1, key: '2', soundId: 'snare' }))
+    pad.set(k, val)
+  doc.getMap(ROOTS.pads).set('r0c1', pad)
+  return doc
+}
+
+describe('upload ids', () => {
+  it('never look like a kit id', () => {
+    expect(SOUNDS.filter((s) => isUploadId(s.id))).toEqual([])
+  })
+
+  it('are fresh each time', () => {
+    const ids = new Set(Array.from({ length: 1000 }, newUploadId))
+    expect(ids.size).toBe(1000)
+    expect([...ids].every(isUploadId)).toBe(true)
+  })
+})
+
+describe('uploaded sounds', () => {
+  const id = 'u-abcdefgh2345'
+
+  it('lists an upload, which a pad can then play', () => {
+    const doc = seededDoc()
+    const results = apply(
+      doc,
+      [
+        { op: 'addSound', id, sound: sound() },
+        { op: 'assignPad', padId: 'r0c0', soundId: id },
+      ],
+      room,
+    )
+    expect(results.every((r) => r.ok)).toBe(true)
+    expect(v(read(Sound, SHAPES.sound, soundsOf(doc).get(id)))).toEqual(sound())
+    expect(padSound(doc, 'r0c0')).toBe(id)
+  })
+
+  it('refuses a pad on an upload the jam does not list', () => {
+    const doc = seededDoc()
+    const [r] = apply(doc, [{ op: 'assignPad', padId: 'r0c0', soundId: id }], me)
+    expect(r?.ok).toBe(false)
+    expect(padSound(doc, 'r0c0')).toBe('kick')
+  })
+
+  it.each(['kick', 'u-short', 'U-ABCDEFGH2345'])(
+    'refuses to list an upload with the id %s',
+    (bad) => {
+      const [r] = apply(seededDoc(), [{ op: 'addSound', id: bad, sound: sound() }], room)
+      expect(r?.ok).toBe(false)
+    },
+  )
+
+  it('refuses a duplicate id and an invalid sound', () => {
+    const doc = seededDoc()
+    const results = apply(
+      doc,
+      [
+        { op: 'addSound', id, sound: sound() },
+        { op: 'addSound', id, sound: sound({ name: 'Other' }) },
+        { op: 'addSound', id: 'u-bbbbbbbbbbbb', sound: sound({ durationMs: 10_001 }) },
+        { op: 'addSound', id: 'u-cccccccccccc', sound: sound({ bytes: UPLOADS.maxBytes + 1 }) },
+      ],
+      room,
+    )
+    expect(results.map((r) => r.ok)).toEqual([true, false, false, false])
+    expect([...soundsOf(doc).keys()]).toEqual([id])
+  })
+
+  it(`holds at most ${UPLOADS.perJam} uploads`, () => {
+    const doc = seededDoc()
+    const ops: Op[] = Array.from({ length: UPLOADS.perJam + 1 }, (_, i) => ({
+      op: 'addSound',
+      id: `u-${'a'.repeat(10)}${'abcdefghijklmnopqrstuvwxyz234567'[i >> 5]}${'abcdefghijklmnopqrstuvwxyz234567'[i & 31]}`,
+      sound: sound(),
+    }))
+    const results = apply(doc, ops, room)
+    expect(results.filter((r) => r.ok)).toHaveLength(UPLOADS.perJam)
+    expect(results.at(-1)?.ok).toBe(false)
+  })
+
+  it('refuses to remove an upload a pad uses, naming the pads', () => {
+    const doc = twoPadDoc()
+    apply(
+      doc,
+      [
+        { op: 'addSound', id, sound: sound() },
+        { op: 'assignPad', padId: 'r0c1', soundId: id },
+        { op: 'assignPad', padId: 'r0c0', soundId: id },
+      ],
+      room,
+    )
+    const [r] = apply(doc, [{ op: 'removeSound', id }], room)
+    expect(r).toEqual({
+      ok: false,
+      issues: [{ message: `Sound ${id} is on pads 1, 2`, path: ['id'] }],
+    })
+    expect(soundsOf(doc).has(id)).toBe(true)
+  })
+
+  it('removes an unused upload, and refuses a missing one', () => {
+    const doc = seededDoc()
+    apply(doc, [{ op: 'addSound', id, sound: sound() }], room)
+    const results = apply(
+      doc,
+      [
+        { op: 'removeSound', id },
+        { op: 'removeSound', id },
+      ],
+      room,
+    )
+    expect(results.map((r) => r.ok)).toEqual([true, false])
+    expect(soundsOf(doc).size).toBe(0)
+  })
+
+  it('expires every upload, leaving pads on them unknown', () => {
+    const doc = seededDoc()
+    apply(
+      doc,
+      [
+        { op: 'addSound', id, sound: sound() },
+        { op: 'addSound', id: 'u-bbbbbbbbbbbb', sound: sound() },
+        { op: 'assignPad', padId: 'r0c0', soundId: id },
+        { op: 'expireSounds' },
+      ],
+      room,
+    )
+    expect(soundsOf(doc).size).toBe(0)
+    expect(padSound(doc, 'r0c0')).toBe(id)
+    const [r] = apply(doc, [{ op: 'assignPad', padId: 'r0c0', soundId: id }], me)
+    expect(r?.ok).toBe(false)
+  })
+
+  it('replaces a sound on every pad that uses it, in one change', () => {
+    const doc = twoPadDoc()
+    const next = 'u-bbbbbbbbbbbb'
+    apply(
+      doc,
+      [
+        { op: 'addSound', id, sound: sound() },
+        { op: 'addSound', id: next, sound: sound({ name: 'Vox 2' }) },
+        { op: 'assignPad', padId: 'r0c0', soundId: id },
+      ],
+      room,
+    )
+    let changes = 0
+    doc.on('afterTransaction', () => changes++)
+    const results = board(doc, me).replaceSound(id, next)
+    expect(results).toEqual([{ ok: true }])
+    expect(changes).toBe(1)
+    expect(padSound(doc, 'r0c0')).toBe(next)
+    expect(padSound(doc, 'r0c1')).toBe('snare')
   })
 })
