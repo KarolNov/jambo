@@ -193,6 +193,14 @@
         "src/audio/upload.ts": "9d3467419e28"
       },
       "syncedCommit": "489a9381e5e510abadde7fe5d86b2b9c5cff1b2a"
+    },
+    "agent": {
+      "ref": null,
+      "anchors": [
+        "shared/agent/**",
+        "worker/agent/**",
+        "skills/jam/**"
+      ]
     }
   },
   "changes": {
@@ -235,6 +243,13 @@
         "https://github.com/KarolNov/jambo/pull/12",
         "https://github.com/KarolNov/jambo/pull/13"
       ]
+    },
+    "agent-mcp": {
+      "brief": "https://app.notion.com/p/41c43cce21f28151bae4c831fbd34b8c",
+      "review": "https://app.notion.com/p/41c43cce21f2817dbde5fd13005bd6fe",
+      "tickets": "https://app.notion.com/p/41c43cce21f2817dbde5fd13005bd6fe",
+      "status": "approved",
+      "baseCommit": "4a346b7ef58026e7386fc8b472cab67a1f6ab888"
     }
   }
 }
