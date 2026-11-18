@@ -27,10 +27,11 @@
         "shared/board/apply.ts": "0bf62eb5e23e",
         "shared/board/index.ts": "7aa4c76f3296",
         "shared/board/ops.ts": "c14b87e85e4a",
-        "shared/board/schema.ts": "034c3cf9c99d",
+        "shared/board/schema.ts": "e11404520ea6",
         "shared/board/sdk.ts": "ec96fbef672a",
         "shared/board/seed.ts": "d5eb014f0cd8",
-        "shared/looper.ts": "d8f614e05f2f",
+        "shared/clock.ts": "f72f7a2e8ca6",
+        "shared/looper.ts": "1f199433e372",
         "shared/parties.ts": "f686acc22693",
         "shared/slug.ts": "93fbc4b73dd9",
         "shared/sounds.ts": "37747cf60d71",
@@ -38,7 +39,7 @@
         "src/App.tsx": "73dcf24dbe28",
         "worker/index.ts": "809c62e25d69"
       },
-      "syncedCommit": "a3f33b84d7280fdbc7f0ea8f28982926017fda14"
+      "syncedCommit": "da8ab73bedfcf042c6b75b33b53ae4092802497b"
     },
     "room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
@@ -47,13 +48,13 @@
         "worker/index.ts",
         "src/board/doc.ts"
       ],
-      "specVersion": "6c8433a630d40b26",
+      "specVersion": "2ff7d17cf81f604d",
       "anchorsFiles": {
-        "src/board/doc.ts": "878594687779",
-        "worker/board.ts": "11798d14d337",
+        "src/board/doc.ts": "f03410fb7517",
+        "worker/board.ts": "381d1cc3a87c",
         "worker/index.ts": "809c62e25d69"
       },
-      "syncedCommit": "a3f33b84d7280fdbc7f0ea8f28982926017fda14"
+      "syncedCommit": "da8ab73bedfcf042c6b75b33b53ae4092802497b"
     },
     "board": {
       "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
@@ -61,16 +62,18 @@
         "src/board/model.ts",
         "src/board/Jam.tsx",
         "src/board/identity.ts",
-        "src/board/session.ts"
+        "src/board/session.ts",
+        "src/board/presence.ts"
       ],
-      "specVersion": "1814cece56800710",
+      "specVersion": "82c8f9d0d602a868",
       "anchorsFiles": {
-        "src/board/Jam.tsx": "901192fc720d",
+        "src/board/Jam.tsx": "570aa1011914",
         "src/board/identity.ts": "ad8784c9a32a",
         "src/board/model.ts": "0c80a186531b",
+        "src/board/presence.ts": "7a1e3badf2a7",
         "src/board/session.ts": "c48c16e24b76"
       },
-      "syncedCommit": "a3f33b84d7280fdbc7f0ea8f28982926017fda14"
+      "syncedCommit": "da8ab73bedfcf042c6b75b33b53ae4092802497b"
     },
     "board/ops": {
       "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
@@ -82,27 +85,32 @@
         "shared/board/apply.ts": "0bf62eb5e23e",
         "shared/board/index.ts": "7aa4c76f3296",
         "shared/board/ops.ts": "c14b87e85e4a",
-        "shared/board/schema.ts": "034c3cf9c99d",
+        "shared/board/schema.ts": "e11404520ea6",
         "shared/board/sdk.ts": "ec96fbef672a",
         "shared/board/seed.ts": "d5eb014f0cd8"
       },
-      "syncedCommit": "4a578d9a2b4a26267c84ca8143679568ff67ff2a"
+      "syncedCommit": "da8ab73bedfcf042c6b75b33b53ae4092802497b"
     },
     "looper": {
       "ref": "https://app.notion.com/p/41c43cce21f2816ba415d28e60bf80d5",
       "anchors": [
         "src/audio/**",
         "src/board/Transport.tsx",
-        "src/board/Tracks.tsx"
+        "src/board/Tracks.tsx",
+        "shared/clock.ts",
+        "src/board/Debug.tsx"
       ],
-      "specVersion": "3c0dac07c2cce155",
+      "specVersion": "81b7d6a03e14a54f",
       "anchorsFiles": {
-        "src/audio/engine.ts": "347de291aab2",
+        "shared/clock.ts": "f72f7a2e8ca6",
+        "src/audio/clock.ts": "3d9e98a0e114",
+        "src/audio/engine.ts": "1be07cd17fa5",
         "src/audio/synth.ts": "bbba5b7d5b5b",
+        "src/board/Debug.tsx": "80d7db772bb5",
         "src/board/Tracks.tsx": "25f839a4ccce",
-        "src/board/Transport.tsx": "ffbd15a7e52a"
+        "src/board/Transport.tsx": "91a0a688af12"
       },
-      "syncedCommit": "d21cedbd50af62403e4580e64a7e466acce1c01a"
+      "syncedCommit": "da8ab73bedfcf042c6b75b33b53ae4092802497b"
     },
     "pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
@@ -150,9 +158,10 @@
       "brief": "https://app.notion.com/p/41c43cce21f281ae97e7e7b204cc7eec",
       "review": "https://app.notion.com/p/41c43cce21f2817c9036e4b148d1d014",
       "tickets": "https://app.notion.com/p/41c43cce21f2817c9036e4b148d1d014",
-      "status": "approved",
+      "status": "applied",
       "baseCommit": "32415a7e06e2302fbc825ef4d02ecb20ce9226b4",
-      "branch": "kn/shared-transport"
+      "branch": "kn/shared-transport",
+      "pr": "https://github.com/KarolNov/jambo/pull/6"
     }
   }
 }

@@ -55,6 +55,31 @@ describe('apply', () => {
     expect(v(readTrack(doc, 't1'))).toMatchObject({ mute: true, name: 'Beat' })
   })
 
+  it('keeps the jam bar a track was recorded on, which no patch can change', () => {
+    const doc = seededDoc()
+    const results = apply(
+      doc,
+      [
+        { op: 'addTrack', id: 't1', track: track({ startBar: 897_500_123 }) },
+        { op: 'addTrack', id: 't2', track: track() },
+        { op: 'setTrack', id: 't1', patch: { startBar: 4, gain: 0.5 } },
+      ],
+      me,
+    )
+    expect(results.every((r) => r.ok)).toBe(true)
+    expect(v(readTrack(doc, 't1'))).toMatchObject({ startBar: 897_500_123, gain: 0.5 })
+    expect(v(readTrack(doc, 't2'))?.startBar).toBeUndefined()
+  })
+
+  it.each([-1, 2.5])('rejects a track starting on jam bar %s', (startBar) => {
+    const [result] = apply(
+      seededDoc(),
+      [{ op: 'addTrack', id: 't1', track: track({ startBar }) }],
+      me,
+    )
+    expect(result?.ok).toBe(false)
+  })
+
   it('rejects a bad operation and still applies the rest of the batch', () => {
     const doc = seededDoc()
     apply(doc, [{ op: 'addTrack', id: 't1', track: track() }], me)
