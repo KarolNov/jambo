@@ -1,60 +1,13 @@
-/* PROTOTYPE (neumorphism, throwaway). Every rule is scoped under .neumo. */
-
-/* ── Tokens ─────────────────────────────────────────────────────────────────
-   --bg surface, --hi light-side shadow, --lo dark-side shadow. Dark needs its own shadow pair,
-   not an inverted one. */
-
-.neumo-b[data-theme='light'] {
-  --bg: #ebe4dc;
-  --hi: #fffaf4;
-  --lo: #c6baac;
-  --text: #33291f;
-  --muted: #6d5f50;
-  --accent: #e0532c;
-  --accent-2: #1f8f80;
-  --flat: #f6f1eb;
-  --line: #d6cbbf;
-}
-.neumo-b[data-theme='dark'] {
-  --bg: #2a2621;
-  --hi: #37322c;
-  --lo: #1b1815;
-  --text: #f2ebe2;
-  --muted: #b3a593;
-  --accent: #ff7a4f;
-  --accent-2: #4cc6b4;
-  --flat: #221f1b;
-  --line: #433d36;
-}
+/* The soft console's components. Every rule is scoped under .neumo; tokens come from src/theme. */
 
 .neumo {
-  --raise: -6px -6px 14px var(--hi), 6px 6px 14px var(--lo);
-  --raise-sm: -3px -3px 7px var(--hi), 3px 3px 7px var(--lo);
-  --raise-lg: -12px -12px 28px var(--hi), 12px 12px 28px var(--lo);
-  --inset: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi);
-  --inset-sm: inset 2px 2px 5px var(--lo), inset -2px -2px 5px var(--hi);
   min-height: 100vh;
   padding-bottom: 48px;
   background: var(--bg);
   color: var(--text);
-  color-scheme: light;
   font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
 }
-/* While the theme swaps, nothing animates on its own: the page crossfades as one */
-.neumo.n-switching,
-.neumo.n-switching *,
-.neumo.n-switching *::before,
-.neumo.n-switching *::after {
-  transition: none !important;
-}
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 0.28s;
-  animation-timing-function: ease-in-out;
-}
-.neumo[data-theme='dark'] {
-  color-scheme: dark;
-}
+
 .neumo .n-muted {
   color: var(--muted);
 }
@@ -487,10 +440,7 @@
   padding: 8px;
   border-radius: 18px;
   background: var(--bg);
-  box-shadow:
-    -6px -6px 16px var(--hi),
-    0 22px 48px -14px rgb(0 0 0 / 0.38),
-    0 4px 10px rgb(0 0 0 / 0.1);
+  box-shadow: var(--float);
   animation: n-pop 0.14s ease-out;
 }
 @keyframes n-pop {
@@ -881,62 +831,4 @@
   .neumo-b .b-fader {
     grid-column: 1 / -1;
   }
-}
-
-/* Light/dark switch in the header: an inset track, a raised knob over the current icon */
-.neumo .n-theme {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 66px;
-  height: 34px;
-  padding: 0 7px;
-  border-radius: 999px;
-  box-shadow: var(--inset-sm);
-}
-.neumo .n-theme:active:not(:disabled) {
-  box-shadow: var(--inset-sm);
-}
-.neumo .n-theme-knob {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--bg);
-  box-shadow: var(--raise-sm);
-  transition: transform 0.2s ease;
-}
-.neumo .n-theme[aria-checked='true'] .n-theme-knob {
-  transform: translateX(32px);
-}
-.neumo .n-theme svg {
-  position: relative;
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: stroke 0.2s;
-}
-.neumo .n-theme svg:last-child {
-  margin-left: auto;
-}
-.neumo .n-theme[aria-checked='false'] svg:first-of-type,
-.neumo .n-theme[aria-checked='true'] svg:last-child {
-  stroke: var(--accent-2);
-}
-
-/* The page behind the prototype (overscroll, under the bar) takes the theme's surface colour */
-:root:has(.neumo-b[data-theme='light']) {
-  background: #ebe4dc;
-  color-scheme: light;
-}
-:root:has(.neumo-b[data-theme='dark']) {
-  background: #2a2621;
-  color-scheme: dark;
 }

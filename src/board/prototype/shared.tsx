@@ -23,34 +23,13 @@ import {
   useSampleState,
 } from '../Uploads'
 import { type Group, OptionList, Popover } from './Menu'
-import { ThemeToggle, useTheme } from './Switcher'
+import { ThemeToggle } from '../../theme/ThemeToggle'
+import { useSwatch } from '../colors'
 
 export const STATUS_LABEL: Record<ConnectionStatus, string> = {
   connected: 'Live',
   connecting: 'Connecting…',
   offline: 'Offline',
-}
-
-/**
- * What each collaborator colour looks like here. The doc stores the name; on the dark theme it is
- * the bright swatch, on the light theme a deeper shade of the same hue, so dots, hits and rings
- * keep at least 3:1 against the sand.
- */
-const PALETTE: Record<ColorName, { dark: string; light: string }> = {
-  teal: { dark: '#2ab7ca', light: '#13808e' },
-  coral: { dark: '#ff6b6b', light: '#d64545' },
-  amber: { dark: '#f5a524', light: '#a86400' },
-  lime: { dark: '#8bd346', light: '#4c8519' },
-  violet: { dark: '#a78bfa', light: '#7650e0' },
-  pink: { dark: '#ff6b9d', light: '#cc3870' },
-  sky: { dark: '#5bb4f5', light: '#1d72c4' },
-  mint: { dark: '#4fd1a5', light: '#17845e' },
-}
-
-/** A collaborator colour as this theme paints it. */
-export function useShade(): (c: ColorName) => string {
-  const theme = useTheme()
-  return (c) => PALETTE[c][theme]
 }
 
 /** Who uploaded a sound, for its dot's tooltip. */
@@ -122,7 +101,7 @@ function useSoundGroups(canUpload: boolean): Group[] {
   const sounds = useAtomValue(soundsAtom)
   const uploadsOpen = useBudget().uploads === 'open'
   const uploader = useUploader()
-  const shade = useShade()
+  const shade = useSwatch()
   return [
     ...CATEGORIES.map((c) => ({
       label: c[0]!.toUpperCase() + c.slice(1),
@@ -174,7 +153,7 @@ export function PadGrid({
   const groups = useSoundGroups(!!onUpload)
   useEffect(() => setPicking(undefined), [editing])
 
-  const shade = useShade()
+  const shade = useSwatch()
   const flash = (padId: string, color: ColorName, cls: string) => {
     const el = els.current.get(padId)
     if (!el) return
@@ -269,7 +248,7 @@ function PadSound({ soundId }: { soundId: string }) {
   const upload = sounds.get(soundId)
   const state = useSampleState(soundId)
   const uploader = useUploader()
-  const shade = useShade()
+  const shade = useSwatch()
   if (!upload) return <span className="n-pad-sound">{soundName(soundId) ?? 'Empty'}</span>
   return (
     <span className={`n-pad-sound n-pad-sound-${state ?? 'loading'}`}>
@@ -343,7 +322,7 @@ export function Unlock() {
 export function Header({ slug, status }: { slug: string; status: ConnectionStatus }) {
   const { jam, me } = useSession()
   const people = usePeople(jam.awareness, me)
-  const shade = useShade()
+  const shade = useSwatch()
   const [copied, setCopied] = useState(false)
   return (
     <header className="n-header">

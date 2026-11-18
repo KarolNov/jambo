@@ -70,7 +70,8 @@
         "src/board/identity.ts",
         "src/board/session.ts",
         "src/board/presence.ts",
-        "src/board/colors.ts"
+        "src/board/colors.ts",
+        "src/theme/**"
       ],
       "specVersion": "82c8f9d0d602a868",
       "anchorsFiles": {

@@ -14,18 +14,19 @@ import { useSession } from '../session'
 import { Transport } from '../Transport'
 import { useRecorderState } from '../useEngineState'
 import { Select } from './Menu'
-import { Header, SoundEditor, Unlock, usePlayhead, useShade } from './shared'
-import { useTheme } from './Switcher'
+import { useSwatch } from '../colors'
+import { useThemedPage } from '../../theme/theme'
+import { Header, SoundEditor, Unlock, usePlayhead } from './shared'
 import './neumo.css'
 
 export default function Neumo({ slug, status }: { slug: string; status: ConnectionStatus }) {
-  const theme = useTheme()
+  useThemedPage()
   const tracks = useAtomValue(tracksAtom)
   const bpm = useAtomValue(bpmAtom)
   const state = useRecorderState()
   const [editing, setEditing] = useState(false)
   return (
-    <div className="neumo neumo-b" data-theme={theme}>
+    <div className="neumo neumo-b">
       <main className="b-page">
         <Header slug={slug} status={status} />
         <Unlock />
@@ -81,7 +82,7 @@ function Channel({ id, track }: { id: string; track: Track }) {
     board.track(id).set(patch)
   const row = useRef<HTMLDivElement>(null)
   usePlayhead(id, row)
-  const shade = useShade()
+  const shade = useSwatch()
   const beats = track.bars * 4
   return (
     <div

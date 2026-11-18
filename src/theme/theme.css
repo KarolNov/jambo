@@ -1,0 +1,95 @@
+/*
+ * The soft console's theme. Colour tokens (--bg, --hi, --lo, --text, --muted, --accent,
+ * --accent-2, --flat, --line) are set on <html> by theme.ts from palette.ts while a themed page is
+ * mounted, together with data-theme. These rules only apply then.
+ */
+
+/* Depth, built from the theme's shadow pair: raised = you can press it, inset = it holds a value
+   or is pressed in. Floating things (menus) add a real drop shadow on top. */
+:root[data-theme] {
+  --raise: -6px -6px 14px var(--hi), 6px 6px 14px var(--lo);
+  --raise-sm: -3px -3px 7px var(--hi), 3px 3px 7px var(--lo);
+  --raise-lg: -12px -12px 28px var(--hi), 12px 12px 28px var(--lo);
+  --inset: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi);
+  --inset-sm: inset 2px 2px 5px var(--lo), inset -2px -2px 5px var(--hi);
+  --float:
+    -6px -6px 16px var(--hi), 0 22px 48px -14px rgb(0 0 0 / 0.38), 0 4px 10px rgb(0 0 0 / 0.1);
+  background: var(--bg);
+  color: var(--text);
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+/* While the theme swaps, nothing animates on its own: the page crossfades as one. */
+:root.theme-switching *,
+:root.theme-switching *::before,
+:root.theme-switching *::after {
+  transition: none !important;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.28s;
+  animation-timing-function: ease-in-out;
+}
+
+/* The light/dark switch: an inset track, a raised knob over the current icon. Scoped under the
+   themed root so page-wide button styles don't reach it. */
+:root[data-theme] .theme-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 66px;
+  height: 34px;
+  padding: 0 7px;
+  border: none;
+  border-radius: 999px;
+  background: var(--bg);
+  box-shadow: var(--inset-sm);
+  cursor: pointer;
+}
+:root[data-theme] .theme-toggle:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--accent-2);
+}
+:root[data-theme] .theme-toggle-knob {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+  transition: transform 0.2s ease;
+}
+:root[data-theme] .theme-toggle[aria-checked='true'] .theme-toggle-knob {
+  transform: translateX(32px);
+}
+:root[data-theme] .theme-toggle svg {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+:root[data-theme] .theme-toggle svg:last-child {
+  margin-left: auto;
+}
+:root[data-theme] .theme-toggle[aria-checked='false'] svg:first-of-type,
+:root[data-theme] .theme-toggle[aria-checked='true'] svg:last-child {
+  stroke: var(--accent-2);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] .theme-toggle-knob {
+    transition: none;
+  }
+}
