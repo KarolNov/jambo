@@ -67,7 +67,7 @@ A take with no hits SHALL be discarded.
 
 ### Requirement: Every take is a track
 
-Each take SHALL become its own track, named after the recorder's colour and their count of tracks (for example `Teal 3`), at full level, unmuted, snapping to 1/16. Takes recorded at the same time by different people SHALL all be kept.
+Each take SHALL become its own track, named after the recorder's name in the jam and their count of tracks (for example `Groovy Otter 3`), at full level, unmuted, snapping to 1/16. Takes recorded at the same time by different people SHALL all be kept.
 
 - **Scenario: Two people record**
   - **WHEN** two people in a jam record and stop at overlapping times

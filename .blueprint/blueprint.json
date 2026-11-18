@@ -53,7 +53,7 @@
         "worker/sounds.ts",
         "worker/quota.ts"
       ],
-      "specVersion": "fe36fa15ffb9661c",
+      "specVersion": "cde90b607b940628",
       "anchorsFiles": {
         "src/board/doc.ts": "f03410fb7517",
         "worker/board.ts": "fa1292e11ec5",
@@ -77,7 +77,7 @@
         "src/ui/**",
         "src/board/console/**"
       ],
-      "specVersion": "0ea7375878e341eb",
+      "specVersion": "c8d194c603c96621",
       "anchorsFiles": {
         "src/board/Jam.tsx": "ddb0ab20402d",
         "src/board/colors.ts": "d21c9da0a9fa",
@@ -140,7 +140,7 @@
         "src/board/useTransport.ts",
         "src/board/transport.ts"
       ],
-      "specVersion": "20c6bb8c43dda1b3",
+      "specVersion": "64d9173b60f8dfaa",
       "anchorsFiles": {
         "shared/clock.ts": "1dd908e91d40",
         "src/audio/clock.ts": "c0378e84a7cb",
@@ -166,7 +166,7 @@
         "src/board/Uploads.tsx",
         "src/board/typing.ts"
       ],
-      "specVersion": "aa3025cd5d87c811",
+      "specVersion": "b4d7412062abcf71",
       "anchorsFiles": {
         "src/board/Uploads.tsx": "b6529025fd10",
         "src/board/console/Pads.tsx": "fcb1126e0677",

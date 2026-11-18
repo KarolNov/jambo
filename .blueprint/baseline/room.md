@@ -82,23 +82,23 @@ The room SHALL pass each client's presence to everyone else in the jam, and SHAL
 
 ### Requirement: Seats
 
-The room SHALL give each person in a jam a colour nobody else there has, while one of the eight is free. A person SHALL get the colour they already have in another tab, else their usual colour if it is free, else the first free one; past eight people, the least used colour. A colour SHALL be free again once everyone holding it has left.
+The room SHALL give each person in a jam a name nobody else there has, and a colour nobody else there has while one of the eight is free. A person SHALL get the name and colour they already have in another tab. Otherwise they SHALL get their usual name if nobody here has it, else a fresh adjective and animal nobody here has, comparing names without case; and their usual colour if it is free, else the first free one, and past eight people the least used colour. Names and colours SHALL be free again once everyone holding them has left.
 
-- **Scenario: Shared usual colour**
-  - **GIVEN** three people whose usual colour is Sky
+- **Scenario: Shared usual name and colour**
+  - **GIVEN** three people whose usual name is Groovy Otter and usual colour is Sky
   - **WHEN** they join one jam, one after another
-  - **THEN** they get Sky, Teal and Coral
+  - **THEN** they get Sky, Teal and Coral, the first stays Groovy Otter, and all three names differ
 - **Scenario: Second tab**
   - **WHEN** a person opens the jam in a second tab
-  - **THEN** it gets the colour they already have
+  - **THEN** it gets the name and colour they already have
 - **Scenario: Someone leaves**
-  - **GIVEN** the Sky person has left the jam
-  - **WHEN** someone whose usual colour is Sky joins
-  - **THEN** they get Sky
+  - **GIVEN** Groovy Otter in Sky has left the jam
+  - **WHEN** someone whose usual name is Groovy Otter and usual colour is Sky joins
+  - **THEN** they get Groovy Otter and Sky
 - **Scenario: Nine people**
   - **GIVEN** eight people in a jam, one per colour
   - **WHEN** a ninth joins
-  - **THEN** they get the least used colour, their usual one on a tie
+  - **THEN** they get the least used colour, their usual one on a tie, and a name nobody else there has
 
 ### Requirement: Sound storage
 
