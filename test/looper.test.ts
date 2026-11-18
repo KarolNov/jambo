@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { finishTake, hitsInWindow, nextBar, playBeat } from '../shared/looper'
+import {
+  barAt,
+  barStart,
+  finishTake,
+  hitsInWindow,
+  nextBar,
+  nextJamBar,
+  playBeat,
+  trackStart,
+} from '../shared/looper'
 
 const h = (beat: number, padId = 'r0c0') => ({ padId, beat })
 
@@ -62,6 +71,43 @@ describe('hitsInWindow', () => {
     const one = { bars: 1, hits: [h(0)], quantize: 0.25 }
     expect(hitsInWindow(two, 0, 120, 0, 4)).toHaveLength(1)
     expect(hitsInWindow(one, 0, 120, 0, 4)).toHaveLength(2)
+  })
+})
+
+describe('jam grid', () => {
+  // 120 bpm: a bar is 2000 ms of room time, bar 0 at the Unix epoch.
+  it('numbers bars from the epoch', () => {
+    expect(barAt(0, 120)).toBe(0)
+    expect(barAt(1999, 120)).toBe(0)
+    expect(barAt(2000, 120)).toBe(1)
+    expect(barStart(5, 120)).toBe(10_000)
+  })
+
+  it('finds the next bar, or the time itself on a bar line', () => {
+    expect(nextJamBar(3000, 120)).toBe(2)
+    expect(nextJamBar(4000, 120)).toBe(2)
+    expect(nextJamBar(4001, 120)).toBe(3)
+  })
+
+  it('agrees at present-day room times', () => {
+    const bar = 897_500_000
+    expect(barAt(barStart(bar, 120), 120)).toBe(bar)
+    expect(nextJamBar(barStart(bar, 120) + 1, 120)).toBe(bar + 1)
+  })
+
+  it('starts a track on its take bar, or on bar 0 without one', () => {
+    expect(trackStart({ startBar: 7 }, 120)).toBe(14_000)
+    expect(trackStart({}, 120)).toBe(0)
+  })
+
+  it('puts two clients on the same downbeat for a track from any time they join', () => {
+    const track = { bars: 2, hits: [h(0)], quantize: 0.25, startBar: 3 }
+    const start = trackStart(track, 120) / 1000
+    // Joining at 13.1 s and 17.9 s room time: both hear cycles on 6 + 4k seconds.
+    const a = hitsInWindow(track, start, 120, 13.1, 23).map((x) => x.time)
+    const b = hitsInWindow(track, start, 120, 17.9, 23).map((x) => x.time)
+    expect(a).toEqual([14, 18, 22])
+    expect(b).toEqual([18, 22])
   })
 })
 
