@@ -62,3 +62,20 @@ A client that loses its connection SHALL keep its local edits and merge them whe
   - **GIVEN** a connected client
   - **WHEN** its connection drops, it renames a track, and the connection comes back
   - **THEN** the rename reaches the others, and their edits made meanwhile reach it
+
+### Requirement: Jam clock source
+
+The room SHALL answer each client's clock request with its current time, so every client in a jam can agree one clock.
+
+- **Scenario: Clock request**
+  - **WHEN** a connected client sends a clock request
+  - **THEN** the room answers that client alone with the request's own timestamp and the room's current time
+
+### Requirement: Presence relay
+
+The room SHALL pass each client's presence to everyone else in the jam, and SHALL drop a client's presence when it disconnects.
+
+- **Scenario: Leave**
+  - **GIVEN** two clients in a jam
+  - **WHEN** one closes its connection
+  - **THEN** the other stops seeing its presence within a few seconds

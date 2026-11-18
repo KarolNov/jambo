@@ -47,3 +47,18 @@ The board SHALL show the jam's slug and a control that copies the jam's link, co
 - **Scenario: Copy link**
   - **WHEN** someone presses Copy link
   - **THEN** the jam's URL is on their clipboard and the button reads "Link copied" briefly
+
+### Requirement: Who's here
+
+The board SHALL list everyone connected to the jam, one entry per identity, each as their colour and colour name, with this person first and marked as you.
+
+- **Scenario: Someone joins**
+  - **GIVEN** one person in a jam
+  - **WHEN** a second person, in another browser, opens it
+  - **THEN** both boards list both people within a couple of seconds
+- **Scenario: Two tabs**
+  - **WHEN** someone opens the same jam in two tabs of one browser
+  - **THEN** others see them listed once
+- **Scenario: Someone leaves**
+  - **WHEN** a person closes the jam
+  - **THEN** they disappear from everyone else's list within a few seconds, or within about 30 seconds if their connection dropped

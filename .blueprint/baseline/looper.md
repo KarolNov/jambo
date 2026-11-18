@@ -25,11 +25,15 @@ A jam SHALL have one tempo, a whole number of BPM from 40 to 240 (default 100), 
 
 ### Requirement: Count-in
 
-Recording SHALL start with a one-bar count-in that clicks every beat, even with the metronome off. While loops are playing, the count-in SHALL start at the next bar, so the take stays in phase with them.
+Recording SHALL start with a one-bar count-in that clicks every beat, even with the metronome off. The count-in SHALL start at the jam's next bar, so every take is in phase with the jam.
 
 - **Scenario: Stop during the count-in**
   - **WHEN** someone presses record and stops before the count-in ends
   - **THEN** no track is added and the transport says nothing was recorded
+- **Scenario: Nothing looping**
+  - **GIVEN** a jam with no tracks
+  - **WHEN** someone presses record halfway through a jam bar
+  - **THEN** the count-in starts at the next jam bar, and the transport shows it is waiting until then
 
 ### Requirement: Record a take
 
@@ -71,15 +75,22 @@ Each take SHALL become its own track, named after the recorder's colour and thei
 
 ### Requirement: Loop playback
 
-Every unmuted track SHALL play in a loop at its level, aligned to the listener's own bar grid. Each listener has their own grid: people in a jam are not in time with each other's downbeats. A track the listener just recorded SHALL keep looping from where its take started, without a gap; any other new track SHALL start at the listener's next bar.
+Every unmuted track SHALL play in a loop at its level, on the jam's shared bar grid: everyone in a jam SHALL hear each loop's downbeats within 20 ms of each other. A track's loop SHALL start on the jam bar where its take began and repeat every length. A track someone else adds SHALL start playing right away, from its current point in the loop. A track the listener just recorded SHALL keep looping from where its take started, without a gap.
 
+- **Scenario: Same downbeat**
+  - **GIVEN** two people in a jam with a one-bar track
+  - **WHEN** both listen
+  - **THEN** they hear its first hit within 20 ms of each other on every loop
 - **Scenario: A track joins**
   - **GIVEN** a two-bar track playing
   - **WHEN** someone else adds a one-bar track mid-bar
-  - **THEN** it starts at the next bar and loops twice for each loop of the first
+  - **THEN** it plays right away from its current point in the loop, and loops twice for each loop of the first
 - **Scenario: Your own take**
   - **WHEN** someone stops a take
   - **THEN** their new loop carries on in time with what they just played
+- **Scenario: Join a playing jam**
+  - **WHEN** someone opens a jam whose loops are playing for others
+  - **THEN** they hear each loop at the same point in it as everyone else
 
 ### Requirement: Quantize
 
@@ -103,7 +114,7 @@ Anyone in the jam SHALL be able to mute, set the level (0 to 1.5) of, rename, ch
 
 ### Requirement: Metronome
 
-While it is on, the metronome SHALL click every beat of a take, and SHALL NOT click when nothing is being recorded. It SHALL be on by default, and each browser SHALL remember the setting.
+While it is on, the metronome SHALL click every beat of a take, on the jam's beats, and SHALL NOT click when nothing is being recorded. It SHALL be on by default, and each browser SHALL remember the setting.
 
 - **Scenario: Loops without clicks**
   - **GIVEN** the metronome is on and loops are playing
@@ -113,6 +124,21 @@ While it is on, the metronome SHALL click every beat of a take, and SHALL NOT cl
   - **GIVEN** the metronome is off
   - **WHEN** someone records
   - **THEN** only the count-in clicks
+- **Scenario: Two people record**
+  - **WHEN** two people in a jam record at the same time with the metronome on
+  - **THEN** their clicks land within 20 ms of each other
+
+### Requirement: Jam clock
+
+Each client SHALL agree its clock with the jam before its first take; until then the record control SHALL say it is syncing and SHALL NOT start a take. A client that goes offline SHALL keep playing on its last agreement.
+
+- **Scenario: Record right after opening**
+  - **WHEN** someone opens a jam and presses record before the clock is agreed
+  - **THEN** the record control says it is syncing, and recording can start once it is agreed (normally under a second)
+- **Scenario: Offline**
+  - **GIVEN** loops are playing
+  - **WHEN** the connection drops
+  - **THEN** the loops keep playing on the same downbeat
 
 ### Requirement: Start audio
 
