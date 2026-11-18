@@ -240,6 +240,14 @@ describe('agent runs', () => {
     client.close()
   })
 
+  it('refuses a run with no operations or more than 64', async () => {
+    const r = await room('funky-otter-ag14')
+    const error = { error: 'A run holds 1 to 64 operations' }
+    expect(await r.runAgentOps({ kind: 'Claude' }, [], 'Nothing')).toEqual(error)
+    expect(await r.runAgentOps({ kind: 'Claude' }, Array(65).fill(beat), 'Lots')).toEqual(error)
+    expect((await r.snapshot()).tracks).toEqual([])
+  })
+
   it('refuses a run without a summary', async () => {
     const r = await room('funky-otter-ag13')
     expect(await r.runAgentOps({ kind: 'Claude' }, [beat], ' ')).toEqual({

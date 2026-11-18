@@ -5,6 +5,7 @@ import { YServer } from 'y-partyserver'
 import * as Y from 'yjs'
 import {
   AGENT_AUTHOR_PREFIX,
+  AGENT_LIMITS,
   checkSummary,
   prepare,
   type Snapshot,
@@ -218,6 +219,8 @@ export class Board extends YServer<Env> {
   ): Promise<AgentRunResult | { error: string }> {
     const checked = checkSummary(summaryText)
     if ('error' in checked) return checked
+    if (calls.length < 1 || calls.length > AGENT_LIMITS.ops)
+      return { error: `A run holds 1 to ${AGENT_LIMITS.ops} operations` }
     const agent = await this.roster.join(hello, this.peopleSeats(), checked.summary)
     const prepared = prepare(calls, { id: agent.id, color: agent.color })
     const ops = prepared.flatMap((p) => ('op' in p ? [p.op] : []))

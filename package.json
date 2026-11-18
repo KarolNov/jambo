@@ -18,6 +18,8 @@
     "sounds:clean-preview": "node scripts/clean-preview-sounds.mjs"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "2.4.0",
+    "agents": "0.33.0",
     "duratom": "^0.1.0",
     "hono": "^4.13.19",
     "hono-party": "^2.1.0",
