@@ -2,6 +2,7 @@ import type { Hit, Track } from '../../shared/board'
 import { BEATS_PER_BAR } from '../../shared/board'
 import { barSeconds, beatSeconds, finishTake, hitsInWindow, nextBar } from '../../shared/looper'
 import { click, renderKit } from './synth'
+import { keepAwake, preferPlayback } from './session'
 
 const LOOKAHEAD = 0.12 // seconds of audio scheduled ahead
 const TICK_MS = 25
@@ -35,6 +36,8 @@ export class Engine {
   /** The board's tempo; it reaches `bpm` only between takes, so a take keeps one tempo. */
   private boardBpm = 100
   private starting?: Promise<void>
+  /** Stops resuming the context after iOS interrupts it. */
+  private sleep?: () => void
   private pads = new Map<string, string>()
   private playing = new Map<string, Playing>()
   /** Start times claimed for tracks this client just recorded, so they keep looping seamlessly. */
@@ -65,7 +68,9 @@ export class Engine {
 
   /** Creates the context (still inside the gesture), renders the kit, then goes live all at once. */
   private async start() {
+    preferPlayback()
     const ctx = new AudioContext({ latencyHint: 'interactive' })
+    this.sleep = keepAwake(ctx)
     const master = ctx.createGain()
     master.gain.value = 0.8
     master.connect(ctx.destination)
@@ -80,6 +85,7 @@ export class Engine {
   }
 
   dispose() {
+    this.sleep?.()
     clearInterval(this.timer)
     void this.ctx?.close()
   }
