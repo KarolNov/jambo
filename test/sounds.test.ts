@@ -35,7 +35,7 @@ function upload(
       'CF-Connecting-IP': opts.ip ?? newAddress(),
       [UPLOAD_HEADERS.name]: encodeURIComponent(opts.name ?? 'Vox'),
       [UPLOAD_HEADERS.author]: 'me',
-      [UPLOAD_HEADERS.color]: '#2ab7ca',
+      [UPLOAD_HEADERS.color]: 'teal',
       ...opts.headers,
     },
   })

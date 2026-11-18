@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { listPeople } from '../src/board/presence'
 
-const me = { id: 'me', color: '#2ab7ca', colorName: 'Teal' }
-const coral = { id: 'c', color: '#ff6b6b', colorName: 'Coral' }
+const me = { id: 'me', color: 'teal' } as const
+const coral = { id: 'c', color: 'coral' } as const
 
 describe('listPeople', () => {
   it('lists you first, then everyone else once per identity', () => {
@@ -15,9 +15,14 @@ describe('listPeople', () => {
   })
 
   it('skips states without a readable person', () => {
-    expect(listPeople([{}, null, { person: { id: 'x' } }, { person: coral }], me)).toEqual([
-      me,
-      coral,
-    ])
+    const unknown = { person: { id: 'x', color: 'beige' } }
+    expect(listPeople([{}, null, { person: { id: 'x' } }, unknown, { person: coral }], me)).toEqual(
+      [me, coral],
+    )
+  })
+
+  it('reads a person from an older client, whose colour is a hex, by colour name', () => {
+    const old = { person: { id: 'c', color: '#FF6B6B', colorName: 'Coral' } }
+    expect(listPeople([old], me)).toEqual([me, coral])
   })
 })

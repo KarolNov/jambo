@@ -1,6 +1,7 @@
 import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState } from 'react'
 import { BEATS_PER_BAR, QUANTIZE, type Track } from '../../shared/board'
+import { swatch } from './colors'
 import { tracksAtom } from './model'
 import { useSession } from './session'
 
@@ -57,7 +58,10 @@ function TrackRow({ id, track }: { id: string; track: Track }) {
   const length = track.bars * BEATS_PER_BAR
 
   return (
-    <li className={`track ${track.mute ? 'muted' : ''}`} style={{ borderLeftColor: track.color }}>
+    <li
+      className={`track ${track.mute ? 'muted' : ''}`}
+      style={{ borderLeftColor: swatch(track.color) }}
+    >
       <div className="track-top">
         <input
           className="track-name"
@@ -92,7 +96,7 @@ function TrackRow({ id, track }: { id: string; track: Track }) {
           <span
             key={i}
             className="hit"
-            style={{ left: `${(h.beat / length) * 100}%`, background: track.color }}
+            style={{ left: `${(h.beat / length) * 100}%`, background: swatch(track.color) }}
           />
         ))}
         <div ref={head} className="playhead" />

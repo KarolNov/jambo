@@ -20,7 +20,7 @@ const upload = (slug: string) =>
       'CF-Connecting-IP': `198.51.100.${++address}`,
       [UPLOAD_HEADERS.name]: 'Vox',
       [UPLOAD_HEADERS.author]: 'me',
-      [UPLOAD_HEADERS.color]: '#2ab7ca',
+      [UPLOAD_HEADERS.color]: 'teal',
     },
   })
 
