@@ -16,3 +16,14 @@
 :root[data-theme] .console .debug dd {
   margin: 0;
 }
+
+/* "AI" as a superscript after a name: an agent in Who's here, a loop an agent added. */
+:root[data-theme] .console-ai {
+  margin-left: 1px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 0;
+  color: var(--accent-2);
+  vertical-align: 0.5em;
+}

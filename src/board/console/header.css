@@ -67,34 +67,108 @@
   font-size: 13px;
   color: var(--muted);
 }
+/* The AI mark hugs the name: the row's gap pulled back, raised to the top of the name. */
+:root[data-theme] .console-people .console-ai {
+  align-self: flex-start;
+  margin-left: -4px;
+  line-height: 1;
+}
 :root[data-theme] .console-people.is-crowded {
   gap: 6px;
 }
-:root[data-theme] .console-people.is-crowded .console-person-name {
+:root[data-theme] .console-people.is-crowded .console-person-name,
+:root[data-theme] .console-people.is-crowded .console-ai {
   display: none;
 }
 :root[data-theme] .console-person {
   width: 14px;
   height: 14px;
   border-radius: 50%;
+  background: var(--c);
   box-shadow:
     0 0 0 3px var(--bg),
     var(--raise-sm);
 }
+/* An agent: its dot glows, a gradient from its colour turning slowly around it. The glow is drawn
+   under the dot (::after), not under the element, so it never covers it. */
+:root[data-theme] .console-people .is-agent .console-person {
+  position: relative;
+  margin: 0 2px;
+  background: none;
+  box-shadow: none;
+}
+:root[data-theme] .console-people .is-agent .console-person::before,
+:root[data-theme] .console-people .is-agent .console-person::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+}
+:root[data-theme] .console-people .is-agent .console-person::before {
+  inset: -4px;
+  background: conic-gradient(
+    var(--c),
+    color-mix(in oklab, var(--c), var(--accent-2) 70%),
+    transparent 50%,
+    color-mix(in oklab, var(--c), var(--hi) 40%),
+    var(--c)
+  );
+  filter: blur(2.5px);
+  animation: console-agent-glow 4s linear infinite;
+}
+:root[data-theme] .console-people .is-agent .console-person::after {
+  inset: 0;
+  background: var(--c);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+@keyframes console-agent-glow {
+  to {
+    transform: rotate(1turn);
+  }
+}
 
+/* The connection, as a lit LED and a word in the same colour: steady while live, pulsing while it
+   connects, dim when offline. Read-only, so nothing about it looks pressable. */
 :root[data-theme] .console-status {
+  --led: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: 12px;
   font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 999px;
-  color: var(--muted);
-  box-shadow: var(--inset-sm);
+  color: var(--led);
+}
+:root[data-theme] .console-status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--led);
+  box-shadow: 0 0 6px 1px color-mix(in oklab, var(--led), transparent 40%);
 }
 :root[data-theme] .console-status-connected {
-  color: var(--accent-2);
+  --led: var(--accent-2);
+}
+:root[data-theme] .console-status-connecting::before {
+  animation: console-led-pulse 1.1s ease-in-out infinite alternate;
 }
 :root[data-theme] .console-status-offline {
-  color: var(--accent);
+  --led: var(--accent);
+}
+:root[data-theme] .console-status-offline::before {
+  box-shadow: none;
+  opacity: 0.6;
+}
+@keyframes console-led-pulse {
+  from {
+    opacity: 0.25;
+    box-shadow: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] .console-people .is-agent .console-person::before,
+  :root[data-theme] .console-status-connecting::before {
+    animation: none;
+  }
 }
 
 /* Phone width: dots only, a tighter bar. */
@@ -104,7 +178,8 @@
     padding: 12px 14px;
     gap: 10px 12px;
   }
-  :root[data-theme] .console-person-name {
+  :root[data-theme] .console-person-name,
+  :root[data-theme] .console-people .console-ai {
     display: none;
   }
   :root[data-theme] .console-header-end {

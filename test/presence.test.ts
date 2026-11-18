@@ -41,6 +41,29 @@ describe('reading people', () => {
   })
 })
 
+describe('agents', () => {
+  const room = {
+    agents: [
+      { id: 'a1', name: 'Groovy Claude', color: 'sky', kind: 'Claude', summary: 'Beat' },
+      { id: 'a2', name: 'Mellow Codex', color: 'pink', kind: 'Codex' },
+    ],
+  }
+
+  it('lists the agents the room publishes after people, marked as agents', () => {
+    expect(listPeople([room, { person: coral }], me)).toEqual([
+      me,
+      coral,
+      { id: 'agent:a1', name: 'Groovy Claude', color: 'sky', agent: { kind: 'Claude' } },
+      { id: 'agent:a2', name: 'Mellow Codex', color: 'pink', agent: { kind: 'Codex' } },
+    ])
+  })
+
+  it('skips agents it cannot read', () => {
+    const bad = { agents: [{ id: 'x', color: 'sky' }, { name: 'No Id', color: 'sky' }, null] }
+    expect(listPeople([bad], me)).toEqual([me])
+  })
+})
+
 describe('joinPresence', () => {
   it('shows the name and colour the room seats you with, and leaves when you do', () => {
     const awareness = new Awareness(new Y.Doc())
