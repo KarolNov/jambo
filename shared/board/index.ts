@@ -1,4 +1,4 @@
-export { apply, type Origin } from './apply'
+export { apply, countUploads, type Origin } from './apply'
 export { Op, TrackPatch, type Issue, type OpResult } from './ops'
 export * from './schema'
 export { board, newId, type Board } from './sdk'

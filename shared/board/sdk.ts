@@ -23,6 +23,8 @@ export function board(doc: Y.Doc, origin: Origin) {
     pad: (padId: string) => ({
       assign: (soundId: string) => one({ op: 'assignPad', padId, soundId }),
     }),
+    /** Moves every pad on sound `from` to sound `to`. Tracks follow, since they hit pads. */
+    replaceSound: (from: string, to: string) => one({ op: 'replaceSound', from, to }),
     addTrack: (id: string, track: Track) => one({ op: 'addTrack', id, track }),
     track: (id: string) => ({
       set: (patch: TrackPatch) => one({ op: 'setTrack', id, patch }),

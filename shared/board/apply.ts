@@ -1,9 +1,9 @@
 import { isMap } from 'duratom'
 import { create, read, write } from 'duratom/core'
 import * as Y from 'yjs'
-import { SOUND_IDS } from '../sounds'
+import { isUploadId, PAD_KEYS, SOUND_IDS, UPLOADS } from '../sounds'
 import { type Issue, Op, type OpResult } from './ops'
-import { LIMITS, Meta, Pad, ROOTS, SHAPES, Track } from './schema'
+import { LIMITS, Meta, Pad, ROOTS, SHAPES, Sound, Track } from './schema'
 
 /** Who made a change: tagged on the transaction, so undo and presence can tell people apart. */
 export type Origin = { kind: 'user' | 'ai' | 'system'; id: string }
@@ -34,12 +34,46 @@ const fromResult = (result: { issues?: readonly SchemaIssue[] }): OpResult =>
 export function apply(doc: Y.Doc, ops: readonly unknown[], origin: Origin): OpResult[] {
   const results: OpResult[] = []
   doc.transact(() => {
-    for (const raw of ops) results.push(applyOne(doc, raw))
+    for (const raw of ops) results.push(applyOne(doc, raw, origin))
   }, origin)
   return results
 }
 
-function applyOne(doc: Y.Doc, raw: unknown): OpResult {
+const isListedSound = (sounds: Y.Map<unknown>, id: string) => {
+  const node = sounds.get(id)
+  const s = isMap(node) ? read(Sound, SHAPES.sound, node) : undefined
+  return !!s && !s.issues
+}
+
+/** How many uploads a jam lists: the count `addSound` holds to `UPLOADS.perJam`. */
+export function countUploads(doc: Y.Doc): number {
+  const sounds = doc.getMap<unknown>(ROOTS.sounds)
+  let n = 0
+  sounds.forEach((_, id) => isListedSound(sounds, id) && n++)
+  return n
+}
+
+const KEY_ORDER = PAD_KEYS.join('').toUpperCase()
+const keyOrder = (key: string) => KEY_ORDER.indexOf(key)
+
+/** Operations only the room may apply: it stores and deletes the audio they list. */
+const ROOM_ONLY = new Set<Op['op']>(['addSound', 'removeSound', 'expireSounds'])
+
+/**
+ * Pads whose stored sound is `soundId`, readable or not, as [pad id, upper-case key] in key
+ * order. Reads the raw field, so a pad that fails its schema still counts as using the sound.
+ */
+function padsUsing(pads: Y.Map<unknown>, soundId: string): [string, string][] {
+  const out: [string, string][] = []
+  pads.forEach((node, padId) => {
+    if (!isMap(node) || node.get('soundId') !== soundId) return
+    const key = node.get('key')
+    out.push([padId, typeof key === 'string' ? key.toUpperCase() : padId])
+  })
+  return out.sort(([, a], [, b]) => keyOrder(a) - keyOrder(b))
+}
+
+function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
   const parsed = Op.safeParse(raw)
   if (!parsed.success) {
     return {
@@ -48,9 +82,14 @@ function applyOne(doc: Y.Doc, raw: unknown): OpResult {
     }
   }
   const op = parsed.data
+  if (ROOM_ONLY.has(op.op) && origin.kind !== 'system')
+    return fail(`Only the room can apply ${op.op}`)
   const meta = doc.getMap<unknown>(ROOTS.meta)
   const pads = doc.getMap<unknown>(ROOTS.pads)
   const tracks = doc.getMap<unknown>(ROOTS.tracks)
+  const sounds = doc.getMap<unknown>(ROOTS.sounds)
+  const isListed = (id: string) => isListedSound(sounds, id)
+  const uploadCount = () => countUploads(doc)
   // Only readable tracks count: the UI can't see or remove the rest.
   const trackCount = () => {
     let n = 0
@@ -69,7 +108,8 @@ function applyOne(doc: Y.Doc, raw: unknown): OpResult {
     case 'assignPad': {
       const node = pads.get(op.padId)
       if (!isMap(node)) return fail(`No pad ${op.padId}`, ['padId'])
-      if (!SOUND_IDS.has(op.soundId)) return fail(`No sound ${op.soundId}`, ['soundId'])
+      if (!SOUND_IDS.has(op.soundId) && !isListed(op.soundId))
+        return fail(`No sound ${op.soundId}`, ['soundId'])
       const current = read(Pad, SHAPES.pad, node)
       if (!current || current.issues) return fail(`Pad ${op.padId} is unreadable`, ['padId'])
       return fromResult(write(Pad, SHAPES.pad, node, { ...current.value, soundId: op.soundId }))
@@ -91,6 +131,41 @@ function applyOne(doc: Y.Doc, raw: unknown): OpResult {
     case 'removeTrack': {
       if (!tracks.has(op.id)) return fail(`No track ${op.id}`, ['id'])
       tracks.delete(op.id)
+      return { ok: true }
+    }
+    case 'addSound': {
+      if (!isUploadId(op.id)) return fail(`${op.id} is not an upload id`, ['id'])
+      if (sounds.has(op.id)) return fail(`Sound ${op.id} already exists`, ['id'])
+      if (uploadCount() >= UPLOADS.perJam)
+        return fail(`A jam holds at most ${UPLOADS.perJam} uploads`)
+      return fromResult(create(Sound, SHAPES.sound, sounds, op.id, op.sound))
+    }
+    case 'removeSound': {
+      if (!sounds.has(op.id)) return fail(`No sound ${op.id}`, ['id'])
+      const keys = padsUsing(pads, op.id).map(([, key]) => key)
+      if (keys.length > 0) {
+        return fail(
+          `Sound ${op.id} is on ${keys.length === 1 ? 'pad' : 'pads'} ${keys.join(', ')}`,
+          ['id'],
+        )
+      }
+      sounds.delete(op.id)
+      return { ok: true }
+    }
+    case 'expireSounds': {
+      for (const id of [...sounds.keys()]) sounds.delete(id)
+      return { ok: true }
+    }
+    case 'replaceSound': {
+      if (!SOUND_IDS.has(op.to) && !isListed(op.to)) return fail(`No sound ${op.to}`, ['to'])
+      for (const [padId] of padsUsing(pads, op.from)) {
+        const node = pads.get(padId)
+        if (!isMap(node)) continue
+        const current = read(Pad, SHAPES.pad, node)
+        if (!current || current.issues) continue
+        const written = write(Pad, SHAPES.pad, node, { ...current.value, soundId: op.to })
+        if (written.issues) return fromResult(written)
+      }
       return { ok: true }
     }
   }

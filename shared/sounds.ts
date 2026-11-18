@@ -29,6 +29,56 @@ export const SOUND_IDS = new Set<string>(SOUNDS.map((s) => s.id))
 
 export const soundName = (id: string) => SOUNDS.find((s) => s.id === id)?.name
 
+/**
+ * Limits for sounds people upload to a jam. The browser turns every upload into 16-bit mono WAV
+ * at `sampleRate`, so `maxSeconds` of it fits in `maxBytes` with room for the header.
+ */
+export const UPLOADS = {
+  maxSeconds: 10,
+  maxBytes: 900_000,
+  perJam: 32,
+  sampleRate: 44_100,
+  /** The largest file the browser will try to decode before it is converted. */
+  maxFileBytes: 20 * 1024 * 1024,
+} as const
+
+/** Header names for an upload's details, sent with the WAV as the request body. */
+export const UPLOAD_HEADERS = {
+  name: 'X-Sound-Name',
+  author: 'X-Sound-Author',
+  color: 'X-Sound-Color',
+} as const
+
+/**
+ * Whether the app's sound budget allows uploads and downloads. Uploads pause when storage is
+ * nearly full or this month's writes are nearly spent; downloads pause when this month's reads are.
+ */
+export interface UploadStatus {
+  uploads: 'open' | 'storage' | 'writes'
+  reads: 'open' | 'reads'
+}
+
+/** What to tell people while uploads or downloads are paused. */
+export const PAUSED_MESSAGES = {
+  storage:
+    'Uploads are paused: jambo’s sound storage is full. Removing unused uploads frees space.',
+  writes: 'Uploads are paused until next month: jambo has used this month’s upload budget.',
+  reads:
+    'Uploaded sounds can’t load until next month: jambo has used this month’s download budget.',
+} as const
+
+const UPLOAD_ID = /^u-[a-z2-7]{12}$/
+const BASE32 = 'abcdefghijklmnopqrstuvwxyz234567'
+
+/** Whether `id` has the form of an uploaded sound's id. No kit id has it. */
+export const isUploadId = (id: string) => UPLOAD_ID.test(id)
+
+/** A fresh upload id: `u-` and 12 random base32 characters. Only the jam's room mints them. */
+export function newUploadId(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(12))
+  return `u-${Array.from(bytes, (b) => BASE32[b & 31]).join('')}`
+}
+
 /** Keyboard keys for the 4×4 grid, row by row. */
 export const PAD_KEYS = ['1234', 'qwer', 'asdf', 'zxcv'] as const
 

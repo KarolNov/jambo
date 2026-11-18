@@ -47,6 +47,16 @@ pnpm deploy       # vite build, then wrangler deploy to workers.dev
 
 The first deploy asks Wrangler to log in to your Cloudflare account.
 
+Uploaded sounds live in R2: `jambo-sounds` for production, and `jambo-sounds-preview`, shared by every pull-request preview. Once a PR has merged, clear what its preview uploaded:
+
+```bash
+pnpm sounds:clean-preview                                 # dry run: what would go
+pnpm sounds:clean-preview --yes                           # empty the preview bucket
+pnpm sounds:clean-preview --prefix jams/<slug>/ --yes     # or just one jam
+```
+
+It only ever touches the preview bucket named in `wrangler.jsonc`, through Wrangler's remote bindings and your `wrangler login`. Emptying the bucket also clears sounds other open PRs' previews uploaded. It only deletes audio: those previews' jams still list the sounds (they show as missing), and their upload quota still counts the deleted bytes.
+
 ## Specs
 
 Specs, blueprints and tasks live in Notion: [Specs & blueprints](https://app.notion.com/p/41b43cce21f281a8aedffc816ffb7b69). `.blueprint/blueprint.json` maps each capability to its code.

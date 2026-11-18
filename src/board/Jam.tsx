@@ -2,10 +2,11 @@ import { Provider, useAtomValue } from 'jotai'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { JamClock } from '../audio/clock'
 import { Engine } from '../audio/engine'
+import { SampleLoader } from '../audio/samples'
 import { Debug } from './Debug'
 import { type ConnectionStatus, onStatus, openJam } from './doc'
 import { identity } from './identity'
-import { bpmAtom, padsAtom, tracksAtom } from './model'
+import { bpmAtom, padsAtom, soundsAtom, tracksAtom } from './model'
 import { Pads } from './Pads'
 import { joinPresence, usePeople } from './presence'
 import { makeBoard, type Session, SessionContext, useSession } from './session'
@@ -20,7 +21,7 @@ export function Jam({ slug }: { slug: string }) {
   useEffect(() => {
     const jam = openJam(slug)
     const clock = new JamClock(jam.provider)
-    const engine = new Engine(clock)
+    const engine = new Engine(clock, new SampleLoader(slug))
     const me = identity()
     setSession({ jam, engine, me, board: makeBoard(jam, me) })
     const stop = onStatus(jam.provider, setStatus)
@@ -50,9 +51,15 @@ function EngineFeed({ engine }: { engine: Engine }) {
   const bpm = useAtomValue(bpmAtom)
   const pads = useAtomValue(padsAtom)
   const tracks = useAtomValue(tracksAtom)
+  const sounds = useAtomValue(soundsAtom)
   useEffect(() => {
-    engine.update({ bpm, pads: new Map([...pads].map(([id, p]) => [id, p.soundId])), tracks })
-  }, [engine, bpm, pads, tracks])
+    engine.update({
+      bpm,
+      pads: new Map([...pads].map(([id, p]) => [id, p.soundId])),
+      tracks,
+      uploads: new Set(sounds.keys()),
+    })
+  }, [engine, bpm, pads, tracks, sounds])
   return null
 }
 
@@ -121,7 +128,7 @@ function Looper({ slug, status }: { slug: string; status: ConnectionStatus }) {
       <div className="looper">
         <section className="left">
           <Transport />
-          <Pads />
+          <Pads slug={slug} />
         </section>
         <section className="right">
           <Tracks />

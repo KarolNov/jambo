@@ -1,15 +1,48 @@
 import { useAtomValue } from 'jotai'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SOUND_IDS, SOUNDS, soundName } from '../../shared/sounds'
-import { padsAtom } from './model'
+import { padsAtom, soundsAtom } from './model'
 import { useSession } from './session'
+import {
+  PausedNotice,
+  refreshBudget,
+  useBudget,
+  UploadDialog,
+  UploadsList,
+  type UploadTarget,
+  useFilePicker,
+  useSampleState,
+} from './Uploads'
 
-/** The 4×4 mini board: click or press a pad's key to play it; edit mode assigns sounds. */
-export function Pads() {
+const CATEGORIES = [...new Set(SOUNDS.map((s) => s.category))]
+const UPLOAD_OPTION = '__upload'
+
+/**
+ * The 4×4 mini board: click or press a pad's key to play it; edit mode assigns sounds from the
+ * kit or the jam's uploads, and uploads new ones.
+ */
+export function Pads({ slug }: { slug: string }) {
   const { engine, board } = useSession()
   const pads = useAtomValue(padsAtom)
+  const sounds = useAtomValue(soundsAtom)
   const [editing, setEditing] = useState(false)
   const [lit, setLit] = useState<string>()
+  const [pending, setPending] = useState<{ file: File; target: UploadTarget }>()
+  // Where the next picked file goes. A ref, so the picker opens within the click (Safari needs that).
+  const target = useRef<UploadTarget>({ kind: 'list' })
+  const picker = useFilePicker((file) => setPending({ file, target: target.current }))
+  const pick = (t: UploadTarget) => {
+    // One upload at a time: a new pick would unmount a dialog whose upload is still running.
+    if (pending) return
+    target.current = t
+    picker.open()
+  }
+  const uploadsOpen = useBudget().uploads === 'open'
+  // Check the app's sound budget on opening the jam and on each switch into Change sounds.
+  useEffect(() => {
+    void refreshBudget()
+  }, [editing])
+  const known = (id: string) => SOUND_IDS.has(id) || sounds.has(id)
 
   const hit = (padId: string) => {
     if (!engine.ready) void engine.unlock()
@@ -46,23 +79,40 @@ export function Pads() {
             {editing ? (
               <select
                 aria-label={`Sound for pad ${pad.key.toUpperCase()}`}
-                value={SOUND_IDS.has(pad.soundId) ? pad.soundId : ''}
+                value={known(pad.soundId) ? pad.soundId : ''}
                 onChange={(e) => {
+                  if (e.target.value === UPLOAD_OPTION) return pick({ kind: 'pad', padId: id })
                   const r = board.pad(id).assign(e.target.value)
                   if (!r.ok) console.warn(r.issues)
                 }}
               >
-                {!SOUND_IDS.has(pad.soundId) && <option value="">(empty)</option>}
-                {SOUNDS.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
+                {!known(pad.soundId) && <option value="">(empty)</option>}
+                {CATEGORIES.map((c) => (
+                  <optgroup key={c} label={c[0]!.toUpperCase() + c.slice(1)}>
+                    {SOUNDS.filter((s) => s.category === c).map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
+                {sounds.size > 0 && (
+                  <optgroup label="Uploads">
+                    {[...sounds].map(([sid, s]) => (
+                      <option key={sid} value={sid}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                <option value={UPLOAD_OPTION} disabled={!uploadsOpen || !!pending}>
+                  {uploadsOpen ? 'Upload a sound…' : 'Uploads paused'}
+                </option>
               </select>
             ) : (
               <button type="button" onPointerDown={() => hit(id)}>
                 <span className="pad-key">{pad.key.toUpperCase()}</span>
-                <span className="pad-sound">{soundName(pad.soundId) ?? 'Empty'}</span>
+                <PadSound soundId={pad.soundId} />
               </button>
             )}
           </div>
@@ -71,7 +121,34 @@ export function Pads() {
       <button type="button" className="link" onClick={() => setEditing((e) => !e)}>
         {editing ? 'Done' : 'Change sounds'}
       </button>
+      {picker.element}
+      {pending && (
+        <UploadDialog
+          key={pending.file.name + pending.file.lastModified}
+          slug={slug}
+          file={pending.file}
+          target={pending.target}
+          onClose={() => setPending(undefined)}
+        />
+      )}
+      {editing && <UploadsList slug={slug} onPick={pick} uploading={!!pending} />}
+      {!editing && sounds.size > 0 && <PausedNotice uploads={false} />}
     </div>
+  )
+}
+
+/** A pad's sound name: the kit's, or an upload's (marked while loading or missing), else Empty. */
+function PadSound({ soundId }: { soundId: string }) {
+  const sounds = useAtomValue(soundsAtom)
+  const upload = sounds.get(soundId)
+  const state = useSampleState(soundId)
+  if (!upload) return <span className="pad-sound">{soundName(soundId) ?? 'Empty'}</span>
+  return (
+    <span className={`pad-sound ${state === 'ready' ? '' : `pad-sound-${state ?? 'loading'}`}`}>
+      {upload.name}
+      {state === 'loading' && <span className="sr-only"> (loading)</span>}
+      {state === 'missing' && <span className="pad-flag"> (missing)</span>}
+    </span>
   )
 }
 
