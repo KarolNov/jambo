@@ -50,6 +50,8 @@ export const Track = z
     quantize: z.union(
       QUANTIZE.map((q) => z.literal(q)) as [z.ZodLiteral<0>, ...z.ZodLiteral<number>[]],
     ),
+    /** The jam bar where the take began; its loop cycles from there. Set once, when recorded. */
+    startBar: z.number().int().min(0).optional(),
     /** Reserved for delay and stretch; always empty in v1. */
     effects: z.array(z.never()).max(0),
   })
