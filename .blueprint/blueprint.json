@@ -34,8 +34,36 @@
     "board": {
       "ref": null,
       "anchors": [
-        "src/board/**",
-        "!src/board/doc.ts"
+        "src/board/model.ts",
+        "src/board/Board.tsx",
+        "src/board/Jam.tsx"
+      ]
+    },
+    "board/ops": {
+      "ref": null,
+      "anchors": [
+        "shared/board/**"
+      ]
+    },
+    "looper": {
+      "ref": null,
+      "anchors": [
+        "src/audio/**",
+        "src/board/Transport.tsx",
+        "src/board/Tracks.tsx"
+      ]
+    },
+    "pads": {
+      "ref": null,
+      "anchors": [
+        "src/board/Pads.tsx"
+      ]
+    },
+    "sounds": {
+      "ref": null,
+      "anchors": [
+        "shared/sounds.ts",
+        "public/sounds/**"
       ]
     }
   },
@@ -47,6 +75,14 @@
       "status": "building",
       "baseCommit": null,
       "branch": "kn/scaffold-jambo"
+    },
+    "looper-v1": {
+      "brief": "https://app.notion.com/p/41b43cce21f281afa448e564e5c0ff27",
+      "review": "https://app.notion.com/p/41b43cce21f2811cade1fd5f84b0db30",
+      "tickets": "https://app.notion.com/p/41b43cce21f2811cade1fd5f84b0db30",
+      "status": "building",
+      "baseCommit": "7e16840ec3a7f114265c6324f61545e2bb587216",
+      "branch": "kn/looper-v1"
     }
   }
 }

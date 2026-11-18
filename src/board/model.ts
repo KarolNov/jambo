@@ -1,21 +1,33 @@
-import { collection, select } from 'duratom'
-import { z } from 'zod'
+import { collection, select, typedAtom } from 'duratom'
+import { atom } from 'jotai'
+import { BPM, Meta, Pad, ROOTS, SHAPES, Track } from '../../shared/board'
 
-/** A track on the board. The scaffold's toy model: just a name; clips come in a later blueprint. */
-export const Track = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, 'A track needs a name')
-    .max(60, 'Keep track names under 60 characters'),
+/** Reads of the board doc. Writes never go through these atoms: they go through the board SDK. */
+export const meta = typedAtom(select.map(ROOTS.meta), Meta, SHAPES.meta)
+export const pads = collection(select.map(ROOTS.pads), Pad, SHAPES.pad)
+export const tracks = collection(select.map(ROOTS.tracks), Track, SHAPES.track)
+
+export const bpmAtom = atom((get) => {
+  const m = get(meta)
+  return m && !m.issues ? m.value.bpm : BPM.default
 })
-export type Track = z.infer<typeof Track>
 
-/** Every track, in the root map `tracks`; `name` is shared text so two people can type in it. */
-export const tracks = collection(select.map('tracks'), Track, { name: 'text' })
+/** Every readable pad by id. */
+export const padsAtom = atom((get) => {
+  const out = new Map<string, Pad>()
+  for (const id of get(pads.ids)) {
+    const p = get(pads.item(id))
+    if (p && !p.issues) out.set(id, p.value)
+  }
+  return out
+})
 
-/** Track ids sort by creation time, so the collection's sorted `ids` is creation order. */
-export function newTrackId(now = Date.now()): string {
-  const random = crypto.getRandomValues(new Uint8Array(4))
-  return `${now.toString(36).padStart(9, '0')}-${Array.from(random, (b) => b.toString(16).padStart(2, '0')).join('')}`
-}
+/** Every readable track by id, in creation order. */
+export const tracksAtom = atom((get) => {
+  const out = new Map<string, Track>()
+  for (const id of get(tracks.ids)) {
+    const t = get(tracks.item(id))
+    if (t && !t.issues) out.set(id, t.value)
+  }
+  return out
+})

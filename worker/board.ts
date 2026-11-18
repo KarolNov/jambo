@@ -1,5 +1,6 @@
 import { YServer } from 'y-partyserver'
 import * as Y from 'yjs'
+import { seedBoard } from '../shared/board/seed'
 
 const SNAPSHOT_KEY = 'doc'
 
@@ -17,6 +18,7 @@ export class Board extends YServer<Env> {
   override async onLoad() {
     const saved = await this.ctx.storage.get<Uint8Array>(SNAPSHOT_KEY)
     if (saved) Y.applyUpdate(this.document, saved)
+    seedBoard(this.document)
   }
 
   // Called a moment after edits, and when the last client leaves.

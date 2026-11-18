@@ -2,7 +2,8 @@
 
 Collaborative music board on Cloudflare Workers: Hono + React SPA in one Worker (Vite + `@cloudflare/vite-plugin`), one `Board` Durable Object per jam (`y-partyserver`), client state in a Yjs doc read and written through duratom atoms.
 
-- Read and write the board doc only through duratom atoms (`src/board/model.ts`). Its rules are in `node_modules/duratom/skills/duratom/SKILL.md`.
+- Write to the board doc only through the board SDK in `shared/board/` (operations applied by `apply`); read it through duratom atoms (`src/board/model.ts`). duratom's rules are in `node_modules/duratom/skills/duratom/SKILL.md`.
+- New kinds of change get a new operation in `shared/board/ops.ts` with tests in `test/board.test.ts`, never a direct doc write.
 - Slug rules are shared by Worker and client in `shared/slug.ts`.
 - After changing `wrangler.jsonc`, run `pnpm cf-typegen` to regenerate `worker-configuration.d.ts`.
 - Check work with `pnpm typecheck`, `pnpm test` and `pnpm format:check`.
