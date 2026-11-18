@@ -44,7 +44,7 @@ export class Engine {
   /** The count-in's first click; clicks sound from here to the take's start even with the metronome off. */
   private countFrom = Infinity
   private countUntil = -Infinity
-  /** The metronome clicks every beat of this client's bar grid while it is on. */
+  /** While it is on, the metronome clicks every beat of a take. */
   metronome = loadMetronome()
   private listeners = new Set<() => void>()
 
@@ -243,13 +243,15 @@ export class Engine {
         this.play(this.pads.get(hit.padId), hit.time, p.gain)
       }
     }
-    // Clicks on every beat of the grid: always during the count-in, otherwise only with the metronome on.
+    // Clicks only around a take: always during the count-in, and while recording if the metronome is on.
     const beat = beatSeconds(this.bpm)
     const first = Math.ceil((from - this.origin) / beat - 1e-9)
     for (let n = Math.max(0, first); this.origin + n * beat < to; n++) {
       const at = this.origin + n * beat
       const counting = at >= this.countFrom - 1e-6 && at < this.countUntil - 1e-6
-      if (this.metronome || counting) click(ctx, this.master!, at, n % BEATS_PER_BAR === 0)
+      const recording = this.recorder.phase !== 'idle' && at >= this.countUntil - 1e-6
+      if (counting || (this.metronome && recording))
+        click(ctx, this.master!, at, n % BEATS_PER_BAR === 0)
     }
     this.scheduledUntil = to
   }
