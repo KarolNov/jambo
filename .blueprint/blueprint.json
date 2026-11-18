@@ -52,7 +52,7 @@
         "worker/sounds.ts",
         "worker/quota.ts"
       ],
-      "specVersion": "405eae33955b859a",
+      "specVersion": "fe36fa15ffb9661c",
       "anchorsFiles": {
         "src/board/doc.ts": "f03410fb7517",
         "worker/board.ts": "3de92380e081",
@@ -70,12 +70,13 @@
         "src/board/identity.ts",
         "src/board/session.ts",
         "src/board/presence.ts",
+        "src/board/seat.ts",
         "src/board/colors.ts",
         "src/theme/**",
         "src/ui/**",
         "src/board/console/**"
       ],
-      "specVersion": "0ffaa29add54f1dd",
+      "specVersion": "0ea7375878e341eb",
       "anchorsFiles": {
         "src/board/Jam.tsx": "7621d2e9045c",
         "src/board/colors.ts": "d21c9da0a9fa",

@@ -80,6 +80,26 @@ The room SHALL pass each client's presence to everyone else in the jam, and SHAL
   - **WHEN** one closes its connection
   - **THEN** the other stops seeing its presence within a few seconds
 
+### Requirement: Seats
+
+The room SHALL give each person in a jam a colour nobody else there has, while one of the eight is free. A person SHALL get the colour they already have in another tab, else their usual colour if it is free, else the first free one; past eight people, the least used colour. A colour SHALL be free again once everyone holding it has left.
+
+- **Scenario: Shared usual colour**
+  - **GIVEN** three people whose usual colour is Sky
+  - **WHEN** they join one jam, one after another
+  - **THEN** they get Sky, Teal and Coral
+- **Scenario: Second tab**
+  - **WHEN** a person opens the jam in a second tab
+  - **THEN** it gets the colour they already have
+- **Scenario: Someone leaves**
+  - **GIVEN** the Sky person has left the jam
+  - **WHEN** someone whose usual colour is Sky joins
+  - **THEN** they get Sky
+- **Scenario: Nine people**
+  - **GIVEN** eight people in a jam, one per colour
+  - **WHEN** a ninth joins
+  - **THEN** they get the least used colour, their usual one on a tie
+
 ### Requirement: Sound storage
 
 The room SHALL store each upload's audio outside the board, list it on the board only after the audio is stored, serve it to anyone with the jam's link, and delete it after its listing is removed or the jam goes 90 days unvisited. Served files SHALL be cacheable for a day, so a deleted file stops being served within a day. It SHALL refuse bodies over 900,000 bytes, anything other than 10 s or less of mono 16-bit 44.1 kHz WAV, more than 10 writes per minute from one address, more than 120 downloads that miss the edge cache per minute from one address, and uploads while it is deleting the jam's expired audio.
