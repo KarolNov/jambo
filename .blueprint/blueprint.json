@@ -142,7 +142,7 @@
       "brief": "https://app.notion.com/p/41b43cce21f281afa448e564e5c0ff27",
       "review": "https://app.notion.com/p/41b43cce21f2811cade1fd5f84b0db30",
       "tickets": "https://app.notion.com/p/41b43cce21f2811cade1fd5f84b0db30",
-      "status": "building",
+      "status": "applied",
       "baseCommit": "7e16840ec3a7f114265c6324f61545e2bb587216",
       "branch": "kn/looper-v1"
     }
