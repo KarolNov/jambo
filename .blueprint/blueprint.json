@@ -46,12 +46,13 @@
       ]
     },
     "looper": {
-      "ref": null,
+      "ref": "https://app.notion.com/p/41c43cce21f2816ba415d28e60bf80d5",
       "anchors": [
         "src/audio/**",
         "src/board/Transport.tsx",
         "src/board/Tracks.tsx"
-      ]
+      ],
+      "specVersion": "3c0dac07c2cce155"
     },
     "pads": {
       "ref": null,
