@@ -1,9 +1,7 @@
 import type { Connection, ConnectionContext } from 'partyserver'
 import { YServer } from 'y-partyserver'
 import * as Y from 'yjs'
-import { isMap } from 'duratom'
-import { read } from 'duratom/core'
-import { apply, ROOTS, SHAPES, Sound, type Origin } from '../shared/board'
+import { apply, countUploads, ROOTS, Sound, type Origin } from '../shared/board'
 import { seedBoard } from '../shared/board/seed'
 import { parseClockMessage, pong } from '../shared/clock'
 import { newUploadId, PAUSED_MESSAGES, UPLOADS } from '../shared/sounds'
@@ -13,8 +11,12 @@ import { quota } from './quota'
 const SNAPSHOT_KEY = 'doc'
 /** Set by the retention alarm when the doc wasn't loaded, so the next load unlists the uploads. */
 const EXPIRED_KEY = 'soundsExpired'
-/** Every upload id this jam has issued, so none is ever issued twice. */
+/**
+ * Every upload id this jam has issued, so none is ever issued twice. The value is the bytes the
+ * id's file holds against the budget, or 0 once they were given back.
+ */
 const ISSUED_PREFIX = 'issued:'
+const EXPIRING_MESSAGE = 'This jam’s old sounds are being cleared, try again in a moment'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 /** A jam's uploaded audio is deleted after this long with nobody connecting. */
@@ -53,6 +55,8 @@ export class Board extends YServer<Env> {
 
   /** Whether the doc is in memory: the retention alarm can fire without loading it. */
   private loaded = false
+  /** Whether the retention alarm is deleting this jam's audio right now. */
+  private expiring = false
 
   override async onLoad() {
     const saved = await this.ctx.storage.get<Uint8Array>(SNAPSHOT_KEY)
@@ -102,29 +106,43 @@ export class Board extends YServer<Env> {
     if (!parsed.success)
       return { ok: false, status: 400, error: parsed.error.issues[0]?.message ?? 'Invalid sound' }
     const sounds = this.document.getMap<unknown>(ROOTS.sounds)
-    if (sounds.size >= UPLOADS.perJam)
+    if (countUploads(this.document) >= UPLOADS.perJam)
       return { ok: false, status: 409, error: `This jam already has ${UPLOADS.perJam} sounds` }
+    if (this.expiring) return { ok: false, status: 503, error: EXPIRING_MESSAGE }
 
     // The app-wide budget: refused once storage or this month's writes run low.
-    const verdict = await quota(this.env).reserveUpload(input.wav.byteLength)
+    const bytes = input.wav.byteLength
+    const verdict = await quota(this.env).reserveUpload(bytes)
     if (verdict !== 'open') return { ok: false, status: 503, error: PAUSED_MESSAGES[verdict] }
 
-    let id = newUploadId()
-    while (sounds.has(id) || (await this.ctx.storage.get(ISSUED_PREFIX + id))) id = newUploadId()
-    await this.ctx.storage.put(ISSUED_PREFIX + id, true)
-
-    const key = soundKey(this.name, id)
+    let id: string
     try {
-      await this.env.SOUND_FILES.put(key, input.wav, { httpMetadata: { contentType: 'audio/wav' } })
+      id = newUploadId()
+      while (sounds.has(id) || (await this.ctx.storage.get(ISSUED_PREFIX + id))) id = newUploadId()
+      // From here the room's record owns the reserved bytes; releasing goes through it.
+      await this.ctx.storage.put(ISSUED_PREFIX + id, bytes)
     } catch (e) {
-      await quota(this.env).release(input.wav.byteLength)
+      await quota(this.env).release(bytes)
       throw e
     }
-    const [result] = apply(this.document, [{ op: 'addSound', id, sound: parsed.data }], ROOM)
-    if (!result?.ok) {
-      await this.env.SOUND_FILES.delete(key)
-      await quota(this.env).release(input.wav.byteLength)
-      return { ok: false, status: 409, error: result?.issues[0]?.message ?? 'Not added' }
+
+    const key = soundKey(this.name, id)
+    let added = false
+    try {
+      await this.env.SOUND_FILES.put(key, input.wav, { httpMetadata: { contentType: 'audio/wav' } })
+      // Retention started while the file was going up: it would unlist this sound too.
+      if (this.expiring) {
+        await this.env.SOUND_FILES.delete(key)
+        return { ok: false, status: 503, error: EXPIRING_MESSAGE }
+      }
+      const [result] = apply(this.document, [{ op: 'addSound', id, sound: parsed.data }], ROOM)
+      if (!result?.ok) {
+        await this.env.SOUND_FILES.delete(key)
+        return { ok: false, status: 409, error: result?.issues[0]?.message ?? 'Not added' }
+      }
+      added = true
+    } finally {
+      if (!added) await this.releaseStored(id)
     }
     await this.keepSounds()
     return { ok: true, id, sound: parsed.data }
@@ -132,16 +150,26 @@ export class Board extends YServer<Env> {
 
   /** Unlists an upload no pad uses, then deletes its audio. */
   async removeSound(id: string): Promise<SoundResult> {
-    const node = this.document.getMap<unknown>(ROOTS.sounds).get(id)
-    if (node === undefined) return { ok: false, status: 404, error: 'No such sound' }
-    // The room wrote the listing, so its size is the stored file's.
-    const listed = isMap(node) ? read(Sound, SHAPES.sound, node) : undefined
+    if (!this.document.getMap<unknown>(ROOTS.sounds).has(id))
+      return { ok: false, status: 404, error: 'No such sound' }
     const [result] = apply(this.document, [{ op: 'removeSound', id }], ROOM)
     if (!result?.ok)
       return { ok: false, status: 409, error: result?.issues[0]?.message ?? 'In use' }
     await this.env.SOUND_FILES.delete(soundKey(this.name, id))
-    if (listed && !listed.issues) await quota(this.env).release(listed.value.bytes)
+    await this.releaseStored(id)
     return { ok: true }
+  }
+
+  /**
+   * Gives an upload's stored bytes back to the budget, once. The size comes from the room's own
+   * record, not the listing, which clients can edit. Claiming zeroes the record before any other
+   * I/O, so removal and retention racing for the same file release it only once.
+   */
+  private async releaseStored(id: string) {
+    const bytes = await this.ctx.storage.get<number>(ISSUED_PREFIX + id)
+    if (typeof bytes !== 'number' || bytes <= 0) return
+    await this.ctx.storage.put(ISSUED_PREFIX + id, 0)
+    await quota(this.env).release(bytes)
   }
 
   /**
@@ -161,25 +189,38 @@ export class Board extends YServer<Env> {
       await this.ctx.storage.setAlarm(Date.now() + SOUND_RETENTION_MS)
       return
     }
-    const prefix = soundPrefix(this.name)
-    let cursor: string | undefined
-    let lists = 0
-    let freed = 0
-    do {
-      const page = await this.env.SOUND_FILES.list({ prefix, cursor })
-      lists++
-      if (page.objects.length > 0) await this.env.SOUND_FILES.delete(page.objects.map((o) => o.key))
-      for (const o of page.objects) freed += o.size
-      cursor = page.truncated ? page.cursor : undefined
-    } while (cursor)
-    const budget = quota(this.env)
-    await budget.countLists(lists)
-    if (freed > 0) await budget.release(freed)
-    if (this.loaded) {
-      apply(this.document, [{ op: 'expireSounds' }], ROOM)
-      await this.onSave()
-    } else {
-      await this.ctx.storage.put(EXPIRED_KEY, true)
+    // Uploads wait until this is done, so expiring can't unlist one that lands meanwhile.
+    this.expiring = true
+    try {
+      // Claim every stored size first, so a removal racing this releases nothing twice.
+      let freed = 0
+      const stored = await this.ctx.storage.list<unknown>({ prefix: ISSUED_PREFIX })
+      for (const [k, bytes] of stored) {
+        if (typeof bytes !== 'number' || bytes <= 0) continue
+        freed += bytes
+        await this.ctx.storage.put(k, 0)
+      }
+      const prefix = soundPrefix(this.name)
+      let cursor: string | undefined
+      let lists = 0
+      do {
+        const page = await this.env.SOUND_FILES.list({ prefix, cursor })
+        lists++
+        if (page.objects.length > 0)
+          await this.env.SOUND_FILES.delete(page.objects.map((o) => o.key))
+        cursor = page.truncated ? page.cursor : undefined
+      } while (cursor)
+      const budget = quota(this.env)
+      await budget.countLists(lists)
+      if (freed > 0) await budget.release(freed)
+      if (this.loaded) {
+        apply(this.document, [{ op: 'expireSounds' }], ROOM)
+        await this.onSave()
+      } else {
+        await this.ctx.storage.put(EXPIRED_KEY, true)
+      }
+    } finally {
+      this.expiring = false
     }
   }
 }

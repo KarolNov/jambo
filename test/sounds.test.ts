@@ -65,7 +65,7 @@ describe('uploading a sound', () => {
 
     const file = await fetchApp(`/api/jams/${slug}/sounds/${id}`)
     expect(file.status).toBe(200)
-    expect(file.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable')
+    expect(file.headers.get('Cache-Control')).toBe('public, max-age=86400')
     expect(file.headers.get('Content-Type')).toBe('audio/wav')
     expect(new Uint8Array(await file.arrayBuffer())).toEqual(wav())
     other.close()
