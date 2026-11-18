@@ -91,8 +91,32 @@ button:hover {
   color: var(--bad);
 }
 
-.me {
+.presence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
   font-size: 14px;
+}
+
+.presence .you {
+  color: var(--muted);
+}
+
+.debug {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 0 0 16px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.debug dd {
+  margin: 0;
 }
 
 .unlock {

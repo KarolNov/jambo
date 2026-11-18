@@ -1,10 +1,13 @@
 import { Provider, useAtomValue } from 'jotai'
 import { useEffect, useState, useSyncExternalStore } from 'react'
+import { JamClock } from '../audio/clock'
 import { Engine } from '../audio/engine'
+import { Debug } from './Debug'
 import { type ConnectionStatus, onStatus, openJam } from './doc'
 import { identity } from './identity'
 import { bpmAtom, padsAtom, tracksAtom } from './model'
 import { Pads } from './Pads'
+import { joinPresence, usePeople } from './presence'
 import { makeBoard, type Session, SessionContext, useSession } from './session'
 import { Tracks } from './Tracks'
 import { Transport } from './Transport'
@@ -16,13 +19,17 @@ export function Jam({ slug }: { slug: string }) {
 
   useEffect(() => {
     const jam = openJam(slug)
-    const engine = new Engine()
+    const clock = new JamClock(jam.provider)
+    const engine = new Engine(clock)
     const me = identity()
     setSession({ jam, engine, me, board: makeBoard(jam, me) })
     const stop = onStatus(jam.provider, setStatus)
+    const leave = joinPresence(jam.awareness, me)
     return () => {
+      leave()
       stop()
       engine.dispose()
+      clock.dispose()
       jam.destroy()
     }
   }, [slug])
@@ -48,6 +55,24 @@ function EngineFeed({ engine }: { engine: Engine }) {
   }, [engine, bpm, pads, tracks])
   return null
 }
+
+/** Who's here: one entry per person, you first. */
+function Presence() {
+  const { jam, me } = useSession()
+  const people = usePeople(jam.awareness, me)
+  return (
+    <ul className="presence" aria-label="Who's here">
+      {people.map((p) => (
+        <li key={p.id} className={p.id === me.id ? 'me' : undefined} style={{ color: p.color }}>
+          ● {p.colorName}
+          {p.id === me.id && <span className="you"> (you)</span>}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+const DEBUG = new URLSearchParams(window.location.search).has('debug')
 
 const STATUS_LABEL: Record<ConnectionStatus, string> = {
   connected: 'Live',
@@ -79,13 +104,13 @@ function Looper({ slug, status }: { slug: string; status: ConnectionStatus }) {
         <button type="button" onClick={copyLink}>
           {copied ? 'Link copied' : 'Copy link'}
         </button>
-        <span className="me" style={{ color: me.color }}>
-          ● {me.colorName}
-        </span>
+        <Presence />
         <span className={`status status-${status}`} role="status">
           {STATUS_LABEL[status]}
         </span>
       </header>
+
+      {DEBUG && <Debug />}
 
       {!ready && (
         <button type="button" className="unlock" onClick={() => void engine.unlock()}>

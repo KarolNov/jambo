@@ -1,6 +1,7 @@
 import { docAtom } from 'duratom'
 import { createStore } from 'jotai'
 import YProvider from 'y-partyserver/provider'
+import type { Awareness } from 'y-protocols/awareness'
 import * as Y from 'yjs'
 import { BOARD_PARTY } from '../../shared/parties'
 
@@ -10,6 +11,8 @@ export interface JamSession {
   doc: Y.Doc
   store: ReturnType<typeof createStore>
   provider: YProvider
+  /** Who is in the jam right now; relayed by the room, never stored. */
+  awareness: Awareness
   destroy: () => void
 }
 
@@ -26,6 +29,7 @@ export function openJam(slug: string): JamSession {
     doc,
     store,
     provider,
+    awareness: provider.awareness,
     destroy: () => {
       provider.destroy()
       doc.destroy()
