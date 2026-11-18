@@ -103,7 +103,7 @@ Each track SHALL play its hits snapped to its grid (off, 1/32, 1/16, 1/8 or 1/4)
 
 ### Requirement: Track controls
 
-Anyone in the jam SHALL be able to mute, set the level (0 to 1.5) of, rename, change the snap of and remove any track. A name SHALL be 1 to 40 characters after trimming. Each track SHALL show a playhead while it plays.
+Anyone in the jam SHALL be able to mute, set the level (0 to 1.5) of, rename, change the snap of and remove any track. A name SHALL be 1 to 40 characters after trimming. Each track SHALL show its length in bars, its number of hits and its hits across the loop, and, while it plays, a playhead and a ring showing how far through the loop it is.
 
 - **Scenario: Mute someone's loop**
   - **WHEN** one person mutes a track another person recorded
