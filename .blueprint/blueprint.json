@@ -27,22 +27,23 @@
         "shared/board/apply.ts": "8e96c8d077f2",
         "shared/board/index.ts": "d02f03f765b4",
         "shared/board/ops.ts": "970889c7971f",
-        "shared/board/schema.ts": "3e8b7574a59a",
+        "shared/board/schema.ts": "509c3c07af79",
         "shared/board/sdk.ts": "bf705d5b1ff9",
         "shared/board/seed.ts": "d5eb014f0cd8",
         "shared/clock.ts": "1dd908e91d40",
         "shared/colors.ts": "dfb520827f03",
         "shared/looper.ts": "7567f1bf8543",
+        "shared/names.ts": "13587eecf4a7",
         "shared/parties.ts": "f686acc22693",
-        "shared/seats.ts": "1d6c2a59fd42",
+        "shared/seats.ts": "1172f9915414",
         "shared/slug.ts": "93fbc4b73dd9",
-        "shared/sounds.ts": "81c5ac9e8e99",
+        "shared/sounds.ts": "0c3d032a4e92",
         "shared/wav.ts": "ef7c26f7b9d9",
         "shared/words.ts": "7f1c29eda1b3",
         "src/App.tsx": "de410d3da63f",
         "worker/index.ts": "6a8239beef94"
       },
-      "syncedCommit": "cd920b5209e2ee06b889a648ca319220302ef1ac"
+      "syncedCommit": "f120c65e35a0cae376514da89992e1f0f5f5b2ba"
     },
     "room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
@@ -56,12 +57,12 @@
       "specVersion": "cde90b607b940628",
       "anchorsFiles": {
         "src/board/doc.ts": "f03410fb7517",
-        "worker/board.ts": "fa1292e11ec5",
+        "worker/board.ts": "35b03b3d1f3a",
         "worker/index.ts": "6a8239beef94",
         "worker/quota.ts": "fa0709c13df2",
-        "worker/sounds.ts": "d4d11276087b"
+        "worker/sounds.ts": "a7fefefa7801"
       },
-      "syncedCommit": "cd920b5209e2ee06b889a648ca319220302ef1ac"
+      "syncedCommit": "f120c65e35a0cae376514da89992e1f0f5f5b2ba"
     },
     "board": {
       "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
@@ -85,19 +86,19 @@
         "src/board/console/Deck.tsx": "b90069c29313",
         "src/board/console/Header.tsx": "afefad6628f6",
         "src/board/console/Mixer.tsx": "81448b15ecae",
-        "src/board/console/Pads.tsx": "fcb1126e0677",
+        "src/board/console/Pads.tsx": "caa583ca3812",
         "src/board/console/console.css": "accc250b5cae",
         "src/board/console/deck.css": "118929fd1e28",
         "src/board/console/header.css": "e38ca410c91a",
         "src/board/console/loops.ts": "739dc66699f6",
         "src/board/console/mixer.css": "927086479975",
         "src/board/console/pads.css": "41c326eb00db",
-        "src/board/console/people.ts": "2a06e64cf72b",
+        "src/board/console/people.ts": "40651ffddd24",
         "src/board/console/share.ts": "41845818fcbf",
-        "src/board/identity.ts": "4c52d723e68f",
+        "src/board/identity.ts": "992b954ac74e",
         "src/board/model.ts": "62d108e90ddd",
-        "src/board/presence.ts": "3fd5a11a19e0",
-        "src/board/seat.ts": "9b3ff4e7c375",
+        "src/board/presence.ts": "6755c6544739",
+        "src/board/seat.ts": "148a166295aa",
         "src/board/session.ts": "fe550b1c4ea4",
         "src/theme/ThemeToggle.tsx": "0383bce6cdab",
         "src/theme/palette.ts": "d370201d2e76",
@@ -109,7 +110,7 @@
         "src/ui/listNav.ts": "5b2ced68cb10",
         "src/ui/ui.css": "47f077a9f60f"
       },
-      "syncedCommit": "cd920b5209e2ee06b889a648ca319220302ef1ac"
+      "syncedCommit": "f120c65e35a0cae376514da89992e1f0f5f5b2ba"
     },
     "board/ops": {
       "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
@@ -121,11 +122,11 @@
         "shared/board/apply.ts": "8e96c8d077f2",
         "shared/board/index.ts": "d02f03f765b4",
         "shared/board/ops.ts": "970889c7971f",
-        "shared/board/schema.ts": "3e8b7574a59a",
+        "shared/board/schema.ts": "509c3c07af79",
         "shared/board/sdk.ts": "bf705d5b1ff9",
         "shared/board/seed.ts": "d5eb014f0cd8"
       },
-      "syncedCommit": "3ed2f6c79f667d25e2bb7bec4e2dd7dfaa7fd214"
+      "syncedCommit": "f120c65e35a0cae376514da89992e1f0f5f5b2ba"
     },
     "looper": {
       "ref": "https://app.notion.com/p/41c43cce21f2816ba415d28e60bf80d5",
@@ -148,16 +149,16 @@
         "src/audio/samples.ts": "093a12daee1a",
         "src/audio/session.ts": "2e1ec86333d1",
         "src/audio/synth.ts": "bbba5b7d5b5b",
-        "src/audio/upload.ts": "72fe8ef240b6",
+        "src/audio/upload.ts": "cef5d4abb848",
         "src/board/Debug.tsx": "80d7db772bb5",
         "src/board/console/Deck.tsx": "b90069c29313",
         "src/board/console/Mixer.tsx": "81448b15ecae",
         "src/board/console/loops.ts": "739dc66699f6",
-        "src/board/transport.ts": "ee46acbcaeea",
+        "src/board/transport.ts": "f75ab5f4ec44",
         "src/board/useEngineState.ts": "f06f1956d95d",
-        "src/board/useTransport.ts": "4851698f920b"
+        "src/board/useTransport.ts": "6aee955131e5"
       },
-      "syncedCommit": "4fe0fb3921027069147f42aa26be6cfdd50ae3be"
+      "syncedCommit": "f120c65e35a0cae376514da89992e1f0f5f5b2ba"
     },
     "pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
@@ -169,10 +170,10 @@
       "specVersion": "b4d7412062abcf71",
       "anchorsFiles": {
         "src/board/Uploads.tsx": "b6529025fd10",
-        "src/board/console/Pads.tsx": "fcb1126e0677",
+        "src/board/console/Pads.tsx": "caa583ca3812",
         "src/board/typing.ts": "9749aa39cc94"
       },
-      "syncedCommit": "4fe0fb3921027069147f42aa26be6cfdd50ae3be"
+      "syncedCommit": "f120c65e35a0cae376514da89992e1f0f5f5b2ba"
     },
     "sounds": {
       "ref": "https://app.notion.com/p/41c43cce21f2810f8bb0f1ed9935a67d",
@@ -185,13 +186,13 @@
       ],
       "specVersion": "db7debc62f7535c4",
       "anchorsFiles": {
-        "shared/sounds.ts": "81c5ac9e8e99",
+        "shared/sounds.ts": "0c3d032a4e92",
         "shared/wav.ts": "ef7c26f7b9d9",
         "src/audio/samples.ts": "093a12daee1a",
         "src/audio/synth.ts": "bbba5b7d5b5b",
-        "src/audio/upload.ts": "72fe8ef240b6"
+        "src/audio/upload.ts": "cef5d4abb848"
       },
-      "syncedCommit": "527c51b4fdff119d45382e59f4383871e510dcf0"
+      "syncedCommit": "f120c65e35a0cae376514da89992e1f0f5f5b2ba"
     }
   },
   "changes": {
