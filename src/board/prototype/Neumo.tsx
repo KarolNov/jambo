@@ -13,7 +13,7 @@ import { bpmAtom, tracksAtom } from '../model'
 import { useSession } from '../session'
 import { Transport } from '../Transport'
 import { useRecorderState } from '../useEngineState'
-import { Select } from './Menu'
+import { Button, IconButton, Range, Select } from '../../ui'
 import { useSwatch } from '../colors'
 import { useThemedPage } from '../../theme/theme'
 import { Header, SoundEditor, Unlock, usePlayhead } from './shared'
@@ -39,14 +39,13 @@ export default function Neumo({ slug, status }: { slug: string; status: Connecti
               <span className={`b-phase b-phase-${state.phase}`}>{state.phase}</span>
             </div>
             <Transport />
-            <button
-              type="button"
-              className="b-edit"
+            <Button
+              tone={editing ? 'primary' : 'default'}
               aria-pressed={editing}
               onClick={() => setEditing((e) => !e)}
             >
               {editing ? 'Done' : 'Change sounds'}
-            </button>
+            </Button>
             {editing && <p className="b-edit-hint n-muted">Click a pad to change its sound.</p>}
           </div>
         </div>
@@ -106,10 +105,10 @@ function Channel({ id, track }: { id: string; track: Track }) {
         ))}
         <span className="b-head" />
       </div>
-      <input
-        type="range"
+      <Range
         className="b-fader"
-        aria-label={`Level of ${track.name}`}
+        label={`Level of ${track.name}`}
+        color={shade(track.color)}
         min={0}
         max={1.5}
         step={0.05}
@@ -125,22 +124,17 @@ function Channel({ id, track }: { id: string; track: Track }) {
           onChange={(v) => set({ quantize: Number(v) })}
         />
       </div>
-      <button
-        type="button"
+      <Button
+        size="sm"
         className="b-mute"
         aria-pressed={track.mute}
         onClick={() => set({ mute: !track.mute })}
       >
         {track.mute ? 'Muted' : 'Mute'}
-      </button>
-      <button
-        type="button"
-        className="b-remove"
-        aria-label="Remove loop"
-        onClick={() => board.track(id).remove()}
-      >
+      </Button>
+      <IconButton tone="quiet" label="Remove loop" onClick={() => board.track(id).remove()}>
         ✕
-      </button>
+      </IconButton>
     </div>
   )
 }

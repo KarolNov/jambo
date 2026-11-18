@@ -1,0 +1,328 @@
+/*
+ * The soft controls. They read the theme's tokens (src/theme), so they apply on a themed page,
+ * and are scoped under it to win over page-wide element styles. Raised = you can press it;
+ * inset = it holds a value or is pressed in. Focus shows inside a control: an accent rim.
+ */
+
+/* ── Button ─────────────────────────────────────────────────────────────── */
+:root[data-theme] .ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg);
+  border: none;
+  border-radius: 12px;
+  box-shadow: var(--raise-sm);
+  cursor: pointer;
+  transition:
+    box-shadow 0.12s,
+    color 0.12s;
+}
+:root[data-theme] .ui-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+:root[data-theme] .ui-md {
+  padding: 9px 16px;
+  font-size: 14px;
+}
+:root[data-theme] .ui-lg {
+  padding: 16px 20px;
+  font-size: 18px;
+  border-radius: 20px;
+}
+:root[data-theme] .ui-button:hover:not(:disabled) {
+  color: var(--accent-2);
+}
+:root[data-theme] .ui-primary {
+  color: var(--accent-2);
+}
+:root[data-theme] .ui-danger,
+:root[data-theme] .ui-danger:hover:not(:disabled) {
+  color: var(--accent);
+}
+:root[data-theme] .ui-quiet {
+  color: var(--muted);
+  font-weight: 600;
+}
+:root[data-theme] .ui-button:active:not(:disabled),
+:root[data-theme] .ui-button[aria-pressed='true'] {
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .ui-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+:root[data-theme] .ui-button:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--raise-sm),
+    inset 0 0 0 2px var(--accent-2);
+}
+:root[data-theme] .ui-button[aria-pressed='true']:focus-visible,
+:root[data-theme] .ui-button:active:focus-visible {
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--accent-2);
+}
+
+/* ── Icon button ────────────────────────────────────────────────────────── */
+:root[data-theme] .ui-icon-button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 12px;
+}
+:root[data-theme] .ui-icon-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Switch ─────────────────────────────────────────────────────────────── */
+:root[data-theme] .ui-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: none;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+:root[data-theme] .ui-switch-track {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--bg);
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .ui-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+  transition:
+    left 0.15s,
+    background 0.15s;
+}
+:root[data-theme] .ui-switch[aria-checked='true'] .ui-switch-knob {
+  left: 21px;
+  background: var(--accent-2);
+}
+:root[data-theme] .ui-switch:focus-visible {
+  outline: none;
+}
+:root[data-theme] .ui-switch:focus-visible .ui-switch-track {
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--accent-2);
+}
+
+/* ── Range ──────────────────────────────────────────────────────────────── */
+:root[data-theme] .ui-range {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 22px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+:root[data-theme] .ui-range::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .ui-range::-moz-range-track {
+  height: 8px;
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .ui-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+  border: 3px solid var(--ui-c, var(--accent-2));
+}
+:root[data-theme] .ui-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+  border: 3px solid var(--ui-c, var(--accent-2));
+}
+:root[data-theme] .ui-range:focus-visible {
+  outline: none;
+}
+:root[data-theme] .ui-range:focus-visible::-webkit-slider-runnable-track {
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--accent-2);
+}
+:root[data-theme] .ui-range:focus-visible::-moz-range-track {
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--accent-2);
+}
+
+/* ── Select (opens a popover menu) ──────────────────────────────────────── */
+:root[data-theme] .ui-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px 7px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--bg);
+  border: none;
+  border-radius: 10px;
+  box-shadow: var(--inset-sm);
+  cursor: pointer;
+}
+:root[data-theme] .ui-select[aria-expanded='true'] {
+  color: var(--accent-2);
+}
+:root[data-theme] .ui-select:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--accent-2);
+}
+:root[data-theme] .ui-chevron {
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0.6;
+}
+:root[data-theme] .ui-select[aria-expanded='true'] .ui-chevron {
+  transform: rotate(225deg);
+  margin-top: 4px;
+}
+
+/* ── Popover menu: a raised card floating over the page ─────────────────── */
+:root[data-theme] .ui-popover {
+  position: fixed;
+  z-index: 60;
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 18px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+  box-shadow: var(--float);
+  animation: ui-pop 0.14s ease-out;
+}
+@keyframes ui-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] .ui-popover {
+    animation: none;
+  }
+}
+:root[data-theme] .ui-options {
+  outline: none;
+  min-width: 180px;
+}
+:root[data-theme] .ui-option-group + .ui-option-group {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+:root[data-theme] .ui-option-label {
+  padding: 6px 12px 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+:root[data-theme] .ui-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+:root[data-theme] .ui-option-main {
+  display: flex;
+  align-items: center;
+}
+:root[data-theme] .ui-option.is-active {
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .ui-options:focus-visible .ui-option.is-active {
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--accent-2);
+}
+:root[data-theme] .ui-option[aria-selected='true'] {
+  color: var(--accent-2);
+}
+:root[data-theme] .ui-option[aria-selected='true']::after {
+  content: '';
+  width: 5px;
+  height: 10px;
+  margin-right: 2px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+:root[data-theme] .ui-option[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: default;
+}
+:root[data-theme] .ui-option-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* A small dot in a collaborator's colour, set in a soft rim (who uploaded a sound). */
+:root[data-theme] .ui-dot {
+  display: inline-block;
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  vertical-align: 1px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--bg);
+}

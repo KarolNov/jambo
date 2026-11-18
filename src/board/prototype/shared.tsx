@@ -22,7 +22,7 @@ import {
   useFilePicker,
   useSampleState,
 } from '../Uploads'
-import { type Group, OptionList, Popover } from './Menu'
+import { Button, type Group, IconButton, OptionList, Popover } from '../../ui'
 import { ThemeToggle } from '../../theme/ThemeToggle'
 import { useSwatch } from '../colors'
 
@@ -253,7 +253,7 @@ function PadSound({ soundId }: { soundId: string }) {
   return (
     <span className={`n-pad-sound n-pad-sound-${state ?? 'loading'}`}>
       <span
-        className="n-dot"
+        className="ui-dot"
         style={{ background: shade(upload.color) }}
         title={uploader(upload)}
         aria-label={uploader(upload)}
@@ -312,9 +312,9 @@ export function Unlock() {
   )
   if (ready) return null
   return (
-    <button type="button" className="n-unlock" onClick={() => void engine.unlock()}>
+    <Button tone="primary" className="n-unlock" onClick={() => void engine.unlock()}>
       Tap to start audio
-    </button>
+    </Button>
   )
 }
 
@@ -330,10 +330,9 @@ export function Header({ slug, status }: { slug: string; status: ConnectionStatu
         jambo
       </a>
       <span className="n-slug">{slug}</span>
-      <button
-        type="button"
+      <IconButton
         className="n-share"
-        aria-label={copied ? 'Link copied' : 'Share this jam'}
+        label={copied ? 'Link copied' : 'Share this jam'}
         title="Share this jam"
         onClick={async () => {
           const url = window.location.href.replace(/\?.*$/, '')
@@ -360,7 +359,7 @@ export function Header({ slug, status }: { slug: string; status: ConnectionStatu
             Link copied
           </span>
         )}
-      </button>
+      </IconButton>
       <ul className="n-people" aria-label="Who's here">
         {people.map((p) => (
           <li

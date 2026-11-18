@@ -1,9 +1,11 @@
 /**
- * PROTOTYPE (neumorphism, throwaway): a soft popover and option list, in place of native
- * <select>s. Keyboard: ↑ ↓ Home End to move, Enter or Space to pick, Escape to close.
+ * A soft popover and option list, in place of native <select>s. Keyboard: ↑ ↓ Home End to move,
+ * Enter or Space to pick, Escape to close; the logic is in listNav.ts.
  */
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { initialIndex, navKey } from './listNav'
+import './ui.css'
 
 export interface Option {
   value: string
@@ -24,7 +26,7 @@ const EDGE = 12
 
 /**
  * Floats `children` next to `anchor`, below it or above when there's more room there, and
- * closes on Escape or a press outside. Rendered into the prototype root so it keeps the theme.
+ * closes on Escape or a press outside. Rendered into <body>: the theme's tokens live on <html>.
  */
 export function Popover({
   anchor,
@@ -80,7 +82,7 @@ export function Popover({
   return createPortal(
     <div
       ref={box}
-      className="n-popover"
+      className="ui-popover"
       style={style}
       onKeyDown={(e) => {
         if (e.key === 'Escape') {
@@ -93,7 +95,7 @@ export function Popover({
     >
       {children}
     </div>,
-    anchor.closest('.neumo') ?? document.body,
+    document.body,
   )
 }
 
@@ -110,12 +112,7 @@ export function OptionList({
   label: string
 }) {
   const flat = groups.flatMap((g) => g.options)
-  const [active, setActive] = useState(() =>
-    Math.max(
-      0,
-      flat.findIndex((o) => o.value === value),
-    ),
-  )
+  const [active, setActive] = useState(() => initialIndex(flat, value))
   const list = useRef<HTMLDivElement>(null)
   const id = useId()
 
@@ -124,12 +121,6 @@ export function OptionList({
     document.getElementById(`${id}-${active}`)?.scrollIntoView({ block: 'nearest' })
   }, [id, active])
 
-  const move = (from: number, step: number) => {
-    for (let n = 0, i = from; n < flat.length; n++) {
-      i = (i + step + flat.length) % flat.length
-      if (!flat[i]!.disabled) return setActive(i)
-    }
-  }
   const pick = (i: number) => {
     const o = flat[i]
     if (o && !o.disabled) onSelect(o.value)
@@ -139,31 +130,23 @@ export function OptionList({
   return (
     <div
       ref={list}
-      className="n-options"
+      className="ui-options"
       role="listbox"
       aria-label={label}
       tabIndex={0}
       aria-activedescendant={`${id}-${active}`}
       onKeyDown={(e) => {
-        const keys: Record<string, () => void> = {
-          ArrowDown: () => move(active, 1),
-          ArrowUp: () => move(active, -1),
-          Home: () => move(-1, 1),
-          End: () => move(flat.length, -1),
-          Enter: () => pick(active),
-          ' ': () => pick(active),
-        }
-        const run = keys[e.key]
-        if (run) {
-          e.preventDefault()
-          run()
-        }
+        const to = navKey(e.key, flat, active)
+        if (to === undefined) return
+        e.preventDefault()
+        if (to === 'pick') pick(active)
+        else setActive(to)
       }}
     >
       {groups.map((g, gi) => (
-        <div key={gi} role="group" aria-label={g.label} className="n-option-group">
+        <div key={gi} role="group" aria-label={g.label} className="ui-option-group">
           {g.label && (
-            <div className="n-option-label" aria-hidden>
+            <div className="ui-option-label" aria-hidden>
               {g.label}
             </div>
           )}
@@ -176,14 +159,14 @@ export function OptionList({
                 role="option"
                 aria-selected={o.value === value}
                 aria-disabled={o.disabled || undefined}
-                className={`n-option ${i === active ? 'is-active' : ''}`}
+                className={`ui-option ${i === active ? 'is-active' : ''}`}
                 onPointerMove={() => !o.disabled && i !== active && setActive(i)}
                 onClick={() => pick(i)}
               >
-                <span className="n-option-main">
+                <span className="ui-option-main">
                   {o.dot && (
                     <span
-                      className="n-dot"
+                      className="ui-dot"
                       style={{ background: o.dot.color }}
                       title={o.dot.title}
                       aria-label={o.dot.title}
@@ -191,7 +174,7 @@ export function OptionList({
                   )}
                   {o.label}
                 </span>
-                {o.note && <span className="n-option-note">{o.note}</span>}
+                {o.note && <span className="ui-option-note">{o.note}</span>}
               </div>
             )
           })}
@@ -223,7 +206,7 @@ export function Select({
       <button
         ref={button}
         type="button"
-        className={`n-select ${className}`}
+        className={`ui-select ${className}`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`${label}: ${current?.label ?? 'none'}`}
@@ -236,7 +219,7 @@ export function Select({
         }}
       >
         <span>{current?.label ?? '—'}</span>
-        <span className="n-chevron" aria-hidden />
+        <span className="ui-chevron" aria-hidden />
       </button>
       {open && button.current && (
         <Popover anchor={button.current} onClose={() => setOpen(false)}>
