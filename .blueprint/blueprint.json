@@ -52,7 +52,14 @@
         "src/board/Transport.tsx",
         "src/board/Tracks.tsx"
       ],
-      "specVersion": "3c0dac07c2cce155"
+      "specVersion": "3c0dac07c2cce155",
+      "anchorsFiles": {
+        "src/audio/engine.ts": "347de291aab2",
+        "src/audio/synth.ts": "bbba5b7d5b5b",
+        "src/board/Tracks.tsx": "25f839a4ccce",
+        "src/board/Transport.tsx": "ffbd15a7e52a"
+      },
+      "syncedCommit": "d21cedbd50af62403e4580e64a7e466acce1c01a"
     },
     "pads": {
       "ref": null,
