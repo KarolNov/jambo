@@ -31,7 +31,7 @@
         "shared/board/sdk.ts": "ec96fbef672a",
         "shared/board/seed.ts": "d5eb014f0cd8",
         "shared/clock.ts": "f72f7a2e8ca6",
-        "shared/looper.ts": "1f199433e372",
+        "shared/looper.ts": "7567f1bf8543",
         "shared/parties.ts": "f686acc22693",
         "shared/slug.ts": "93fbc4b73dd9",
         "shared/sounds.ts": "37747cf60d71",
@@ -39,7 +39,7 @@
         "src/App.tsx": "73dcf24dbe28",
         "worker/index.ts": "809c62e25d69"
       },
-      "syncedCommit": "da8ab73bedfcf042c6b75b33b53ae4092802497b"
+      "syncedCommit": "408a7b658504fe1601462cb48fd1192103d0325b"
     },
     "room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
