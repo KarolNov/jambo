@@ -109,7 +109,10 @@
   height: 24px;
   border-radius: 999px;
   background: var(--bg);
-  box-shadow: var(--inset-sm);
+  /* A faint rim as well as the inset, so the switch reads even where shadows are subtle (dark). */
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 1px var(--line);
 }
 :root[data-theme] .ui-switch-knob {
   position: absolute;
@@ -118,7 +121,8 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--bg);
+  /* Off: a muted knob; on: the accent. */
+  background: color-mix(in srgb, var(--muted) 45%, var(--bg));
   box-shadow: var(--raise-sm);
   transition:
     left 0.15s,
@@ -135,6 +139,11 @@
   box-shadow:
     var(--inset-sm),
     inset 0 0 0 2px var(--accent-2);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] .ui-switch-knob {
+    transition: none;
+  }
 }
 
 /* ── Range ──────────────────────────────────────────────────────────────── */

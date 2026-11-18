@@ -110,7 +110,8 @@
         "src/board/Tracks.tsx",
         "shared/clock.ts",
         "src/board/Debug.tsx",
-        "src/board/useEngineState.ts"
+        "src/board/useEngineState.ts",
+        "src/board/useTransport.ts"
       ],
       "specVersion": "81b7d6a03e14a54f",
       "anchorsFiles": {

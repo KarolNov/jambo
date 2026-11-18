@@ -4,6 +4,7 @@ import {
   audioShift,
   audioToRoom,
   bestSample,
+  heardAt,
   nextOffset,
   roomToAudio,
   sampleFrom,
@@ -46,6 +47,14 @@ describe('nextOffset', () => {
     expect(nextOffset(100, 104.9)).toBe(100)
     expect(nextOffset(100, 95.1)).toBe(100)
     expect(nextOffset(100, 106)).toBe(106)
+  })
+})
+
+describe('heardAt', () => {
+  it('maps a scheduled audio time to when it is heard, on the performance clock', () => {
+    const heard = { contextTime: 10, performanceTime: 5000 }
+    expect(heardAt(10.25, heard)).toBe(5250)
+    expect(heardAt(9.9, heard)).toBeCloseTo(4900)
   })
 })
 

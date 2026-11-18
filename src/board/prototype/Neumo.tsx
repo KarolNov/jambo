@@ -1,55 +1,31 @@
 /**
- * PROTOTYPE (neumorphism, throwaway): the jam as a soft "console". The whole page is one soft
- * surface: pads and a readout on the deck, loops as rows in an inset mixer tray.
- *
- * Open a jam with `?variant` (any value) on the dev server; `?theme=light|dark` picks the theme.
- * Same live board, audio and SDK writes as the real page.
+ * The jam as a soft "console": header, deck (src/board/console) and, still in prototype form here,
+ * the mixer tray of loop rows. Open a jam with `?variant` on the dev server.
  */
 import { useAtomValue } from 'jotai'
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { QUANTIZE, type Track } from '../../../shared/board'
-import type { ConnectionStatus } from '../doc'
-import { bpmAtom, tracksAtom } from '../model'
-import { useSession } from '../session'
-import { Transport } from '../Transport'
-import { useRecorderState } from '../useEngineState'
+import { useThemedPage } from '../../theme/theme'
 import { Button, IconButton, Range, Select } from '../../ui'
 import { useSwatch } from '../colors'
-import { useThemedPage } from '../../theme/theme'
+import { Deck } from '../console/Deck'
 import { Header } from '../console/Header'
-import { SoundEditor, Unlock, usePlayhead } from './shared'
+import { Unlock } from '../console/Pads'
+import type { ConnectionStatus } from '../doc'
+import { tracksAtom } from '../model'
+import { useSession } from '../session'
+import { usePlayhead } from './shared'
 import './neumo.css'
 
 export default function Neumo({ slug, status }: { slug: string; status: ConnectionStatus }) {
   useThemedPage()
   const tracks = useAtomValue(tracksAtom)
-  const bpm = useAtomValue(bpmAtom)
-  const state = useRecorderState()
-  const [editing, setEditing] = useState(false)
   return (
     <div className="neumo neumo-b">
       <main className="b-page">
         <Header slug={slug} status={status} />
         <Unlock />
-        <div className="b-deck">
-          <SoundEditor slug={slug} editing={editing} />
-          <div className="b-side">
-            <div className="b-readout" aria-hidden>
-              <span className="b-bpm">{bpm}</span>
-              <span className="n-muted">BPM</span>
-              <span className={`b-phase b-phase-${state.phase}`}>{state.phase}</span>
-            </div>
-            <Transport />
-            <Button
-              tone={editing ? 'primary' : 'default'}
-              aria-pressed={editing}
-              onClick={() => setEditing((e) => !e)}
-            >
-              {editing ? 'Done' : 'Change sounds'}
-            </Button>
-            {editing && <p className="b-edit-hint n-muted">Click a pad to change its sound.</p>}
-          </div>
-        </div>
+        <Deck slug={slug} />
         <section className="b-mixer" aria-label="Loops">
           {tracks.size === 0 ? (
             <p className="b-empty n-muted">

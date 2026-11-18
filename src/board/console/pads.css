@@ -1,0 +1,261 @@
+/*
+ * The console's pads and sound editing. Pads are soft rubber squares: your press pushes one in
+ * (an inner ring in your colour), a loop hit lights it from the centre in the loop's colour.
+ */
+:root[data-theme] .console-unlock {
+  display: flex;
+  margin: 0 auto 16px;
+  animation: console-breathe 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] .console-unlock {
+    animation: none;
+  }
+}
+@keyframes console-breathe {
+  50% {
+    box-shadow: var(--raise);
+  }
+}
+
+/* Pads: soft rubber squares. Pressed by you: pushed in. Hit by a loop: lit in its colour. */
+:root[data-theme] .console-pads {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+:root[data-theme] .console-pad {
+  position: relative;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: none;
+  cursor: pointer;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 18px;
+  box-shadow: var(--raise);
+  text-align: left;
+  touch-action: manipulation;
+  user-select: none;
+  overflow: hidden;
+  transition: box-shadow 0.18s ease-out;
+}
+:root[data-theme] .console-pad::after {
+  /* the glow layer, faded in for loop hits */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle closest-side at 50% 50%, var(--glow), transparent);
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+  pointer-events: none;
+}
+:root[data-theme] .console-pad.glow::after {
+  opacity: 0.55;
+  transition: none;
+}
+:root[data-theme] .console-pad.glow {
+  transition: none;
+}
+:root[data-theme] .console-pad.pressed {
+  box-shadow:
+    var(--inset),
+    inset 0 0 0 2px var(--glow);
+  transition: none;
+}
+:root[data-theme] .console-pad:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--raise),
+    inset 0 0 0 2px var(--accent-2);
+}
+:root[data-theme] .console-pad-key {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  padding: 2px 7px;
+  border-radius: 7px;
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .console-pad-sound {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.15;
+  position: relative;
+  z-index: 1;
+}
+
+/* Change sounds: pads stay raised; a badge marks them, a click opens the sound menu */
+:root[data-theme] .console-pads.is-editing .console-pad {
+  cursor: pointer;
+}
+:root[data-theme] .console-pad-edit {
+  /* "opens a menu": a down chevron in a small well, like the Snap select's */
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: var(--inset-sm);
+  color: var(--accent-2);
+}
+:root[data-theme] .console-pad-edit::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+:root[data-theme] .console-pad[aria-expanded='true'] .console-pad-edit::before {
+  top: 9px;
+  transform: rotate(225deg);
+}
+:root[data-theme] .console-pad[aria-expanded='true'] {
+  box-shadow:
+    var(--raise),
+    inset 0 0 0 2px var(--accent-2);
+}
+
+:root[data-theme] .console-pad-sound-loading {
+  opacity: 0.5;
+}
+:root[data-theme] .console-pad-sound-missing {
+  color: var(--accent);
+}
+
+/* The upload dialog and uploads list, softened */
+:root[data-theme] {
+  --panel: var(--bg);
+  --bad: var(--accent);
+}
+:root[data-theme] .console-sounds {
+  display: grid;
+  gap: 22px;
+}
+:root[data-theme] .console-sounds .upload-dialog,
+:root[data-theme] .console-sounds .uploads {
+  margin: 0;
+  padding: 18px 20px;
+  border: none;
+  border-radius: 22px;
+  background: var(--bg);
+  box-shadow: var(--raise);
+  font-size: 14px;
+}
+:root[data-theme] .console-sounds .upload-dialog {
+  gap: 14px;
+}
+:root[data-theme] .console-sounds .upload-title {
+  font-weight: 750;
+}
+:root[data-theme] .console-sounds .upload-dialog label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+}
+:root[data-theme] .console-sounds .upload-dialog input {
+  flex: 1;
+  max-width: 320px;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--bg);
+  box-shadow: var(--inset-sm);
+  transition: box-shadow 0.15s;
+}
+/* Focus shows inside the field, as a deeper well with an accent rim: no outer outline */
+:root[data-theme] .console-sounds .upload-dialog input:focus,
+:root[data-theme] .console-sounds .upload-dialog input:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--inset),
+    inset 0 0 0 1.5px var(--accent-2);
+}
+:root[data-theme] .console-sounds .upload-dialog input::selection {
+  background: color-mix(in srgb, var(--accent-2) 35%, transparent);
+}
+:root[data-theme] .console-sounds .upload-actions {
+  gap: 14px;
+}
+:root[data-theme] .console-sounds .upload-actions button[type='submit'] {
+  font-weight: 750;
+  color: var(--accent-2);
+  padding: 9px 20px;
+}
+:root[data-theme] .console-sounds .upload-actions button.link {
+  font-weight: 600;
+  color: var(--muted);
+}
+:root[data-theme] .console-sounds .uploads-head {
+  font-weight: 750;
+}
+:root[data-theme] .console-sounds .uploads ul {
+  gap: 10px;
+  margin-top: 14px;
+}
+:root[data-theme] .console-sounds .uploads li {
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .console-sounds .upload-name {
+  font-weight: 700;
+}
+:root[data-theme] .console-sounds .muted {
+  color: var(--muted);
+}
+:root[data-theme] .console-sounds button.link {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 12px;
+}
+:root[data-theme] .console-sounds .paused {
+  margin: 0;
+  color: var(--accent);
+}
+
+/* The upload dialog and uploads list are shared with the current board and use plain buttons:
+   give them the soft look here, at zero specificity so ui-kit controls keep theirs. */
+:where(.console-sounds) button {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: none;
+  border-radius: 12px;
+  padding: 8px 14px;
+  box-shadow: var(--raise-sm);
+  cursor: pointer;
+}
+:where(.console-sounds) button:hover:not(:disabled) {
+  color: var(--accent-2);
+}
+:where(.console-sounds) button:active:not(:disabled) {
+  box-shadow: var(--inset-sm);
+}
+:where(.console-sounds) button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+:where(.console-sounds) button:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--raise-sm),
+    inset 0 0 0 2px var(--accent-2);
+}
+:where(.console-sounds) input {
+  font: inherit;
+  color: var(--text);
+}

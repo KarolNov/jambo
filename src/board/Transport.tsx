@@ -1,86 +1,28 @@
-import { useAtomValue } from 'jotai'
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { BPM, newId } from '../../shared/board'
-import { colorLabel } from '../../shared/colors'
-import { bpmAtom, tracksAtom } from './model'
-import { isTyping } from './Pads'
-import { useSession } from './session'
-import { useRecorderState } from './useEngineState'
+import { useRef, useState } from 'react'
+import { BPM } from '../../shared/board'
+import { useTransport } from './useTransport'
 
 /** Tempo, record / stop, metronome. Space toggles recording. */
 export function Transport() {
-  const { engine, board, me } = useSession()
-  const bpm = useAtomValue(bpmAtom)
-  const tracks = useAtomValue(tracksAtom)
-  const state = useRecorderState()
-  const [message, setMessage] = useState<string>()
-  const metronome = useSyncExternalStore(
-    (l) => engine.subscribe(l),
-    () => engine.metronome,
-  )
-  const synced = useSyncExternalStore(
-    (l) => engine.subscribe(l),
-    () => engine.synced,
-  )
+  const {
+    bpm,
+    state,
+    synced,
+    locked,
+    metronome,
+    message,
+    toggle,
+    setTempo: applyTempo,
+    setMetronome,
+  } = useTransport()
   // The tempo being typed; it is applied on Enter or when the field loses focus.
   const [draft, setDraft] = useState<string>()
   // Set on Escape, so the blur that follows doesn't apply the draft.
   const cancelled = useRef(false)
-  const locked = tracks.size > 0 || state.phase !== 'idle'
-
-  const toggle = async () => {
-    if (!engine.ready) await engine.unlock()
-    if (engine.state.phase === 'idle') {
-      setMessage(undefined)
-      // Takes go on the jam's grid; record() waits until this client's clock agrees with the jam.
-      engine.record()
-      return
-    }
-    const take = engine.stop()
-    if (!take) {
-      setMessage('Nothing recorded')
-      return
-    }
-    const id = newId()
-    const mine = [...tracks.values()].filter((t) => t.author === me.id).length
-    engine.claim(id)
-    const r = board.addTrack(id, {
-      name: `${colorLabel(me.color)} ${mine + 1}`,
-      author: me.id,
-      color: me.color,
-      bars: take.bars,
-      hits: take.hits,
-      startBar: take.startBar,
-      gain: 1,
-      mute: false,
-      quantize: 0.25,
-      effects: [],
-    })
-    setMessage(r.ok ? undefined : r.issues[0]?.message)
-  }
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code !== 'Space' || e.repeat || isTyping(e.target)) return
-      e.preventDefault()
-      void toggle()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  })
 
   const setTempo = (value: number) => {
     setDraft(undefined)
-    if (!Number.isFinite(value) || value === bpm) return
-    const clamped = Math.round(Math.min(BPM.max, Math.max(BPM.min, value)))
-    const r = board.tempo(clamped)
-    setMessage(
-      r.ok
-        ? clamped !== value
-          ? `Tempo is ${BPM.min}–${BPM.max} BPM`
-          : undefined
-        : r.issues[0]?.message,
-    )
+    applyTempo(value)
   }
 
   const label =
@@ -152,7 +94,7 @@ export function Transport() {
         <input
           type="checkbox"
           checked={metronome}
-          onChange={(e) => engine.setMetronome(e.target.checked)}
+          onChange={(e) => setMetronome(e.target.checked)}
         />
         Click
       </label>
