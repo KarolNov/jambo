@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Awareness } from 'y-protocols/awareness'
 import { type ColorName, toColorName } from '../../shared/colors'
 import { toName } from '../../shared/names'
+import type { Me } from './seat'
 
 /** A person in the jam, as their awareness state carries them: the parts of their identity others see. */
 export interface Person {
@@ -32,21 +33,19 @@ export function listPeople(states: Iterable<unknown>, me: Person): Person[] {
 }
 
 /**
- * Puts this person into the jam's awareness for as long as the jam is open, and keeps their colour
- * there current when the room seats them with another.
+ * Puts this person into the jam's awareness once the room seats them, so others never see a name or
+ * colour someone else holds, and keeps their name and colour there current; until the jam closes.
  */
-export function joinPresence(
-  awareness: Awareness,
-  me: Person & { subscribe?: (l: () => void) => () => void },
-) {
+export function joinPresence(awareness: Awareness, me: Me) {
   const publish = () => {
+    if (!me.seated) return
     const person = { id: me.id, name: me.name, color: me.color }
     awareness.setLocalState({ ...awareness.getLocalState(), person })
   }
   publish()
-  const stop = me.subscribe?.(publish)
+  const stop = me.subscribe(publish)
   return () => {
-    stop?.()
+    stop()
     awareness.setLocalState(null)
   }
 }

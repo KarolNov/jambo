@@ -4,14 +4,17 @@ import { namesPeople, personName, uploadedBy } from '../src/board/console/people
 import { TEMPO_RANGE, takeName, tempoFor } from '../src/board/transport'
 
 describe('naming a take', () => {
-  it("is the recorder's name and their count of tracks", () => {
-    const tracks = [{ author: 'me' }, { author: 'you' }, { author: 'me' }]
-    expect(takeName('Groovy Otter', 'me', tracks)).toBe('Groovy Otter 3')
-    expect(takeName('Misty Yak', 'you', tracks)).toBe('Misty Yak 2')
+  it("is the recorder's name and the next number after the jam's takes with it", () => {
+    const tracks = [{ name: 'Groovy Otter 1' }, { name: 'Misty Yak 1' }, { name: 'Groovy Otter 2' }]
+    expect(takeName('Groovy Otter', tracks)).toBe('Groovy Otter 3')
+    expect(takeName('Misty Yak', tracks)).toBe('Misty Yak 2')
   })
 
-  it('starts at 1', () => {
-    expect(takeName('Groovy Otter', 'me', [])).toBe('Groovy Otter 1')
+  it('starts at 1, and ignores names that only start the same', () => {
+    expect(takeName('Groovy Otter', [])).toBe('Groovy Otter 1')
+    expect(takeName('Groovy Otter', [{ name: 'Groovy Otter Remix' }, { name: 'Groovy 9' }])).toBe(
+      'Groovy Otter 1',
+    )
   })
 })
 

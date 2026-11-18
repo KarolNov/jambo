@@ -44,8 +44,10 @@ describe('reading people', () => {
 describe('joinPresence', () => {
   it('shows the name and colour the room seats you with, and leaves when you do', () => {
     const awareness = new Awareness(new Y.Doc())
-    const me = new Me({ id: 'me', name: 'Groovy Otter', color: 'sky' })
+    const me = new Me({ id: 'me', key: 'k', name: 'Groovy Otter', color: 'sky' })
     const leave = joinPresence(awareness, me)
+    expect(awareness.getLocalState()?.person).toBeUndefined()
+    me.seat({ name: 'Groovy Otter', color: 'sky' })
     expect(awareness.getLocalState()?.person).toEqual({
       id: 'me',
       name: 'Groovy Otter',

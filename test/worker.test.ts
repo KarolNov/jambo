@@ -193,9 +193,9 @@ describe('seats', () => {
       .at(-1)
     return last?.t === 'seat' ? { name: last.name, color: last.color } : undefined
   }
-  const join = async (slug: string, id: string, name = 'Groovy Otter') => {
+  const join = async (slug: string, key: string, name = 'Groovy Otter') => {
     const c = await connectBoard(slug)
-    c.sendCustom(hello(id, name, 'sky'))
+    c.sendCustom(hello(key, name, 'sky'))
     await until(() => seatOf(c) !== undefined)
     return c
   }

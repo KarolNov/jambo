@@ -4,9 +4,12 @@
  * always unique; colours are, while one of the eight is free.
  */
 import { COLOR_NAMES, type ColorName, toColorName } from './colors'
-import { randomName, toName } from './names'
+import { allNames, randomName, toName } from './names'
 
-/** Who holds a connection, and their name and colour in this jam. */
+/**
+ * Who holds a connection, and their name and colour in this jam. `id` is the person's private key
+ * (not their public id, which anyone in the jam can see), so nobody can claim someone else's seat.
+ */
 export interface Seat {
   id: string
   name: string
@@ -51,10 +54,15 @@ export function assignName(
     if (seat.id === id) return seat.name
     taken.add(seat.name.toLowerCase())
   }
-  let name = preferred
+  const free = (name: string) => !taken.has(name.toLowerCase())
+  if (free(preferred)) return preferred
   // 64 adjectives × 48 animals: a free name turns up within a few picks.
-  for (let i = 0; taken.has(name.toLowerCase()) && i < 1000; i++) name = pick()
-  return name
+  for (let i = 0; i < 20; i++) {
+    const name = pick()
+    if (free(name)) return name
+  }
+  for (const name of allNames()) if (free(name)) return name
+  for (let n = 2; ; n++) if (free(`${preferred} ${n}`)) return `${preferred} ${n}`
 }
 
 /** A person's seat in a jam, given who is already seated. */
@@ -71,24 +79,24 @@ export const assignSeat = (
 
 /** Seat messages over the board connection: a client says who it is, the room seats it. */
 export type SeatMessage =
-  | { t: 'hello'; id: string; name: string; color: ColorName }
+  | { t: 'hello'; key: string; name: string; color: ColorName }
   | { t: 'seat'; name: string; color: ColorName }
 
-export const hello = (id: string, name: string, color: ColorName) =>
-  JSON.stringify({ t: 'hello', id, name, color })
+export const hello = (key: string, name: string, color: ColorName) =>
+  JSON.stringify({ t: 'hello', key, name, color })
 export const seated = (seat: { name: string; color: ColorName }) =>
   JSON.stringify({ t: 'seat', name: seat.name, color: seat.color })
 
 /** A seat message, or undefined for anything else. */
 export function parseSeatMessage(message: string): SeatMessage | undefined {
   try {
-    const m = JSON.parse(message) as { t?: unknown; id?: unknown; name?: unknown; color?: unknown }
+    const m = JSON.parse(message) as { t?: unknown; key?: unknown; name?: unknown; color?: unknown }
     const color = toColorName(m.color)
     const name = toName(m.name)
     if (!color || !name) return undefined
     if (m.t === 'seat') return { t: 'seat', name, color }
-    if (m.t === 'hello' && typeof m.id === 'string' && m.id.length > 0 && m.id.length <= 64)
-      return { t: 'hello', id: m.id, name, color }
+    if (m.t === 'hello' && typeof m.key === 'string' && m.key.length > 0 && m.key.length <= 64)
+      return { t: 'hello', key: m.key, name, color }
   } catch {
     // Not JSON: not a seat message.
   }

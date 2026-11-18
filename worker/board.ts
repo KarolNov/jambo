@@ -98,16 +98,16 @@ export class Board extends YServer<Env> {
     // A client saying who it is: seat it with a name nobody else in the jam has, and a colour
     // nobody else has while one is free.
     const seat = parseSeatMessage(message)
-    if (seat?.t === 'hello') this.seat(connection, seat.id, seat)
+    if (seat?.t === 'hello') this.seat(connection, seat.key, seat)
   }
 
-  private seat(connection: Connection, id: string, usual: { name: string; color: ColorName }) {
+  private seat(connection: Connection, key: string, usual: { name: string; color: ColorName }) {
     const others: Seat[] = []
     for (const c of this.getConnections<SeatState>()) {
       const s = c.state?.[SEAT_KEY]
       if (c.id !== connection.id && s) others.push(s)
     }
-    const seat = assignSeat(others, id, usual)
+    const seat = assignSeat(others, key, usual)
     // Merged in: y-partyserver keeps its own fields in the connection's state.
     connection.setState((prev: SeatState | null) => ({ ...prev, [SEAT_KEY]: seat }))
     this.sendCustomMessage(connection, seated(seat))

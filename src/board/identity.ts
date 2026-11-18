@@ -7,6 +7,8 @@ import { randomName, toName } from '../../shared/names'
  */
 export interface Identity {
   id: string
+  /** Private to this browser and the jam's room, which seats by it: unlike `id`, nobody else sees it. */
+  key: string
   name: string
   color: ColorName
 }
@@ -17,6 +19,7 @@ export function identity(): Identity {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as {
       id?: unknown
+      key?: unknown
       name?: unknown
       color?: unknown
     }
@@ -24,12 +27,13 @@ export function identity(): Identity {
     // names get one now, kept from here on.
     const color = toColorName(saved?.color)
     const name = toName(saved?.name) ?? randomName()
-    if (typeof saved?.id === 'string' && color) return remember({ id: saved.id, name, color })
+    const key = typeof saved?.key === 'string' && saved.key ? saved.key : crypto.randomUUID()
+    if (typeof saved?.id === 'string' && color) return remember({ id: saved.id, key, name, color })
   } catch {
     // Storage blocked or corrupt: fall through to a fresh identity for this page.
   }
   const color = COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)]!
-  return remember({ id: crypto.randomUUID(), name: randomName(), color })
+  return remember({ id: crypto.randomUUID(), key: crypto.randomUUID(), name: randomName(), color })
 }
 
 function remember(identity: Identity): Identity {

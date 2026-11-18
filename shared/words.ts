@@ -1,6 +1,9 @@
 // Word lists for jam links. 64 of each, so a slug's words carry 12 bits and its suffix 20 more.
 // Keep every word lowercase ASCII letters only: the slug pattern relies on it.
 
+/** `word` with its first letter in upper case. */
+export const capitalize = (word: string) => word[0]!.toUpperCase() + word.slice(1)
+
 export const ADJECTIVES = [
   'funky',
   'groovy',

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { capitalize } from './words'
 
 /**
  * Collaborator colours, by name. The board doc and presence store the name; each UI decides what
@@ -39,4 +40,4 @@ export function toColorName(value: unknown): ColorName | undefined {
 export const Color = z.preprocess((v) => toColorName(v) ?? v, z.enum(COLOR_NAMES))
 
 /** How a colour is named to people: "Teal". */
-export const colorLabel = (c: ColorName) => c[0]!.toUpperCase() + c.slice(1)
+export const colorLabel = (c: ColorName) => capitalize(c)

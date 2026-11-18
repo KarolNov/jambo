@@ -3,7 +3,7 @@
  * usual name; in a jam the room makes sure nobody else there has it. Animals only, so a name can one
  * day come with an animal avatar in the person's colour.
  */
-import { ADJECTIVES } from './words'
+import { ADJECTIVES, capitalize } from './words'
 
 export const ANIMALS = [
   'otter',
@@ -59,13 +59,17 @@ export const ANIMALS = [
 /** Longest a name may be: the longest adjective and animal, with room to spare. */
 export const NAME_MAX = 40
 
-const title = (word: string) => word[0]!.toUpperCase() + word.slice(1)
-
 /** A random name, from `random` (a float in [0, 1)). */
 export function randomName(random: () => number = Math.random): string {
   const adjective = ADJECTIVES[Math.floor(random() * ADJECTIVES.length)]!
   const animal = ANIMALS[Math.floor(random() * ANIMALS.length)]!
-  return `${title(adjective)} ${title(animal)}`
+  return `${capitalize(adjective)} ${capitalize(animal)}`
+}
+
+/** Every name `randomName` can give, in a fixed order. */
+export function* allNames(): Generator<string> {
+  for (const adjective of ADJECTIVES)
+    for (const animal of ANIMALS) yield `${capitalize(adjective)} ${capitalize(animal)}`
 }
 
 /** A name as stored and sent: trimmed, 1 to `NAME_MAX` characters; undefined otherwise. */

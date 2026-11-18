@@ -7,7 +7,7 @@ import type { JamSession } from './doc'
 export interface Session {
   jam: JamSession
   engine: Engine
-  /** This person here: their id, and their colour in this jam. */
+  /** This person here: their id, and their name and colour in this jam. */
   me: Me
   /** The board SDK, writing as this browser. */
   board: Board

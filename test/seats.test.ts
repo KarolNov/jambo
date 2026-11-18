@@ -61,6 +61,11 @@ describe('assigning a name', () => {
     )
   })
 
+  it('never gives a taken name, even when the picks run dry', () => {
+    const others = [{ id: 'a', name: 'Groovy Otter' }]
+    expect(assignName(others, 'me', 'Groovy Otter', () => 'Groovy Otter')).not.toBe('Groovy Otter')
+  })
+
   it('gives the name you already have in another tab', () => {
     expect(assignName([{ id: 'me', name: 'Misty Yak' }], 'me', 'Groovy Otter')).toBe('Misty Yak')
   })
@@ -104,7 +109,7 @@ describe('seat messages', () => {
   it('round-trip', () => {
     expect(parseSeatMessage(hello('me', 'Groovy Otter', 'sky'))).toEqual({
       t: 'hello',
-      id: 'me',
+      key: 'me',
       name: 'Groovy Otter',
       color: 'sky',
     })
@@ -119,10 +124,15 @@ describe('seat messages', () => {
     const msg = (m: object) => JSON.stringify(m)
     expect(parseSeatMessage('not json')).toBeUndefined()
     expect(
-      parseSeatMessage(msg({ t: 'hello', id: 'me', name: 'A B', color: 'beige' })),
+      parseSeatMessage(msg({ t: 'hello', key: 'me', name: 'A B', color: 'beige' })),
     ).toBeUndefined()
-    expect(parseSeatMessage(msg({ t: 'hello', id: '', name: 'A B', color: 'sky' }))).toBeUndefined()
-    expect(parseSeatMessage(msg({ t: 'hello', id: 'me', color: 'sky' }))).toBeUndefined()
+    expect(
+      parseSeatMessage(msg({ t: 'hello', key: '', name: 'A B', color: 'sky' })),
+    ).toBeUndefined()
+    expect(parseSeatMessage(msg({ t: 'hello', key: 'me', color: 'sky' }))).toBeUndefined()
+    expect(
+      parseSeatMessage(msg({ t: 'hello', id: 'me', name: 'A B', color: 'sky' })),
+    ).toBeUndefined()
     expect(parseSeatMessage(msg({ t: 'ping', c: 1 }))).toBeUndefined()
   })
 })

@@ -90,7 +90,7 @@ export async function uploadSound(
         'Content-Type': 'audio/wav',
         [UPLOAD_HEADERS.name]: encodeURIComponent(wellFormed(name.trim())),
         [UPLOAD_HEADERS.author]: encodeURIComponent(me.id),
-        [UPLOAD_HEADERS.authorName]: encodeURIComponent(me.name),
+        [UPLOAD_HEADERS.authorName]: encodeURIComponent(wellFormed(me.name)),
         [UPLOAD_HEADERS.color]: encodeURIComponent(me.color),
       },
     })

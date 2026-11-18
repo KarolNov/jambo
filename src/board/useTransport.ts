@@ -44,7 +44,7 @@ export function useTransport() {
     const id = newId()
     engine.claim(id)
     const r = board.addTrack(id, {
-      name: takeName(me.name, me.id, tracks.values()),
+      name: takeName(me.name, tracks.values()),
       author: me.id,
       color: me.color,
       bars: take.bars,
