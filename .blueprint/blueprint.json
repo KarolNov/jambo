@@ -34,6 +34,7 @@
         "shared/colors.ts": "dfb520827f03",
         "shared/looper.ts": "7567f1bf8543",
         "shared/parties.ts": "f686acc22693",
+        "shared/seats.ts": "1d6c2a59fd42",
         "shared/slug.ts": "93fbc4b73dd9",
         "shared/sounds.ts": "81c5ac9e8e99",
         "shared/wav.ts": "ef7c26f7b9d9",
@@ -41,7 +42,7 @@
         "src/App.tsx": "de410d3da63f",
         "worker/index.ts": "6a8239beef94"
       },
-      "syncedCommit": "4fe75ebf76eba886f908f63bba087f1b978c312f"
+      "syncedCommit": "cd920b5209e2ee06b889a648ca319220302ef1ac"
     },
     "room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
@@ -55,12 +56,12 @@
       "specVersion": "fe36fa15ffb9661c",
       "anchorsFiles": {
         "src/board/doc.ts": "f03410fb7517",
-        "worker/board.ts": "3de92380e081",
+        "worker/board.ts": "fa1292e11ec5",
         "worker/index.ts": "6a8239beef94",
         "worker/quota.ts": "fa0709c13df2",
         "worker/sounds.ts": "d4d11276087b"
       },
-      "syncedCommit": "527c51b4fdff119d45382e59f4383871e510dcf0"
+      "syncedCommit": "cd920b5209e2ee06b889a648ca319220302ef1ac"
     },
     "board": {
       "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
@@ -78,7 +79,7 @@
       ],
       "specVersion": "0ea7375878e341eb",
       "anchorsFiles": {
-        "src/board/Jam.tsx": "7621d2e9045c",
+        "src/board/Jam.tsx": "ddb0ab20402d",
         "src/board/colors.ts": "d21c9da0a9fa",
         "src/board/console/Console.tsx": "347ed6405206",
         "src/board/console/Deck.tsx": "b90069c29313",
@@ -95,8 +96,9 @@
         "src/board/console/share.ts": "41845818fcbf",
         "src/board/identity.ts": "4c52d723e68f",
         "src/board/model.ts": "62d108e90ddd",
-        "src/board/presence.ts": "4116262bb042",
-        "src/board/session.ts": "c48c16e24b76",
+        "src/board/presence.ts": "3fd5a11a19e0",
+        "src/board/seat.ts": "9b3ff4e7c375",
+        "src/board/session.ts": "fe550b1c4ea4",
         "src/theme/ThemeToggle.tsx": "0383bce6cdab",
         "src/theme/palette.ts": "d370201d2e76",
         "src/theme/theme.css": "707fdfab339b",
@@ -107,7 +109,7 @@
         "src/ui/listNav.ts": "5b2ced68cb10",
         "src/ui/ui.css": "47f077a9f60f"
       },
-      "syncedCommit": "4fe0fb3921027069147f42aa26be6cfdd50ae3be"
+      "syncedCommit": "cd920b5209e2ee06b889a648ca319220302ef1ac"
     },
     "board/ops": {
       "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
