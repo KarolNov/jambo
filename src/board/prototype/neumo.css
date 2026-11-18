@@ -1,0 +1,942 @@
+/* PROTOTYPE (neumorphism, throwaway). Every rule is scoped under .neumo. */
+
+/* ── Tokens ─────────────────────────────────────────────────────────────────
+   --bg surface, --hi light-side shadow, --lo dark-side shadow. Dark needs its own shadow pair,
+   not an inverted one. */
+
+.neumo-b[data-theme='light'] {
+  --bg: #ebe4dc;
+  --hi: #fffaf4;
+  --lo: #c6baac;
+  --text: #33291f;
+  --muted: #6d5f50;
+  --accent: #e0532c;
+  --accent-2: #1f8f80;
+  --flat: #f6f1eb;
+  --line: #d6cbbf;
+}
+.neumo-b[data-theme='dark'] {
+  --bg: #2a2621;
+  --hi: #37322c;
+  --lo: #1b1815;
+  --text: #f2ebe2;
+  --muted: #b3a593;
+  --accent: #ff7a4f;
+  --accent-2: #4cc6b4;
+  --flat: #221f1b;
+  --line: #433d36;
+}
+
+.neumo {
+  --raise: -6px -6px 14px var(--hi), 6px 6px 14px var(--lo);
+  --raise-sm: -3px -3px 7px var(--hi), 3px 3px 7px var(--lo);
+  --raise-lg: -12px -12px 28px var(--hi), 12px 12px 28px var(--lo);
+  --inset: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi);
+  --inset-sm: inset 2px 2px 5px var(--lo), inset -2px -2px 5px var(--hi);
+  min-height: 100vh;
+  padding-bottom: 48px;
+  background: var(--bg);
+  color: var(--text);
+  color-scheme: light;
+  font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+}
+/* While the theme swaps, nothing animates on its own: the page crossfades as one */
+.neumo.n-switching,
+.neumo.n-switching *,
+.neumo.n-switching *::before,
+.neumo.n-switching *::after {
+  transition: none !important;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.28s;
+  animation-timing-function: ease-in-out;
+}
+.neumo[data-theme='dark'] {
+  color-scheme: dark;
+}
+.neumo .n-muted {
+  color: var(--muted);
+}
+
+/* Base controls: soft, borderless */
+.neumo button,
+.neumo input,
+.neumo select {
+  font: inherit;
+  color: inherit;
+}
+.neumo button {
+  background: var(--bg);
+  border: none;
+  border-radius: 12px;
+  padding: 8px 14px;
+  box-shadow: var(--raise-sm);
+  cursor: pointer;
+  transition:
+    box-shadow 0.12s,
+    transform 0.12s,
+    color 0.12s;
+}
+.neumo button:hover:not(:disabled) {
+  color: var(--accent-2);
+}
+.neumo button:active:not(:disabled),
+.neumo button[aria-pressed='true'] {
+  box-shadow: var(--inset-sm);
+}
+.neumo button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.neumo :focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 3px;
+}
+
+/* Soft range: inset groove, raised knob */
+.neumo input[type='range'] {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  height: 22px;
+  width: 100%;
+}
+.neumo input[type='range']::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: var(--inset-sm);
+}
+.neumo input[type='range']::-moz-range-track {
+  height: 8px;
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: var(--inset-sm);
+}
+.neumo input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+  border: 3px solid var(--c, var(--accent-2));
+}
+.neumo input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+  border: 3px solid var(--c, var(--accent-2));
+}
+
+/* ── Shared pieces ──────────────────────────────────────────────────────── */
+
+.neumo .n-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 20px 24px;
+}
+.neumo .n-logo {
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-decoration: none;
+}
+.neumo .n-slug {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  color: var(--muted);
+}
+.neumo .n-share {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  margin-left: -6px;
+}
+.neumo .n-share svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.neumo .n-share-tip {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent-2);
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+  animation: n-pop 0.14s ease-out;
+  pointer-events: none;
+}
+.neumo .n-people {
+  display: flex;
+  gap: 10px;
+  list-style: none;
+  margin: 0 0 0 auto;
+  padding: 0;
+}
+.neumo .n-people li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.neumo .n-person {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 3px var(--bg),
+    var(--raise-sm);
+}
+.neumo .n-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  box-shadow: var(--inset-sm);
+}
+.neumo .n-status-connected {
+  color: var(--accent-2);
+}
+.neumo .n-status-offline {
+  color: var(--accent);
+}
+.neumo .n-unlock {
+  display: block;
+  margin: 0 auto 16px;
+  padding: 12px 24px;
+  font-weight: 700;
+  color: var(--accent-2);
+  animation: n-breathe 1.8s ease-in-out infinite;
+}
+@keyframes n-breathe {
+  50% {
+    box-shadow: var(--raise);
+  }
+}
+
+/* Pads: soft rubber squares. Pressed by you: pushed in. Hit by a loop: lit in its colour. */
+.neumo .n-pads {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+.neumo .n-pad {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 18px;
+  box-shadow: var(--raise);
+  text-align: left;
+  touch-action: manipulation;
+  user-select: none;
+  overflow: hidden;
+  transition: box-shadow 0.18s ease-out;
+}
+.neumo .n-pad::after {
+  /* the glow layer, faded in for loop hits */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle closest-side at 50% 50%, var(--glow), transparent);
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+  pointer-events: none;
+}
+.neumo .n-pad.glow::after {
+  opacity: 0.55;
+  transition: none;
+}
+.neumo .n-pad.glow {
+  transition: none;
+}
+.neumo .n-pad.pressed {
+  box-shadow:
+    var(--inset),
+    inset 0 0 0 2px var(--glow);
+  transition: none;
+}
+.neumo .n-pad-key {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  padding: 2px 7px;
+  border-radius: 7px;
+  box-shadow: var(--inset-sm);
+}
+.neumo .n-pad-sound {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.15;
+  position: relative;
+  z-index: 1;
+}
+
+/* Change sounds: pads stay raised; a badge marks them, a click opens the sound menu */
+.neumo .n-pads.is-editing .n-pad {
+  cursor: pointer;
+}
+.neumo .n-pad-edit {
+  /* "opens a menu": a down chevron in a small well, like the Snap select's */
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: var(--inset-sm);
+  color: var(--accent-2);
+}
+.neumo .n-pad-edit::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+.neumo .n-pad[aria-expanded='true'] .n-pad-edit::before {
+  top: 9px;
+  transform: rotate(225deg);
+}
+.neumo .n-pad[aria-expanded='true'] {
+  box-shadow:
+    var(--raise),
+    inset 0 0 0 2px var(--accent-2);
+}
+
+.neumo .n-dot {
+  /* who uploaded a sound: a small dot in their colour, set in a soft rim */
+  display: inline-block;
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+  vertical-align: 1px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.neumo .n-option-main {
+  display: flex;
+  align-items: center;
+}
+.neumo .n-pad-sound-loading {
+  opacity: 0.5;
+}
+.neumo .n-pad-sound-missing {
+  color: var(--accent);
+}
+
+/* The real upload dialog and uploads list, softened */
+.neumo {
+  --panel: var(--bg);
+  --bad: var(--accent);
+}
+.neumo .n-sound-editor {
+  display: grid;
+  gap: 22px;
+}
+.neumo .upload-dialog,
+.neumo .uploads {
+  margin: 0;
+  padding: 18px 20px;
+  border: none;
+  border-radius: 22px;
+  background: var(--bg);
+  box-shadow: var(--raise);
+  font-size: 14px;
+}
+.neumo .upload-dialog {
+  gap: 14px;
+}
+.neumo .upload-title {
+  font-weight: 750;
+}
+.neumo .upload-dialog label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+}
+.neumo .upload-dialog input {
+  flex: 1;
+  max-width: 320px;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--bg);
+  box-shadow: var(--inset-sm);
+  transition: box-shadow 0.15s;
+}
+/* Focus shows inside the field, as a deeper well with an accent rim: no outer outline */
+.neumo .upload-dialog input:focus,
+.neumo .upload-dialog input:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--inset),
+    inset 0 0 0 1.5px var(--accent-2);
+}
+.neumo .upload-dialog input::selection {
+  background: color-mix(in srgb, var(--accent-2) 35%, transparent);
+}
+.neumo .upload-actions {
+  gap: 14px;
+}
+.neumo .upload-actions button[type='submit'] {
+  font-weight: 750;
+  color: var(--accent-2);
+  padding: 9px 20px;
+}
+.neumo .upload-actions button.link {
+  font-weight: 600;
+  color: var(--muted);
+}
+.neumo .uploads-head {
+  font-weight: 750;
+}
+.neumo .uploads ul {
+  gap: 10px;
+  margin-top: 14px;
+}
+.neumo .uploads li {
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  box-shadow: var(--inset-sm);
+}
+.neumo .upload-name {
+  font-weight: 700;
+}
+.neumo .muted {
+  color: var(--muted);
+}
+.neumo button.link {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 12px;
+}
+.neumo .paused {
+  margin: 0;
+  color: var(--accent);
+}
+
+/* Soft select button (opens a popover menu) */
+.neumo .n-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px 7px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: var(--inset-sm);
+}
+.neumo .n-select[aria-expanded='true'] {
+  color: var(--accent-2);
+}
+.neumo .n-chevron {
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0.6;
+}
+.neumo .n-select[aria-expanded='true'] .n-chevron {
+  transform: rotate(225deg);
+  margin-top: 4px;
+}
+
+/* Popover menu: a raised soft card that floats over the page */
+.neumo .n-popover {
+  position: fixed;
+  z-index: 60;
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 18px;
+  background: var(--bg);
+  box-shadow:
+    -6px -6px 16px var(--hi),
+    0 22px 48px -14px rgb(0 0 0 / 0.38),
+    0 4px 10px rgb(0 0 0 / 0.1);
+  animation: n-pop 0.14s ease-out;
+}
+@keyframes n-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+.neumo .n-options {
+  outline: none;
+  min-width: 180px;
+}
+.neumo .n-option-group + .n-option-group {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+.neumo .n-option-label {
+  padding: 6px 12px 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.neumo .n-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.neumo .n-option.is-active {
+  box-shadow: var(--inset-sm);
+}
+.neumo .n-options:focus-visible .n-option.is-active {
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--accent-2);
+}
+.neumo .n-option[aria-selected='true'] {
+  color: var(--accent-2);
+}
+.neumo .n-option[aria-selected='true']::after {
+  content: '';
+  width: 5px;
+  height: 10px;
+  margin-right: 2px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+.neumo .n-option[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: default;
+}
+.neumo .n-option-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* The real Transport, restyled: .record, .tempo (− input + label), .metronome, .message */
+.neumo .transport {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+.neumo .transport .record {
+  font-weight: 700;
+  padding: 12px 20px;
+  border-radius: 999px;
+  color: var(--accent);
+}
+.neumo .transport .record-recording {
+  box-shadow:
+    var(--inset),
+    0 0 0 2px var(--accent);
+  animation: n-rec 1s steps(2) infinite;
+}
+.neumo .transport .record-count-in {
+  box-shadow: var(--inset);
+  color: var(--accent-2);
+}
+@keyframes n-rec {
+  50% {
+    color: var(--muted);
+  }
+}
+.neumo .transport .tempo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.neumo .transport .tempo button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  font-weight: 700;
+}
+.neumo .transport .tempo input {
+  width: 64px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 7px 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: var(--inset);
+  color: var(--text);
+}
+.neumo .transport .metronome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.neumo .transport .metronome input {
+  /* a soft switch */
+  appearance: none;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--bg);
+  box-shadow: var(--inset-sm);
+  position: relative;
+  cursor: pointer;
+  margin: 0;
+}
+.neumo .transport .metronome input::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+  transition:
+    left 0.15s,
+    background 0.15s;
+}
+.neumo .transport .metronome input:checked::after {
+  left: 21px;
+  background: var(--accent-2);
+}
+.neumo .transport .message {
+  font-size: 13px;
+  color: var(--accent);
+}
+
+/* ── B: Console ────────────────────────────────────────────────────────────
+   One soft surface: pads + readout on the deck, loops as mixer channels below. */
+
+.neumo-b .b-page {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+.neumo-b .n-header {
+  margin: 16px 24px 28px;
+  border-radius: 22px;
+  box-shadow: var(--raise);
+}
+.neumo-b .b-deck {
+  display: grid;
+  grid-template-columns: minmax(300px, 520px) minmax(240px, 1fr);
+  gap: 40px;
+  padding: 0 24px;
+  align-items: start;
+}
+.neumo-b .n-pads {
+  gap: 20px;
+}
+.neumo-b .n-pad {
+  border-radius: 24px;
+}
+.neumo-b .b-side {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.neumo-b .b-readout {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 2px 10px;
+  padding: 22px 26px;
+  border-radius: 24px;
+  box-shadow: var(--inset);
+}
+.neumo-b .b-bpm {
+  font-size: 56px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.neumo-b .b-phase {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.neumo-b .b-phase-recording {
+  color: var(--accent);
+}
+.neumo-b .b-phase-count-in,
+.neumo-b .b-phase-waiting {
+  color: var(--accent-2);
+}
+.neumo-b .transport {
+  flex-direction: column;
+  align-items: stretch;
+}
+.neumo-b .transport .record {
+  padding: 18px;
+  font-size: 18px;
+  border-radius: 22px;
+}
+.neumo-b .b-mixer {
+  display: grid;
+  gap: 16px;
+  margin: 40px 24px 0;
+  padding: 22px;
+  border-radius: 28px;
+  box-shadow: var(--inset);
+  min-height: 110px;
+}
+.neumo-b .b-empty {
+  margin: auto;
+}
+/* One loop: ring · name · pattern · level · mute · remove */
+.neumo-b .b-channel {
+  display: grid;
+  grid-template-columns: 36px minmax(80px, 150px) minmax(140px, 1fr) minmax(
+      80px,
+      130px
+    ) auto auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px 12px 12px;
+  border-radius: 20px;
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+}
+.neumo-b .b-channel.is-muted .b-ring,
+.neumo-b .b-channel.is-muted .b-title,
+.neumo-b .b-channel.is-muted .b-pattern {
+  opacity: 0.4;
+}
+.neumo-b .b-ring {
+  /* loop progress as a ring in the loop's colour */
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--bg) 55%, transparent 57%),
+    conic-gradient(var(--c) calc(var(--p, 0) * 360deg), var(--line) 0);
+  box-shadow: var(--raise-sm);
+}
+.neumo-b .b-channel[data-playing='false'] .b-ring {
+  background: radial-gradient(circle, var(--bg) 55%, transparent 57%), var(--line);
+}
+.neumo-b .b-title {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.neumo-b .b-name {
+  font-size: 15px;
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.neumo-b .b-bars {
+  font-size: 12px;
+  color: var(--muted);
+}
+/* The pattern sits on a flat, high-contrast plate so hits read clearly */
+.neumo-b .b-pattern {
+  position: relative;
+  height: 30px;
+  border-radius: 10px;
+  background: var(--flat);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.neumo-b .b-beat {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line);
+}
+.neumo-b .b-hit {
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  width: 5px;
+  margin-left: -2px;
+  border-radius: 3px;
+  background: var(--c);
+}
+.neumo-b .b-head {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text);
+  left: calc(var(--p, 0) * 100%);
+}
+.neumo-b .b-channel[data-playing='false'] .b-head {
+  opacity: 0;
+}
+.neumo-b .b-snap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.neumo-b .b-edit {
+  font-weight: 700;
+  padding: 12px;
+  border-radius: 16px;
+}
+.neumo-b .b-edit[aria-pressed='true'] {
+  color: var(--accent-2);
+}
+.neumo-b .b-edit-hint {
+  margin: -8px 0 0;
+  font-size: 13px;
+  text-align: center;
+}
+.neumo-b .b-mute {
+  min-width: 72px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.neumo-b .b-mute[aria-pressed='true'] {
+  color: var(--accent);
+}
+.neumo-b .b-remove {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── Phone width ───────────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .neumo-b .b-deck {
+    grid-template-columns: 1fr;
+    padding: 0 16px;
+  }
+  .neumo .n-pads {
+    gap: 12px;
+  }
+  .neumo .n-person-name {
+    display: none;
+  }
+  .neumo-b .b-mixer {
+    margin: 28px 16px 0;
+    padding: 14px;
+  }
+  .neumo-b .b-channel {
+    grid-template-columns: 36px 1fr auto auto auto;
+  }
+  .neumo-b .b-pattern,
+  .neumo-b .b-fader {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Light/dark switch in the header: an inset track, a raised knob over the current icon */
+.neumo .n-theme {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 66px;
+  height: 34px;
+  padding: 0 7px;
+  border-radius: 999px;
+  box-shadow: var(--inset-sm);
+}
+.neumo .n-theme:active:not(:disabled) {
+  box-shadow: var(--inset-sm);
+}
+.neumo .n-theme-knob {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+  transition: transform 0.2s ease;
+}
+.neumo .n-theme[aria-checked='true'] .n-theme-knob {
+  transform: translateX(32px);
+}
+.neumo .n-theme svg {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.2s;
+}
+.neumo .n-theme svg:last-child {
+  margin-left: auto;
+}
+.neumo .n-theme[aria-checked='false'] svg:first-of-type,
+.neumo .n-theme[aria-checked='true'] svg:last-child {
+  stroke: var(--accent-2);
+}
+
+/* The page behind the prototype (overscroll, under the bar) takes the theme's surface colour */
+:root:has(.neumo-b[data-theme='light']) {
+  background: #ebe4dc;
+  color-scheme: light;
+}
+:root:has(.neumo-b[data-theme='dark']) {
+  background: #2a2621;
+  color-scheme: dark;
+}

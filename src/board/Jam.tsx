@@ -1,5 +1,5 @@
 import { Provider, useAtomValue } from 'jotai'
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react'
 import { JamClock } from '../audio/clock'
 import { Engine } from '../audio/engine'
 import { SampleLoader } from '../audio/samples'
@@ -42,7 +42,13 @@ export function Jam({ slug }: { slug: string }) {
     <SessionContext.Provider value={session}>
       <Provider store={session.jam.store}>
         <EngineFeed engine={session.engine} />
-        <Looper slug={slug} status={status} />
+        {Neumo ? (
+          <Suspense>
+            <Neumo slug={slug} status={status} />
+          </Suspense>
+        ) : (
+          <Looper slug={slug} status={status} />
+        )}
       </Provider>
     </SessionContext.Provider>
   )
@@ -84,6 +90,12 @@ function Presence() {
     </ul>
   )
 }
+
+// PROTOTYPE (neumorphism): `?variant=a|b|c` on the dev server swaps in the soft-UI variants.
+const Neumo =
+  import.meta.env.DEV && new URLSearchParams(window.location.search).has('variant')
+    ? lazy(() => import('./prototype/Neumo'))
+    : undefined
 
 const DEBUG = new URLSearchParams(window.location.search).has('debug')
 
