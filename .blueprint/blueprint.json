@@ -72,7 +72,8 @@
         "src/board/presence.ts",
         "src/board/colors.ts",
         "src/theme/**",
-        "src/ui/**"
+        "src/ui/**",
+        "src/board/console/**"
       ],
       "specVersion": "82c8f9d0d602a868",
       "anchorsFiles": {
