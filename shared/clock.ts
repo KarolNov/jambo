@@ -56,6 +56,15 @@ export function audioShift(
 export const roomToAudio = (roomMs: number, shift: number) => roomMs / 1000 + shift
 export const audioToRoom = (audio: number, shift: number) => (audio - shift) * 1000
 
+/**
+ * When audio scheduled for `audioTime` (context seconds) leaves the speakers, in performance.now()
+ * ms, given a pair of the two clocks taken at the same moment (`heard`).
+ */
+export const heardAt = (
+  audioTime: number,
+  heard: { contextTime: number; performanceTime: number },
+) => heard.performanceTime + (audioTime - heard.contextTime) * 1000
+
 /** Clock messages over the board connection: a client's ping, and the room's pong. */
 export type ClockMessage = { t: 'ping'; c: number } | { t: 'pong'; c: number; s: number }
 

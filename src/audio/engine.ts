@@ -1,6 +1,12 @@
 import type { Hit, Track } from '../../shared/board'
 import { BEATS_PER_BAR } from '../../shared/board'
-import { SHIFT_THRESHOLD_MS, audioShift, audioToRoom, roomToAudio } from '../../shared/clock'
+import {
+  SHIFT_THRESHOLD_MS,
+  audioShift,
+  audioToRoom,
+  heardAt,
+  roomToAudio,
+} from '../../shared/clock'
 import {
   barMs,
   barStart,
@@ -32,6 +38,12 @@ export type RecorderState =
       /** The jam bar the take begins on (`recordStart`'s bar). */
       recordBar: number
     }
+
+/** A pad sounding: played live by this client, or by a loop (`trackId`). */
+export interface PadHit {
+  padId: string
+  trackId?: string
+}
 
 interface Playing {
   track: Track
@@ -75,6 +87,9 @@ export class Engine {
   /** While it is on, the metronome clicks every beat of a take. */
   metronome = loadMetronome()
   private listeners = new Set<() => void>()
+  private hitListeners = new Set<(hit: PadHit) => void>()
+  /** Timers that announce scheduled loop hits when they are heard. */
+  private hitTimers = new Set<ReturnType<typeof setTimeout>>()
   private unsubscribeClock: () => void
 
   constructor(
@@ -125,6 +140,9 @@ export class Engine {
   dispose() {
     this.sleep?.()
     clearInterval(this.timer)
+    for (const t of this.hitTimers) clearTimeout(t)
+    this.hitTimers.clear()
+    this.hitListeners.clear()
     this.unsubscribeClock()
     this.samples.dispose()
     void this.ctx?.close()
@@ -138,6 +156,32 @@ export class Engine {
 
   private emit() {
     for (const l of this.listeners) l()
+  }
+
+  /**
+   * Subscribes to pads sounding, as they are heard: live hits at once, loop hits when the
+   * scheduled sound leaves the speakers. For lighting pads; nothing here changes the board.
+   */
+  onHit(listener: (hit: PadHit) => void) {
+    this.hitListeners.add(listener)
+    return () => {
+      this.hitListeners.delete(listener)
+    }
+  }
+
+  private announce(hit: PadHit) {
+    for (const l of this.hitListeners) l(hit)
+  }
+
+  /** Announces a loop hit scheduled for `at` (audio seconds) when it is heard. */
+  private announceAt(hit: PadHit, at: number) {
+    if (this.hitListeners.size === 0) return
+    const delay = Math.max(0, heardAt(at, this.heard(this.ctx!)) - performance.now())
+    const t = setTimeout(() => {
+      this.hitTimers.delete(t)
+      this.announce(hit)
+    }, delay)
+    this.hitTimers.add(t)
   }
 
   /** Feeds the board's current state: tempo, pad sounds, uploads, and every readable track by id. */
@@ -194,6 +238,7 @@ export class Engine {
     const ctx = this.ctx
     if (!ctx) return
     this.play(this.pads.get(padId), ctx.currentTime, this.master!)
+    this.announce({ padId })
     const now = this.heardNow()
     if (this.recorder.phase !== 'idle' && now !== undefined) {
       // People play to what they hear: the room time of what is leaving the speakers now, on the
@@ -364,7 +409,7 @@ export class Engine {
     if (to <= from) return
     const ctx = this.ctx!
     const shift = this.shift!
-    for (const p of this.playing.values()) {
+    for (const [trackId, p] of this.playing) {
       // A just-recorded track's next loop may have begun before it was added: play what it missed now.
       const start = Math.min(from, p.catchUpFrom ?? from)
       p.catchUpFrom = undefined
@@ -373,6 +418,7 @@ export class Engine {
       for (const hit of hitsInWindow(p.track, origin, this.bpm, start / 1000, to / 1000)) {
         const at = Math.max(ctx.currentTime, roomToAudio(hit.time * 1000, shift))
         this.play(this.pads.get(hit.padId), at, p.gain)
+        this.announceAt({ padId: hit.padId, trackId }, at)
       }
     }
     // Clicks only around a take: always during the count-in, and while recording if the metronome is on.

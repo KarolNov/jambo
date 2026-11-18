@@ -1,16 +1,12 @@
 import type { ColorName } from '../../shared/colors'
+import { SWATCHES, type Theme } from '../theme/palette'
+import { useTheme } from '../theme/theme'
 
-/** What each collaborator colour looks like on the board's dark theme. */
-const SWATCHES: Record<ColorName, string> = {
-  teal: '#2ab7ca',
-  coral: '#ff6b6b',
-  amber: '#f5a524',
-  lime: '#8bd346',
-  violet: '#a78bfa',
-  pink: '#ff6b9d',
-  sky: '#5bb4f5',
-  mint: '#4fd1a5',
+/** The CSS colour to paint a collaborator colour with in `theme` (dark: today's board). */
+export const swatch = (c: ColorName, theme: Theme = 'dark') => SWATCHES[c][theme]
+
+/** Paints collaborator colours for the theme being shown. */
+export function useSwatch(): (c: ColorName) => string {
+  const theme = useTheme()
+  return (c) => swatch(c, theme)
 }
-
-/** The CSS colour to paint a collaborator colour with. */
-export const swatch = (c: ColorName) => SWATCHES[c]
