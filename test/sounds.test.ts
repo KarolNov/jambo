@@ -3,10 +3,9 @@ import { env, exports } from 'cloudflare:workers'
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 import { ROOTS } from '../shared/board'
-import { isUploadId, UPLOADS } from '../shared/sounds'
+import { isUploadId, UPLOAD_HEADERS, UPLOADS } from '../shared/sounds'
 import { encodeWav } from '../shared/wav'
 import { SOUND_RETENTION_MS, soundKey } from '../worker/board'
-import { SOUND_HEADERS } from '../worker/sounds'
 import { connectBoard, until } from './client'
 
 let address = 0
@@ -34,9 +33,9 @@ function upload(
     body: opts.body ?? wav(),
     headers: {
       'CF-Connecting-IP': opts.ip ?? newAddress(),
-      [SOUND_HEADERS.name]: encodeURIComponent(opts.name ?? 'Vox'),
-      [SOUND_HEADERS.author]: 'me',
-      [SOUND_HEADERS.color]: '#2ab7ca',
+      [UPLOAD_HEADERS.name]: encodeURIComponent(opts.name ?? 'Vox'),
+      [UPLOAD_HEADERS.author]: 'me',
+      [UPLOAD_HEADERS.color]: '#2ab7ca',
       ...opts.headers,
     },
   })

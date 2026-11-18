@@ -42,6 +42,13 @@ export const UPLOADS = {
   maxFileBytes: 20 * 1024 * 1024,
 } as const
 
+/** Header names for an upload's details, sent with the WAV as the request body. */
+export const UPLOAD_HEADERS = {
+  name: 'X-Sound-Name',
+  author: 'X-Sound-Author',
+  color: 'X-Sound-Color',
+} as const
+
 const UPLOAD_ID = /^u-[a-z2-7]{12}$/
 const BASE32 = 'abcdefghijklmnopqrstuvwxyz234567'
 
