@@ -1,0 +1,69 @@
+/**
+ * Who an agent is in a jam. Its name is a jambo adjective and its kind, like "Groovy Claude", so an
+ * AI reads as one by name as well as by its badge. The room seats it by a private key only the
+ * agent holds; the board and presence carry only a separate public id.
+ */
+import { NAME_MAX } from '../names'
+import { ADJECTIVES, capitalize } from '../words'
+
+/** Prefix of an agent's public id wherever an author is stored, so the UI can mark its work. */
+export const AGENT_AUTHOR_PREFIX = 'agent:'
+
+export const DEFAULT_KIND = 'Agent'
+
+/** Longest a kind may be. */
+export const KIND_MAX = 20
+
+/** Whether a stored author is an agent. */
+export const isAgentAuthor = (author: string) => author.startsWith(AGENT_AUTHOR_PREFIX)
+
+/** An agent's kind, title-cased ("claude" → "Claude"); undefined unless one word of 1-20 letters or digits. */
+export function toKind(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const v = value.trim()
+  if (!/^[A-Za-z0-9]{1,20}$/.test(v)) return undefined
+  return capitalize(v.toLowerCase())
+}
+
+const adjectives = new Set<string>(ADJECTIVES)
+
+/** Whether `name` is a jambo adjective followed by `kind`, case aside, like "Groovy Claude". */
+export function isAgentName(name: string, kind: string): boolean {
+  const parts = name.trim().split(/\s+/)
+  return (
+    parts.length === 2 &&
+    adjectives.has(parts[0]!.toLowerCase()) &&
+    parts[1]!.toLowerCase() === kind.toLowerCase() &&
+    name.length <= NAME_MAX
+  )
+}
+
+/** `name` as an agent of `kind` writes it: "Groovy Claude". */
+export const agentName = (adjective: string, kind: string) => `${capitalize(adjective)} ${kind}`
+
+/** A random agent name for `kind`, from `random` (a float in [0, 1)). */
+export function randomAgentName(kind: string, random: () => number = Math.random): string {
+  return agentName(ADJECTIVES[Math.floor(random() * ADJECTIVES.length)]!, kind)
+}
+
+/** Every agent name for `kind`, in a fixed order. */
+export function* allAgentNames(kind: string): Generator<string> {
+  for (const adjective of ADJECTIVES) yield agentName(adjective, kind)
+}
+
+/** A new private agent key: 128 random bits, hex. */
+export function newAgentKey(): string {
+  return hex(crypto.getRandomValues(new Uint8Array(16)))
+}
+
+/** A new public agent id, unrelated to the key. */
+export function newAgentId(): string {
+  return hex(crypto.getRandomValues(new Uint8Array(8)))
+}
+
+const hex = (bytes: Uint8Array) =>
+  Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+
+/** Whether `value` looks like a key `newAgentKey` made. */
+export const isAgentKey = (value: unknown): value is string =>
+  typeof value === 'string' && /^[0-9a-f]{32}$/.test(value)
