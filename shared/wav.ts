@@ -64,13 +64,13 @@ export function parseUploadWav(bytes: Uint8Array): WavInfo | { error: string } {
     return { error: 'The file is truncated or has extra data' }
   const frames = dataBytes / 2
   if (frames < 1 || !Number.isInteger(frames)) return { error: 'The file has no audio' }
-  const durationMs = Math.ceil((frames / sampleRate) * 1000)
+  const durationMs = Math.ceil((frames * 1000) / sampleRate)
   if (durationMs > UPLOADS.maxSeconds * 1000)
     return { error: `Samples must be ${UPLOADS.maxSeconds} seconds or less` }
   return { sampleRate, channels, bitsPerSample, frames, durationMs }
 }
 
-/** Silence is anything quieter than this (−60 dBFS). */
+/** Silence is anything more than 60 dB below the sample's own peak. */
 export const SILENCE = 10 ** (-60 / 20)
 /** How much is kept before the first sound, so attacks aren't clipped. */
 export const LEAD_SECONDS = 0.005
@@ -87,15 +87,19 @@ export function mixDown(channels: readonly Float32Array[]): Float32Array {
 }
 
 /**
- * Trims silence from both ends, keeping a few ms before the first sound. Returns an empty array
- * when everything is silent.
+ * Trims silence from both ends, keeping a few ms before the first sound. Silence is measured
+ * against the sample's peak, so the cut doesn't depend on how loud it was recorded. Returns an
+ * empty array when everything is zero.
  */
 export function trimSilence(samples: Float32Array, sampleRate: number): Float32Array {
+  let peak = 0
+  for (const s of samples) peak = Math.max(peak, Math.abs(s))
+  if (peak === 0) return new Float32Array(0)
+  const floor = peak * SILENCE
   let first = 0
-  while (first < samples.length && Math.abs(samples[first]!) < SILENCE) first++
-  if (first === samples.length) return new Float32Array(0)
+  while (first < samples.length && Math.abs(samples[first]!) < floor) first++
   let last = samples.length - 1
-  while (last > first && Math.abs(samples[last]!) < SILENCE) last--
+  while (last > first && Math.abs(samples[last]!) < floor) last--
   const start = Math.max(0, first - Math.round(LEAD_SECONDS * sampleRate))
   return samples.slice(start, last + 1)
 }

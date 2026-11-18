@@ -57,7 +57,10 @@ export async function prepareSample(file: Blob): Promise<Prepared> {
     throw new UploadError(
       `Samples must be ${UPLOADS.maxSeconds} seconds or less (this one is ${seconds.toFixed(1)} s)`,
     )
-  return { wav: encodeWav(normalise(trimmed), rate), durationMs: Math.ceil(seconds * 1000) }
+  return {
+    wav: encodeWav(normalise(trimmed), rate),
+    durationMs: Math.ceil((trimmed.length * 1000) / rate),
+  }
 }
 
 async function failure(res: Response, fallback: string): Promise<UploadError> {

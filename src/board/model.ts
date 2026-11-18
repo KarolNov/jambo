@@ -35,10 +35,10 @@ export const tracksAtom = atom((get) => {
 
 /** Every readable upload of the jam by id, oldest first. */
 export const soundsAtom = atom((get) => {
-  const out = new Map<string, Sound>()
+  const out: [string, Sound][] = []
   for (const id of get(sounds.ids)) {
     const s = get(sounds.item(id))
-    if (s && !s.issues) out.set(id, s.value)
+    if (s && !s.issues) out.push([id, s.value])
   }
-  return new Map([...out].sort(([, a], [, b]) => a.createdAt - b.createdAt))
+  return new Map(out.sort(([, a], [, b]) => a.createdAt - b.createdAt))
 })

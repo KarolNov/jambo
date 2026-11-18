@@ -34,7 +34,7 @@ const fromResult = (result: { issues?: readonly SchemaIssue[] }): OpResult =>
 export function apply(doc: Y.Doc, ops: readonly unknown[], origin: Origin): OpResult[] {
   const results: OpResult[] = []
   doc.transact(() => {
-    for (const raw of ops) results.push(applyOne(doc, raw))
+    for (const raw of ops) results.push(applyOne(doc, raw, origin))
   }, origin)
   return results
 }
@@ -56,7 +56,24 @@ export function countUploads(doc: Y.Doc): number {
 const KEY_ORDER = PAD_KEYS.join('').toUpperCase()
 const keyOrder = (key: string) => KEY_ORDER.indexOf(key)
 
-function applyOne(doc: Y.Doc, raw: unknown): OpResult {
+/** Operations only the room may apply: it stores and deletes the audio they list. */
+const ROOM_ONLY = new Set<Op['op']>(['addSound', 'removeSound', 'expireSounds'])
+
+/**
+ * Pads whose stored sound is `soundId`, readable or not, as [pad id, upper-case key] in key
+ * order. Reads the raw field, so a pad that fails its schema still counts as using the sound.
+ */
+function padsUsing(pads: Y.Map<unknown>, soundId: string): [string, string][] {
+  const out: [string, string][] = []
+  pads.forEach((node, padId) => {
+    if (!isMap(node) || node.get('soundId') !== soundId) return
+    const key = node.get('key')
+    out.push([padId, typeof key === 'string' ? key.toUpperCase() : padId])
+  })
+  return out.sort(([, a], [, b]) => keyOrder(a) - keyOrder(b))
+}
+
+function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
   const parsed = Op.safeParse(raw)
   if (!parsed.success) {
     return {
@@ -65,6 +82,8 @@ function applyOne(doc: Y.Doc, raw: unknown): OpResult {
     }
   }
   const op = parsed.data
+  if (ROOM_ONLY.has(op.op) && origin.kind !== 'system')
+    return fail(`Only the room can apply ${op.op}`)
   const meta = doc.getMap<unknown>(ROOTS.meta)
   const pads = doc.getMap<unknown>(ROOTS.pads)
   const tracks = doc.getMap<unknown>(ROOTS.tracks)
@@ -123,13 +142,8 @@ function applyOne(doc: Y.Doc, raw: unknown): OpResult {
     }
     case 'removeSound': {
       if (!sounds.has(op.id)) return fail(`No sound ${op.id}`, ['id'])
-      const keys: string[] = []
-      pads.forEach((node) => {
-        const p = isMap(node) ? read(Pad, SHAPES.pad, node) : undefined
-        if (p && !p.issues && p.value.soundId === op.id) keys.push(p.value.key.toUpperCase())
-      })
+      const keys = padsUsing(pads, op.id).map(([, key]) => key)
       if (keys.length > 0) {
-        keys.sort((a, b) => keyOrder(a) - keyOrder(b))
         return fail(
           `Sound ${op.id} is on ${keys.length === 1 ? 'pad' : 'pads'} ${keys.join(', ')}`,
           ['id'],
@@ -140,6 +154,18 @@ function applyOne(doc: Y.Doc, raw: unknown): OpResult {
     }
     case 'expireSounds': {
       for (const id of [...sounds.keys()]) sounds.delete(id)
+      return { ok: true }
+    }
+    case 'replaceSound': {
+      if (!SOUND_IDS.has(op.to) && !isListed(op.to)) return fail(`No sound ${op.to}`, ['to'])
+      for (const [padId] of padsUsing(pads, op.from)) {
+        const node = pads.get(padId)
+        if (!isMap(node)) continue
+        const current = read(Pad, SHAPES.pad, node)
+        if (!current || current.issues) continue
+        const written = write(Pad, SHAPES.pad, node, { ...current.value, soundId: op.to })
+        if (written.issues) return fromResult(written)
+      }
       return { ok: true }
     }
   }

@@ -94,6 +94,20 @@ describe('sample preparation', () => {
     expect(trimSilence(silence, RATE).length).toBe(0)
   })
 
+  it('trims relative to the peak, so a quiet recording keeps its tail', () => {
+    // Peaks at −80 dBFS, decaying to −120 dBFS: all of it is within 60 dB of its own peak.
+    const quiet = Float32Array.from(
+      { length: RATE / 10 },
+      (_, i) => 1e-4 * 0.01 ** (i / (RATE / 10)),
+    )
+    expect(trimSilence(quiet, RATE).length).toBe(quiet.length)
+  })
+
+  it('reports durations without floating-point drift', () => {
+    const wav = encodeWav(new Float32Array(177_723), RATE)
+    expect(parseUploadWav(wav)).toMatchObject({ durationMs: Math.ceil((177_723 * 1000) / RATE) })
+  })
+
   it('levels the peak to −1 dBFS', () => {
     const out = normalise(tone(0.1, 0.1))
     expect(Math.max(...out.map(Math.abs))).toBeCloseTo(PEAK, 3)

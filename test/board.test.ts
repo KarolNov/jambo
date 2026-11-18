@@ -350,10 +350,43 @@ describe('uploaded sounds', () => {
     )
     let changes = 0
     doc.on('afterTransaction', () => changes++)
-    const results = board(doc, me).replaceSound(id, next)
-    expect(results).toEqual([{ ok: true }])
+    const result = board(doc, me).replaceSound(id, next)
+    expect(result).toEqual({ ok: true })
     expect(changes).toBe(1)
     expect(padSound(doc, 'r0c0')).toBe(next)
     expect(padSound(doc, 'r0c1')).toBe('snare')
+  })
+
+  it('refuses to replace a sound with one the jam does not list, even with no pad on it', () => {
+    const doc = seededDoc()
+    expect(board(doc, me).replaceSound('u-unusedunused', id).ok).toBe(false)
+  })
+
+  it('lets only the room change the uploads list', () => {
+    const doc = seededDoc()
+    apply(doc, [{ op: 'addSound', id, sound: sound() }], room)
+    const results = board(doc, me).apply([
+      { op: 'addSound', id: 'u-bbbbbbbbbbbb', sound: sound() },
+      { op: 'removeSound', id },
+      { op: 'expireSounds' },
+    ])
+    expect(results.map((r) => r.ok)).toEqual([false, false, false])
+    expect([...soundsOf(doc).keys()]).toEqual([id])
+  })
+
+  it('refuses to remove an upload an unreadable pad still names', () => {
+    const doc = seededDoc()
+    apply(
+      doc,
+      [
+        { op: 'addSound', id, sound: sound() },
+        { op: 'assignPad', padId: 'r0c0', soundId: id },
+      ],
+      room,
+    )
+    doc.getMap<Y.Map<unknown>>(ROOTS.pads).get('r0c0')!.set('row', 99)
+    const [r] = apply(doc, [{ op: 'removeSound', id }], room)
+    expect(r?.ok).toBe(false)
+    expect(soundsOf(doc).has(id)).toBe(true)
   })
 })

@@ -28,6 +28,8 @@ export const Op = z.discriminatedUnion('op', [
   z.object({ op: z.literal('removeSound'), id: z.string() }),
   /** Unlists every upload, whatever uses it: the room's retention, after it deleted the audio. */
   z.object({ op: z.literal('expireSounds') }),
+  /** Moves every pad on sound `from` to sound `to`. Tracks follow, since they hit pads. */
+  z.object({ op: z.literal('replaceSound'), from: z.string(), to: z.string() }),
 ])
 export type Op = z.infer<typeof Op>
 
