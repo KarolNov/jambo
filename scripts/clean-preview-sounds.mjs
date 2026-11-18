@@ -12,11 +12,13 @@
  * It only ever touches the bucket bound as SOUND_FILES under `previews` in wrangler.jsonc, and
  * refuses to run against production's bucket.
  */
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
-import { getPlatformProxy } from 'wrangler'
+import { runnerImport } from 'vite'
+import { experimental_readRawConfig, getPlatformProxy } from 'wrangler'
 
 const { values } = parseArgs({
   options: {
@@ -31,11 +33,9 @@ if (values.help) {
 }
 
 // Read both bucket names from the config, so this can't drift from what the Worker uses.
-const config = JSON.parse(
-  readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8')
-    .replace(/^\s*\/\/.*$/gm, '')
-    .replace(/,(\s*[}\]])/g, '$1'),
-)
+const { rawConfig: config } = experimental_readRawConfig({
+  config: fileURLToPath(new URL('../wrangler.jsonc', import.meta.url)),
+})
 const bucketOf = (block) => block?.r2_buckets?.find((b) => b.binding === 'SOUND_FILES')?.bucket_name
 const preview = bucketOf(config.previews)
 const production = bucketOf(config)
@@ -45,34 +45,38 @@ if (!preview || preview === production) {
   )
   process.exit(1)
 }
-if (values.prefix && !/^jams\/[a-z0-9-]+\/$/.test(values.prefix)) {
-  console.error('--prefix must look like jams/<slug>/')
-  process.exit(1)
+if (values.prefix) {
+  // The jam's slug, checked by the slug rules the Worker and client share.
+  const {
+    module: { isJamSlug },
+  } = await runnerImport(fileURLToPath(new URL('../shared/slug.ts', import.meta.url)), {
+    configFile: false,
+  })
+  const slug = /^jams\/([^/]+)\/$/.exec(values.prefix)?.[1]
+  if (!slug || !isJamSlug(slug)) {
+    console.error(
+      '--prefix must look like jams/<slug>/, for a jam link slug such as funky-otter-k7q2',
+    )
+    process.exit(1)
+  }
 }
 
 // A throwaway config with only the preview bucket, bound remotely.
 const dir = mkdtempSync(join(tmpdir(), 'jambo-clean-'))
-const configPath = join(dir, 'wrangler.json')
-writeFileSync(
-  configPath,
-  JSON.stringify({
-    // Remote bindings run through a temporary edge-preview Worker under this name. Keep it fixed:
-    // on this account, edge-preview sessions under new names fail with an internal error.
-    name: 'jambo-clean-probe',
-    compatibility_date: config.compatibility_date,
-    r2_buckets: [{ binding: 'BUCKET', bucket_name: preview, remote: true }],
-  }),
-)
-
-const proxy = await getPlatformProxy({ configPath, persist: false })
+let proxy
 try {
-  await proxy.env.BUCKET.list().catch((e) => {
-    throw new Error(
-      `Couldn't reach ${preview} through Wrangler's remote bindings (${e.message}). ` +
-        'Check `npx wrangler whoami`, or empty the bucket from the dashboard: R2 > ' +
-        `${preview} > select all > Delete.`,
-    )
-  })
+  const configPath = join(dir, 'wrangler.json')
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      // Remote bindings run through a temporary edge-preview Worker under this name. Keep it fixed:
+      // on this account, edge-preview sessions under new names fail with an internal error.
+      name: 'jambo-clean-probe',
+      compatibility_date: config.compatibility_date,
+      r2_buckets: [{ binding: 'BUCKET', bucket_name: preview, remote: true }],
+    }),
+  )
+  proxy = await getPlatformProxy({ configPath, persist: false })
   /** @type {R2Bucket} */
   const bucket = proxy.env.BUCKET
   let cursor
@@ -84,7 +88,16 @@ try {
       ...(values.prefix ? { prefix: values.prefix } : {}),
       ...(cursor ? { cursor } : {}),
     }
-    const page = await bucket.list(Object.keys(options).length > 0 ? options : undefined)
+    const page = await bucket
+      .list(Object.keys(options).length > 0 ? options : undefined)
+      .catch((e) => {
+        if (cursor) throw e
+        throw new Error(
+          `Couldn't reach ${preview} through Wrangler's remote bindings (${e.message}). ` +
+            'Check `npx wrangler whoami`, or empty the bucket from the dashboard: R2 > ' +
+            `${preview} > select all > Delete.`,
+        )
+      })
     const keys = page.objects.map((o) => o.key)
     count += keys.length
     bytes += page.objects.reduce((n, o) => n + o.size, 0)
@@ -100,6 +113,6 @@ try {
       `${count} sound file(s), ${size}, in ${where}. Run again with --yes to delete them.`,
     )
 } finally {
-  await proxy.dispose()
+  await proxy?.dispose()
   rmSync(dir, { recursive: true, force: true })
 }

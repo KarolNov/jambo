@@ -40,7 +40,7 @@
         "src/App.tsx": "73dcf24dbe28",
         "worker/index.ts": "6a8239beef94"
       },
-      "syncedCommit": "c899c41a331d5fc2e778b53d88ec9efb55e73e76"
+      "syncedCommit": "900b504ef7b6ef142cc25ba16fe64bc8b97c0147"
     },
     "room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
@@ -59,7 +59,7 @@
         "worker/quota.ts": "fa0709c13df2",
         "worker/sounds.ts": "5747baabfd9e"
       },
-      "syncedCommit": "c899c41a331d5fc2e778b53d88ec9efb55e73e76"
+      "syncedCommit": "900b504ef7b6ef142cc25ba16fe64bc8b97c0147"
     },
     "board": {
       "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
@@ -78,7 +78,7 @@
         "src/board/presence.ts": "7a1e3badf2a7",
         "src/board/session.ts": "c48c16e24b76"
       },
-      "syncedCommit": "c899c41a331d5fc2e778b53d88ec9efb55e73e76"
+      "syncedCommit": "900b504ef7b6ef142cc25ba16fe64bc8b97c0147"
     },
     "board/ops": {
       "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
@@ -94,7 +94,7 @@
         "shared/board/sdk.ts": "b49b1c8f5e10",
         "shared/board/seed.ts": "d5eb014f0cd8"
       },
-      "syncedCommit": "c899c41a331d5fc2e778b53d88ec9efb55e73e76"
+      "syncedCommit": "900b504ef7b6ef142cc25ba16fe64bc8b97c0147"
     },
     "looper": {
       "ref": "https://app.notion.com/p/41c43cce21f2816ba415d28e60bf80d5",
@@ -118,7 +118,7 @@
         "src/board/Tracks.tsx": "25f839a4ccce",
         "src/board/Transport.tsx": "f5b53a3f71af"
       },
-      "syncedCommit": "c899c41a331d5fc2e778b53d88ec9efb55e73e76"
+      "syncedCommit": "900b504ef7b6ef142cc25ba16fe64bc8b97c0147"
     },
     "pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
@@ -131,7 +131,7 @@
         "src/board/Pads.tsx": "a8ec9ea04371",
         "src/board/Uploads.tsx": "9370881a5c44"
       },
-      "syncedCommit": "c899c41a331d5fc2e778b53d88ec9efb55e73e76"
+      "syncedCommit": "900b504ef7b6ef142cc25ba16fe64bc8b97c0147"
     },
     "sounds": {
       "ref": "https://app.notion.com/p/41c43cce21f2810f8bb0f1ed9935a67d",
@@ -150,7 +150,7 @@
         "src/audio/synth.ts": "bbba5b7d5b5b",
         "src/audio/upload.ts": "9d20ca33fa35"
       },
-      "syncedCommit": "c899c41a331d5fc2e778b53d88ec9efb55e73e76"
+      "syncedCommit": "900b504ef7b6ef142cc25ba16fe64bc8b97c0147"
     }
   },
   "changes": {

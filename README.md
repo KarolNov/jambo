@@ -55,7 +55,7 @@ pnpm sounds:clean-preview --yes                           # empty the preview bu
 pnpm sounds:clean-preview --prefix jams/<slug>/ --yes     # or just one jam
 ```
 
-It only ever touches the preview bucket named in `wrangler.jsonc`, through Wrangler's remote bindings and your `wrangler login`. Emptying the bucket also clears sounds other open PRs' previews uploaded.
+It only ever touches the preview bucket named in `wrangler.jsonc`, through Wrangler's remote bindings and your `wrangler login`. Emptying the bucket also clears sounds other open PRs' previews uploaded. It only deletes audio: those previews' jams still list the sounds (they show as missing), and their upload quota still counts the deleted bytes.
 
 ## Specs
 
