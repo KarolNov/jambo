@@ -1,10 +1,10 @@
 import { useAtomValue } from 'jotai'
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { BPM, newId } from '../../shared/board'
-import { colorLabel } from '../../shared/colors'
+import { newId } from '../../shared/board'
 import { bpmAtom, tracksAtom } from './model'
 import { isTyping } from './typing'
 import { useSession } from './session'
+import { TEMPO_RANGE, takeName, tempoFor } from './transport'
 import { useRecorderState } from './useEngineState'
 
 /**
@@ -42,10 +42,9 @@ export function useTransport() {
       return
     }
     const id = newId()
-    const mine = [...tracks.values()].filter((t) => t.author === me.id).length
     engine.claim(id)
     const r = board.addTrack(id, {
-      name: `${colorLabel(me.color)} ${mine + 1}`,
+      name: takeName(me.color, me.id, tracks.values()),
       author: me.id,
       color: me.color,
       bars: take.bars,
@@ -72,16 +71,10 @@ export function useTransport() {
 
   /** Sets the tempo, clamped to the allowed range; says so when it clamps or is refused. */
   const setTempo = (value: number) => {
-    if (!Number.isFinite(value) || value === bpm) return
-    const clamped = Math.round(Math.min(BPM.max, Math.max(BPM.min, value)))
-    const r = board.tempo(clamped)
-    setMessage(
-      r.ok
-        ? clamped !== value
-          ? `Tempo is ${BPM.min}–${BPM.max} BPM`
-          : undefined
-        : r.issues[0]?.message,
-    )
+    const next = tempoFor(value, bpm)
+    if (!next) return
+    const r = board.tempo(next.bpm)
+    setMessage(r.ok ? (next.clamped ? TEMPO_RANGE : undefined) : r.issues[0]?.message)
   }
 
   return {

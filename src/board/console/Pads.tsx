@@ -1,12 +1,13 @@
 import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { type ColorName, colorLabel } from '../../../shared/colors'
+import type { ColorName } from '../../../shared/colors'
 import { SOUND_IDS, SOUNDS, soundName } from '../../../shared/sounds'
 import { Button, type Group, OptionList, Popover } from '../../ui'
 import { useSwatch } from '../colors'
 import { padsAtom, soundsAtom, tracksAtom } from '../model'
 import { isTyping } from '../typing'
 import { useSession } from '../session'
+import { uploadedBy } from './people'
 import {
   PausedNotice,
   refreshBudget,
@@ -29,7 +30,7 @@ const GLOW_MS = 160
 /** Who uploaded a sound, for its dot's tooltip. */
 function useUploader(): (sound: { author: string; color: ColorName }) => string {
   const { me } = useSession()
-  return (s) => (s.author === me.id ? 'Uploaded by you' : `Uploaded by ${colorLabel(s.color)}`)
+  return (s) => uploadedBy(s, me.id)
 }
 
 /** Every sound a pad can take: the kit by category, the jam's uploads, then "Upload a sound…". */

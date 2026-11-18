@@ -133,7 +133,8 @@
         "src/board/console/loops.ts",
         "src/board/Debug.tsx",
         "src/board/useEngineState.ts",
-        "src/board/useTransport.ts"
+        "src/board/useTransport.ts",
+        "src/board/transport.ts"
       ],
       "specVersion": "20c6bb8c43dda1b3",
       "anchorsFiles": {

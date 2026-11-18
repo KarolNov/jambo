@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { colorLabel } from '../../../shared/colors'
 import { ThemeToggle } from '../../theme/ThemeToggle'
 import { IconButton } from '../../ui'
 import { useSwatch } from '../colors'
 import type { ConnectionStatus } from '../doc'
 import { usePeople } from '../presence'
 import { useSession } from '../session'
+import { namesPeople, personName } from './people'
 import { jamLink, shareLink, type ShareResult } from './share'
 import './header.css'
 
@@ -14,9 +14,6 @@ const STATUS: Record<ConnectionStatus, { label: string; title?: string }> = {
   connecting: { label: 'Connecting…' },
   offline: { label: 'Offline', title: 'Offline: your edits will sync when you are back' },
 }
-
-/** Past this many people the header shows only their dots; names stay in each dot's tooltip. */
-const NAMED_PEOPLE = 3
 
 const TIPS: Partial<Record<ShareResult, string>> = {
   copied: 'Link copied',
@@ -85,11 +82,11 @@ function People() {
   const { jam, me } = useSession()
   const people = usePeople(jam.awareness, me)
   const swatch = useSwatch()
-  const named = people.length <= NAMED_PEOPLE
+  const named = namesPeople(people.length)
   return (
     <ul className={`console-people ${named ? '' : 'is-crowded'}`} aria-label="Who's here">
       {people.map((p) => {
-        const name = `${colorLabel(p.color)}${p.id === me.id ? ' (you)' : ''}`
+        const name = personName(p, me.id)
         return (
           <li key={p.id} title={name}>
             <span className="console-person" style={{ background: swatch(p.color) }} aria-hidden />
