@@ -12,6 +12,7 @@ import {
   trackStart,
 } from '../../shared/looper'
 import type { JamClock } from './clock'
+import type { SampleLoader } from './samples'
 import { click, renderKit } from './synth'
 import { keepAwake, preferPlayback } from './session'
 
@@ -76,7 +77,11 @@ export class Engine {
   private listeners = new Set<() => void>()
   private unsubscribeClock: () => void
 
-  constructor(readonly clock: JamClock) {
+  constructor(
+    readonly clock: JamClock,
+    /** The jam's uploaded sounds, played by id beside the kit. */
+    readonly samples: SampleLoader,
+  ) {
     this.unsubscribeClock = clock.subscribe(() => this.emit())
   }
 
@@ -109,6 +114,7 @@ export class Engine {
     master.gain.value = 0.8
     master.connect(ctx.destination)
     this.buffers = await renderKit(ctx.sampleRate)
+    this.samples.attach(ctx)
     this.ctx = ctx
     this.master = master
     for (const p of this.playing.values()) this.attach(p)
@@ -120,6 +126,7 @@ export class Engine {
     this.sleep?.()
     clearInterval(this.timer)
     this.unsubscribeClock()
+    this.samples.dispose()
     void this.ctx?.close()
   }
 
@@ -133,8 +140,14 @@ export class Engine {
     for (const l of this.listeners) l()
   }
 
-  /** Feeds the board's current state: tempo, pad sounds, and every readable track by id. */
-  update(state: { bpm: number; pads: Map<string, string>; tracks: Map<string, Track> }) {
+  /** Feeds the board's current state: tempo, pad sounds, uploads, and every readable track by id. */
+  update(state: {
+    bpm: number
+    pads: Map<string, string>
+    tracks: Map<string, Track>
+    uploads: ReadonlySet<string>
+  }) {
+    this.samples.sync(state.uploads)
     this.boardBpm = state.bpm
     if (this.recorder.phase === 'idle') this.bpm = this.boardBpm
     this.pads = state.pads
@@ -191,7 +204,8 @@ export class Engine {
   }
 
   private play(soundId: string | undefined, at: number, out: AudioNode) {
-    const buffer = soundId ? this.buffers.get(soundId) : undefined
+    // An upload that hasn't loaded yet plays nothing; its hits sound once it has.
+    const buffer = soundId ? (this.buffers.get(soundId) ?? this.samples.get(soundId)) : undefined
     if (!buffer || !this.ctx) return
     const src = this.ctx.createBufferSource()
     src.buffer = buffer

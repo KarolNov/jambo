@@ -260,6 +260,110 @@ button:hover {
   font-size: 13px;
 }
 
+.pad-sound-loading {
+  opacity: 0.5;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.pad-sound-missing {
+  color: var(--bad);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.upload-dialog,
+.uploads {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.upload-dialog {
+  border-color: var(--accent);
+  display: grid;
+  gap: 8px;
+}
+
+.upload-dialog p {
+  margin: 0;
+}
+
+.upload-dialog input {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 6px;
+  width: min(100%, 260px);
+}
+
+.upload-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.upload-actions .link,
+.uploads .link {
+  margin-top: 0;
+}
+
+.uploads-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.uploads ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.uploads li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+}
+
+.upload-name {
+  overflow-wrap: anywhere;
+}
+
+.upload-buttons {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+}
+
+.link:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
 .link {
   margin-top: 8px;
   background: none;
