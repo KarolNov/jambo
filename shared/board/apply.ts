@@ -39,6 +39,20 @@ export function apply(doc: Y.Doc, ops: readonly unknown[], origin: Origin): OpRe
   return results
 }
 
+const isListedSound = (sounds: Y.Map<unknown>, id: string) => {
+  const node = sounds.get(id)
+  const s = isMap(node) ? read(Sound, SHAPES.sound, node) : undefined
+  return !!s && !s.issues
+}
+
+/** How many uploads a jam lists: the count `addSound` holds to `UPLOADS.perJam`. */
+export function countUploads(doc: Y.Doc): number {
+  const sounds = doc.getMap<unknown>(ROOTS.sounds)
+  let n = 0
+  sounds.forEach((_, id) => isListedSound(sounds, id) && n++)
+  return n
+}
+
 const KEY_ORDER = PAD_KEYS.join('').toUpperCase()
 const keyOrder = (key: string) => KEY_ORDER.indexOf(key)
 
@@ -55,16 +69,8 @@ function applyOne(doc: Y.Doc, raw: unknown): OpResult {
   const pads = doc.getMap<unknown>(ROOTS.pads)
   const tracks = doc.getMap<unknown>(ROOTS.tracks)
   const sounds = doc.getMap<unknown>(ROOTS.sounds)
-  const isListed = (id: string) => {
-    const node = sounds.get(id)
-    const s = isMap(node) ? read(Sound, SHAPES.sound, node) : undefined
-    return !!s && !s.issues
-  }
-  const uploadCount = () => {
-    let n = 0
-    sounds.forEach((_, id) => isListed(id) && n++)
-    return n
-  }
+  const isListed = (id: string) => isListedSound(sounds, id)
+  const uploadCount = () => countUploads(doc)
   // Only readable tracks count: the UI can't see or remove the rest.
   const trackCount = () => {
     let n = 0
