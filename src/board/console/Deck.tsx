@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { BPM } from '../../../shared/board'
 import type { RecorderState } from '../../audio/engine'
-import { Button, IconButton, Switch } from '../../ui'
+import { Button, IconButton, ScrubField, Switch } from '../../ui'
 import { useTransport } from '../useTransport'
 import { SoundEditor } from './Pads'
 import './deck.css'
@@ -73,17 +73,9 @@ function Transport({
   metronome,
   message,
   toggle,
-  setTempo: applyTempo,
+  setTempo,
   setMetronome,
 }: ReturnType<typeof useTransport>) {
-  // The tempo being typed; it is applied on Enter or when the field loses focus.
-  const [draft, setDraft] = useState<string>()
-  // Set on Escape, so the blur that follows doesn't apply the draft.
-  const cancelled = useRef(false)
-  const setTempo = (value: number) => {
-    setDraft(undefined)
-    applyTempo(value)
-  }
   const syncing = state.phase === 'idle' && !synced
 
   return (
@@ -105,47 +97,36 @@ function Transport({
           className="console-tempo"
           title={locked ? 'Tempo is locked while the jam has loops' : undefined}
         >
-          <IconButton
-            label="Slower"
-            disabled={locked || bpm <= BPM.min}
-            onClick={() => setTempo(bpm - 1)}
-          >
-            −
-          </IconButton>
-          <input
-            className="console-tempo-field"
+          {/* The BPM label scrubs the tempo; it applies once, on release, for everyone. */}
+          <ScrubField
+            label="BPM"
             aria-label="Tempo in BPM"
-            inputMode="numeric"
-            value={draft ?? String(bpm)}
+            value={bpm}
+            onChange={setTempo}
+            min={BPM.min}
+            max={BPM.max}
+            maxLength={3}
             disabled={locked}
-            onChange={(e) => setDraft(e.target.value.replace(/[^0-9]/g, '').slice(0, 3))}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') e.currentTarget.blur()
-              if (e.key === 'Escape') {
-                cancelled.current = true
-                setDraft(undefined)
-                e.currentTarget.blur()
-              }
-              if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                e.preventDefault()
-                setTempo(bpm + (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1))
-              }
-            }}
-            onBlur={() => {
-              if (cancelled.current || !draft) {
-                cancelled.current = false
-                setDraft(undefined)
-              } else setTempo(Number(draft))
-            }}
+            start={
+              <IconButton
+                label="Slower"
+                disabled={locked || bpm <= BPM.min}
+                onClick={() => setTempo(bpm - 1)}
+              >
+                −
+              </IconButton>
+            }
+            end={
+              <IconButton
+                label="Faster"
+                disabled={locked || bpm >= BPM.max}
+                onClick={() => setTempo(bpm + 1)}
+              >
+                +
+              </IconButton>
+            }
           />
-          <IconButton
-            label="Faster"
-            disabled={locked || bpm >= BPM.max}
-            onClick={() => setTempo(bpm + 1)}
-          >
-            +
-          </IconButton>
-          <span>BPM {locked && <span aria-label="locked">🔒</span>}</span>
+          {locked && <span aria-label="locked">🔒</span>}
         </div>
         <Switch checked={metronome} onChange={setMetronome}>
           Click
