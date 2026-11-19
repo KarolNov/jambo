@@ -112,7 +112,8 @@ export function Switch({
           </span>
         </span>
       ) : (
-        <span className={off || on ? 'ui-slide ui-slide-marked' : 'ui-slide'} aria-hidden>
+        <span className="ui-slide" aria-hidden>
+          {!off && !on && <span className="ui-slide-fill" />}
           <span className="ui-slide-knob" />
           <span className="ui-slide-off">{off}</span>
           <span className="ui-slide-on">{on}</span>

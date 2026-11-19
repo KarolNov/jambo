@@ -217,7 +217,10 @@
   height: var(--slide-knob);
   border-radius: 999px;
   background: var(--bg);
-  box-shadow: var(--raise-sm);
+  /* A tight shadow, not the soft raise: that spills a haze onto the lit track. */
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--lo) 80%, transparent),
+    inset 0 0 0 1px var(--line);
   transform-origin: left center;
   transition:
     transform 0.38s cubic-bezier(0.3, 1.5, 0.5, 1),
@@ -226,25 +229,28 @@
 :root[data-theme] .ui-switch:active .ui-slide-knob {
   width: calc(var(--slide-knob) + 6px);
 }
-/* Without marks, the track lights behind the knob: the fill runs from the off end to under the
-   knob and moves with it, so on lights all the space the knob has left, like a physical switch.
-   Off, it hides under the knob. */
-:root[data-theme] .ui-slide:not(.ui-slide-marked)::before {
+/* Without marks, the track lights behind the knob: a fill fixed to the knob's back, clipped to
+   the track, so on lights all the space the knob has left and off hides it. It moves on the
+   knob's own transform, so it can't lag. */
+:root[data-theme] .ui-slide-fill {
+  position: absolute;
+  inset: var(--slide-pad);
+  border-radius: 999px;
+  overflow: hidden;
+}
+:root[data-theme] .ui-slide-fill::before {
   content: '';
   position: absolute;
-  top: var(--slide-pad);
-  left: var(--slide-pad);
-  width: var(--slide-knob);
-  height: var(--slide-knob);
+  top: 0;
+  bottom: 0;
+  right: calc(100% - var(--slide-knob));
+  width: calc(var(--slide-travel) + var(--slide-knob));
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent-2) 70%, var(--bg));
-  box-shadow: inset 1px 1px 3px color-mix(in srgb, var(--lo) 60%, transparent);
-  transition: width 0.38s cubic-bezier(0.3, 1.5, 0.5, 1);
+  transition: transform 0.38s cubic-bezier(0.3, 1.5, 0.5, 1);
 }
-:root[data-theme]
-  .ui-switch:has(> .ui-switch-input:checked)
-  .ui-slide:not(.ui-slide-marked)::before {
-  width: calc(var(--slide-travel) + var(--slide-knob));
+:root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-slide-fill::before {
+  transform: translateX(var(--slide-travel));
 }
 :root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-slide-knob {
   transform: translateX(var(--slide-travel));
@@ -284,7 +290,7 @@
 @media (prefers-reduced-motion: reduce) {
   /* Jumps across without the spring or the stretch. */
   :root[data-theme] .ui-slide-knob,
-  :root[data-theme] .ui-slide::before {
+  :root[data-theme] .ui-slide-fill::before {
     transition: none;
   }
   :root[data-theme] .ui-switch:active .ui-slide-knob {
