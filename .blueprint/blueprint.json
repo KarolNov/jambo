@@ -138,7 +138,7 @@
         "src/board/useTransport.ts",
         "src/board/transport.ts"
       ],
-      "specVersion": "c57b1f77a27a68eb",
+      "specVersion": "58be587d2edacde6",
       "anchorsFiles": {
         "shared/clock.ts": "1dd908e91d40",
         "src/audio/clock.ts": "c0378e84a7cb",
@@ -149,14 +149,14 @@
         "src/audio/synth.ts": "bbba5b7d5b5b",
         "src/audio/upload.ts": "9d3467419e28",
         "src/board/Debug.tsx": "80d7db772bb5",
-        "src/board/console/Deck.tsx": "3fb36110e7d0",
-        "src/board/console/Mixer.tsx": "7dfefa2e369d",
+        "src/board/console/Deck.tsx": "c82790ccb25b",
+        "src/board/console/Mixer.tsx": "cf7df23a124e",
         "src/board/console/loops.ts": "42ef8492a4ca",
         "src/board/transport.ts": "cee162c2b1a7",
         "src/board/useEngineState.ts": "f06f1956d95d",
         "src/board/useTransport.ts": "754386647e7d"
       },
-      "syncedCommit": "00d1392965d46f159ac9d1e6fb1590839fcdb191"
+      "syncedCommit": "b62a61a008f9842ad33e3a9c193d983c536180a0"
     },
     "pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
@@ -222,28 +222,28 @@
         "src/ds/**",
         "DESIGN.md"
       ],
-      "specVersion": "12646a7b4615aa96",
+      "specVersion": "a2ab4c0c7cd1caf3",
       "anchorsFiles": {
-        "DESIGN.md": "2a10e6bdaf22",
+        "DESIGN.md": "527bce869123",
         "src/ds/Showcase.tsx": "ac8e134e3886",
-        "src/ds/catalogue.tsx": "6e8a842f1121",
+        "src/ds/catalogue.tsx": "bd0f93394675",
         "src/ds/ds.css": "d2c2ffbf9b63",
         "src/theme/ThemeToggle.tsx": "d9f25bb631c3",
-        "src/theme/palette.ts": "d370201d2e76",
+        "src/theme/palette.ts": "131b04f179ed",
         "src/theme/theme.css": "69360aacdbdf",
         "src/theme/theme.ts": "d344ee870e57",
         "src/ui/Menu.tsx": "2d9775cf6df9",
         "src/ui/Pad.tsx": "f0b6b6149ebe",
-        "src/ui/controls.tsx": "ad39f723e338",
-        "src/ui/fader.ts": "c5879f1ed2aa",
+        "src/ui/controls.tsx": "7bb0fe97a0a0",
+        "src/ui/fader.ts": "0e8d2c9acca4",
         "src/ui/haptics.ts": "5a3288047b64",
-        "src/ui/index.ts": "253373b10c06",
+        "src/ui/index.ts": "1861f48ccf58",
         "src/ui/listNav.ts": "5b2ced68cb10",
         "src/ui/scrub.ts": "3184ca5112fd",
         "src/ui/scrubSteps.ts": "51776600539b",
-        "src/ui/ui.css": "acb623631b92"
+        "src/ui/ui.css": "ea03ebb7bcf6"
       },
-      "syncedCommit": "00d1392965d46f159ac9d1e6fb1590839fcdb191"
+      "syncedCommit": "b62a61a008f9842ad33e3a9c193d983c536180a0"
     }
   },
   "changes": {

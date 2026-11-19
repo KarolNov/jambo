@@ -10,8 +10,8 @@ A jam SHALL have one tempo, a whole number of BPM from 40 to 240 (default 100), 
 
 - **Scenario: Locked by tracks**
   - **GIVEN** a jam with one track
-  - **WHEN** someone tries to change the tempo
-  - **THEN** the change is refused, and the tempo control shows a lock and says why
+  - **WHEN** someone taps the tempo's buttons, its field, its BPM label or the lock beside it
+  - **THEN** nothing changes, and a note saying the tempo is locked while the jam has loops shows for a few seconds, on phones as on desktop
 - **Scenario: Locked while recording**
   - **GIVEN** a count-in or a take in progress
   - **WHEN** the person recording looks at the tempo control
@@ -111,7 +111,7 @@ Each track SHALL play its hits snapped to its grid (off, 1/32, 1/16, 1/8 or 1/4)
 
 ### Requirement: Track controls
 
-Anyone in the jam SHALL be able to mute, set the level (0 to 1.5) of, rename, change the snap of and remove any track, and turn any of its sound knobs. A name SHALL be 1 to 40 characters after trimming. Each track SHALL show its length in bars, its number of hits and its hits across the loop, and, while it plays, a playhead and a ring showing how far through the loop it is. Each track's sound knobs SHALL sit in an Effects strip under its row that can be opened and closed; the strip SHALL start closed, and its toggle SHALL show when any knob is away from its default. Turning a knob SHALL change the sound for everyone in the jam while it turns, as dragging the level does; a double-click SHALL reset it to its default.
+Anyone in the jam SHALL be able to mute, set the level (0 to 1.5) of, rename, change the snap of and remove any track, and turn any of its sound knobs. A name SHALL be 1 to 40 characters after trimming. Each track SHALL show its length in bars, its number of hits and its hits across the loop, and, while it plays, a playhead and a ring showing how far through the loop it is. Each track's sound knobs SHALL sit in an Effects strip under its row that can be opened and closed; the strip SHALL start closed, and its toggle SHALL stay pressed in while the strip is open, and SHALL show when any knob is away from its default. Turning a knob SHALL change the sound for everyone in the jam while it turns, as dragging the level does; a double-click SHALL reset it to its default.
 
 - **Scenario: Mute someone's loop**
   - **WHEN** one person mutes a track another person recorded
