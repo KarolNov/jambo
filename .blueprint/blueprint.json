@@ -85,21 +85,21 @@
         "src/ui/**",
         "src/board/console/**"
       ],
-      "specVersion": "3182c06d2d45e90a",
+      "specVersion": "92cb507773b134c4",
       "anchorsFiles": {
         "src/board/Jam.tsx": "ddb0ab20402d",
         "src/board/colors.ts": "d21c9da0a9fa",
-        "src/board/console/AiBadge.tsx": "fa50f10f01b4",
+        "src/board/console/AiMark.tsx": "a01ab3b0aaee",
         "src/board/console/Console.tsx": "347ed6405206",
         "src/board/console/Deck.tsx": "b90069c29313",
-        "src/board/console/Header.tsx": "6169558755f0",
-        "src/board/console/Mixer.tsx": "6acd13e1dd73",
+        "src/board/console/Header.tsx": "28ae2697b851",
+        "src/board/console/Mixer.tsx": "1b929175849a",
         "src/board/console/Pads.tsx": "caa583ca3812",
-        "src/board/console/console.css": "70790535c3ea",
+        "src/board/console/console.css": "5559a0df577b",
         "src/board/console/deck.css": "118929fd1e28",
-        "src/board/console/header.css": "43822a320d26",
+        "src/board/console/header.css": "97303b390412",
         "src/board/console/loops.ts": "739dc66699f6",
-        "src/board/console/mixer.css": "927086479975",
+        "src/board/console/mixer.css": "abe27b25b1c4",
         "src/board/console/pads.css": "41c326eb00db",
         "src/board/console/people.ts": "c947df332ba9",
         "src/board/console/share.ts": "41845818fcbf",
@@ -118,7 +118,7 @@
         "src/ui/listNav.ts": "5b2ced68cb10",
         "src/ui/ui.css": "47f077a9f60f"
       },
-      "syncedCommit": "e7595379d073f14d974fb2ee7f14dd07c141da07"
+      "syncedCommit": "1dfd631dcbc85543d8064aced94193ba96f531ba"
     },
     "board/ops": {
       "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
@@ -160,13 +160,13 @@
         "src/audio/upload.ts": "9d3467419e28",
         "src/board/Debug.tsx": "80d7db772bb5",
         "src/board/console/Deck.tsx": "b90069c29313",
-        "src/board/console/Mixer.tsx": "6acd13e1dd73",
+        "src/board/console/Mixer.tsx": "1b929175849a",
         "src/board/console/loops.ts": "739dc66699f6",
         "src/board/transport.ts": "cee162c2b1a7",
         "src/board/useEngineState.ts": "f06f1956d95d",
         "src/board/useTransport.ts": "754386647e7d"
       },
-      "syncedCommit": "e7595379d073f14d974fb2ee7f14dd07c141da07"
+      "syncedCommit": "1dfd631dcbc85543d8064aced94193ba96f531ba"
     },
     "pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
