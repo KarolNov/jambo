@@ -10,6 +10,10 @@ export const AGENT_LIMITS = {
   perAddress: 3,
   /** An agent with no action for this long leaves the jam. */
   idleMs: 5 * 60 * 1000,
+  /** How long a jam remembers the name, kind and colour of an agent that left, for its return. */
+  awayMs: 7 * 24 * 60 * 60 * 1000,
+  /** Most agents that left one jam remembered at once; the longest gone are forgotten first. */
+  awayMax: 64,
 } as const
 
 /** A run's summary trimmed, or an error message when it is missing or too long. */

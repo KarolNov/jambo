@@ -129,10 +129,19 @@ describe('uploading a sound', () => {
   })
 
   it('allows 10 writes a minute from one address', async () => {
-    const ip = newAddress()
-    for (let i = 0; i < 10; i++) expect((await upload('funky-otter-sp06', { ip })).status).toBe(201)
-    expect((await upload('funky-otter-sp06', { ip })).status).toBe(429)
-    expect((await remove('funky-otter-sp06', 'u-aaaaaaaaaaaa', ip)).status).toBe(429)
+    // The limiter counts per clock minute, so a burst that crosses one is retried from a new address.
+    const minute = () => Math.floor(Date.now() / 60_000)
+    for (let attempt = 0; ; attempt++) {
+      const ip = newAddress()
+      const start = minute()
+      const statuses = []
+      for (let i = 0; i < 11; i++) statuses.push((await upload('funky-otter-sp06', { ip })).status)
+      const removed = (await remove('funky-otter-sp06', 'u-aaaaaaaaaaaa', ip)).status
+      if (minute() !== start && attempt === 0) continue
+      expect(statuses).toEqual([...Array(10).fill(201), 429])
+      expect(removed).toBe(429)
+      return
+    }
   })
 
   it('serves not found for unknown sounds and malformed slugs', async () => {

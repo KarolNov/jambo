@@ -26,7 +26,7 @@
       "anchorsFiles": {
         "shared/agent/identity.ts": "7255c8e36b80",
         "shared/agent/index.ts": "b9ef0e798a4e",
-        "shared/agent/limits.ts": "e309866642fd",
+        "shared/agent/limits.ts": "d4559fe10460",
         "shared/agent/link.ts": "c936b9cdd9bf",
         "shared/agent/record.ts": "c9aff89071cb",
         "shared/agent/seat.ts": "e8d0659161b8",
@@ -50,7 +50,7 @@
         "src/App.tsx": "e939cfa58e13",
         "worker/index.ts": "54ae3089e9f6"
       },
-      "syncedCommit": "9fd9be7d7fab9aa7d6a66d04666fb1f9dfef0463"
+      "syncedCommit": "7b8bd573ef360b0a3a724bc9f76b64b49d0e2522"
     },
     "room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
@@ -199,20 +199,20 @@
         "worker/agent/**",
         "skills/jam/**"
       ],
-      "specVersion": "40cb0306d0b73ed3",
+      "specVersion": "71835c9302b6385c",
       "anchorsFiles": {
         "shared/agent/identity.ts": "7255c8e36b80",
         "shared/agent/index.ts": "b9ef0e798a4e",
-        "shared/agent/limits.ts": "e309866642fd",
+        "shared/agent/limits.ts": "d4559fe10460",
         "shared/agent/link.ts": "c936b9cdd9bf",
         "shared/agent/record.ts": "c9aff89071cb",
         "shared/agent/seat.ts": "e8d0659161b8",
         "shared/agent/snapshot.ts": "31018f0ae58c",
-        "skills/jam/SKILL.md": "0a5fa0a7c514",
-        "worker/agent/mcp.ts": "07a7ae7b06b1",
-        "worker/agent/roster.ts": "b2ee1694445d"
+        "skills/jam/SKILL.md": "34098883ae62",
+        "worker/agent/mcp.ts": "d7eb83f64fcc",
+        "worker/agent/roster.ts": "1d797b63f037"
       },
-      "syncedCommit": "00d1392965d46f159ac9d1e6fb1590839fcdb191"
+      "syncedCommit": "7b8bd573ef360b0a3a724bc9f76b64b49d0e2522"
     },
     "ui": {
       "ref": "https://app.notion.com/p/41d43cce21f281d291ccec92edb7d20d",

@@ -173,6 +173,118 @@ describe('agent seats and people', () => {
   })
 })
 
+/** Ages every agent remembered as away in `slug` by `ms`. */
+const ageAway = (slug: string, ms: number) =>
+  runInDurableObject(env.Board.getByName(slug), async (instance) => {
+    const roster = (
+      instance as unknown as {
+        roster: { load(): Promise<unknown>; away: Map<string, { leftAt: number }> }
+      }
+    ).roster
+    await roster.load()
+    for (const a of roster.away.values()) a.leftAt -= ms
+  })
+
+/** Idles every agent in `slug` out, as the alarm does. */
+async function idleOut(slug: string) {
+  await ageAgents(slug)
+  expect(await runDurableObjectAlarm(env.Board.getByName(slug))).toBe(true)
+}
+
+describe('agents coming back', () => {
+  it('comes back after idling out with its kind, name and colour, asking for none', async () => {
+    const slug = 'funky-otter-ag22'
+    const r = await room(slug)
+    const a = await seated(r, { kind: 'Claude', name: 'Funky Claude', color: 'amber' })
+    await idleOut(slug)
+    expect((await r.snapshot()).here).toEqual([])
+    expect(await seated(r, { key: a.key })).toEqual(a)
+  })
+
+  it('comes back after leaving as itself, or with what it asks for', async () => {
+    const r = await room('funky-otter-ag23')
+    const a = await seated(r, { kind: 'Claude', name: 'Funky Claude', color: 'amber' })
+    await r.agentLeave(a.key)
+    expect(await seated(r, { key: a.key })).toMatchObject({ name: 'Funky Claude', color: 'amber' })
+    await r.agentLeave(a.key)
+    expect(await seated(r, { key: a.key, name: 'Groovy Claude', color: 'sky' })).toMatchObject({
+      id: a.id,
+      name: 'Groovy Claude',
+      color: 'sky',
+    })
+  })
+
+  it("is the agent's key, not its name, that brings an identity back", async () => {
+    const slug = 'funky-otter-ag24'
+    const r = await room(slug)
+    const a = await seated(r, { kind: 'Claude', name: 'Funky Claude', color: 'amber' })
+    await idleOut(slug)
+    // Someone else takes the free name meanwhile; the returning agent gets another.
+    const b = await seated(r, { kind: 'Claude', name: 'Funky Claude', color: 'amber' })
+    expect(b.id).not.toBe(a.id)
+    const back = await seated(r, { key: a.key })
+    expect(back.id).toBe(a.id)
+    expect(back.kind).toBe('Claude')
+    expect(back.name).not.toBe('Funky Claude')
+    expect(back.color).not.toBe('amber')
+  })
+
+  it('keeps no key in storage, and forgets an agent gone too long', async () => {
+    const slug = 'funky-otter-ag25'
+    const r = await room(slug)
+    const a = await seated(r, { kind: 'Claude', name: 'Funky Claude', color: 'amber' })
+    await r.agentLeave(a.key)
+    const stored = await runInDurableObject(env.Board.getByName(slug), (_i, state) =>
+      state.storage.get('agentsAway'),
+    )
+    expect(JSON.stringify(stored)).toContain('Funky Claude')
+    expect(JSON.stringify(stored)).not.toContain(a.key)
+    await ageAway(slug, AGENT_LIMITS.awayMs)
+    const back = await seated(r, { key: a.key })
+    expect(back.id).toBe(a.id)
+    expect(back.kind).toBe('Agent')
+  })
+
+  it('remembers at most awayMax agents, forgetting the longest gone', async () => {
+    const r = await room('funky-otter-ag26')
+    const first = await seated(r, { kind: 'Claude', name: 'Funky Claude', from: 'x' })
+    await r.agentLeave(first.key)
+    for (let i = 0; i < AGENT_LIMITS.awayMax; i++) {
+      const a = await seated(r, { kind: 'Codex', from: `${i}` })
+      await r.agentLeave(a.key)
+    }
+    expect((await seated(r, { key: first.key })).kind).toBe('Agent')
+  })
+})
+
+describe('agents changing how they look', () => {
+  it('takes a free name and colour it asks for while here, but not one in use', async () => {
+    const r = await room('funky-otter-ag27')
+    const a = await seated(r, { kind: 'Claude', name: 'Twangy Claude', color: 'coral' })
+    await seated(r, { kind: 'Claude', name: 'Groovy Claude', color: 'sky' })
+    expect(await seated(r, { key: a.key, name: 'Funky Claude', color: 'amber' })).toMatchObject({
+      id: a.id,
+      name: 'Funky Claude',
+      color: 'amber',
+    })
+    expect(await seated(r, { key: a.key, name: 'Groovy Claude', color: 'sky' })).toMatchObject({
+      name: 'Funky Claude',
+      color: 'amber',
+    })
+  })
+
+  it('takes a new kind, with a fresh name when its name does not fit it', async () => {
+    const r = await room('funky-otter-ag28')
+    const a = await seated(r, { name: 'Twangy Agent' })
+    const b = await seated(r, { key: a.key, kind: 'Claude' })
+    expect(b.kind).toBe('Claude')
+    expect(b.name).toMatch(/^[A-Z][a-z]+ Claude$/)
+    expect((await seated(r, { key: a.key, kind: 'Claude', name: 'Funky Claude' })).name).toBe(
+      'Funky Claude',
+    )
+  })
+})
+
 describe('agent caps', () => {
   it('seats at most perAddress agents from one address, and any number of returns', async () => {
     const r = await room('funky-otter-ag15')
