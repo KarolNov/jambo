@@ -14,6 +14,8 @@
   --inset-sm: inset 2px 2px 5px var(--lo), inset -2px -2px 5px var(--hi);
   --float:
     -6px -6px 16px var(--hi), 0 22px 48px -14px rgb(0 0 0 / 0.38), 0 4px 10px rgb(0 0 0 / 0.1);
+  /* Keyboard focus rings. A jam sets this to your colour while you are in it. */
+  --focus: var(--accent-2);
   background: var(--bg);
   color: var(--text);
 }
@@ -55,7 +57,7 @@
   outline: none;
   box-shadow:
     var(--inset-sm),
-    inset 0 0 0 2px var(--accent-2);
+    inset 0 0 0 2px var(--focus);
 }
 :root[data-theme] .theme-toggle-knob {
   position: absolute;

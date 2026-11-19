@@ -114,7 +114,7 @@
   outline: none;
   box-shadow:
     var(--inset),
-    inset 0 0 0 2px var(--accent-2);
+    inset 0 0 0 2px var(--focus);
 }
 :root[data-theme] .console-tempo-field:disabled {
   color: var(--muted);
