@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { partyserverMiddleware } from 'hono-party'
 import { BOARD_CLASS } from '../shared/parties'
 import { isJamSlug, newJamSlug } from '../shared/slug'
+import { handleMcp } from './agent/mcp'
 import { quota } from './quota'
 import { sounds } from './sounds'
 
@@ -38,6 +39,10 @@ app.use(
     },
   }),
 )
+
+// Agents in a jam, over MCP (stateless streamable HTTP). The jam link is the only key.
+// Hono's ExecutionContext type predates the runtime's; the object is the runtime's own.
+app.all('/mcp', (c) => handleMcp(c.req.raw, c.env, c.executionCtx as unknown as ExecutionContext))
 
 // A jam page: a well-formed slug gets the SPA, anything else is not found.
 app.get('/jam/:slug', async (c) => {

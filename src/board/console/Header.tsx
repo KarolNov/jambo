@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { ThemeToggle } from '../../theme/ThemeToggle'
 import { IconButton } from '../../ui'
 import { useSwatch } from '../colors'
@@ -6,6 +6,7 @@ import type { ConnectionStatus } from '../doc'
 import { usePeople } from '../presence'
 import { useSeat } from '../seat'
 import { useSession } from '../session'
+import { AiMark } from './AiMark'
 import { namesPeople, personName } from './people'
 import { jamLink, shareLink, type ShareResult } from './share'
 import './header.css'
@@ -78,7 +79,10 @@ function ShareButton({ slug }: { slug: string }) {
   )
 }
 
-/** Everyone in the jam as a dot in their colour, you first; named while there are few. */
+/**
+ * Everyone in the jam as a dot in their colour, you first; named while there are few. Agents' dots
+ * glow, and their names carry a superscript AI.
+ */
 function People() {
   const { jam, me } = useSession()
   useSeat(me) // your own entry reads `me`, so re-render when the room seats you
@@ -89,10 +93,18 @@ function People() {
     <ul className={`console-people ${named ? '' : 'is-crowded'}`} aria-label="Who's here">
       {people.map((p) => {
         const name = personName(p, me.id)
+        const label = p.agent ? `${name}, an AI agent` : name
         return (
-          <li key={p.id} title={name}>
-            <span className="console-person" style={{ background: swatch(p.color) }} aria-hidden />
+          <li
+            key={p.id}
+            title={label}
+            aria-label={label}
+            className={p.agent ? 'is-agent' : undefined}
+            style={{ '--c': swatch(p.color) } as CSSProperties}
+          >
+            <span className="console-person" aria-hidden />
             <span className="console-person-name">{name}</span>
+            {p.agent && <AiMark />}
           </li>
         )
       })}

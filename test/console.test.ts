@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BPM } from '../shared/board'
-import { namesPeople, personName, uploadedBy } from '../src/board/console/people'
+import { byAgent, namesPeople, personName, uploadedBy } from '../src/board/console/people'
 import { TEMPO_RANGE, takeName, tempoFor } from '../src/board/transport'
 
 describe('naming a take', () => {
@@ -64,7 +64,20 @@ describe('uploaded sounds', () => {
     )
   })
 
+  it('uploaded by an agent name the agent', () => {
+    const sound = { author: 'agent:a1', authorName: 'Groovy Claude', color: 'sky' } as const
+    expect(uploadedBy(sound, 'me')).toBe('Uploaded by Groovy Claude')
+    expect(byAgent(sound)).toBe(true)
+  })
+
   it('uploaded before names say the colour', () => {
     expect(uploadedBy({ author: 'them', color: 'coral' }, 'me')).toBe('Uploaded by Coral')
+  })
+})
+
+describe('agent loops', () => {
+  it('are marked; loops people recorded are not', () => {
+    expect(byAgent({ author: 'agent:a1' })).toBe(true)
+    expect(byAgent({ author: 'p1' })).toBe(false)
   })
 })

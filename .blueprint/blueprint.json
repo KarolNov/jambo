@@ -24,6 +24,13 @@
       ],
       "specVersion": "2fb8113bc610e301",
       "anchorsFiles": {
+        "shared/agent/identity.ts": "50f8d6202110",
+        "shared/agent/index.ts": "32adef0b5e71",
+        "shared/agent/limits.ts": "a09e06b15412",
+        "shared/agent/link.ts": "c936b9cdd9bf",
+        "shared/agent/record.ts": "fb69f7672689",
+        "shared/agent/seat.ts": "8e860ecdc88d",
+        "shared/agent/snapshot.ts": "7b8656e114e4",
         "shared/board/apply.ts": "8e96c8d077f2",
         "shared/board/index.ts": "d02f03f765b4",
         "shared/board/ops.ts": "970889c7971f",
@@ -35,15 +42,15 @@
         "shared/looper.ts": "7567f1bf8543",
         "shared/names.ts": "812ac5f26e0b",
         "shared/parties.ts": "f686acc22693",
-        "shared/seats.ts": "7f4eab3b3192",
+        "shared/seats.ts": "f05d8ce7a23b",
         "shared/slug.ts": "93fbc4b73dd9",
         "shared/sounds.ts": "0c3d032a4e92",
         "shared/wav.ts": "ef7c26f7b9d9",
         "shared/words.ts": "093dd86b1435",
         "src/App.tsx": "de410d3da63f",
-        "worker/index.ts": "6a8239beef94"
+        "worker/index.ts": "54ae3089e9f6"
       },
-      "syncedCommit": "489a9381e5e510abadde7fe5d86b2b9c5cff1b2a"
+      "syncedCommit": "e7595379d073f14d974fb2ee7f14dd07c141da07"
     },
     "room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
@@ -54,15 +61,15 @@
         "worker/sounds.ts",
         "worker/quota.ts"
       ],
-      "specVersion": "d172116c423856b4",
+      "specVersion": "29a6a0df8cae16a3",
       "anchorsFiles": {
         "src/board/doc.ts": "f03410fb7517",
-        "worker/board.ts": "06b6d5964044",
-        "worker/index.ts": "6a8239beef94",
+        "worker/board.ts": "87be58ea5a22",
+        "worker/index.ts": "54ae3089e9f6",
         "worker/quota.ts": "fa0709c13df2",
         "worker/sounds.ts": "548f085c2ba4"
       },
-      "syncedCommit": "489a9381e5e510abadde7fe5d86b2b9c5cff1b2a"
+      "syncedCommit": "e7595379d073f14d974fb2ee7f14dd07c141da07"
     },
     "board": {
       "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
@@ -78,26 +85,27 @@
         "src/ui/**",
         "src/board/console/**"
       ],
-      "specVersion": "8d0c3fca9a0eb762",
+      "specVersion": "92cb507773b134c4",
       "anchorsFiles": {
         "src/board/Jam.tsx": "ddb0ab20402d",
         "src/board/colors.ts": "d21c9da0a9fa",
+        "src/board/console/AiMark.tsx": "a01ab3b0aaee",
         "src/board/console/Console.tsx": "347ed6405206",
         "src/board/console/Deck.tsx": "b90069c29313",
-        "src/board/console/Header.tsx": "a3f8040aaff0",
-        "src/board/console/Mixer.tsx": "81448b15ecae",
+        "src/board/console/Header.tsx": "28ae2697b851",
+        "src/board/console/Mixer.tsx": "1b929175849a",
         "src/board/console/Pads.tsx": "caa583ca3812",
-        "src/board/console/console.css": "accc250b5cae",
+        "src/board/console/console.css": "5559a0df577b",
         "src/board/console/deck.css": "118929fd1e28",
-        "src/board/console/header.css": "e38ca410c91a",
+        "src/board/console/header.css": "97303b390412",
         "src/board/console/loops.ts": "739dc66699f6",
-        "src/board/console/mixer.css": "927086479975",
+        "src/board/console/mixer.css": "abe27b25b1c4",
         "src/board/console/pads.css": "41c326eb00db",
-        "src/board/console/people.ts": "40651ffddd24",
+        "src/board/console/people.ts": "c947df332ba9",
         "src/board/console/share.ts": "41845818fcbf",
         "src/board/identity.ts": "d1d2eaa5cab9",
         "src/board/model.ts": "62d108e90ddd",
-        "src/board/presence.ts": "1c0878990f37",
+        "src/board/presence.ts": "db360bbf1c06",
         "src/board/seat.ts": "efa33b9e925b",
         "src/board/session.ts": "74ea6cbdbb7f",
         "src/theme/ThemeToggle.tsx": "0383bce6cdab",
@@ -110,7 +118,7 @@
         "src/ui/listNav.ts": "5b2ced68cb10",
         "src/ui/ui.css": "47f077a9f60f"
       },
-      "syncedCommit": "489a9381e5e510abadde7fe5d86b2b9c5cff1b2a"
+      "syncedCommit": "1dfd631dcbc85543d8064aced94193ba96f531ba"
     },
     "board/ops": {
       "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
@@ -152,13 +160,13 @@
         "src/audio/upload.ts": "9d3467419e28",
         "src/board/Debug.tsx": "80d7db772bb5",
         "src/board/console/Deck.tsx": "b90069c29313",
-        "src/board/console/Mixer.tsx": "81448b15ecae",
+        "src/board/console/Mixer.tsx": "1b929175849a",
         "src/board/console/loops.ts": "739dc66699f6",
         "src/board/transport.ts": "cee162c2b1a7",
         "src/board/useEngineState.ts": "f06f1956d95d",
         "src/board/useTransport.ts": "754386647e7d"
       },
-      "syncedCommit": "489a9381e5e510abadde7fe5d86b2b9c5cff1b2a"
+      "syncedCommit": "1dfd631dcbc85543d8064aced94193ba96f531ba"
     },
     "pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
@@ -195,12 +203,26 @@
       "syncedCommit": "489a9381e5e510abadde7fe5d86b2b9c5cff1b2a"
     },
     "agent": {
-      "ref": null,
+      "ref": "https://app.notion.com/p/41d43cce21f2814bbbb8ef7ccde6b7e2",
       "anchors": [
         "shared/agent/**",
         "worker/agent/**",
         "skills/jam/**"
-      ]
+      ],
+      "specVersion": "1eaa039f158115f1",
+      "anchorsFiles": {
+        "shared/agent/identity.ts": "50f8d6202110",
+        "shared/agent/index.ts": "32adef0b5e71",
+        "shared/agent/limits.ts": "a09e06b15412",
+        "shared/agent/link.ts": "c936b9cdd9bf",
+        "shared/agent/record.ts": "fb69f7672689",
+        "shared/agent/seat.ts": "8e860ecdc88d",
+        "shared/agent/snapshot.ts": "7b8656e114e4",
+        "skills/jam/SKILL.md": "5c600ed8bc45",
+        "worker/agent/mcp.ts": "f220668ae623",
+        "worker/agent/roster.ts": "5dc5dd96c023"
+      },
+      "syncedCommit": "e7595379d073f14d974fb2ee7f14dd07c141da07"
     },
     "ui": {
       "ref": null,
@@ -257,8 +279,17 @@
       "brief": "https://app.notion.com/p/41c43cce21f28151bae4c831fbd34b8c",
       "review": "https://app.notion.com/p/41c43cce21f2817dbde5fd13005bd6fe",
       "tickets": "https://app.notion.com/p/41c43cce21f2817dbde5fd13005bd6fe",
-      "status": "approved",
-      "baseCommit": "4a346b7ef58026e7386fc8b472cab67a1f6ab888"
+      "status": "applied",
+      "baseCommit": "4a346b7ef58026e7386fc8b472cab67a1f6ab888",
+      "branch": "kn/agent-mcp-1-sandbox",
+      "pr": "https://github.com/KarolNov/jambo/pull/20",
+      "stack": [
+        "https://github.com/KarolNov/jambo/pull/20",
+        "https://github.com/KarolNov/jambo/pull/21",
+        "https://github.com/KarolNov/jambo/pull/22",
+        "https://github.com/KarolNov/jambo/pull/23",
+        "https://github.com/KarolNov/jambo/pull/24"
+      ]
     },
     "ds-showcase": {
       "brief": "https://app.notion.com/p/41d43cce21f281e386fde1b35adcc8c7",

@@ -5,7 +5,9 @@ import { Button, IconButton, Range, Select } from '../../ui'
 import { useSwatch } from '../colors'
 import { tracksAtom } from '../model'
 import { useSession } from '../session'
+import { AiMark } from './AiMark'
 import { beatPosition, loopSummary, SNAP_OPTIONS } from './loops'
+import { byAgent } from './people'
 import './mixer.css'
 
 const SNAP_GROUPS = [{ options: SNAP_OPTIONS }]
@@ -53,25 +55,28 @@ function Channel({ id, track }: { id: string; track: Track }) {
     >
       <div className="console-ring" aria-hidden />
       <div className="console-channel-title">
-        <input
-          className="console-channel-name"
-          aria-label="Loop name"
-          aria-invalid={!!error}
-          aria-describedby={error ? `${id}-error` : undefined}
-          value={draft ?? track.name}
-          onChange={(e) => {
-            // Keep the typed text until blur: the stored name reads back trimmed.
-            setDraft(e.target.value)
-            set({ name: e.target.value })
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') e.currentTarget.blur()
-          }}
-          onBlur={() => {
-            setDraft(undefined)
-            setError(undefined)
-          }}
-        />
+        <div className="console-channel-head">
+          <input
+            className="console-channel-name"
+            aria-label="Loop name"
+            aria-invalid={!!error}
+            aria-describedby={error ? `${id}-error` : undefined}
+            value={draft ?? track.name}
+            onChange={(e) => {
+              // Keep the typed text until blur: the stored name reads back trimmed.
+              setDraft(e.target.value)
+              set({ name: e.target.value })
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.currentTarget.blur()
+            }}
+            onBlur={() => {
+              setDraft(undefined)
+              setError(undefined)
+            }}
+          />
+          {byAgent(track) && <AiMark title="Added by an AI agent" />}
+        </div>
         <span className="console-channel-size">{loopSummary(track.bars, track.hits.length)}</span>
       </div>
       <div className="console-pattern" aria-hidden>

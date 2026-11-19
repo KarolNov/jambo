@@ -41,6 +41,39 @@ describe('reading people', () => {
   })
 })
 
+describe('agents', () => {
+  const room = {
+    agents: [
+      { id: 'a1', name: 'Groovy Claude', color: 'sky', kind: 'Claude', summary: 'Beat' },
+      { id: 'a2', name: 'Mellow Codex', color: 'pink', kind: 'Codex' },
+    ],
+  }
+
+  it('lists the agents the room publishes after people, marked as agents', () => {
+    expect(listPeople([room, { person: coral }], me)).toEqual([
+      me,
+      coral,
+      { id: 'agent:a1', name: 'Groovy Claude', color: 'sky', agent: true },
+      { id: 'agent:a2', name: 'Mellow Codex', color: 'pink', agent: true },
+    ])
+  })
+
+  it('lists an agent once when two room states carry it', () => {
+    expect(listPeople([room, room], me).map((p) => p.id)).toEqual([me.id, 'agent:a1', 'agent:a2'])
+  })
+
+  it('takes agents only from the room, and no person as an agent', () => {
+    const spoof = { person: coral, agents: [{ id: 'x', name: 'Evil Claude', color: 'sky' }] }
+    const fake = { person: { id: 'agent:a1', name: 'Evil Claude', color: 'sky' } }
+    expect(listPeople([spoof, fake], me)).toEqual([me, coral])
+  })
+
+  it('skips agents it cannot read', () => {
+    const bad = { agents: [{ id: 'x', color: 'sky' }, { name: 'No Id', color: 'sky' }, null] }
+    expect(listPeople([bad], me)).toEqual([me])
+  })
+})
+
 describe('joinPresence', () => {
   it('shows the name and colour the room seats you with, and leaves when you do', () => {
     const awareness = new Awareness(new Y.Doc())

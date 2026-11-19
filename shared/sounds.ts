@@ -83,6 +83,14 @@ export function newUploadId(): string {
 /** Keyboard keys for the 4×4 grid, row by row. */
 export const PAD_KEYS = ['1234', 'qwer', 'asdf', 'zxcv'] as const
 
+const PAD_KEY_ORDER = PAD_KEYS.join('')
+
+/** Where a pad key falls in keyboard order, case aside; keys off the grid sort last. */
+export function padKeyOrder(key: string): number {
+  const i = PAD_KEY_ORDER.indexOf(key.toLowerCase())
+  return i < 0 ? PAD_KEY_ORDER.length : i
+}
+
 /** The layout a new jam starts with: drums on top, tonal sounds below. */
 export const DEFAULT_LAYOUT: readonly (readonly SoundId[])[] = [
   ['kick', 'snare', 'clap', 'hat'],
