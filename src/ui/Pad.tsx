@@ -14,17 +14,19 @@ export type PadProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
   /** Shows the badge that says a click opens the sound menu. */
   editing?: boolean
   /**
-   * Shows the pad pushed in (`pressed`) or lit from inside (`glow`), in `glow`'s colour. A live
-   * console sets these classes straight on the element instead, as hits come too fast for React.
+   * Shows the pad pushed in (`pressed`) or lit from inside (`glow`), in `tint`. A live console
+   * sets these classes straight on the element instead, as hits come too fast for React; it must
+   * then keep `lit` and `className` unchanged, since a new className string replaces the
+   * element's classes and cuts its flash short.
    */
   lit?: 'pressed' | 'glow'
-  /** The colour of the press ring and the glow (the `--glow` variable). */
-  glow?: string
+  /** The colour of the press ring and the light (the `--glow` variable); else `--accent-2`. */
+  tint?: string
 }
 
 /**
  * A pad's face: a soft rubber square with its key letter moulded in and its sound's name. Pressed,
- * it is pushed in with a ring in `glow`; lit, light spreads from inside it in `glow`. Purely
+ * it is pushed in with a ring in `tint`; lit, light spreads from inside it in `tint`. Purely
  * presentational: the console decides what a press does.
  */
 export function Pad({
@@ -34,13 +36,13 @@ export function Pad({
   status,
   editing = false,
   lit,
-  glow,
+  tint,
   className = '',
   style,
   type = 'button',
   ...rest
 }: PadProps) {
-  const vars = glow ? ({ '--glow': glow } as CSSProperties) : undefined
+  const vars = tint ? ({ '--glow': tint } as CSSProperties) : undefined
   return (
     <button
       type={type}

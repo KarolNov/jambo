@@ -34,12 +34,44 @@ function unpaint() {
   for (const name of Object.keys(TOKENS.light)) root.style.removeProperty(cssVar(name as TokenName))
 }
 
+/** The longest a theme swap waits for running transitions (a switch's knob, say) to land. */
+const SETTLE_MAX_MS = 600
+let pending = 0
+
+/**
+ * Resolves once the CSS transitions running now have finished, or after SETTLE_MAX_MS. Waits a
+ * frame first, so transitions the click that asked for the swap just started are counted.
+ */
+function settled(): Promise<void> {
+  return new Promise((resolve) => {
+    const cap = setTimeout(resolve, SETTLE_MAX_MS)
+    requestAnimationFrame(() => {
+      const running = document
+        .getAnimations()
+        .filter((a) => typeof CSSTransition !== 'undefined' && a instanceof CSSTransition)
+      void Promise.allSettled(running.map((a) => a.finished)).then(() => {
+        clearTimeout(cap)
+        resolve()
+      })
+    })
+  })
+}
+
 /**
  * Shows `next` as one even crossfade of the whole page: per-element transitions are off while it
  * swaps (they would each fade at their own speed), and where the browser has view transitions it
- * fades the old page into the new one.
+ * fades the old page into the new one. It first lets running transitions land, so a control that
+ * animated on the click (the theme switch's knob) isn't frozen mid-move.
  */
 function show(next: Theme) {
+  const token = ++pending
+  void settled().then(() => {
+    // A later request wins.
+    if (token === pending) swap(next)
+  })
+}
+
+function swap(next: Theme) {
   if (next === current) return
   const root = document.documentElement
   let updated = false

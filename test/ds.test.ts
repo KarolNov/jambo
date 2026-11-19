@@ -20,10 +20,17 @@ function uiExports(source: string): { values: string[]; types: string[] } {
 }
 
 const { values, types } = uiExports(uiIndex)
-const entries = [...catalogue.matchAll(/^ {4}name: '(\w+)',$/gm)].map((m) => m[1]!)
+const entries = [...catalogue.matchAll(/^\s*name:\s*['"`](\w+)['"`],?\s*$/gm)].map((m) => m[1]!)
 const sections = [...design.matchAll(/^### `?(\w+)`?\s*$/gm)].map((m) => m[1]!)
 
 describe('the design system', () => {
+  it('reads every export of src/ui, so none slips past these checks', () => {
+    const unread = (uiIndex.match(/^export\b.*$/gm) ?? []).filter(
+      (line) => !/^export\s+(type\s+)?\{/.test(line),
+    )
+    expect(unread).toEqual([])
+  })
+
   it('reads the exports of src/ui', () => {
     expect(values).toContain('Button')
     expect(values).toContain('Pad')
