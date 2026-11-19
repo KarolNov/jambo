@@ -111,7 +111,7 @@ Each track SHALL play its hits snapped to its grid (off, 1/32, 1/16, 1/8 or 1/4)
 
 ### Requirement: Track controls
 
-Anyone in the jam SHALL be able to mute, set the level (0 to 1.5) of, rename, change the snap of and remove any track. A name SHALL be 1 to 40 characters after trimming. Each track SHALL show its length in bars, its number of hits and its hits across the loop, and, while it plays, a playhead and a ring showing how far through the loop it is.
+Anyone in the jam SHALL be able to mute, set the level (0 to 1.5) of, rename, change the snap of and remove any track, and turn any of its sound knobs. A name SHALL be 1 to 40 characters after trimming. Each track SHALL show its length in bars, its number of hits and its hits across the loop, and, while it plays, a playhead and a ring showing how far through the loop it is. Each track's sound knobs SHALL sit in an Effects strip under its row that can be opened and closed; the strip SHALL start closed, and its toggle SHALL show when any knob is away from its default. Turning a knob SHALL change the sound for everyone in the jam while it turns, as dragging the level does; a double-click SHALL reset it to its default.
 
 - **Scenario: Mute someone's loop**
   - **WHEN** one person mutes a track another person recorded
@@ -119,6 +119,42 @@ Anyone in the jam SHALL be able to mute, set the level (0 to 1.5) of, rename, ch
 - **Scenario: Blank name**
   - **WHEN** someone clears a track's name
   - **THEN** the row shows an error and the track keeps its old name
+- **Scenario: Turn up the reverb**
+  - **GIVEN** two people in a jam with a looping track
+  - **WHEN** one opens the track's Effects strip and turns its Reverb up
+  - **THEN** both hear the reverb grow while the knob turns
+- **Scenario: Changed loop at a glance**
+  - **GIVEN** a track with Tone at -0.4 and its strip closed
+  - **WHEN** someone looks at the mixer
+  - **THEN** that track's Effects toggle shows a dot, and a track at the defaults shows none
+
+### Requirement: Sound knobs
+
+Every track SHALL play through five sound settings: reverb (0 to 1), echo (0 to 1), tone (-1 to 1), pitch (-12 to +12 whole semitones) and pan (-1 to 1), each defaulting to 0, which leaves the sound unchanged. A track without a stored setting SHALL play at that setting's default. Reverb SHALL add a room's reflections; echo SHALL repeat each hit every dotted eighth note at the jam's tempo, fading with each repeat; tone SHALL darken the sound below 0 and thin it above 0; pitch SHALL raise or lower each hit by that many semitones from the track's next hit; pan SHALL move the track between the left speaker (-1) and the right (+1). Pads played live, the count-in and the metronome SHALL stay dry.
+
+- **Scenario: Older jam**
+  - **GIVEN** a jam whose tracks were recorded before sound knobs existed
+  - **WHEN** someone opens it
+  - **THEN** every loop sounds as it did, and each knob reads its default
+- **Scenario: An octave up**
+  - **GIVEN** a looping track of the bass C
+  - **WHEN** someone sets its pitch to +12
+  - **THEN** from its next hit it plays an octave higher, for everyone in the jam
+- **Scenario: Echo in time**
+  - **GIVEN** a jam at 120 BPM and a track with one hit a bar
+  - **WHEN** someone turns its echo up
+  - **THEN** each hit repeats 375 ms later, quieter each time
+- **Scenario: Hard left**
+  - **WHEN** someone sets a track's pan to -1
+  - **THEN** that track plays only from the left speaker
+- **Scenario: Live pads stay dry**
+  - **GIVEN** a track with reverb at 1 that hits the snare
+  - **WHEN** someone plays the snare pad live
+  - **THEN** the live hit sounds dry, and the track's hits keep their reverb
+- **Scenario: Mute silences the tail's source**
+  - **GIVEN** a track with echo at 1
+  - **WHEN** someone mutes it
+  - **THEN** it adds no new echoes, and echoes already sounding fade out
 
 ### Requirement: Metronome
 
