@@ -195,7 +195,24 @@
   margin: 0;
   background: transparent;
   cursor: pointer;
-  touch-action: none;
+  /* Sideways drags move the fader; a vertical swipe that starts on it still scrolls the page. */
+  touch-action: pan-y;
+  /* The cap: a solid block lit from above, with engraved ridges (a groove and a light edge each)
+     and an index line in the control's colour through its middle. Shared by both engines' thumbs. */
+  --cap-bg:
+    linear-gradient(var(--ui-c, var(--accent-2)), var(--ui-c, var(--accent-2))) 50% 50% / 2px 100%
+      no-repeat,
+    repeating-linear-gradient(
+        90deg,
+        var(--cap-groove) 0 1px,
+        var(--cap-edge) 1px 2px,
+        transparent 2px 4px
+      )
+      50% 50% / 15px 62% no-repeat,
+    linear-gradient(180deg, var(--cap-top), var(--cap-bot));
+  --cap-shadow:
+    inset 0 1px 0 var(--cap-edge), inset 0 -2px 2px rgb(0 0 0 / 0.14), 0 1px 1px var(--cap-drop),
+    0 5px 9px -3px var(--cap-drop);
 }
 :root[data-theme] .ui-range::-webkit-slider-runnable-track {
   height: 6px;
@@ -211,8 +228,7 @@
   background: var(--flat);
   box-shadow: inset 1px 1px 3px var(--lo);
 }
-/* The cap: a solid block lit from above, with engraved ridges (a groove and a light edge each)
-   and an index line in the control's colour through its middle. */
+/* The two engines' thumbs need separate rules: one unknown pseudo-element drops a whole list. */
 :root[data-theme] .ui-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: var(--cap-w);
@@ -220,22 +236,8 @@
   margin-top: -13px;
   border: none;
   border-radius: 5px;
-  background:
-    linear-gradient(var(--ui-c, var(--accent-2)), var(--ui-c, var(--accent-2))) 50% 50% / 2px 100%
-      no-repeat,
-    repeating-linear-gradient(
-        90deg,
-        var(--cap-groove) 0 1px,
-        var(--cap-edge) 1px 2px,
-        transparent 2px 4px
-      )
-      50% 50% / 15px 62% no-repeat,
-    linear-gradient(180deg, var(--cap-top), var(--cap-bot));
-  box-shadow:
-    inset 0 1px 0 var(--cap-edge),
-    inset 0 -2px 2px rgb(0 0 0 / 0.14),
-    0 1px 1px var(--cap-drop),
-    0 5px 9px -3px var(--cap-drop);
+  background: var(--cap-bg);
+  box-shadow: var(--cap-shadow);
   transition:
     transform 0.1s,
     box-shadow 0.1s;
@@ -245,21 +247,8 @@
   height: 32px;
   border: none;
   border-radius: 5px;
-  background:
-    linear-gradient(var(--ui-c, var(--accent-2)), var(--ui-c, var(--accent-2))) 50% 50% / 2px 100%
-      no-repeat,
-    repeating-linear-gradient(
-        90deg,
-        var(--cap-groove) 0 1px,
-        var(--cap-edge) 1px 2px,
-        transparent 2px 4px
-      )
-      50% 50% / 15px 62% no-repeat,
-    linear-gradient(180deg, var(--cap-top), var(--cap-bot));
-  box-shadow:
-    inset 0 1px 0 var(--cap-edge),
-    0 1px 1px var(--cap-drop),
-    0 5px 9px -3px var(--cap-drop);
+  background: var(--cap-bg);
+  box-shadow: var(--cap-shadow);
 }
 /* Held: the cap sinks a little. */
 :root[data-theme] .ui-range:active::-webkit-slider-thumb {
@@ -335,7 +324,9 @@
   position: absolute;
   inset: 0;
   background: var(--seg);
-  clip-path: inset(0 calc((1 - var(--lit)) * 100%) 0 0);
+  /* The strip runs 2px past the ticks so the last light's gap falls outside; clip over the
+     ticks' width (100% - 2px), so the lit edge lines up with the marks and the cap. */
+  clip-path: inset(0 calc((1 - var(--lit)) * (100% - 2px) + 2px) 0 0);
   filter: drop-shadow(0 0 3px color-mix(in srgb, var(--ui-c, var(--accent-2)) 60%, transparent));
   transition: clip-path 0.08s;
 }

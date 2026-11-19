@@ -4,6 +4,7 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 import { fraction, litFraction, snap, stepBy } from './fader'
@@ -110,11 +111,16 @@ export type RangeProps = Omit<
   format?: (value: number) => string
 }
 
+/** How many key steps each key moves; Home and End go to the ends. */
 const KEY_DELTA: Partial<Record<string, number>> = {
   ArrowRight: 1,
   ArrowUp: 1,
   ArrowLeft: -1,
   ArrowDown: -1,
+  PageUp: 5,
+  PageDown: -5,
+  Home: -Infinity,
+  End: Infinity,
 }
 
 /**
@@ -141,9 +147,33 @@ export function Range({
   ...rest
 }: RangeProps) {
   const [dragging, setDragging] = useState(false)
+  // While dragged, the fader shows `draft` at once and hands it on at most once a frame, so a
+  // drag doesn't send a change for every 0.01 it passes.
+  const [draft, setDraft] = useState<number>()
+  const shown = draft ?? value
+  const held = useRef(false)
+  const pending = useRef<number>(undefined)
+  const frame = useRef(0)
+  const latest = useRef(onChange)
+  useEffect(() => {
+    latest.current = onChange
+  })
+  const flush = () => {
+    cancelAnimationFrame(frame.current)
+    frame.current = 0
+    const v = pending.current
+    pending.current = undefined
+    if (v !== undefined) latest.current(v)
+  }
+
   useEffect(() => {
     if (!dragging) return
-    const end = () => setDragging(false)
+    const end = () => {
+      held.current = false
+      flush()
+      setDraft(undefined)
+      setDragging(false)
+    }
     window.addEventListener('pointerup', end)
     window.addEventListener('pointercancel', end)
     return () => {
@@ -151,15 +181,24 @@ export function Range({
       window.removeEventListener('pointercancel', end)
     }
   }, [dragging])
+  useEffect(() => () => cancelAnimationFrame(frame.current), [])
 
-  // Drags stick to the detent; keys step on their own grid, so they can always leave it.
-  const change = (v: number) => {
-    if (v === value) return
+  // Drags stick to the detent, with a tick; keys step on their own grid, so they can always
+  // leave it, and never tick.
+  const drag = (raw: number) => {
+    const v = snap(raw, detent)
+    if (v === shown) return
+    if (!held.current) {
+      onChange(v) // Moved some other way (a screen reader): no drag to coalesce.
+      return
+    }
     if (v === detent) haptic('detent')
-    onChange(v)
+    setDraft(v)
+    pending.current = v
+    frame.current ||= requestAnimationFrame(flush)
   }
 
-  const f = fraction(value, min, max)
+  const f = fraction(shown, min, max)
   const vars = { '--f': f, '--lit': litFraction(f) } as CSSProperties
   if (color) Object.assign(vars, { '--ui-c': color })
   return (
@@ -180,19 +219,20 @@ export function Range({
       )}
       <span className="ui-fader-leds" aria-hidden />
       <span className="ui-fader-bubble" aria-hidden>
-        {format(value)}
+        {format(shown)}
       </span>
       <input
         type="range"
         aria-label={label}
-        aria-valuetext={format(value)}
+        aria-valuetext={format(shown)}
         className="ui-range"
         min={min}
         max={max}
         step={step}
-        value={value}
-        onChange={(e) => change(snap(Number(e.target.value), detent))}
+        value={shown}
+        onChange={(e) => drag(Number(e.target.value))}
         onPointerDown={(e) => {
+          held.current = true
           setDragging(true)
           onPointerDown?.(e)
         }}
@@ -201,7 +241,12 @@ export function Range({
           const delta = KEY_DELTA[e.key]
           if (e.defaultPrevented || delta === undefined) return
           e.preventDefault()
-          change(stepBy(value, delta, keyStep, min, max))
+          const v = Number.isFinite(delta)
+            ? stepBy(shown, delta, keyStep, min, max)
+            : delta > 0
+              ? max
+              : min
+          if (v !== shown) onChange(v)
         }}
         {...rest}
       />

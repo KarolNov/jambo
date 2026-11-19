@@ -26,6 +26,12 @@ describe('fader keys', () => {
     expect(stepBy(0.98, -1, 0.05, 0, 1.5)).toBe(0.95)
   })
 
+  it('starts the grid at min', () => {
+    expect(stepBy(0.02, 1, 0.05, 0.02, 1)).toBe(0.07)
+    expect(stepBy(0.07, -1, 0.05, 0.02, 1)).toBe(0.02)
+    expect(stepBy(0.5, 5, 0.05, 0, 1.5)).toBe(0.75)
+  })
+
   it('stays within range', () => {
     expect(stepBy(1.5, 1, 0.05, 0, 1.5)).toBe(1.5)
     expect(stepBy(0, -1, 0.05, 0, 1.5)).toBe(0)
