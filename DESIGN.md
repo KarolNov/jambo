@@ -94,8 +94,10 @@ An I/O rocker that tips toward the side that is on, with the I lit when on. A na
 `haptic('flip')`.
 
 - Use for a setting that is on or off and takes effect at once (the metronome).
-- Not for one-off actions (`Button`) or choices between named options (`Select`). The theme has
-  its own sun and moon switch, `ThemeToggle` in `src/theme`.
+- `off` and `on` replace the O and I when the two sides have names of their own: `ThemeToggle`
+  in `src/theme` is a `Switch` with a sun and a moon. Without a visible label, give it an
+  `aria-label`.
+- Not for one-off actions (`Button`) or choices between named options (`Select`).
 
 ### Range
 

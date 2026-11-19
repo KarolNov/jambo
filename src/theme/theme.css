@@ -51,60 +51,22 @@
   animation-timing-function: ease-in-out;
 }
 
-/* The light/dark switch: an inset track, a raised knob over the current icon. Scoped under the
-   themed root so page-wide button styles don't reach it. */
-:root[data-theme] .theme-toggle {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 66px;
-  height: 34px;
-  padding: 0 7px;
-  border: none;
-  border-radius: 999px;
-  background: var(--bg);
-  box-shadow: var(--inset-sm);
-  cursor: pointer;
-}
-:root[data-theme] .theme-toggle:focus-visible {
-  outline: none;
-  box-shadow:
-    var(--inset-sm),
-    inset 0 0 0 2px var(--focus);
-}
-:root[data-theme] .theme-toggle-knob {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--bg);
-  box-shadow: var(--raise-sm);
-  transition: transform 0.2s ease;
-}
-:root[data-theme] .theme-toggle[aria-checked='true'] .theme-toggle-knob {
-  transform: translateX(32px);
-}
+/* The light/dark switch: a `Switch` rocker with a sun and a moon for its O and I. */
 :root[data-theme] .theme-toggle svg {
-  position: relative;
-  width: 20px;
-  height: 20px;
+  width: 15px;
+  height: 15px;
   fill: none;
-  stroke: var(--muted);
-  stroke-width: 2;
+  stroke: currentColor;
+  stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-:root[data-theme] .theme-toggle svg:last-child {
-  margin-left: auto;
+/* The rocker lights the I (moon) when on; light up the sun the same way when off. */
+:root[data-theme] .theme-toggle.ui-switch:has(> .ui-switch-input:not(:checked)) .ui-rocker-o {
+  color: var(--accent-2);
+  filter: drop-shadow(0 0 4px var(--accent-2));
 }
-:root[data-theme] .theme-toggle[aria-checked='false'] svg:first-of-type,
-:root[data-theme] .theme-toggle[aria-checked='true'] svg:last-child {
-  stroke: var(--accent-2);
-}
-@media (prefers-reduced-motion: reduce) {
-  :root[data-theme] .theme-toggle-knob {
-    transition: none;
-  }
+:root[data-theme] .theme-toggle.ui-switch:has(> .ui-switch-input:checked) .ui-rocker-i {
+  text-shadow: none;
+  filter: drop-shadow(0 0 4px var(--accent-2));
 }

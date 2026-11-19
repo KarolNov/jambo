@@ -1,3 +1,4 @@
+import { Switch } from '../ui'
 import { setTheme, useTheme } from './theme'
 
 const Sun = () => (
@@ -15,22 +16,18 @@ const Moon = () => (
   </svg>
 )
 
-/** A soft two-position switch, sun then moon, with the knob over the theme being shown. */
+/** The theme's switch: the same rocker as `Switch`, tipped down on the sun or the moon. */
 export function ThemeToggle() {
   const dark = useTheme() === 'dark'
   return (
-    <button
-      type="button"
+    <Switch
       className="theme-toggle"
-      role="switch"
-      aria-checked={dark}
+      checked={dark}
+      onChange={(on) => setTheme(on ? 'dark' : 'light')}
+      off={<Sun />}
+      on={<Moon />}
       aria-label="Dark mode"
       title={dark ? 'Switch to light' : 'Switch to dark'}
-      onClick={() => setTheme(dark ? 'light' : 'dark')}
-    >
-      <span className="theme-toggle-knob" aria-hidden />
-      <Sun />
-      <Moon />
-    </button>
+    />
   )
 }

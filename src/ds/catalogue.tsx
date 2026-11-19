@@ -18,6 +18,7 @@ import {
   Select,
   Switch,
 } from '../ui'
+import { ThemeToggle } from '../theme/ThemeToggle'
 
 export interface Entry {
   /** The export's name in src/ui/index.ts. */
@@ -260,12 +261,15 @@ export const CATALOGUE: Entry[] = [
       { label: 'Off', demo: <SwitchDemo /> },
       { label: 'On', demo: <SwitchDemo on /> },
       { label: 'Disabled', demo: <SwitchDemo disabled /> },
+      { label: 'Own marks (the theme)', demo: <ThemeToggle /> },
     ],
-    use: ['A setting that is on or off and takes effect at once (the metronome).'],
+    use: [
+      'A setting that is on or off and takes effect at once (the metronome).',
+      'With off and on marks, when the two sides have names of their own (light and dark).',
+    ],
     avoid: [
       'An action that happens once: use Button.',
       'A choice between named options: use Select.',
-      'The theme: that has its own sun and moon switch (ThemeToggle in src/theme).',
     ],
   },
   {

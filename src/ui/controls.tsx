@@ -55,7 +55,9 @@ export function IconButton({
 
 /**
  * An on/off switch: an I/O rocker that tips down toward the side that is on, with the I lit in
- * the accent when on, then its label. Flipping it ticks on phones that support haptics.
+ * the accent when on, then its label. Flipping it ticks on phones that support haptics. `off` and
+ * `on` replace the O and I (the theme's sun and moon); without a visible label, give it an
+ * `aria-label`.
  *
  * Underneath it is a native `<input type="checkbox" switch>`, invisible and laid over the whole
  * control, so a tap lands on a real switch: iOS Safari gives that its own haptic tick, which
@@ -65,12 +67,18 @@ export function Switch({
   checked,
   onChange,
   children,
+  off = 'O',
+  on = 'I',
   className = '',
   ...rest
 }: Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'checked' | 'onChange' | 'children'> & {
   checked: boolean
   onChange: (checked: boolean) => void
-  children: ReactNode
+  children?: ReactNode
+  /** What the off (left) side shows; default O. */
+  off?: ReactNode
+  /** What the on (right) side shows; default I. */
+  on?: ReactNode
 }) {
   return (
     <label className={`ui-switch ${className}`}>
@@ -89,8 +97,8 @@ export function Switch({
       />
       <span className="ui-rocker" aria-hidden>
         <span className="ui-rocker-plate">
-          <span className="ui-rocker-o">O</span>
-          <span className="ui-rocker-i">I</span>
+          <span className="ui-rocker-o">{off}</span>
+          <span className="ui-rocker-i">{on}</span>
         </span>
       </span>
       {children}
