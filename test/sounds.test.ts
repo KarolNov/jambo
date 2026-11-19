@@ -2,11 +2,14 @@ import { evictDurableObject, runDurableObjectAlarm, runInDurableObject } from 'c
 import { env, exports } from 'cloudflare:workers'
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
-import { ROOTS } from '../shared/board'
-import { isUploadId, UPLOAD_HEADERS, UPLOADS } from '../shared/sounds'
+import { apply, type Origin, ROOTS, type Sound } from '../shared/board'
+import { isUploadId, newUploadId, UPLOAD_HEADERS, UPLOADS } from '../shared/sounds'
 import { encodeWav } from '../shared/wav'
 import { SOUND_RETENTION_MS, soundKey } from '../worker/board'
 import { connectBoard, until } from './client'
+
+/** The room's own origin, for the operations only it may apply. */
+const ROOM: Origin = { kind: 'system', id: 'room' }
 
 let address = 0
 /** A fresh client address per test, so the write limit of one test doesn't spill into another. */
@@ -104,7 +107,18 @@ describe('uploading a sound', () => {
 
   it(`refuses the ${UPLOADS.perJam + 1}th sound in a jam`, async () => {
     const slug = 'funky-otter-sp05'
-    for (let i = 0; i < UPLOADS.perJam; i++) expect((await upload(slug)).status).toBe(201)
+    // One real upload, then the rest listed in the room directly: 32 uploads in a row outlast
+    // the test timeout on CI, and the cap counts what the board lists.
+    const first = await upload(slug)
+    expect(first.status).toBe(201)
+    const { sound } = (await first.json()) as { sound: Sound }
+    await runInDurableObject(env.Board.getByName(slug), (instance) => {
+      const doc = (instance as unknown as { document: Y.Doc }).document
+      for (let i = 1; i < UPLOADS.perJam; i++) {
+        const [r] = apply(doc, [{ op: 'addSound', id: newUploadId(), sound }], ROOM)
+        expect(r?.ok).toBe(true)
+      }
+    })
     const res = await upload(slug)
     expect(res.status).toBe(409)
     expect(await res.json()).toEqual({ error: `This jam already has ${UPLOADS.perJam} sounds` })
