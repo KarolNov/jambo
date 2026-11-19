@@ -1,6 +1,6 @@
 /*
  * The console's pads and sound editing. Pads are soft rubber squares: your press pushes one in
- * (an inner ring in your colour), a loop hit lights it from the centre in the loop's colour.
+ * (an inner ring in your colour), a loop hit lights it from inside in the loop's colour.
  */
 :root[data-theme] .console-unlock {
   display: flex;
@@ -42,22 +42,48 @@
   text-align: left;
   touch-action: manipulation;
   user-select: none;
-  overflow: hidden;
   transition: box-shadow 0.18s ease-out;
 }
+/* A loop hit is a light inside the rubber: an even wash over the whole pad (::after),
+   gathering softly toward the sides, and a faint halo it spills onto the console (::before). No
+   crisp lines anywhere: those read as neon, not light through rubber. Both switch on at once and
+   fade out together. */
+:root[data-theme] .console-pad::before,
 :root[data-theme] .console-pad::after {
-  /* the glow layer, faded in for loop hits */
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(circle closest-side at 50% 50%, var(--glow), transparent);
   opacity: 0;
-  transition: opacity 0.35s ease-out;
+  transition: opacity 0.5s cubic-bezier(0.2, 0.7, 0.3, 1);
   pointer-events: none;
 }
+:root[data-theme] .console-pad::before {
+  box-shadow: 0 0 32px 0 color-mix(in srgb, var(--glow) 22%, transparent);
+}
+:root[data-theme] .console-pad::after {
+  /* a broad, even wash over the whole pad, only a touch brighter in the middle, with more light
+     gathering at the edges: a lit panel rather than a spot */
+  background:
+    radial-gradient(
+      ellipse farthest-side at 50% 50%,
+      color-mix(in srgb, var(--glow-core, var(--glow)) 40%, transparent) 0%,
+      color-mix(in srgb, var(--glow) 22%, transparent) 60%,
+      transparent 100%
+    ),
+    color-mix(in srgb, var(--glow) 20%, transparent);
+  box-shadow: inset 0 0 30px 0 color-mix(in srgb, var(--glow) 28%, transparent);
+  mix-blend-mode: var(--glow-blend, normal);
+}
+:root[data-theme='dark'] .console-pad {
+  /* on the dark console the light adds to the rubber rather than painting over it, and its core
+     burns near white; on the light one a white core would read as a hole */
+  --glow-blend: screen;
+  --glow-core: color-mix(in srgb, var(--glow) 55%, white);
+}
+:root[data-theme] .console-pad.glow::before,
 :root[data-theme] .console-pad.glow::after {
-  opacity: 0.55;
+  opacity: 0.9;
   transition: none;
 }
 :root[data-theme] .console-pad.glow {
@@ -73,15 +99,36 @@
   outline: none;
   box-shadow:
     var(--raise),
-    inset 0 0 0 2px var(--accent-2);
+    inset 0 0 0 2px var(--focus);
 }
+/* The key: its letter moulded out of the pad's rubber, only just standing out of it. Its face is
+   the pad's own colour, barely lighter, ringed evenly on every side by a soft, blurred rim in one
+   darker rubber tone (an unshifted shadow, so it spills out the same on every side). It sits
+   under the glow layer, so a hit lights it like the rest of the pad. */
 :root[data-theme] .console-pad-key {
-  font-size: 12px;
+  --rim: var(--lo);
+  font-size: 18px;
   font-weight: 800;
-  color: var(--muted);
-  padding: 2px 7px;
-  border-radius: 7px;
-  box-shadow: var(--inset-sm);
+  line-height: 1;
+  color: color-mix(in srgb, var(--hi) 15%, var(--bg));
+  text-shadow:
+    0 0 2px var(--rim),
+    0 0 6px var(--rim);
+  transition:
+    transform 0.18s ease-out,
+    text-shadow 0.18s ease-out;
+}
+/* The dark console's shadow tone sits too close to its rubber to show: go deeper there, and lift
+   the face a little so the letter keeps its shape */
+:root[data-theme='dark'] .console-pad-key {
+  --rim: rgb(0 0 0 / 0.75);
+  color: color-mix(in srgb, var(--hi) 45%, var(--bg));
+}
+/* Pressing the pad pushes the letter in with it */
+:root[data-theme] .console-pad.pressed .console-pad-key {
+  transform: scale(0.96);
+  text-shadow: 0 0 2px var(--rim);
+  transition: none;
 }
 :root[data-theme] .console-pad-sound {
   font-size: 13px;
@@ -239,7 +286,7 @@
   outline: none;
   box-shadow:
     var(--inset),
-    inset 0 0 0 1.5px var(--accent-2);
+    inset 0 0 0 1.5px var(--focus);
 }
 :root[data-theme] .console-sounds .upload-dialog input::selection {
   background: color-mix(in srgb, var(--accent-2) 35%, transparent);
@@ -311,7 +358,7 @@
   outline: none;
   box-shadow:
     var(--raise-sm),
-    inset 0 0 0 2px var(--accent-2);
+    inset 0 0 0 2px var(--focus);
 }
 :where(.console-sounds) input {
   font: inherit;

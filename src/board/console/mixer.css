@@ -81,7 +81,7 @@
   outline: none;
   box-shadow:
     var(--inset-sm),
-    inset 0 0 0 2px var(--accent-2);
+    inset 0 0 0 2px var(--focus);
 }
 :root[data-theme] .console-channel-name[aria-invalid='true'] {
   box-shadow:
