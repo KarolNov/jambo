@@ -262,14 +262,56 @@ describe('agent uploads', () => {
     person.close()
   })
 
+  it('takes a WAV with extra chunks, as base64url wrapped in CRLF lines', async () => {
+    // What ffmpeg writes: a LIST chunk between fmt and data.
+    const plain = monoWav(1)
+    const list = new Uint8Array(
+      [...'LIST', 6, 0, 0, 0, ...'INFOab'].map((c) =>
+        typeof c === 'string' ? c.charCodeAt(0) : c,
+      ),
+    )
+    const wav = new Uint8Array(plain.length + list.length)
+    wav.set(plain.subarray(0, 36))
+    wav.set(list, 36)
+    wav.set(plain.subarray(36), 36 + list.length)
+    new DataView(wav.buffer).setUint32(4, wav.length - 8, true)
+    const url = base64(wav).replace(/\+/g, '-').replace(/\//g, '_')
+    const out = await call('upload_sound', {
+      jam: 'funky-otter-mc11',
+      soundName: 'Tagged',
+      wav: url.replace(/.{76}/g, '$&\r\n'),
+    })
+    expect(out.isError).toBe(false)
+    expect(out.body.sound).toMatchObject({ durationMs: 1000, bytes: plain.length })
+  })
+
+  it('refuses a file bigger than an upload can be', async () => {
+    const out = await call('upload_sound', {
+      jam: 'funky-otter-mc12',
+      soundName: 'Huge',
+      wav: base64(new Uint8Array(UPLOADS.maxBytes + 3)),
+    })
+    expect(out).toMatchObject({ isError: true, body: { error: 'The file is too big' } })
+  })
+
+  it('refuses the 11th upload from one address within a minute', async () => {
+    const ip = newAddress()
+    const args = { jam: 'funky-otter-mc13', soundName: 'X', wav: '%%%' }
+    for (let i = 0; i < 10; i++)
+      expect((await call('upload_sound', args, ip)).body.error).toBe('wav is not base64')
+    expect((await call('upload_sound', args, ip)).body.error).toBe(
+      'Too many uploads, try again in a minute',
+    )
+  })
+
   it('refuses a stereo WAV and stores nothing', async () => {
-    const slug = 'funky-otter-mc07'
+    const slug = 'funky-otter-mc10'
     const out = await call('upload_sound', {
       jam: slug,
       soundName: 'Wide',
       wav: base64(stereoWav()),
     })
-    expect(out.isError).toBe(true)
+    expect(out).toMatchObject({ isError: true, body: { error: 'Only mono is accepted' } })
     const person = await connectBoard(slug)
     expect(person.doc.getMap(ROOTS.sounds).size).toBe(0)
     const listed = await env.SOUND_FILES.list({ prefix: `jams/${slug}/` })

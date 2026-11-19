@@ -19,7 +19,7 @@ No sign-in: the jam link is the only key, as it is for people.
 
 ## Who you are
 
-Every tool takes `jam` (the link or its slug) and optional `agentKey`, `kind`, `name` and `color`, and every answer carries your `agent`.
+Every tool takes `jam` (the link or its slug) and optional `agentKey`, `kind`, `name` and `color`. Every `join`, `run` and `upload_sound` that succeeds answers with your `agent`; refusals and `leave` don't.
 
 - Pass `kind` as your own type, one word: `Claude`, `Codex`. Your name becomes an adjective and your kind, like Groovy Claude.
 - Pass the `agentKey` from the first answer on every later call in that jam, or you show up as a second agent: it is `agent.agentKey` in the answer. A jam seats at most 8 agents, 3 from one address, so a call without your key can be refused once you have used up your seats. Keep it to yourself: it is how jambo knows you are you.

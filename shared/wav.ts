@@ -70,6 +70,44 @@ export function parseUploadWav(bytes: Uint8Array): WavInfo | { error: string } {
   return { sampleRate, channels, bitsPerSample, frames, durationMs }
 }
 
+/**
+ * Rewrites a WAV that carries other chunks (LIST, bext, FLLR, fact…), as ffmpeg, sox and
+ * afconvert write them, into the 44-byte layout `parseUploadWav` takes, keeping only its `fmt `
+ * and `data`. Bytes that aren't a RIFF WAVE with both come back as they are, for
+ * `parseUploadWav` to say why.
+ */
+export function toUploadLayout(bytes: Uint8Array<ArrayBuffer>): Uint8Array<ArrayBuffer> {
+  if (bytes.length < 12) return bytes
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const tag = (at: number) => String.fromCharCode(...bytes.subarray(at, at + 4))
+  if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return bytes
+  let fmt: number | undefined
+  let data: { at: number; size: number } | undefined
+  for (let at = 12; at + 8 <= bytes.length;) {
+    const size = view.getUint32(at + 4, true)
+    if (tag(at) === 'fmt ' && size >= 16) fmt = at + 8
+    if (tag(at) === 'data') {
+      data = { at: at + 8, size: Math.min(size, bytes.length - at - 8) }
+      break
+    }
+    at += 8 + size + (size & 1) // chunks are padded to an even length
+  }
+  if (fmt === undefined || !data) return bytes
+  const out = new Uint8Array(HEADER_BYTES + data.size)
+  const outView = new DataView(out.buffer)
+  out.set(bytes.subarray(0, 12)) // RIFF, size (rewritten below), WAVE
+  out.set(bytes.subarray(fmt - 8, fmt + 16), 12) // 'fmt ' and its first 16 bytes
+  outView.setUint32(4, out.length - 8, true)
+  outView.setUint32(16, 16, true)
+  // WAVE_FORMAT_EXTENSIBLE: the real format is the first two bytes of its sub-format.
+  if (view.getUint16(fmt, true) === 0xfffe && view.getUint32(fmt - 4, true) >= 40)
+    outView.setUint16(20, view.getUint16(fmt + 24, true), true)
+  out.set(bytes.subarray(data.at - 8, data.at - 4), 36) // 'data'
+  outView.setUint32(40, data.size, true)
+  out.set(bytes.subarray(data.at, data.at + data.size), HEADER_BYTES)
+  return out
+}
+
 /** Silence is anything more than 60 dB below the sample's own peak. */
 export const SILENCE = 10 ** (-60 / 20)
 /** How much is kept before the first sound, so attacks aren't clipped. */

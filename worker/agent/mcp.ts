@@ -14,6 +14,7 @@ import {
 import { BPM, LIMITS, QUANTIZE } from '../../shared/board'
 import { COLOR_NAMES, toColorName } from '../../shared/colors'
 import { UPLOADS } from '../../shared/sounds'
+import { toUploadLayout } from '../../shared/wav'
 import type { AgentHello } from './roster'
 
 /** Tool calls per minute per address: the AGENT_RUNS limit in `wrangler.jsonc`, keep them equal. */
@@ -44,7 +45,7 @@ run takes ops, a JSON array of 1-${AGENT_LIMITS.ops} operations, and summary (1-
   { op: 'removeTrack', id }
 Tracks hit pads, so to use a sound, assign it to a pad and hit that pad. The operations apply in order as one change; each gets a result { op, ok, issues?, id? } (id: the new track's), and refused ones change nothing. If any operation doesn't fit the schema, nothing applies. run answers { summary, ops, agent }.
 
-upload_sound takes soundName and wav (base64 of a mono 16-bit ${UPLOADS.sampleRate} Hz WAV, up to ${UPLOADS.maxSeconds} s) and answers its id; a run can then assign it to a pad. leave takes you out of the jam.
+upload_sound takes soundName and wav (base64 of a mono 16-bit PCM ${UPLOADS.sampleRate} Hz WAV, up to ${UPLOADS.maxSeconds} s; other chunks such as LIST are dropped) and answers { id, sound, agent }; a run can then assign id to a pad. leave takes you out of the jam.
 
 Calls are limited to ${AGENT_CALLS_PER_MINUTE} a minute per address.`
 
@@ -121,20 +122,28 @@ async function resolve(input: Who, address: string): Promise<{ slug: string; hel
   }
 }
 
-/** Decodes base64 (standard or URL-safe, whitespace ignored), or undefined if it isn't. */
-function fromBase64(text: string): ArrayBuffer | undefined {
-  // Never decode more than an upload can be.
-  if (text.length > Math.ceil((UPLOADS.maxBytes * 4) / 3) + 1024)
-    return new ArrayBuffer(UPLOADS.maxBytes + 1)
-  try {
-    const clean = text.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/')
-    const bin = atob(clean)
-    const bytes = new Uint8Array(bin.length)
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-    return bytes.buffer
-  } catch {
-    return undefined
+/** The runtime's native base64 decoder (`Uint8Array.fromBase64`), which lib.es2023 doesn't type. */
+const decodeBase64 = (
+  Uint8Array as unknown as {
+    fromBase64(text: string, options: { alphabet: 'base64' | 'base64url' }): Uint8Array<ArrayBuffer>
   }
+).fromBase64
+
+/** Base64 for the largest upload, before any whitespace. */
+const MAX_BASE64 = Math.ceil(UPLOADS.maxBytes / 3) * 4
+
+/** Decodes base64 (standard or URL-safe, whitespace ignored), or says why it can't. */
+function fromBase64(text: string): Uint8Array<ArrayBuffer> | { error: string } {
+  // Room for line breaks, but never decode much more than an upload can be.
+  if (text.length > 2 * MAX_BASE64) return { error: 'The file is too big' }
+  let bytes: Uint8Array<ArrayBuffer>
+  try {
+    bytes = decodeBase64(text, { alphabet: /[-_]/.test(text) ? 'base64url' : 'base64' })
+  } catch {
+    return { error: 'wav is not base64' }
+  }
+  if (bytes.byteLength > UPLOADS.maxBytes) return { error: 'The file is too big' }
+  return bytes
 }
 
 /** Builds the MCP server for one request; `address` is the caller's, for the rate limit. */
@@ -225,14 +234,14 @@ export function jamboMcpServer(env: Env, address: string) {
       // Uploads spend the same budget as the browser's: 10 writes a minute per address.
       const { success } = await env.SOUND_WRITES.limit({ key: address })
       if (!success) return refuse('Too many uploads, try again in a minute')
-      const wav = fromBase64(input.wav)
-      if (!wav) return refuse('wav is not base64')
-      if (wav.byteLength > UPLOADS.maxBytes) return refuse('The file is too big')
+      const decoded = fromBase64(input.wav)
+      if ('error' in decoded) return refuse(decoded.error)
       const r = await room(slug)
       const agent = await r.agentJoin(hello)
       if ('error' in agent) return refuse(agent.error)
       const result = await r.uploadSound({
-        wav,
+        // Agents' WAVs come from any tool; the room takes only the browser's 44-byte layout.
+        wav: toUploadLayout(decoded).buffer,
         name: input.soundName,
         author: AGENT_AUTHOR_PREFIX + agent.id,
         authorName: agent.name,
