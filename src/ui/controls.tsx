@@ -10,8 +10,8 @@ import {
 } from 'react'
 import { fraction, litFraction, snap } from './fader'
 import { haptic } from './haptics'
-import { useScrub } from './scrub'
-import { keyValue } from './scrubSteps'
+import { ANIMATION_FRAMES, useScrub } from './scrub'
+import { keyValue, type LiveDrag, liveDrag } from './scrubSteps'
 import './ui.css'
 
 type Tone = 'default' | 'primary' | 'danger' | 'quiet'
@@ -188,26 +188,18 @@ export function Range({
   // drag doesn't send a change for every 0.01 it passes.
   const [draft, setDraft] = useState<number>()
   const shown = draft ?? value
-  const held = useRef(false)
-  const pending = useRef<number>(undefined)
-  const frame = useRef(0)
-  const latest = useRef(onChange)
+  // The drag's frame-coalesced sender, from press to release.
+  const sender = useRef<LiveDrag>(undefined)
+  const latest = useRef({ value, onChange })
   useEffect(() => {
-    latest.current = onChange
+    latest.current = { value, onChange }
   })
-  const flush = () => {
-    cancelAnimationFrame(frame.current)
-    frame.current = 0
-    const v = pending.current
-    pending.current = undefined
-    if (v !== undefined) latest.current(v)
-  }
 
   useEffect(() => {
     if (!dragging) return
     const end = () => {
-      held.current = false
-      flush()
+      sender.current?.end(true)
+      sender.current = undefined
       setDraft(undefined)
       setDragging(false)
     }
@@ -218,21 +210,26 @@ export function Range({
       window.removeEventListener('pointercancel', end)
     }
   }, [dragging])
-  useEffect(() => () => cancelAnimationFrame(frame.current), [])
+  useEffect(
+    () => () => {
+      sender.current?.drop()
+      sender.current = undefined
+    },
+    [],
+  )
 
   // Drags stick to the detent, with a tick; keys step on their own grid, so they can always
   // leave it, and never tick.
   const drag = (raw: number) => {
     const v = snap(raw, detent)
     if (v === shown) return
-    if (!held.current) {
+    if (!sender.current) {
       onChange(v) // Moved some other way (a screen reader): no drag to coalesce.
       return
     }
     if (v === detent) haptic('detent')
     setDraft(v)
-    pending.current = v
-    frame.current ||= requestAnimationFrame(flush)
+    sender.current.move(v)
   }
 
   const f = fraction(shown, min, max)
@@ -269,7 +266,12 @@ export function Range({
         value={shown}
         onChange={(e) => drag(Number(e.target.value))}
         onPointerDown={(e) => {
-          held.current = true
+          sender.current = liveDrag(
+            value,
+            (v) => latest.current.onChange(v),
+            () => latest.current.value,
+            ANIMATION_FRAMES,
+          )
           setDragging(true)
           onPointerDown?.(e)
         }}
@@ -401,8 +403,14 @@ export function ScrubField({
 export type KnobProps = {
   label: string
   value: number
-  /** Called on release after a drag, and per key press or double-click reset. */
+  /**
+   * Called on release after a drag, and per key press or double-click reset. When `live`, also
+   * called while turning, at most once a frame, and with the start value if Escape cancels
+   * (unless a peer has changed the value since).
+   */
   onChange: (value: number) => void
+  /** Apply the value as it turns, not only on release: for a setting everyone hears change. */
+  live?: boolean
   min?: number
   max?: number
   step?: number
@@ -419,7 +427,9 @@ export type KnobProps = {
 /**
  * A rotary knob: a raised cap with an index line, in a ring lit to the value in `color`. Drag up
  * or right to turn it up, down or left to turn it down, Shift for ten steps; the value shows in a
- * bubble while turning and applies once on release, and Escape puts it back. Arrows, Page Up/Down,
+ * bubble while turning and applies once on release, and Escape puts it back. A `live` knob applies
+ * as it turns, once a frame, and Escape applies the start value again unless a peer has changed
+ * it since. Arrows, Page Up/Down,
  * Home and End turn it from the keyboard; a double-click resets it to `defaultValue`. Screen
  * readers hear a slider.
  */
@@ -433,6 +443,7 @@ export function Knob({
   defaultValue = min,
   color,
   format = String,
+  live = false,
   disabled = false,
   className = '',
 }: KnobProps) {
@@ -446,6 +457,7 @@ export function Knob({
     step,
     pixelsPerStep,
     axis: 'xy',
+    live,
     disabled,
   })
   const f = fraction(scrub.shown, min, max)

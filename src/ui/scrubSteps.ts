@@ -64,3 +64,59 @@ export function keyValue(
   const steps = size === 'page' ? page : e.shiftKey ? SHIFT_STEPS : 1
   return stepBy(value, sign * steps, range.step, range.min, range.max)
 }
+
+/** Animation frames, passed in so a live drag can be tested without a browser. */
+export type Frames = { request: (run: () => void) => number; cancel: (id: number) => void }
+
+/**
+ * A live drag in progress: `move` as the value previews, then once when it stops either `end`
+ * (released, or cancelled) or `drop` (the control went away: nothing more is applied).
+ */
+export type LiveDrag = {
+  move: (value: number) => void
+  end: (commit: boolean) => void
+  drop: () => void
+}
+
+/**
+ * Hands a drag's values to `apply` as it moves, at most once a frame, for a live control. `now`
+ * reads the value as it stands (a peer may change it mid-drag), and nothing is applied that is
+ * already there. Releasing applies the last value moved to, if it moved at all. Cancelling applies `start` again,
+ * but only while the value is still the last one this drag applied: a cancelled drag that sent
+ * nothing changes nothing, and one a peer has since changed leaves the peer's value.
+ */
+export function liveDrag(
+  start: number,
+  apply: (value: number) => void,
+  now: () => number,
+  frames: Frames,
+): LiveDrag {
+  let sent: number | undefined
+  let last: number | undefined
+  let frame = 0
+  const send = (v: number) => {
+    if (v === now()) return
+    sent = v
+    apply(v)
+  }
+  const stop = () => {
+    if (frame) frames.cancel(frame)
+    frame = 0
+  }
+  return {
+    move(v) {
+      last = v
+      frame ||= frames.request(() => {
+        frame = 0
+        if (last !== undefined) send(last)
+      })
+    },
+    end(commit) {
+      stop()
+      if (commit) {
+        if (last !== undefined) send(last)
+      } else if (sent !== undefined && now() === sent) send(start)
+    },
+    drop: stop,
+  }
+}

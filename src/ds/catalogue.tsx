@@ -101,17 +101,40 @@ function RangeDemo({
   )
 }
 
-function KnobDemo({ start, disabled }: { start: number; disabled?: boolean }) {
+function KnobDemo({
+  start,
+  disabled,
+  live,
+}: {
+  start: number
+  disabled?: boolean
+  live?: boolean
+}) {
   const [value, setValue] = useState(start)
-  return (
+  // A live knob's owner sees each change as it turns: count them, to show it applies once a frame.
+  const [changes, setChanges] = useState(0)
+  const knob = (
     <Knob
-      label="Drive"
+      label={live ? 'Reverb' : 'Drive'}
       value={value}
-      onChange={setValue}
-      defaultValue={0.5}
+      onChange={(v) => {
+        setValue(v)
+        setChanges((n) => n + 1)
+      }}
+      defaultValue={live ? 0 : 0.5}
       format={percent}
+      live={live}
       disabled={disabled}
     />
+  )
+  if (!live) return knob
+  return (
+    <span className="ds-knob-live">
+      {knob}
+      <span>
+        {percent(value)} · {changes} applied
+      </span>
+    </span>
   )
 }
 
@@ -305,15 +328,17 @@ export const CATALOGUE: Entry[] = [
   {
     name: 'Knob',
     summary:
-      'A rotary control: drag up or right to turn it up, Shift for ten steps, Escape to put it back, double-click to reset. Screen readers hear a slider.',
+      'A rotary control: drag up or right to turn it up, Shift for ten steps, Escape to put it back, double-click to reset. Applies on release, or once a frame as it turns when live. Screen readers hear a slider.',
     states: [
       { label: 'Middle', demo: <KnobDemo start={0.5} /> },
       { label: 'Full', demo: <KnobDemo start={1} /> },
       { label: 'Disabled', demo: <KnobDemo start={0.25} disabled /> },
+      { label: 'Live: applies as it turns', demo: <KnobDemo start={0} live /> },
     ],
     use: [
       'A secondary continuous parameter where a fader would take too much room.',
       'Give it a defaultValue that double-click returns to.',
+      'Make it live when everyone should hear the change while it turns (a loop’s sound knobs); it applies once a frame and Escape applies the start value again.',
     ],
     avoid: [
       'The main level of something: use Range, which reads at a glance.',

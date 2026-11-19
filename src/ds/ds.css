@@ -101,6 +101,16 @@
 :root[data-theme] .ds-demo > .ui-fader {
   flex: 1;
 }
+/* A live knob and what its owner has been handed so far. */
+:root[data-theme] .ds-knob-live {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
 :root[data-theme] .ds-demo > .ui-pad,
 :root[data-theme] .ds-demo > .ds-anchor > .ui-pad {
   width: 112px;
