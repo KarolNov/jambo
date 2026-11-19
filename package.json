@@ -29,6 +29,7 @@
     "partyserver": "^0.5.10",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "web-haptics": "0.0.6",
     "y-partyserver": "^2.2.0",
     "y-protocols": "^1.0.7",
     "yjs": "^13.6.33",

@@ -11,6 +11,9 @@ import { byAgent } from './people'
 import './mixer.css'
 
 const SNAP_GROUPS = [{ options: SNAP_OPTIONS }]
+/** The level fader's tick marks, every 0.25; it sticks at unity (1.0). */
+const LEVEL_MARKS = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]
+const percent = (v: number) => `${Math.round(v * 100)}%`
 
 /** The mixer tray: every loop in the jam as a row anyone can play with. */
 export function Mixer() {
@@ -102,9 +105,12 @@ function Channel({ id, track }: { id: string; track: Track }) {
         color={swatch(track.color)}
         min={0}
         max={1.5}
-        step={0.05}
+        keyStep={0.05}
+        marks={LEVEL_MARKS}
+        detent={1}
+        format={percent}
         value={track.gain}
-        onChange={(e) => set({ gain: Number(e.target.value) })}
+        onChange={(gain) => set({ gain })}
       />
       <div className="console-snap">
         <span aria-hidden>Snap</span>
