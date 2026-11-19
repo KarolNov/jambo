@@ -15,6 +15,8 @@ export type ScrubOptions = Partial<ScrubRange> & {
   value: number
   /** Called once, when a drag that changed the value is let go. Never for a cancelled drag. */
   onCommit: (value: number) => void
+  /** Called when a drag begins, before the first preview. */
+  onStart?: () => void
   axis?: ScrubAxis
   disabled?: boolean
 }
@@ -36,6 +38,7 @@ type Drag = {
 export function useScrub({
   value,
   onCommit,
+  onStart,
   min = -Infinity,
   max = Infinity,
   step = 1,
@@ -61,8 +64,14 @@ export function useScrub({
     current.current = undefined
     swallowClick.current = d.moved
     setDraft(undefined)
-    if (commit && v !== undefined && v !== d.start) onCommit(v)
+    // Against the value now, not at the start: it may have changed under the drag (a peer).
+    if (commit && d.moved && v !== undefined && v !== latest.current.value) onCommit(v)
   }
+  // The listeners below outlive a render; they reach this render's `end` through here.
+  const latest = useRef({ value, end })
+  useEffect(() => {
+    latest.current = { value, end }
+  })
 
   // Escape puts the value back. Listened for on the window: the handle may not have focus.
   const dragging = draft !== undefined
@@ -72,22 +81,26 @@ export function useScrub({
       if (e.key !== 'Escape') return
       e.preventDefault()
       e.stopPropagation()
-      end(false)
+      latest.current.end(false)
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  })
+  }, [dragging])
   // Disabled mid-drag (the tempo locks): drop the drag without applying it.
   useEffect(() => {
-    if (disabled) end(false)
-  })
+    if (disabled) latest.current.end(false)
+  }, [disabled])
 
   const handlers = {
     onPointerDown(e: ReactPointerEvent) {
       if (disabled || e.button !== 0 || drag.current) return
-      // No text selection or focus change from the drag itself.
+      // No text selection from the drag. That also stops the default focus, so a focusable
+      // handle (a knob) is focused here: its keys work after a turn.
       e.preventDefault()
-      e.currentTarget.setPointerCapture(e.pointerId)
+      const el = e.currentTarget
+      if (el instanceof HTMLElement && el.tabIndex >= 0) el.focus()
+      el.setPointerCapture(e.pointerId)
+      onStart?.()
       drag.current = {
         id: e.pointerId,
         el: e.currentTarget,

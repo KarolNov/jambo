@@ -8,10 +8,10 @@ import {
   useRef,
   useState,
 } from 'react'
-import { fraction, litFraction, snap, stepBy } from './fader'
+import { fraction, litFraction, snap } from './fader'
 import { haptic } from './haptics'
 import { useScrub } from './scrub'
-import { keyValue, SHIFT_STEPS } from './scrubSteps'
+import { keyValue } from './scrubSteps'
 import './ui.css'
 
 type Tone = 'default' | 'primary' | 'danger' | 'quiet'
@@ -121,17 +121,8 @@ export type RangeProps = Omit<
   format?: (value: number) => string
 }
 
-/** How many key steps each key moves; Home and End go to the ends. */
-const KEY_DELTA: Partial<Record<string, number>> = {
-  ArrowRight: 1,
-  ArrowUp: 1,
-  ArrowLeft: -1,
-  ArrowDown: -1,
-  PageUp: 5,
-  PageDown: -5,
-  Home: -Infinity,
-  End: Infinity,
-}
+/** How many key steps Page Up and Page Down move the fader. */
+const PAGE_STEPS = 5
 
 /**
  * A mixer fader: a thin slot, a solid cap with ridges and an index line, an LED strip lit to the
@@ -248,14 +239,10 @@ export function Range({
         }}
         onKeyDown={(e) => {
           onKeyDown?.(e)
-          const delta = KEY_DELTA[e.key]
-          if (e.defaultPrevented || delta === undefined) return
+          if (e.defaultPrevented) return
+          const v = keyValue(e, shown, { min, max, step: keyStep }, PAGE_STEPS)
+          if (v === undefined) return
           e.preventDefault()
-          const v = Number.isFinite(delta)
-            ? stepBy(shown, delta, keyStep, min, max)
-            : delta > 0
-              ? max
-              : min
           if (v !== shown) onChange(v)
         }}
         {...rest}
@@ -310,9 +297,19 @@ export function ScrubField({
 }: ScrubFieldProps) {
   const autoId = useId()
   const fieldId = id ?? autoId
-  const scrub = useScrub({ value, onCommit: onChange, min, max, step, pixelsPerStep, disabled })
-  // The number being typed; applied on Enter or when the field loses focus.
+  // The number being typed; applied on Enter or when the field loses focus. A scrub drops it, so
+  // the dragged value is the one that stays.
   const [typed, setTyped] = useState<string>()
+  const scrub = useScrub({
+    value,
+    onCommit: onChange,
+    onStart: () => setTyped(undefined),
+    min,
+    max,
+    step,
+    pixelsPerStep,
+    disabled,
+  })
   // Set on Escape, so the blur that follows doesn't apply what was typed.
   const cancelled = useRef(false)
   const allowed = new RegExp(`[^0-9${Number.isInteger(step) ? '' : '.'}${min < 0 ? '-' : ''}]`, 'g')
@@ -328,6 +325,7 @@ export function ScrubField({
       </label>
       {start}
       <input
+        {...rest}
         id={fieldId}
         className="ui-scrub-field"
         inputMode={Number.isInteger(step) ? 'numeric' : 'decimal'}
@@ -346,10 +344,9 @@ export function ScrubField({
           }
           if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
             e.preventDefault()
-            const steps = (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? SHIFT_STEPS : 1)
-            const next = Math.min(max, Math.max(min, value + steps * step))
+            const next = keyValue(e, value, { min, max, step })
             setTyped(undefined)
-            if (next !== value) onChange(Number(next.toFixed(6)))
+            if (next !== undefined && next !== value) onChange(next)
           }
         }}
         onBlur={(e) => {
@@ -359,7 +356,6 @@ export function ScrubField({
           if (cancelled.current) cancelled.current = false
           else if (Number.isFinite(n) && n !== value) onChange(n)
         }}
-        {...rest}
       />
       {end}
     </span>
@@ -436,12 +432,6 @@ export function Knob({
         aria-orientation="vertical"
         className="ui-knob-dial"
         {...scrub.handlers}
-        onPointerDown={(e) => {
-          if (disabled) return
-          // The drag handler stops the default focus, so focus it here: keys work after a turn.
-          e.currentTarget.focus()
-          scrub.handlers.onPointerDown(e)
-        }}
         onDoubleClick={() => {
           if (!disabled && defaultValue !== value) onChange(defaultValue)
         }}

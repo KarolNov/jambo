@@ -24,7 +24,7 @@ export function litFraction(f: number): number {
 /**
  * The value `delta` key presses move to: onto the keyStep grid first (0.98 up is 1, down 0.95),
  * then whole steps, so 0.95 + 0.05 is exactly 1. The grid starts at `min`, as the native input's
- * does. Kept within range.
+ * does (at 0 with no min). Kept within range.
  */
 export function stepBy(
   value: number,
@@ -33,7 +33,8 @@ export function stepBy(
   min: number,
   max: number,
 ): number {
-  const q = Math.round(((value - min) / keyStep) * 1e6) / 1e6
-  const next = min + ((delta > 0 ? Math.floor(q) : Math.ceil(q)) + delta) * keyStep
+  const origin = Number.isFinite(min) ? min : 0
+  const q = Math.round(((value - origin) / keyStep) * 1e6) / 1e6
+  const next = origin + ((delta > 0 ? Math.floor(q) : Math.ceil(q)) + delta) * keyStep
   return Math.min(max, Math.max(min, Number(next.toFixed(6))))
 }

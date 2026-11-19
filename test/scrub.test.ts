@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { keyValue, onGrid, type ScrubRange, scrubMove } from '../src/ui/scrubSteps'
+import { stepBy } from '../src/ui/fader'
+import { keyValue, type ScrubRange, scrubMove } from '../src/ui/scrubSteps'
 
 const tempo: ScrubRange = { min: 40, max: 240, step: 1, pixelsPerStep: 4 }
 const level: ScrubRange = { min: 0, max: 1, step: 0.01, pixelsPerStep: 2 }
@@ -40,14 +41,18 @@ describe('scrub steps', () => {
 })
 
 describe('scrub grid', () => {
-  it('rounds onto the grid from min, within range', () => {
-    expect(onGrid(0.1 + 0.2, level)).toBe(0.3)
-    expect(onGrid(41.4, tempo)).toBe(41)
-    expect(onGrid(300, tempo)).toBe(240)
+  it('leaves an off-grid value alone for less than a step', () => {
+    expect(scrubMove({ base: 0.505, at: 0 }, 1, false, level).value).toBe(0.505)
+  })
+
+  it('steps evenly onto the grid from an off-grid value', () => {
+    expect(scrubMove({ base: 0.505, at: 0 }, 2, false, level).value).toBe(0.51)
+    expect(scrubMove({ base: 0.505, at: 0 }, -2, false, level).value).toBe(0.5)
   })
 
   it('starts the grid at 0 without a min', () => {
-    expect(onGrid(2.6, { min: -Infinity, max: Infinity, step: 1 })).toBe(3)
+    expect(stepBy(2.6, 1, 1, -Infinity, Infinity)).toBe(3)
+    expect(stepBy(2.6, -1, 1, -Infinity, Infinity)).toBe(2)
   })
 })
 
@@ -65,6 +70,10 @@ describe('slider keys', () => {
     expect(keyValue(key('Home'), 0.5, level)).toBe(0)
     expect(keyValue(key('End'), 0.5, level)).toBe(1)
     expect(keyValue(key('PageUp'), 0.95, level)).toBe(1)
+  })
+
+  it('moves a page of the given size', () => {
+    expect(keyValue(key('PageUp'), 0.5, level, 5)).toBe(0.55)
   })
 
   it('ignores other keys', () => {
