@@ -32,6 +32,8 @@ import { keepAwake, preferPlayback } from './session'
 
 const LOOKAHEAD = 0.12 // seconds of audio scheduled ahead
 const TICK_MS = 25
+/** How long a removed loop fades before its chain is disconnected. */
+const RELEASE_MS = 100
 
 /**
  * The recorder's phases. Times are room ms on the jam's clock: `countStart` is the count-in's first
@@ -69,6 +71,8 @@ interface Playing {
   track: Track
   /** Undefined until audio starts. */
   chain?: Chain
+  /** The targets last set on the chain, so unchanged ones aren't scheduled again. */
+  applied?: Record<string, number | string>
   /** For a track this client just recorded: schedule from here (room ms) once, so hits missed since its loop came round still sound. */
   catchUpFrom?: number
 }
@@ -87,6 +91,8 @@ export class Engine {
   private reverb?: ConvolverNode
   /** The shared echo every loop's echo send feeds; its time follows the tempo. */
   private echo?: DelayNode
+  /** The tempo the echo's time was last set for. */
+  private echoBpm?: number
   private buffers = new Map<string, AudioBuffer>()
   /** Room ms → audio seconds: `audio = room / 1000 + shift`. Undefined until the clock is agreed. */
   private shift?: number
@@ -172,6 +178,8 @@ export class Engine {
     this.master = master
     this.reverb = reverb
     this.echo = echo
+    // The tempo may have changed while the kit rendered.
+    this.syncEcho()
     for (const p of this.playing.values()) this.attach(p)
     this.timer = setInterval(() => this.tick(), TICK_MS)
     this.emit()
@@ -234,11 +242,12 @@ export class Engine {
     this.samples.sync(state.uploads)
     this.boardBpm = state.bpm
     if (this.recorder.phase === 'idle') this.bpm = this.boardBpm
+    this.syncEcho()
     this.pads = state.pads
     for (const [id, p] of this.playing) {
       if (!state.tracks.has(id)) {
         // Tracks added before audio started have no chain yet.
-        if (p.chain) for (const node of Object.values(p.chain)) node.disconnect()
+        if (p.chain) this.release(p.chain)
         this.playing.delete(id)
       }
     }
@@ -275,7 +284,16 @@ export class Engine {
     chain.gain.connect(chain.reverb).connect(this.reverb!)
     chain.gain.connect(chain.echo).connect(this.echo!)
     p.chain = chain
+    p.applied = undefined
     this.setSound(p, true)
+  }
+
+  /** Fades a removed loop's chain out, so hits still ringing don't click, then disconnects it. */
+  private release(chain: Chain) {
+    chain.gain.gain.setTargetAtTime(0, this.ctx!.currentTime, KNOB_RAMP)
+    setTimeout(() => {
+      for (const node of Object.values(chain)) node.disconnect()
+    }, RELEASE_MS)
   }
 
   /** Moves a loop's chain to its track's level, mute and knobs; `now` jumps there instead of ramping. */
@@ -283,28 +301,35 @@ export class Engine {
     const ctx = this.ctx
     const chain = p.chain
     if (!chain || !ctx) return
-    const set = (param: AudioParam, value: number) => {
+    const applied = (p.applied ??= {})
+    const set = (key: string, param: AudioParam, value: number) => {
+      if (applied[key] === value) return
+      applied[key] = value
       if (now) param.value = value
       else param.setTargetAtTime(value, ctx.currentTime, KNOB_RAMP)
     }
     const sound = soundOf(p.track)
-    set(chain.gain.gain, p.track.mute ? 0 : p.track.gain)
-    set(chain.reverb.gain, sound.reverb)
-    set(chain.echo.gain, sound.echo)
-    set(chain.panner.pan, sound.pan)
-    const tone = toneFilter(sound.tone)
-    // A type can't ramp; both sides meet "open" at 0, so the switch is quiet.
-    if (chain.filter.type !== tone.type) chain.filter.type = tone.type
-    set(chain.filter.frequency, tone.frequency)
+    set('gain', chain.gain.gain, p.track.mute ? 0 : p.track.gain)
+    set('reverb', chain.reverb.gain, sound.reverb)
+    set('echo', chain.echo.gain, sound.echo)
+    set('pan', chain.panner.pan, sound.pan)
+    const tone = toneFilter(sound.tone, ctx.sampleRate / 2)
+    // A type can't ramp, and the two sides are open at opposite ends, so a new type starts
+    // straight at its own cutoff instead of sweeping from the old one's.
+    if (applied.type !== tone.type) {
+      applied.type = chain.filter.type = tone.type
+      chain.filter.frequency.cancelScheduledValues(0)
+      chain.filter.frequency.value = applied.frequency = tone.frequency
+    } else set('frequency', chain.filter.frequency, tone.frequency)
   }
 
   /** Keeps the echo on a dotted eighth of the current tempo. */
   private syncEcho() {
     const echo = this.echo
-    if (!echo || !this.ctx) return
+    if (!echo || !this.ctx || this.echoBpm === this.bpm) return
+    this.echoBpm = this.bpm
     const seconds = echoSeconds(this.bpm)
-    if (Math.abs(echo.delayTime.value - seconds) > 1e-4)
-      echo.delayTime.setTargetAtTime(seconds, this.ctx.currentTime, KNOB_RAMP)
+    echo.delayTime.setTargetAtTime(seconds, this.ctx.currentTime, KNOB_RAMP)
   }
 
   /** Plays a pad now, and records the hit if a take is running. */
@@ -369,6 +394,7 @@ export class Engine {
     this.takeBpm = this.bpm
     // A tempo change that arrived during the take applies now.
     this.bpm = this.boardBpm
+    this.syncEcho()
     return take && { ...take, startBar: rec.recordBar }
   }
 
@@ -452,7 +478,6 @@ export class Engine {
   private tick() {
     const ctx = this.ctx!
     this.advanceRecorder()
-    this.syncEcho()
     // Loops wait for the clock; once it is agreed they start on the jam's grid.
     if (!this.ensureShift()) return
     const candidate = audioShift(this.heard(ctx), this.clock.offset!, performance.timeOrigin)

@@ -9,8 +9,8 @@ import {
 } from '../src/audio/knobs'
 
 describe('toneFilter', () => {
-  it('leaves the sound unchanged at 0', () => {
-    expect(toneFilter(0).type).toBe('allpass')
+  it('is a low-pass at Nyquist at 0, which leaves the sound unchanged', () => {
+    expect(toneFilter(0, 24000)).toEqual({ type: 'lowpass', frequency: 24000 })
   })
 
   it('darkens below 0, down to the low cutoff at -1', () => {
@@ -69,6 +69,8 @@ describe('reverbImpulse', () => {
   it('differs between ears, for width', () => {
     const [l, r] = reverbImpulse(1000, 1)
     expect(Array.from(l.slice(0, 10))).not.toEqual(Array.from(r.slice(0, 10)))
+    // Not the same full-scale first tap in both ears.
+    expect(l[0]! + r[0]!).toBeGreaterThan(-1.9)
   })
 
   it('decays towards silence', () => {
