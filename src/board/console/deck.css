@@ -96,6 +96,11 @@
   font-size: 13px;
   color: var(--muted);
 }
+:root[data-theme] .console-tempo-lock {
+  margin-left: 4px;
+  font-size: 11px;
+  cursor: help;
+}
 :root[data-theme] .console-message {
   margin: 0;
   font-size: 13px;

@@ -64,6 +64,9 @@ const RECORD_LABEL: Record<RecorderState['phase'], string> = {
   recording: 'Stop',
 }
 
+/** Why the tempo can't change: shown on the lock beside BPM. */
+const TEMPO_LOCKED = "Tempo is locked while the jam has loops, since they're all timed to it"
+
 /** Record / stop (Space too), the tempo stepper, and the metronome switch. */
 function Transport({
   bpm,
@@ -93,13 +96,24 @@ function Transport({
         {syncing ? 'Syncing…' : RECORD_LABEL[state.phase]}
       </Button>
       <div className="console-tempo-row">
-        <div
-          className="console-tempo"
-          title={locked ? 'Tempo is locked while the jam has loops' : undefined}
-        >
+        <div className="console-tempo">
           {/* The BPM label scrubs the tempo; it applies once, on release, for everyone. */}
           <ScrubField
-            label="BPM"
+            label={
+              <>
+                BPM
+                {locked && (
+                  <span
+                    className="console-tempo-lock"
+                    role="img"
+                    aria-label={TEMPO_LOCKED}
+                    title={TEMPO_LOCKED}
+                  >
+                    🔒
+                  </span>
+                )}
+              </>
+            }
             aria-label="Tempo in BPM"
             value={bpm}
             onChange={setTempo}
@@ -126,7 +140,6 @@ function Transport({
               </IconButton>
             }
           />
-          {locked && <span aria-label="locked">🔒</span>}
         </div>
         <Switch checked={metronome} onChange={setMetronome}>
           Click

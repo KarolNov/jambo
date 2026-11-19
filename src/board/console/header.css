@@ -10,7 +10,15 @@
   background: var(--bg);
   box-shadow: var(--raise);
 }
+/* The logo and the jam's name share a baseline, so the small slug doesn't float above the logo. */
+:root[data-theme] .console-title {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  min-width: 0;
+}
 :root[data-theme] .console-logo {
+  line-height: 1;
   font-weight: 800;
   font-size: 22px;
   letter-spacing: -0.02em;
@@ -169,12 +177,28 @@
   }
 }
 
+/* The prompt to start audio sits in the bar on wider screens, and under it on phones. */
+:root[data-theme] .console-unlock.console-unlock-header {
+  margin: 0;
+}
+@media (min-width: 761px) {
+  :root[data-theme] .console-unlock.console-unlock-page {
+    display: none;
+  }
+}
+
 /* Phone width: dots only, a tighter bar. */
 @media (max-width: 760px) {
+  :root[data-theme] .console-unlock.console-unlock-header {
+    display: none;
+  }
   :root[data-theme] .console-header {
     margin: 12px 16px 20px;
     padding: 12px 14px;
     gap: 10px 12px;
+  }
+  :root[data-theme] .console-title {
+    gap: 12px;
   }
   :root[data-theme] .console-person-name,
   :root[data-theme] .console-people .console-ai {

@@ -171,13 +171,20 @@
   color: var(--accent);
 }
 
-/* The Effects toggle opens the strip; a dot in the loop's colour says a knob is off its default.
-   The dot always takes its room, so the row doesn't shift when it shows. */
+/* The Effects toggle opens the strip and stays pressed in while it is open; a dot in the loop's
+   colour says a knob is off its default. The dot always takes its room, so the row doesn't shift
+   when it shows. */
 :root[data-theme] .console-effects-toggle {
   gap: 6px;
 }
 :root[data-theme] .console-effects-toggle[aria-expanded='true'] {
   color: var(--text);
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .console-effects-toggle[aria-expanded='true']:focus-visible {
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--focus);
 }
 :root[data-theme] .console-effects-dot {
   width: 7px;
