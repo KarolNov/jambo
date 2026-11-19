@@ -60,7 +60,7 @@ A switch SHALL show whether it is on in one of two looks: an I/O rocker that tip
 
 ### Requirement: Knob
 
-A knob SHALL turn when dragged up or right (increasing) and down or left (decreasing), in steps, with Shift for ten steps at a time, showing its value while turning and applying it once on release. It SHALL take the arrow keys, Page Up and Page Down, Home and End. A double-click SHALL reset it to its default. Escape during a drag SHALL return it to where the drag started. It SHALL announce itself as a slider with its value.
+A knob SHALL turn when dragged up or right (increasing) and down or left (decreasing), in steps, with Shift for ten steps at a time, showing its value while turning. By default it SHALL apply the value once on release; a live knob SHALL instead apply it as it turns, at most once a frame. It SHALL take the arrow keys, Page Up and Page Down, Home and End. A double-click SHALL reset it to its default. Escape during a drag SHALL return it to where the drag started; a live knob SHALL apply that value again unless someone else changed it during the drag. A live knob pressed without moving SHALL apply nothing. It SHALL announce itself as a slider with its value.
 
 - **Scenario: Turn and cancel**
   - **GIVEN** a knob at 0.5
@@ -69,6 +69,10 @@ A knob SHALL turn when dragged up or right (increasing) and down or left (decrea
 - **Scenario: Reset**
   - **WHEN** someone double-clicks a knob
   - **THEN** it returns to its default
+- **Scenario: Live knob**
+  - **GIVEN** a live knob at 0
+  - **WHEN** someone drags it up slowly to 0.6
+  - **THEN** the values in between are applied as it turns, no more than one a frame, and 0.6 is applied last
 
 ### Requirement: Scrub a number
 

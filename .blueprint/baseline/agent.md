@@ -81,11 +81,14 @@ A run SHALL be a list of board operations, applied in order to the jam as one ch
 
 ### Requirement: Agent writes carry the agent
 
-A track an agent adds SHALL have the agent as its author and the agent's colour, start unmuted with no effects, and get its id from jambo; the agent SHALL give only its name, bars, hits, level and snap.
+A track an agent adds SHALL have the agent as its author and the agent's colour, start unmuted with no effects, and get its id from jambo; the agent SHALL give only its name, bars, hits, level and snap, and optionally its reverb, echo, tone, pitch and pan.
 
 - **Scenario: Posing as someone**
   - **WHEN** a run adds a track giving another person's id as author and their colour
   - **THEN** the track is added with the agent as author and in the agent's colour
+- **Scenario: Track with echo**
+  - **WHEN** a run adds a track with echo 0.4 and pan 0.5
+  - **THEN** the track is added with that echo and pan, and plays them for everyone
 
 ### Requirement: Same powers as a person
 
