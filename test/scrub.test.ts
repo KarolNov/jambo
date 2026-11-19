@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { stepBy } from '../src/ui/fader'
-import { keyValue, type ScrubRange, scrubMove } from '../src/ui/scrubSteps'
+import { keyValue, liveDrag, type ScrubRange, scrubMove } from '../src/ui/scrubSteps'
 
 const tempo: ScrubRange = { min: 40, max: 240, step: 1, pixelsPerStep: 4 }
 const level: ScrubRange = { min: 0, max: 1, step: 0.01, pixelsPerStep: 2 }
@@ -78,5 +78,73 @@ describe('slider keys', () => {
 
   it('ignores other keys', () => {
     expect(keyValue(key('a'), 0.5, level)).toBeUndefined()
+  })
+})
+
+describe('a live drag', () => {
+  /** Frames that run only when `tick` is called, and a log of what was applied. */
+  function setup(start: number) {
+    const queued = new Map<number, () => void>()
+    let next = 1
+    const applied: number[] = []
+    const drag = liveDrag(start, (v) => applied.push(v), {
+      request: (run) => (queued.set(next, run), next++),
+      cancel: (id) => queued.delete(id),
+    })
+    const tick = () => {
+      const runs = [...queued.values()]
+      queued.clear()
+      for (const run of runs) run()
+    }
+    return { drag, applied, tick }
+  }
+
+  it('applies at most one value a frame, the latest', () => {
+    const { drag, applied, tick } = setup(0)
+    drag.move(0.1)
+    drag.move(0.2)
+    drag.move(0.3)
+    expect(applied).toEqual([])
+    tick()
+    drag.move(0.4)
+    tick()
+    tick()
+    expect(applied).toEqual([0.3, 0.4])
+  })
+
+  it('applies the last value on release if its frame had not come yet', () => {
+    const { drag, applied, tick } = setup(0)
+    drag.move(0.2)
+    tick()
+    drag.move(0.6)
+    drag.end(true)
+    tick()
+    expect(applied).toEqual([0.2, 0.6])
+  })
+
+  it('applies nothing more on release when the last value already went', () => {
+    const { drag, applied, tick } = setup(0)
+    drag.move(0.6)
+    tick()
+    drag.end(true)
+    expect(applied).toEqual([0.6])
+  })
+
+  it('puts the start value back when cancelled after applying', () => {
+    const { drag, applied, tick } = setup(0.5)
+    drag.move(0.7)
+    tick()
+    drag.move(0.8)
+    drag.end(false)
+    tick()
+    expect(applied).toEqual([0.7, 0.5])
+  })
+
+  it('changes nothing when cancelled before anything was applied', () => {
+    const { drag, applied, tick } = setup(0.5)
+    drag.move(0.7)
+    drag.end(false)
+    tick()
+    expect(applied).toEqual([])
   })
 })

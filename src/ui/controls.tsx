@@ -401,8 +401,13 @@ export function ScrubField({
 export type KnobProps = {
   label: string
   value: number
-  /** Called on release after a drag, and per key press or double-click reset. */
+  /**
+   * Called on release after a drag, and per key press or double-click reset. When `live`, also
+   * called while turning, at most once a frame, and with the start value if Escape cancels.
+   */
   onChange: (value: number) => void
+  /** Apply the value as it turns, not only on release: for a setting everyone hears change. */
+  live?: boolean
   min?: number
   max?: number
   step?: number
@@ -419,7 +424,8 @@ export type KnobProps = {
 /**
  * A rotary knob: a raised cap with an index line, in a ring lit to the value in `color`. Drag up
  * or right to turn it up, down or left to turn it down, Shift for ten steps; the value shows in a
- * bubble while turning and applies once on release, and Escape puts it back. Arrows, Page Up/Down,
+ * bubble while turning and applies once on release, and Escape puts it back. A `live` knob applies
+ * as it turns, once a frame, and Escape applies the start value again. Arrows, Page Up/Down,
  * Home and End turn it from the keyboard; a double-click resets it to `defaultValue`. Screen
  * readers hear a slider.
  */
@@ -433,6 +439,7 @@ export function Knob({
   defaultValue = min,
   color,
   format = String,
+  live = false,
   disabled = false,
   className = '',
 }: KnobProps) {
@@ -446,6 +453,7 @@ export function Knob({
     step,
     pixelsPerStep,
     axis: 'xy',
+    live,
     disabled,
   })
   const f = fraction(scrub.shown, min, max)

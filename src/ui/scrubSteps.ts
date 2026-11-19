@@ -64,3 +64,39 @@ export function keyValue(
   const steps = size === 'page' ? page : e.shiftKey ? SHIFT_STEPS : 1
   return stepBy(value, sign * steps, range.step, range.min, range.max)
 }
+
+/** Animation frames, passed in so a live drag can be tested without a browser. */
+export type Frames = { request: (run: () => void) => number; cancel: (id: number) => void }
+
+/** A live drag in progress: `move` as the value previews, `end` once when it stops. */
+export type LiveDrag = { move: (value: number) => void; end: (commit: boolean) => void }
+
+/**
+ * Hands a drag's values to `apply` as it moves, at most once a frame, for a live knob. Ending it
+ * applies the last value moved to, if the frame hadn't yet; cancelling it applies `start` again,
+ * but only if something else was applied, so a cancelled drag that sent nothing changes nothing.
+ */
+export function liveDrag(start: number, apply: (value: number) => void, frames: Frames): LiveDrag {
+  let sent = start
+  let last = start
+  let frame = 0
+  const send = (v: number) => {
+    if (v === sent) return
+    sent = v
+    apply(v)
+  }
+  return {
+    move(v) {
+      last = v
+      frame ||= frames.request(() => {
+        frame = 0
+        send(last)
+      })
+    },
+    end(commit) {
+      if (frame) frames.cancel(frame)
+      frame = 0
+      send(commit ? last : start)
+    },
+  }
+}

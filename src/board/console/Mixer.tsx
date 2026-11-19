@@ -1,12 +1,18 @@
 import { useAtomValue } from 'jotai'
 import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react'
-import { BEATS_PER_BAR, type Track } from '../../../shared/board'
-import { Button, IconButton, Range, Select } from '../../ui'
+import {
+  BEATS_PER_BAR,
+  SOUND_KNOB_NAMES,
+  SOUND_KNOBS,
+  soundOf,
+  type Track,
+} from '../../../shared/board'
+import { Button, IconButton, Knob, Range, Select } from '../../ui'
 import { useSwatch } from '../colors'
 import { tracksAtom } from '../model'
 import { useSession } from '../session'
 import { AiMark } from './AiMark'
-import { beatPosition, loopSummary, SNAP_OPTIONS } from './loops'
+import { beatPosition, loopSummary, SNAP_OPTIONS, SOUND_READOUTS, soundChanged } from './loops'
 import { byAgent } from './people'
 import './mixer.css'
 
@@ -14,6 +20,8 @@ const SNAP_GROUPS = [{ options: SNAP_OPTIONS }]
 /** The level fader's tick marks, every 0.25; it sticks at unity (1.0). */
 const LEVEL_MARKS = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]
 const percent = (v: number) => `${Math.round(v * 100)}%`
+/** Loops whose Sound strip is open: kept for the page's life, so it survives the mixer remounting. */
+const openStrips = new Set<string>()
 
 /** The mixer tray: every loop in the jam as a row anyone can play with. */
 export function Mixer() {
@@ -35,7 +43,10 @@ export function Mixer() {
   )
 }
 
-/** One loop: progress ring · name and length · pattern · level · snap · mute · remove. */
+/**
+ * One loop: progress ring · name and length · pattern · level · snap · Sound · mute · remove,
+ * then its Sound strip when open.
+ */
 function Channel({ id, track }: { id: string; track: Track }) {
   const { board } = useSession()
   const [draft, setDraft] = useState<string>()
@@ -43,6 +54,12 @@ function Channel({ id, track }: { id: string; track: Track }) {
   const row = useRef<HTMLLIElement>(null)
   usePlayhead(id, row)
   const swatch = useSwatch()
+  const [open, setOpen] = useState(() => openStrips.has(id))
+  const toggle = () => {
+    if (open) openStrips.delete(id)
+    else openStrips.add(id)
+    setOpen(!open)
+  }
 
   const set = (patch: Parameters<ReturnType<typeof board.track>['set']>[0]) => {
     const r = board.track(id).set(patch)
@@ -123,6 +140,17 @@ function Channel({ id, track }: { id: string; track: Track }) {
       </div>
       <Button
         size="sm"
+        className="console-sound-toggle"
+        aria-expanded={open}
+        aria-controls={`${id}-sound`}
+        aria-label={soundChanged(track) ? 'Sound, changed' : 'Sound'}
+        onClick={toggle}
+      >
+        Sound
+        {soundChanged(track) && <span className="console-sound-dot" aria-hidden />}
+      </Button>
+      <Button
+        size="sm"
         className="console-mute"
         aria-pressed={track.mute}
         onClick={() => set({ mute: !track.mute })}
@@ -137,12 +165,63 @@ function Channel({ id, track }: { id: string; track: Track }) {
       >
         ✕
       </IconButton>
+      {open && <SoundStrip id={id} track={track} color={swatch(track.color)} set={set} />}
       {error && (
         <p id={`${id}-error`} className="console-channel-error" role="alert">
           {error}
         </p>
       )}
     </li>
+  )
+}
+
+/** A loop's five sound knobs, live for everyone, each with its name and reading under it. */
+function SoundStrip({
+  id,
+  track,
+  color,
+  set,
+}: {
+  id: string
+  track: Track
+  color: string
+  set: (patch: Partial<Record<keyof typeof SOUND_KNOBS, number>>) => void
+}) {
+  const sound = soundOf(track)
+  return (
+    <div
+      id={`${id}-sound`}
+      className="console-sound"
+      role="group"
+      aria-label={`Sound of ${track.name}`}
+    >
+      {SOUND_KNOB_NAMES.map((k) => {
+        const { min, max, step, default: home } = SOUND_KNOBS[k]
+        const { label, format } = SOUND_READOUTS[k]
+        return (
+          <div key={k} className="console-sound-knob">
+            <Knob
+              live
+              label={`${label} of ${track.name}`}
+              color={color}
+              min={min}
+              max={max}
+              step={step}
+              defaultValue={home}
+              format={format}
+              value={sound[k]}
+              onChange={(v) => set({ [k]: v })}
+            />
+            <span className="console-sound-name" aria-hidden>
+              {label}
+            </span>
+            <span className="console-sound-value" aria-hidden>
+              {format(sound[k])}
+            </span>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 

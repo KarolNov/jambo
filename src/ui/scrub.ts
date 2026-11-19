@@ -6,18 +6,24 @@ import {
   useState,
 } from 'react'
 import { haptic } from './haptics'
-import { type ScrubAnchor, type ScrubRange, scrubMove } from './scrubSteps'
+import { type LiveDrag, liveDrag, type ScrubAnchor, type ScrubRange, scrubMove } from './scrubSteps'
 
 /** How a drag is read: `x` sideways only (right raises); `xy` also up raises, down lowers. */
 export type ScrubAxis = 'x' | 'xy'
 
 export type ScrubOptions = Partial<ScrubRange> & {
   value: number
-  /** Called once, when a drag that changed the value is let go. Never for a cancelled drag. */
+  /**
+   * Called once, when a drag that changed the value is let go. Never for a cancelled drag. When
+   * `live`, also called as the drag moves, at most once a frame, and with the start value again
+   * if a drag that applied something is cancelled.
+   */
   onCommit: (value: number) => void
   /** Called when a drag begins, before the first preview. */
   onStart?: () => void
   axis?: ScrubAxis
+  /** Apply the value while dragging, not only on release. */
+  live?: boolean
   disabled?: boolean
 }
 
@@ -33,7 +39,8 @@ type Drag = {
 /**
  * Drag to change a number, for a knob or a scrub label. The value previews locally while
  * dragged (`shown`) and is handed to `onCommit` once on release; Escape or a lost pointer puts
- * it back without committing. Each step ticks on phones. Spread `handlers` on the drag handle.
+ * it back without committing. Live, it is also handed on as it moves, once a frame, and Escape
+ * hands back the start value. Each step ticks on phones. Spread `handlers` on the drag handle.
  */
 export function useScrub({
   value,
@@ -44,11 +51,14 @@ export function useScrub({
   step = 1,
   pixelsPerStep = 4,
   axis = 'x',
+  live = false,
   disabled = false,
 }: ScrubOptions) {
   const [draft, setDraft] = useState<number>()
   const drag = useRef<Drag>(undefined)
   const current = useRef<number>(undefined)
+  // A live drag's frame-coalesced sender; undefined unless dragging a live control.
+  const sender = useRef<LiveDrag>(undefined)
   // Set when a drag that moved ends, so the click that follows doesn't count as a click.
   const swallowClick = useRef(false)
   const range = { min, max, step, pixelsPerStep }
@@ -64,14 +74,19 @@ export function useScrub({
     current.current = undefined
     swallowClick.current = d.moved
     setDraft(undefined)
+    const s = sender.current
+    sender.current = undefined
+    if (s) return s.end(commit)
     // Against the value now, not at the start: it may have changed under the drag (a peer).
     if (commit && d.moved && v !== undefined && v !== latest.current.value) onCommit(v)
   }
   // The listeners below outlive a render; they reach this render's `end` through here.
-  const latest = useRef({ value, end })
+  const latest = useRef({ value, end, onCommit })
   useEffect(() => {
-    latest.current = { value, end }
+    latest.current = { value, end, onCommit }
   })
+  // Unmounted mid-drag: a live drag keeps where it got to; nothing else is applied.
+  useEffect(() => () => sender.current?.end(true), [])
 
   // Escape puts the value back. Listened for on the window: the handle may not have focus.
   const dragging = draft !== undefined
@@ -111,6 +126,11 @@ export function useScrub({
       }
       current.current = value
       swallowClick.current = false
+      if (live)
+        sender.current = liveDrag(value, (v) => latest.current.onCommit(v), {
+          request: (run) => requestAnimationFrame(run),
+          cancel: (id) => cancelAnimationFrame(id),
+        })
       setDraft(value)
     },
     onPointerMove(e: ReactPointerEvent) {
@@ -129,6 +149,7 @@ export function useScrub({
       haptic('step')
       current.current = next.value
       setDraft(next.value)
+      sender.current?.move(next.value)
     },
     onPointerUp(e: ReactPointerEvent) {
       if (e.pointerId === drag.current?.id) end(true)

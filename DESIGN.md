@@ -120,9 +120,15 @@ A rotary control (`KnobProps`) on `useScrub`: drag up or right to turn it up, Sh
 steps, Escape to put it back, double-click for `defaultValue`. Arrows, Page Up/Down, Home and End
 turn it. Screen readers hear a slider. Its size is `--knob` (48px).
 
-- Use for a secondary continuous parameter where a fader would take too much room.
-- Not for the main level of something (`Range`) or typed values (`ScrubField`). Not used in the
-  jam yet.
+By default it applies once, on release. With `live` it applies as it turns, at most once a frame
+(as `Range` does), and Escape applies the start value again, so everyone hears the change while
+it happens and a cancel puts it back for everyone.
+
+- Use for a secondary continuous parameter where a fader would take too much room, such as a
+  loop's sound knobs in the mixer's Sound strip (live, in the loop's colour).
+- Make it `live` when others hear or see the value as it changes; leave it on release when each
+  change is costly or only the end value matters.
+- Not for the main level of something (`Range`) or typed values (`ScrubField`).
 
 ### ScrubField
 

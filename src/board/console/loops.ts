@@ -1,5 +1,12 @@
 /** The mixer's wording and geometry, kept apart from React so it can be tested. */
-import { BEATS_PER_BAR, QUANTIZE } from '../../../shared/board'
+import {
+  BEATS_PER_BAR,
+  QUANTIZE,
+  SOUND_KNOB_NAMES,
+  SOUND_KNOBS,
+  type SoundKnob,
+  soundOf,
+} from '../../../shared/board'
 
 const SNAP_LABEL: Record<(typeof QUANTIZE)[number], string> = {
   0: 'Off',
@@ -24,3 +31,30 @@ export const loopSummary = (bars: number, hits: number) =>
 /** Where `beat` sits across a loop of `bars`, as a CSS percentage. */
 export const beatPosition = (beat: number, bars: number) =>
   `${(beat / (bars * BEATS_PER_BAR)) * 100}%`
+
+const pct = (v: number) => Math.round(Math.abs(v) * 100)
+
+/** How each sound knob is named and reads under it in the Sound strip. */
+export const SOUND_READOUTS: Record<SoundKnob, { label: string; format: (v: number) => string }> = {
+  reverb: { label: 'Reverb', format: (v) => `${pct(v)}%` },
+  echo: { label: 'Echo', format: (v) => `${pct(v)}%` },
+  tone: {
+    label: 'Tone',
+    format: (v) => (pct(v) === 0 ? 'Flat' : `${v < 0 ? 'Dark' : 'Bright'} ${pct(v)}%`),
+  },
+  pitch: {
+    label: 'Pitch',
+    // `|| 0` so a -0 reads 0.
+    format: (v) => (Math.round(v) > 0 ? `+${Math.round(v)}` : String(Math.round(v) || 0)),
+  },
+  pan: {
+    label: 'Pan',
+    format: (v) => (pct(v) === 0 ? 'C' : `${v < 0 ? 'L' : 'R'} ${pct(v)}`),
+  },
+}
+
+/** Whether any of a track's sound knobs is away from its default: the Sound toggle's dot. */
+export const soundChanged = (track: Partial<Record<SoundKnob, number>>) => {
+  const sound = soundOf(track)
+  return SOUND_KNOB_NAMES.some((k) => sound[k] !== SOUND_KNOBS[k].default)
+}
