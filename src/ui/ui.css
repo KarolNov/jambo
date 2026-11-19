@@ -226,8 +226,9 @@
 :root[data-theme] .ui-switch:active .ui-slide-knob {
   width: calc(var(--slide-knob) + 6px);
 }
-/* Without marks, a lit patch sits in the off half, under the knob. Sliding on uncovers it, the
-   way a physical switch shows its coloured side: nothing fades, the knob just moves off it. */
+/* Without marks, the track lights behind the knob: the fill runs from the off end to under the
+   knob and moves with it, so on lights all the space the knob has left, like a physical switch.
+   Off, it hides under the knob. */
 :root[data-theme] .ui-slide:not(.ui-slide-marked)::before {
   content: '';
   position: absolute;
@@ -238,6 +239,12 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent-2) 70%, var(--bg));
   box-shadow: inset 1px 1px 3px color-mix(in srgb, var(--lo) 60%, transparent);
+  transition: width 0.38s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+:root[data-theme]
+  .ui-switch:has(> .ui-switch-input:checked)
+  .ui-slide:not(.ui-slide-marked)::before {
+  width: calc(var(--slide-travel) + var(--slide-knob));
 }
 :root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-slide-knob {
   transform: translateX(var(--slide-travel));
@@ -276,7 +283,8 @@
 }
 @media (prefers-reduced-motion: reduce) {
   /* Jumps across without the spring or the stretch. */
-  :root[data-theme] .ui-slide-knob {
+  :root[data-theme] .ui-slide-knob,
+  :root[data-theme] .ui-slide::before {
     transition: none;
   }
   :root[data-theme] .ui-switch:active .ui-slide-knob {
