@@ -95,7 +95,8 @@ underneath, so iOS gives its own tick; elsewhere it calls `haptic('flip')`.
 - `variant="rocker"` (default): an I/O rocker that tips toward the side that is on, with the I
   lit when on. Use for a setting of the music that takes effect at once (the metronome).
 - `variant="slide"`: a raised knob that springs along an inset track onto the side that is on,
-  stretching while held, with that side's mark lit. Use for a preference of the app rather than
+  stretching while held, with that side's mark lit. Without marks, moving the knob on uncovers
+  a lit patch on the off side, like a physical switch; nothing fades. Use for a preference of the app rather than
   the music. `ThemeToggle` in `src/theme` is a slide with a sun and a moon.
 - `off` and `on` set what each side shows (the rocker's O and I by default, nothing on the
   slide). Without a visible label, give it an `aria-label`.

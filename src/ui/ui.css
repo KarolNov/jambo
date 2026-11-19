@@ -205,9 +205,7 @@
   box-shadow:
     var(--inset-sm),
     inset 0 0 0 1px var(--line);
-  transition:
-    background 0.25s,
-    box-shadow 0.25s;
+  transition: box-shadow 0.25s;
 }
 /* The knob rides over the side that is on. While held it stretches toward where it will go,
    then springs across: the stretch tells you it has been grabbed. */
@@ -228,9 +226,18 @@
 :root[data-theme] .ui-switch:active .ui-slide-knob {
   width: calc(var(--slide-knob) + 6px);
 }
-/* Without marks, on fills the track with the accent, so on reads without comparing positions. */
-:root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-slide:not(.ui-slide-marked) {
-  background: color-mix(in srgb, var(--accent-2) 55%, var(--bg));
+/* Without marks, a lit patch sits in the off half, under the knob. Sliding on uncovers it, the
+   way a physical switch shows its coloured side: nothing fades, the knob just moves off it. */
+:root[data-theme] .ui-slide:not(.ui-slide-marked)::before {
+  content: '';
+  position: absolute;
+  top: var(--slide-pad);
+  left: var(--slide-pad);
+  width: var(--slide-knob);
+  height: var(--slide-knob);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-2) 70%, var(--bg));
+  box-shadow: inset 1px 1px 3px color-mix(in srgb, var(--lo) 60%, transparent);
 }
 :root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-slide-knob {
   transform: translateX(var(--slide-travel));
@@ -238,7 +245,8 @@
 :root[data-theme] .ui-switch:active:has(> .ui-switch-input:checked) .ui-slide-knob {
   transform: translateX(calc(var(--slide-travel) - 6px));
 }
-/* The marks sit over the knob; the one under it is lit, the other dims and shrinks a little. */
+/* The marks sit over the knob; the one under it is lit. Colour only: nothing scales or fades,
+   so the icons stay crisp while the knob moves. */
 :root[data-theme] .ui-slide-off,
 :root[data-theme] .ui-slide-on {
   position: relative;
@@ -247,18 +255,10 @@
   font-size: 11px;
   font-weight: 900;
   color: var(--muted);
-  opacity: 0.7;
-  transform: scale(0.85);
-  transition:
-    color 0.25s,
-    opacity 0.25s,
-    transform 0.38s cubic-bezier(0.3, 1.5, 0.5, 1);
 }
 :root[data-theme] .ui-switch:has(> .ui-switch-input:not(:checked)) .ui-slide-off,
 :root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-slide-on {
   color: var(--accent-2);
-  opacity: 1;
-  transform: none;
 }
 :root[data-theme] .ui-slide svg {
   width: 16px;
@@ -276,9 +276,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   /* Jumps across without the spring or the stretch. */
-  :root[data-theme] .ui-slide-knob,
-  :root[data-theme] .ui-slide-off,
-  :root[data-theme] .ui-slide-on {
+  :root[data-theme] .ui-slide-knob {
     transition: none;
   }
   :root[data-theme] .ui-switch:active .ui-slide-knob {
