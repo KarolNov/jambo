@@ -264,14 +264,14 @@ export const CATALOGUE: Entry[] = [
   {
     name: 'Switch',
     summary:
-      'On or off, in two variants: an I/O rocker that tips toward the side that is on, or a knob that slides onto it and stretches while held. A native switch underneath, so iOS ticks.',
+      'On or off, in two variants: an I/O rocker that tips toward the side that is on, or a knob that slides onto it and stretches while held, lighting the track or showing a mark like an LED readout. A native switch underneath, so iOS ticks.',
     states: [
       { label: 'Rocker, off', demo: <SwitchDemo /> },
       { label: 'Rocker, on', demo: <SwitchDemo on /> },
       { label: 'Rocker, disabled', demo: <SwitchDemo disabled /> },
       { label: 'Slide, off', demo: <SwitchDemo variant="slide" /> },
       { label: 'Slide, on', demo: <SwitchDemo variant="slide" on /> },
-      { label: 'Slide with marks (the theme)', demo: <ThemeToggle /> },
+      { label: 'Slide with a readout (the theme)', demo: <ThemeToggle /> },
     ],
     use: [
       'Rocker: a setting of the music that is on or off and takes effect at once (the metronome).',

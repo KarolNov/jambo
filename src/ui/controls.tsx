@@ -63,16 +63,17 @@ export type SwitchProps = Omit<
   children?: ReactNode
   /** rocker (default): an I/O rocker that tips; slide: a knob that slides along a track. */
   variant?: 'rocker' | 'slide'
-  /** What the off (left) side shows; the rocker's default is O, the slide's is nothing. */
+  /** The off mark: the rocker's left side (default O), or the slide's knob while off. */
   off?: ReactNode
-  /** What the on (right) side shows; the rocker's default is I, the slide's is nothing. */
+  /** The on mark: the rocker's right side (default I), or the slide's knob while on. */
   on?: ReactNode
 }
 
 /**
  * An on/off switch, then its label. The rocker tips down toward the side that is on, with the I
- * lit in the accent when on. The slide moves a raised knob along an inset track onto the side
- * that is on, stretching while held, with that side's mark lit. Flipping either ticks on phones
+ * lit in the accent when on. The slide moves a knob along an inset track onto the side that is
+ * on, stretching while held; with marks, the knob shows the current one, like an LED readout,
+ * and without them the track lights behind it. Flipping either ticks on phones
  * that support haptics.
  *
  * Underneath it is a native `<input type="checkbox" switch>`, invisible and laid over the whole
@@ -113,10 +114,19 @@ export function Switch({
         </span>
       ) : (
         <span className="ui-slide" aria-hidden>
-          {!off && !on && <span className="ui-slide-fill" />}
-          <span className="ui-slide-knob" />
-          <span className="ui-slide-off">{off}</span>
-          <span className="ui-slide-on">{on}</span>
+          <span className="ui-slide-well">
+            <span className="ui-slide-carriage">
+              {!off && !on && <span className="ui-slide-fill" />}
+              <span className="ui-slide-knob">
+                {(off || on) && (
+                  <>
+                    <span className="ui-slide-off">{off}</span>
+                    <span className="ui-slide-on">{on}</span>
+                  </>
+                )}
+              </span>
+            </span>
+          </span>
         </span>
       )}
       {children}
