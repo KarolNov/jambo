@@ -56,6 +56,7 @@ Every tool takes `jam` (the link or its slug) and optional `agentKey`, `kind`, `
 
 - The operations apply in order as one change. Each gets `{ op, ok, issues?, id? }`: read the issues of any that failed and run again if needed. A new track's id comes back in its result; within the same run, use its `ref`.
 - Hits are in beats, 4 a bar: `0 <= beat < bars * 4`. Tracks hit **pads**, so point a pad at the sound you want (`assignPad`) and hit that pad.
+- Every track has five optional sound knobs, set in `addTrack`'s `track` or `setTrack`'s `patch`: `reverb` and `echo` (0 to 1), `tone` (-1 to 1: below 0 darker, above 0 thinner), `pitch` (whole semitones, -12 to 12; also changes speed) and `pan` (-1 left to 1 right). A track without one plays at its default, which leaves the sound as it is: 0 for all five.
 - Tempo changes only while the jam has no tracks.
 - At most 64 operations a run. If any operation doesn't fit the schema, nothing applies.
 
@@ -100,6 +101,15 @@ Keep one-shots short (under 2 s): a pad hit plays the whole sound, so long tails
 **Make it groove.** Leave space: rests are what make a rhythm. Put a hit just before the bar line (3.75) to pull into the next bar. Add variety with a 2-bar loop whose second bar changes one or two hits, rather than more tracks. Ghost notes (quiet extra snares) want their own track at gain 0.3 to 0.5, since gain is per track.
 
 **Mix.** New loops at gain 0.7 to 0.9; hats, shakers and ghost notes at 0.4 to 0.6; let the kick and bass lead. Keep quantize at 1/16 (0.25) unless a part should swing loose; 0 keeps exactly what you wrote. If the jam gets muddy, mute or turn down before you add.
+
+**Shape each track.** The knobs act on the whole track, so a sound that needs two treatments wants two tracks. Change them a little at a time; small moves sound best.
+
+- **Space.** Keep the kick and bass dry and centred (`reverb` 0, `pan` 0) so the low end stays tight. Give snares, claps and plucks a little room (`reverb` 0.15 to 0.3); pads and fx can take more (0.4 to 0.6). Too much reverb on everything is the quickest way to mud.
+- **Echo.** It is timed to the tempo, so it adds rhythm: a little (0.15 to 0.3) on a sparse stab, pluck or clap fills the gaps. Leave it off busy parts like 16th hats, where it smears.
+- **Width.** Pan parts that play together apart: hats a touch one way (0.2 to 0.4), shaker or a percussion part the other. Keep the lead part of each range near the middle.
+- **Tone.** Turn `tone` down (-0.2 to -0.5) to tuck a busy part behind the others or soften harsh hats; turn it up (0.2 to 0.4) to take the boom out of a part that crowds the bass.
+- **Pitch.** Shift a sound to get a note the kit lacks: `bass-c` up 2 is D, up 5 is F; from C, 4 is E and 7 is G. It also speeds the sound up (shorter) or slows it down (longer), so a kick or tom pitched down a few semitones sounds bigger. Stay in key with what is playing: C major's notes are 0, 2, 4, 5, 7, 9 and 11 semitones above C.
+- When someone else's track is too loud or wet, ask before you change it.
 
 **Build in steps.** One idea per run, with a summary that says what it adds and why ("Offbeat hats to lift the groove"). Then `join` again, look at what changed, and offer the next step, so the user and others in the jam can steer.
 
