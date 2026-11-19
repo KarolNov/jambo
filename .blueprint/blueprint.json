@@ -209,20 +209,20 @@
         "worker/agent/**",
         "skills/jam/**"
       ],
-      "specVersion": "1eaa039f158115f1",
+      "specVersion": "b564b58295e20bf3",
       "anchorsFiles": {
-        "shared/agent/identity.ts": "50f8d6202110",
+        "shared/agent/identity.ts": "7255c8e36b80",
         "shared/agent/index.ts": "32adef0b5e71",
-        "shared/agent/limits.ts": "a09e06b15412",
+        "shared/agent/limits.ts": "e309866642fd",
         "shared/agent/link.ts": "c936b9cdd9bf",
-        "shared/agent/record.ts": "fb69f7672689",
-        "shared/agent/seat.ts": "8e860ecdc88d",
-        "shared/agent/snapshot.ts": "7b8656e114e4",
-        "skills/jam/SKILL.md": "5c600ed8bc45",
-        "worker/agent/mcp.ts": "f220668ae623",
-        "worker/agent/roster.ts": "5dc5dd96c023"
+        "shared/agent/record.ts": "16204f435cc9",
+        "shared/agent/seat.ts": "e8d0659161b8",
+        "shared/agent/snapshot.ts": "31018f0ae58c",
+        "skills/jam/SKILL.md": "4d98df307573",
+        "worker/agent/mcp.ts": "ce75a923b061",
+        "worker/agent/roster.ts": "b2ee1694445d"
       },
-      "syncedCommit": "e7595379d073f14d974fb2ee7f14dd07c141da07"
+      "syncedCommit": "db8fb546a961f671a7a330f772f8fed1b31cd9c5"
     },
     "ui": {
       "ref": null,

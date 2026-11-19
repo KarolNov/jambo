@@ -26,7 +26,7 @@ The MCP server SHALL describe, in its instructions and tool schemas, the jam an 
 
 ### Requirement: Agent identity
 
-Every tool SHALL accept an optional agent key, kind, usual name and usual colour, and return the agent's key, name and colour; without a key, a new agent SHALL be made. The key SHALL be private to the agent: the board and presence SHALL show only a separate public id. An agent's name SHALL be an adjective followed by its kind (default Agent), like Groovy Claude. The room SHALL seat an agent as it seats people: its usual name if it has that form and nobody here has it, else a fresh adjective with the same kind that nobody here has, comparing names without case; its usual colour if free, else the first free one, and past eight the least used.
+Every tool SHALL accept an optional agent key, kind, usual name and usual colour, and `join`, `run` and `upload_sound` SHALL return the agent's key, name and colour; without a key, a new agent SHALL be made. A key jambo didn't make, a kind that isn't one word of 1 to 20 letters or digits, or a colour that isn't one of the eight SHALL be refused. The key SHALL be private to the agent: the board and presence SHALL show only a separate public id, the same in a jam for the same key and different from one jam to the next. An agent's name SHALL be an adjective followed by its kind (default Agent), like Groovy Claude. The room SHALL seat an agent as it seats people: its usual name if it has that form and nobody here has it, else a fresh adjective with the same kind that nobody here has, comparing names without case; its usual colour if free, else the first free one, and past eight the least used.
 
 - **Scenario: First action**
   - **WHEN** an agent calls `run` with no agent key and the kind Claude
@@ -70,7 +70,7 @@ An agent SHALL be in the jam's presence from its first action (`join`, `run` or 
 
 ### Requirement: One run, one change
 
-A run SHALL be a list of board operations, applied in order to the jam as one change tagged as made by an AI; the agent SHALL get one result per operation, with the issues of any refused one. Refused operations SHALL change nothing; the rest SHALL still apply. A track a run adds MAY carry a ref, starting `new:`, that later operations in the same run use as its id.
+A run SHALL be a list of board operations, applied in order to the jam as one change tagged as made by an AI; the agent SHALL get one result per operation, with the issues of any refused one. Refused operations SHALL change nothing; the rest SHALL still apply. A track a run adds MAY carry a ref, starting `new:`, that later operations in the same run use as its id. A ref used twice in a run, or naming a track not added earlier in it, SHALL be refused.
 
 - **Scenario: Beat with one bad op**
   - **WHEN** a run assigns a pad, adds a track and sets the level of a track that does not exist
@@ -107,6 +107,15 @@ A run SHALL be refused, with nothing applied, if it holds no operations or more 
   - **WHEN** a run has an empty summary
   - **THEN** it is refused and the jam is unchanged
 
+### Requirement: Agent seats
+
+A jam SHALL seat at most 8 agents, and at most 3 from one client address; a new agent past either limit SHALL be refused, telling it to pass its agent key. An agent already present SHALL always get back in with its key.
+
+- **Scenario: Fourth from one address**
+  - **GIVEN** three agents from one address in a jam
+  - **WHEN** a fourth call from that address comes without a key
+  - **THEN** it is refused, and a call with one of the three keys still gets in
+
 ### Requirement: Agent rate limit
 
 Tool calls SHALL be refused once one client address makes more than 20 in a minute.
@@ -117,7 +126,7 @@ Tool calls SHALL be refused once one client address makes more than 20 in a minu
 
 ### Requirement: Agent uploads
 
-`upload_sound` SHALL take a WAV with a name and upload it to the jam under the same rules, limits and budget as an upload from the browser, with the agent as author, under its name and in its colour.
+`upload_sound` SHALL take a WAV with a name and upload it to the jam under the same rules, limits and budget as an upload from the browser, with the agent as author, under its name and in its colour. The WAV MAY carry other chunks, such as LIST, and come as standard or URL-safe base64; jambo SHALL keep only its audio.
 
 - **Scenario: Upload**
   - **WHEN** an agent uploads a 2-second mono 16-bit 44.1 kHz WAV named "Vox"
@@ -125,3 +134,6 @@ Tool calls SHALL be refused once one client address makes more than 20 in a minu
 - **Scenario: Wrong format**
   - **WHEN** an agent uploads a stereo WAV
   - **THEN** it is refused and nothing is stored or listed
+- **Scenario: WAV from ffmpeg**
+  - **WHEN** an agent uploads a mono WAV with a LIST chunk
+  - **THEN** it is listed
