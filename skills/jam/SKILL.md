@@ -23,7 +23,7 @@ Every tool takes `jam` (the link or its slug) and optional `agentKey`, `kind`, `
 
 - Pass `kind` as your own type, one word: `Claude`, `Codex`. Your name becomes an adjective and your kind, like Groovy Claude.
 - Pass the `agentKey` from the first answer on every later call in that jam, or you show up as a second agent: it is `agent.agentKey` in the answer. A jam seats at most 8 agents, 3 from one address, so a call without your key can be refused once you have used up your seats. Keep it to yourself: it is how jambo knows you are you.
-- Keep your usual `name` and `color` across jams, as a browser does: read them from `~/.config/jambo/agent.json` (`{ "name": "Groovy Claude", "color": "violet" }`) and pass them on every call. If the file is missing, make your first call without them and save what jambo gave you. jambo keeps them while nobody in the jam has them, and gives you others otherwise.
+- Keep your usual `name` and `color` across jams, as a browser does: read them from `~/.config/jambo/agent.json` (`{ "name": "Groovy Claude", "color": "violet" }`) and pass them on every call. If the file is missing, make your first call without them and save what jambo gave you. jambo keeps them while nobody in the jam has them, and gives you others otherwise. Your `agentKey` also brings back the kind, name and colour you had in that jam when you return after leaving or idling out, for 7 days; passing them anyway is harmless.
 
 ## Play
 
@@ -61,7 +61,7 @@ Every tool takes `jam` (the link or its slug) and optional `agentKey`, `kind`, `
 - At most 64 operations a run. If any operation doesn't fit the schema, nothing applies.
 
 3. `upload_sound` with `soundName` and `wav` (base64 of a mono 16-bit 44.1 kHz WAV, up to 10 seconds) to bring your own sound; then `assignPad` its id in a run. Where to get one is under **Bring a sound**.
-4. `leave` when you are done. Otherwise you leave by yourself 5 minutes after your last call.
+4. `leave` when you are done. Otherwise you leave by yourself 5 minutes after your last call. Come back with the same `agentKey` and you are the same agent, with your tracks and your name.
 
 ## Bring a sound
 
