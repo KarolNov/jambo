@@ -187,6 +187,105 @@
   }
 }
 
+/* ── Switch, slide: a knob that slides along a track ────────────────────── */
+:root[data-theme] .ui-slide {
+  --slide-w: 62px;
+  --slide-knob: 26px;
+  --slide-pad: 4px;
+  --slide-travel: calc(var(--slide-w) - var(--slide-knob) - 2 * var(--slide-pad));
+  position: relative;
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  place-items: center;
+  width: var(--slide-w);
+  height: calc(var(--slide-knob) + 2 * var(--slide-pad));
+  border-radius: 999px;
+  background: var(--bg);
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 1px var(--line);
+  transition:
+    background 0.25s,
+    box-shadow 0.25s;
+}
+/* The knob rides over the side that is on. While held it stretches toward where it will go,
+   then springs across: the stretch tells you it has been grabbed. */
+:root[data-theme] .ui-slide-knob {
+  position: absolute;
+  top: var(--slide-pad);
+  left: var(--slide-pad);
+  width: var(--slide-knob);
+  height: var(--slide-knob);
+  border-radius: 999px;
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+  transform-origin: left center;
+  transition:
+    transform 0.38s cubic-bezier(0.3, 1.5, 0.5, 1),
+    width 0.18s ease-out;
+}
+:root[data-theme] .ui-switch:active .ui-slide-knob {
+  width: calc(var(--slide-knob) + 6px);
+}
+/* Without marks, on fills the track with the accent, so on reads without comparing positions. */
+:root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-slide:not(.ui-slide-marked) {
+  background: color-mix(in srgb, var(--accent-2) 55%, var(--bg));
+}
+:root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-slide-knob {
+  transform: translateX(var(--slide-travel));
+}
+:root[data-theme] .ui-switch:active:has(> .ui-switch-input:checked) .ui-slide-knob {
+  transform: translateX(calc(var(--slide-travel) - 6px));
+}
+/* The marks sit over the knob; the one under it is lit, the other dims and shrinks a little. */
+:root[data-theme] .ui-slide-off,
+:root[data-theme] .ui-slide-on {
+  position: relative;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+  opacity: 0.7;
+  transform: scale(0.85);
+  transition:
+    color 0.25s,
+    opacity 0.25s,
+    transform 0.38s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+:root[data-theme] .ui-switch:has(> .ui-switch-input:not(:checked)) .ui-slide-off,
+:root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-slide-on {
+  color: var(--accent-2);
+  opacity: 1;
+  transform: none;
+}
+:root[data-theme] .ui-slide svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+:root[data-theme] .ui-switch:has(> .ui-switch-input:focus-visible) .ui-slide {
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--focus);
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Jumps across without the spring or the stretch. */
+  :root[data-theme] .ui-slide-knob,
+  :root[data-theme] .ui-slide-off,
+  :root[data-theme] .ui-slide-on {
+    transition: none;
+  }
+  :root[data-theme] .ui-switch:active .ui-slide-knob {
+    width: var(--slide-knob);
+  }
+}
+
 /* ── Range: a mixer fader ───────────────────────────────────────────────── */
 /* The wrapper holds the ticks, the LED strip and the bubble around the native input. It gets
    --f (0–1, where the value sits) and --lit (the lit share of the LEDs) from the component.

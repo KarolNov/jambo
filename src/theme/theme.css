@@ -51,22 +51,3 @@
   animation-timing-function: ease-in-out;
 }
 
-/* The light/dark switch: a `Switch` rocker with a sun and a moon for its O and I. */
-:root[data-theme] .theme-toggle svg {
-  width: 15px;
-  height: 15px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-/* The rocker lights the I (moon) when on; light up the sun the same way when off. */
-:root[data-theme] .theme-toggle.ui-switch:has(> .ui-switch-input:not(:checked)) .ui-rocker-o {
-  color: var(--accent-2);
-  filter: drop-shadow(0 0 4px var(--accent-2));
-}
-:root[data-theme] .theme-toggle.ui-switch:has(> .ui-switch-input:checked) .ui-rocker-i {
-  text-shadow: none;
-  filter: drop-shadow(0 0 4px var(--accent-2));
-}

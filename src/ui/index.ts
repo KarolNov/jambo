@@ -9,6 +9,7 @@ export {
   ScrubField,
   type ScrubFieldProps,
   Switch,
+  type SwitchProps,
 } from './controls'
 export { type Group, type Option, OptionList, Popover, Select } from './Menu'
 export { Pad, type PadProps } from './Pad'

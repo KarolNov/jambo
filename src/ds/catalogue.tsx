@@ -59,10 +59,18 @@ const SOUNDS: Group[] = [
 const percent = (v: number) => `${Math.round(v * 100)}%`
 const level = (v: number) => (v === 1 ? 'Unity' : percent(v))
 
-function SwitchDemo({ on = false, disabled }: { on?: boolean; disabled?: boolean }) {
+function SwitchDemo({
+  on = false,
+  disabled,
+  variant,
+}: {
+  on?: boolean
+  disabled?: boolean
+  variant?: 'rocker' | 'slide'
+}) {
   const [checked, setChecked] = useState(on)
   return (
-    <Switch checked={checked} onChange={setChecked} disabled={disabled}>
+    <Switch checked={checked} onChange={setChecked} disabled={disabled} variant={variant}>
       Metronome
     </Switch>
   )
@@ -256,20 +264,23 @@ export const CATALOGUE: Entry[] = [
   {
     name: 'Switch',
     summary:
-      'An I/O rocker that tips toward the side that is on, with the I lit when on. A native switch underneath, so iOS ticks.',
+      'On or off, in two variants: an I/O rocker that tips toward the side that is on, or a knob that slides onto it and stretches while held. A native switch underneath, so iOS ticks.',
     states: [
-      { label: 'Off', demo: <SwitchDemo /> },
-      { label: 'On', demo: <SwitchDemo on /> },
-      { label: 'Disabled', demo: <SwitchDemo disabled /> },
-      { label: 'Own marks (the theme)', demo: <ThemeToggle /> },
+      { label: 'Rocker, off', demo: <SwitchDemo /> },
+      { label: 'Rocker, on', demo: <SwitchDemo on /> },
+      { label: 'Rocker, disabled', demo: <SwitchDemo disabled /> },
+      { label: 'Slide, off', demo: <SwitchDemo variant="slide" /> },
+      { label: 'Slide, on', demo: <SwitchDemo variant="slide" on /> },
+      { label: 'Slide with marks (the theme)', demo: <ThemeToggle /> },
     ],
     use: [
-      'A setting that is on or off and takes effect at once (the metronome).',
-      'With off and on marks, when the two sides have names of their own (light and dark).',
+      'Rocker: a setting of the music that is on or off and takes effect at once (the metronome).',
+      'Slide: a preference of the app, not the music, especially one with two named sides (light and dark, with off and on marks).',
     ],
     avoid: [
       'An action that happens once: use Button.',
       'A choice between named options: use Select.',
+      'Both variants side by side in one group: pick one.',
     ],
   },
   {

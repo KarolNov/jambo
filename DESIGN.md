@@ -89,15 +89,18 @@ readers and is its tooltip.
 
 ### Switch
 
-An I/O rocker that tips toward the side that is on, with the I lit when on. A native
-`<input type="checkbox" switch>` underneath, so iOS gives its own tick; elsewhere it calls
-`haptic('flip')`.
+An on/off switch (`SwitchProps`) in two variants. A native `<input type="checkbox" switch>`
+underneath, so iOS gives its own tick; elsewhere it calls `haptic('flip')`.
 
-- Use for a setting that is on or off and takes effect at once (the metronome).
-- `off` and `on` replace the O and I when the two sides have names of their own: `ThemeToggle`
-  in `src/theme` is a `Switch` with a sun and a moon. Without a visible label, give it an
-  `aria-label`.
-- Not for one-off actions (`Button`) or choices between named options (`Select`).
+- `variant="rocker"` (default): an I/O rocker that tips toward the side that is on, with the I
+  lit when on. Use for a setting of the music that takes effect at once (the metronome).
+- `variant="slide"`: a raised knob that springs along an inset track onto the side that is on,
+  stretching while held, with that side's mark lit. Use for a preference of the app rather than
+  the music. `ThemeToggle` in `src/theme` is a slide with a sun and a moon.
+- `off` and `on` set what each side shows (the rocker's O and I by default, nothing on the
+  slide). Without a visible label, give it an `aria-label`.
+- Not for one-off actions (`Button`) or choices between named options (`Select`). Don't put
+  both variants side by side in one group.
 
 ### Range
 

@@ -53,11 +53,27 @@ export function IconButton({
   )
 }
 
+export type SwitchProps = Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'checked' | 'onChange' | 'children'
+> & {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  /** Its visible label. Without one, give it an `aria-label`. */
+  children?: ReactNode
+  /** rocker (default): an I/O rocker that tips; slide: a knob that slides along a track. */
+  variant?: 'rocker' | 'slide'
+  /** What the off (left) side shows; the rocker's default is O, the slide's is nothing. */
+  off?: ReactNode
+  /** What the on (right) side shows; the rocker's default is I, the slide's is nothing. */
+  on?: ReactNode
+}
+
 /**
- * An on/off switch: an I/O rocker that tips down toward the side that is on, with the I lit in
- * the accent when on, then its label. Flipping it ticks on phones that support haptics. `off` and
- * `on` replace the O and I (the theme's sun and moon); without a visible label, give it an
- * `aria-label`.
+ * An on/off switch, then its label. The rocker tips down toward the side that is on, with the I
+ * lit in the accent when on. The slide moves a raised knob along an inset track onto the side
+ * that is on, stretching while held, with that side's mark lit. Flipping either ticks on phones
+ * that support haptics.
  *
  * Underneath it is a native `<input type="checkbox" switch>`, invisible and laid over the whole
  * control, so a tap lands on a real switch: iOS Safari gives that its own haptic tick, which
@@ -67,21 +83,14 @@ export function Switch({
   checked,
   onChange,
   children,
-  off = 'O',
-  on = 'I',
+  variant = 'rocker',
+  off = variant === 'rocker' ? 'O' : null,
+  on = variant === 'rocker' ? 'I' : null,
   className = '',
   ...rest
-}: Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'checked' | 'onChange' | 'children'> & {
-  checked: boolean
-  onChange: (checked: boolean) => void
-  children?: ReactNode
-  /** What the off (left) side shows; default O. */
-  off?: ReactNode
-  /** What the on (right) side shows; default I. */
-  on?: ReactNode
-}) {
+}: SwitchProps) {
   return (
-    <label className={`ui-switch ${className}`}>
+    <label className={`ui-switch ui-switch-${variant} ${className}`}>
       <input
         type="checkbox"
         // Safari's native switch: React passes the unknown attribute through as written.
@@ -95,12 +104,20 @@ export function Switch({
         }}
         {...rest}
       />
-      <span className="ui-rocker" aria-hidden>
-        <span className="ui-rocker-plate">
-          <span className="ui-rocker-o">{off}</span>
-          <span className="ui-rocker-i">{on}</span>
+      {variant === 'rocker' ? (
+        <span className="ui-rocker" aria-hidden>
+          <span className="ui-rocker-plate">
+            <span className="ui-rocker-o">{off}</span>
+            <span className="ui-rocker-i">{on}</span>
+          </span>
         </span>
-      </span>
+      ) : (
+        <span className={off || on ? 'ui-slide ui-slide-marked' : 'ui-slide'} aria-hidden>
+          <span className="ui-slide-knob" />
+          <span className="ui-slide-off">{off}</span>
+          <span className="ui-slide-on">{on}</span>
+        </span>
+      )}
       {children}
     </label>
   )
