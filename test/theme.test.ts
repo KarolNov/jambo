@@ -26,6 +26,9 @@ describe('palette', () => {
     // Both accents also colour small text (errors, Muted, Live, the recorder's phase): 4.5:1.
     expect(contrast(t.accent, t.bg)).toBeGreaterThanOrEqual(4.5)
     expect(contrast(t.accent2, t.bg)).toBeGreaterThanOrEqual(4.5)
+    // The status lights colour their word too (Live, Reconnecting…).
+    expect(contrast(t.ok, t.bg)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(t.info, t.bg)).toBeGreaterThanOrEqual(4.5)
   })
 
   it('publishes tokens under the CSS names the styles use', () => {

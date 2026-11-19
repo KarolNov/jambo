@@ -132,8 +132,9 @@
   }
 }
 
-/* The connection, as a lit LED and a word in the same colour: steady while live, pulsing while it
-   connects, dim when offline. Read-only, so nothing about it looks pressable. */
+/* The connection, as a lit LED and a word in the same colour: green while live, grey while it
+   first connects, pulsing blue while it reconnects, dim red when offline. Read-only, so nothing
+   about it looks pressable. */
 :root[data-theme] .console-status {
   --led: var(--muted);
   display: inline-flex;
@@ -152,9 +153,12 @@
   box-shadow: 0 0 6px 1px color-mix(in oklab, var(--led), transparent 40%);
 }
 :root[data-theme] .console-status-connected {
-  --led: var(--accent-2);
+  --led: var(--ok);
 }
-:root[data-theme] .console-status-connecting::before {
+:root[data-theme] .console-status-reconnecting {
+  --led: var(--info);
+}
+:root[data-theme] .console-status-reconnecting::before {
   animation: console-led-pulse 1.1s ease-in-out infinite alternate;
 }
 :root[data-theme] .console-status-offline {
@@ -172,7 +176,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   :root[data-theme] .console-people .is-agent .console-person::before,
-  :root[data-theme] .console-status-connecting::before {
+  :root[data-theme] .console-status-reconnecting::before {
     animation: none;
   }
 }

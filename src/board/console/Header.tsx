@@ -15,7 +15,11 @@ import './header.css'
 const STATUS: Record<ConnectionStatus, { label: string; title?: string }> = {
   connected: { label: 'Live' },
   connecting: { label: 'Connecting…' },
-  offline: { label: 'Offline', title: 'Offline: your edits will sync when you are back' },
+  reconnecting: {
+    label: 'Reconnecting…',
+    title: 'Lost the connection, trying again: your edits will sync when it is back',
+  },
+  offline: { label: 'Offline', title: 'No network: your edits will sync when you are back' },
 }
 
 const TIPS: Partial<Record<ShareResult, string>> = {

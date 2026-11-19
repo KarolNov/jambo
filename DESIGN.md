@@ -25,6 +25,7 @@ never an inverted light one.
 | `--accent`                 | Record and destructive actions, errors.                                                   |
 | `--accent-2`               | Selection, "open", hover, the default focus and value tint. A jam sets it to your colour. |
 | `--flat`, `--line`         | High-contrast plates that carry data (hit patterns, grids).                               |
+| `--ok`, `--info`           | Status lights only: green for live, blue for trying again.                                |
 | `--focus`                  | Keyboard focus rings. A jam sets it to your colour.                                       |
 | `--cap-top` … `--cap-drop` | The fader cap's and rocker's shading. Controls only.                                      |
 

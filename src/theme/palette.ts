@@ -9,6 +9,7 @@ export const THEMES = ['light', 'dark'] as const
  * the lit side of a shadow pair, `lo` the shaded side. Dark has its own pair, never an inverted
  * light one. `accent` marks record and destructive actions; `accent2` focus, selection and "open".
  * `flat` and `line` make the high-contrast plates that carry data (hit patterns, playheads).
+ * `ok` and `info` are status lights only: live, and trying again.
  */
 export const TOKENS: Record<Theme, Record<TokenName, string>> = {
   light: {
@@ -21,6 +22,8 @@ export const TOKENS: Record<Theme, Record<TokenName, string>> = {
     accent2: '#187165',
     flat: '#f6f1eb',
     line: '#d6cbbf',
+    ok: '#24702f',
+    info: '#2f5fb5',
   },
   dark: {
     bg: '#2a2621',
@@ -32,6 +35,8 @@ export const TOKENS: Record<Theme, Record<TokenName, string>> = {
     accent2: '#4cc6b4',
     flat: '#221f1b',
     line: '#433d36',
+    ok: '#7ad36a',
+    info: '#7aa7ff',
   },
 }
 export type TokenName =
@@ -44,6 +49,8 @@ export type TokenName =
   | 'accent2'
   | 'flat'
   | 'line'
+  | 'ok'
+  | 'info'
 
 /** The CSS custom property each token is published as: `accent2` → `--accent-2`. */
 export const cssVar = (t: TokenName) => `--${t.replace(/(\d)$/, '-$1')}`
