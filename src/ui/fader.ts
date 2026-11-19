@@ -6,6 +6,12 @@ export const DETENT_RANGE = 0.04
 /** The number of lights in the fader's LED strip. */
 export const LEDS = 24
 
+/**
+ * The number of lights around a segmented knob's ring, about 17° each of its 270° sweep. Even, so a
+ * centred knob (pan, pitch) lights exactly half.
+ */
+export const KNOB_LEDS = 16
+
 /** `value` snapped to `detent` when it lands within {@link DETENT_RANGE} of it. */
 export function snap(value: number, detent?: number): number {
   return detent !== undefined && Math.abs(value - detent) < DETENT_RANGE ? detent : value
@@ -16,9 +22,12 @@ export function fraction(value: number, min: number, max: number): number {
   return max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0
 }
 
-/** How much of the LED strip is lit for fraction `f`: whole lights only, a light on from its middle. */
-export function litFraction(f: number): number {
-  return Math.floor(f * LEDS + 0.5) / LEDS
+/**
+ * How much of a strip of `leds` lights is lit for fraction `f`: whole lights only, a light on from
+ * its middle.
+ */
+export function litFraction(f: number, leds = LEDS): number {
+  return Math.floor(f * leds + 0.5) / leds
 }
 
 /**

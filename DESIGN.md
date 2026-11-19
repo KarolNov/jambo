@@ -129,6 +129,8 @@ it happens and a cancel puts it back for everyone.
 
 - Use for a secondary continuous parameter where a fader would take too much room, such as a
   loop's sound knobs in the mixer's Effects strip (live, in the loop's colour).
+- Set `fill="segmented"` beside faders: its ring splits into lights like the fader's LED strip,
+  lit a whole light at a time. Leave it `continuous` (the default) elsewhere.
 - Make it `live` when others hear or see the value as it changes; leave it on release when each
   change is costly or only the end value matters.
 - Not for the main level of something (`Range`) or typed values (`ScrubField`).

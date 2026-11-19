@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { fraction, litFraction, snap } from './fader'
+import { fraction, KNOB_LEDS, litFraction, snap } from './fader'
 import { haptic } from './haptics'
 import { ANIMATION_FRAMES, useScrub } from './scrub'
 import { keyValue, type LiveDrag, liveDrag } from './scrubSteps'
@@ -465,6 +465,11 @@ export type KnobProps = {
   color?: string
   /** How the value reads in the bubble and to screen readers (default: the number). */
   format?: (value: number) => string
+  /**
+   * How the ring lights: continuous (default), or segmented into lights as the fader's LED strip
+   * is, lit whole lights at a time; use it beside faders.
+   */
+  fill?: 'continuous' | 'segmented'
   disabled?: boolean
   className?: string
 } & SharedProps
@@ -490,6 +495,7 @@ export function Knob({
   color,
   format = String,
   live = false,
+  fill = 'continuous',
   disabled = false,
   heldBy,
   onDragChange,
@@ -510,11 +516,12 @@ export function Knob({
   })
   useDragReport(scrub.dragging, onDragChange)
   const f = fraction(scrub.shown, min, max)
-  const vars = { '--f': f, ...heldVars(heldBy) } as CSSProperties
+  const lit = fill === 'segmented' ? litFraction(f, KNOB_LEDS) : f
+  const vars = { '--f': f, '--lit': lit, ...heldVars(heldBy) } as CSSProperties
   if (color) Object.assign(vars, { '--ui-c': color })
   return (
     <span
-      className={`ui-knob ${scrub.dragging ? 'is-dragging' : ''} ${heldBy ? 'is-held' : ''} ${className}`}
+      className={`ui-knob ui-knob-${fill} ${scrub.dragging ? 'is-dragging' : ''} ${heldBy ? 'is-held' : ''} ${className}`}
       style={vars}
     >
       <span className="ui-knob-bubble" aria-hidden>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fraction, LEDS, litFraction, snap, stepBy } from '../src/ui/fader'
+import { fraction, KNOB_LEDS, LEDS, litFraction, snap, stepBy } from '../src/ui/fader'
 
 describe('fader detent', () => {
   it('snaps a drag that lands within 0.04 of the detent', () => {
@@ -50,5 +50,7 @@ describe('fader lights', () => {
     expect(litFraction(1)).toBe(1)
     expect(litFraction(0.5 / LEDS)).toBe(1 / LEDS)
     expect(litFraction(0.49 / LEDS)).toBe(0)
+    expect(litFraction(0.5 / KNOB_LEDS, KNOB_LEDS)).toBe(1 / KNOB_LEDS)
+    expect(litFraction(0.49 / KNOB_LEDS, KNOB_LEDS)).toBe(0)
   })
 })

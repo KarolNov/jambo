@@ -698,8 +698,9 @@
   color: var(--muted);
 }
 /* ── Knob: a rotary control ─────────────────────────────────────────────── */
-/* The ring is lit along a 270° sweep from 7 o'clock to --f of the way to 5 o'clock; the cap
-   turns with it. --f comes from the component. */
+/* The ring is lit along a 270° sweep from 7 o'clock to --lit of the way to 5 o'clock; the cap
+   turns with it to --f. Both come from the component: --lit is --f, or whole lights of it when
+   segmented. */
 :root[data-theme] .ui-knob {
   --knob: 48px;
   position: relative;
@@ -729,12 +730,20 @@
   border-radius: 50%;
   background: conic-gradient(
     from 225deg,
-    var(--ui-c, var(--accent-2)) calc(var(--f) * 270deg),
+    var(--ui-c, var(--accent-2)) calc(var(--lit) * 270deg),
     var(--line) 0 270deg,
     transparent 0
   );
   mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
   filter: drop-shadow(0 0 2px color-mix(in srgb, var(--ui-c, var(--accent-2)) 50%, transparent));
+}
+/* Segmented: the ring cut into 16 lights (270° / 16) with a gap after each, like the fader's
+   LEDs. Keep the count in step with KNOB_LEDS in fader.ts. */
+:root[data-theme] .ui-knob-segmented .ui-knob-dial::before {
+  mask:
+    radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px)),
+    repeating-conic-gradient(from 225deg, #000 0 11deg, transparent 0 16.875deg);
+  mask-composite: intersect;
 }
 /* The cap: the fader's solid cap, round, turned to the value, with its index line. */
 :root[data-theme] .ui-knob-cap {
