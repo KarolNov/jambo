@@ -1,5 +1,15 @@
 import { z } from 'zod'
-import { newId, type Issue, type Op, TrackPatch } from '../board'
+import {
+  AssignPad,
+  newId,
+  type Issue,
+  type Op,
+  RemoveTrack,
+  ReplaceSound,
+  SetTempo,
+  SetTrack,
+  Track,
+} from '../board'
 import type { ColorName } from '../colors'
 import { AGENT_AUTHOR_PREFIX } from './identity'
 
@@ -29,15 +39,9 @@ const Ref = z
   .regex(/^new:[A-Za-z0-9_-]{1,32}$/, 'A ref is new: and up to 32 letters, digits, _ or -')
 
 export const AgentCall = z.discriminatedUnion('op', [
-  z
-    .object({ op: z.literal('setTempo'), bpm: z.number() })
-    .describe('Only while the jam has no tracks'),
-  z
-    .object({ op: z.literal('assignPad'), padId: z.string(), soundId: z.string() })
-    .describe('Point a pad at a kit sound or an upload'),
-  z
-    .object({ op: z.literal('replaceSound'), from: z.string(), to: z.string() })
-    .describe('Move every pad on one sound to another'),
+  SetTempo.describe('Only while the jam has no tracks'),
+  AssignPad.describe('Point a pad at a kit sound or an upload'),
+  ReplaceSound.describe('Move every pad on one sound to another'),
   z
     .object({
       op: z.literal('addTrack'),
@@ -45,10 +49,8 @@ export const AgentCall = z.discriminatedUnion('op', [
       track: TrackDraft,
     })
     .describe('Add a loop; its author and colour are yours'),
-  z
-    .object({ op: z.literal('setTrack'), id: z.string(), patch: TrackPatch })
-    .describe('Change a track: name, gain, mute, quantize'),
-  z.object({ op: z.literal('removeTrack'), id: z.string() }).describe('Remove any track'),
+  SetTrack.describe('Change a track: name, gain, mute, quantize'),
+  RemoveTrack.describe('Remove any track'),
 ])
 export type AgentCall = z.infer<typeof AgentCall>
 
@@ -76,8 +78,16 @@ export function prepare(
   agent: AgentStamp,
   mint: () => string = () => newId(),
 ): Prepared[] {
-  const refs = new Map<string, string>()
-  const resolve = (id: string) => refs.get(id) ?? id
+  // A ref's minted id, or null when its addTrack was refused.
+  const refs = new Map<string, string | null>()
+  const resolve = (id: string): { id: string } | { issues: Issue[] } => {
+    if (!id.startsWith(REF_PREFIX)) return { id }
+    const minted = refs.get(id)
+    if (minted) return { id: minted }
+    const message =
+      minted === null ? `Track ${id} wasn't added` : `No track ${id} added earlier in this run`
+    return { issues: [{ message, path: ['id'] }] }
+  }
   return calls.map((raw): Prepared => {
     const parsed = AgentCall.safeParse(raw)
     if (!parsed.success) {
@@ -92,32 +102,45 @@ export function prepare(
     const call = parsed.data
     switch (call.op) {
       case 'addTrack': {
+        if (call.ref && refs.has(call.ref))
+          return {
+            issues: [{ message: `Ref ${call.ref} is already used in this run`, path: ['ref'] }],
+          }
+        const t = call.track
+        const track: Track = {
+          name: t.name,
+          author: AGENT_AUTHOR_PREFIX + agent.id,
+          color: agent.color,
+          bars: t.bars,
+          hits: t.hits,
+          gain: t.gain ?? 1,
+          mute: false,
+          quantize: t.quantize ?? 0.25,
+          effects: [],
+        }
+        // Checked here, so a ref never stands for a track that was refused.
+        const checked = Track.safeParse(track)
+        if (!checked.success) {
+          if (call.ref) refs.set(call.ref, null)
+          return {
+            issues: checked.error.issues.map((i) => ({
+              message: i.message,
+              path: ['track', ...i.path],
+            })),
+          }
+        }
         const id = mint()
         if (call.ref) refs.set(call.ref, id)
-        const t = call.track
-        return {
-          id,
-          op: {
-            op: 'addTrack',
-            id,
-            track: {
-              name: t.name,
-              author: AGENT_AUTHOR_PREFIX + agent.id,
-              color: agent.color,
-              bars: t.bars,
-              hits: t.hits,
-              gain: t.gain ?? 1,
-              mute: false,
-              quantize: t.quantize ?? 0.25,
-              effects: [],
-            },
-          },
-        }
+        return { id, op: { op: 'addTrack', id, track } }
       }
-      case 'setTrack':
-        return { op: { op: 'setTrack', id: resolve(call.id), patch: call.patch } }
-      case 'removeTrack':
-        return { op: { op: 'removeTrack', id: resolve(call.id) } }
+      case 'setTrack': {
+        const r = resolve(call.id)
+        return 'issues' in r ? r : { op: { op: 'setTrack', id: r.id, patch: call.patch } }
+      }
+      case 'removeTrack': {
+        const r = resolve(call.id)
+        return 'issues' in r ? r : { op: { op: 'removeTrack', id: r.id } }
+      }
       default:
         return { op: call }
     }

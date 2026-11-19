@@ -21,22 +21,30 @@ export const isAgentAuthor = (author: string) => author.startsWith(AGENT_AUTHOR_
 export function toKind(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined
   const v = value.trim()
-  if (!/^[A-Za-z0-9]{1,20}$/.test(v)) return undefined
+  if (v.length > KIND_MAX || !/^[A-Za-z0-9]+$/.test(v)) return undefined
   return capitalize(v.toLowerCase())
 }
 
 const adjectives = new Set<string>(ADJECTIVES)
 
-/** Whether `name` is a jambo adjective followed by `kind`, case aside, like "Groovy Claude". */
-export function isAgentName(name: string, kind: string): boolean {
+/**
+ * `name` written as `agentName` writes it ("groovy  claude" → "Groovy Claude") when it is a jambo
+ * adjective followed by `kind`, case and spacing aside; undefined otherwise.
+ */
+export function toAgentName(name: string, kind: string): string | undefined {
   const parts = name.trim().split(/\s+/)
-  return (
-    parts.length === 2 &&
-    adjectives.has(parts[0]!.toLowerCase()) &&
-    parts[1]!.toLowerCase() === kind.toLowerCase() &&
-    name.length <= NAME_MAX
+  if (
+    parts.length !== 2 ||
+    !adjectives.has(parts[0]!.toLowerCase()) ||
+    parts[1]!.toLowerCase() !== kind.toLowerCase()
   )
+    return undefined
+  const canonical = agentName(parts[0]!.toLowerCase(), kind)
+  return canonical.length <= NAME_MAX ? canonical : undefined
 }
+
+/** Whether `name` is a jambo adjective followed by `kind`, case and spacing aside, like "Groovy Claude". */
+export const isAgentName = (name: string, kind: string) => toAgentName(name, kind) !== undefined
 
 /** `name` as an agent of `kind` writes it: "Groovy Claude". */
 export const agentName = (adjective: string, kind: string) => `${capitalize(adjective)} ${kind}`

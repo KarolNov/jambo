@@ -1,7 +1,7 @@
 import { isMap } from 'duratom'
 import { create, read, write } from 'duratom/core'
 import * as Y from 'yjs'
-import { isUploadId, PAD_KEYS, SOUND_IDS, UPLOADS } from '../sounds'
+import { isUploadId, padKeyOrder, SOUND_IDS, UPLOADS } from '../sounds'
 import { type Issue, Op, type OpResult } from './ops'
 import { LIMITS, Meta, Pad, ROOTS, SHAPES, Sound, Track } from './schema'
 
@@ -53,9 +53,6 @@ export function countUploads(doc: Y.Doc): number {
   return n
 }
 
-const KEY_ORDER = PAD_KEYS.join('').toUpperCase()
-const keyOrder = (key: string) => KEY_ORDER.indexOf(key)
-
 /** Operations only the room may apply: it stores and deletes the audio they list. */
 const ROOM_ONLY = new Set<Op['op']>(['addSound', 'removeSound', 'expireSounds'])
 
@@ -70,7 +67,7 @@ function padsUsing(pads: Y.Map<unknown>, soundId: string): [string, string][] {
     const key = node.get('key')
     out.push([padId, typeof key === 'string' ? key.toUpperCase() : padId])
   })
-  return out.sort(([, a], [, b]) => keyOrder(a) - keyOrder(b))
+  return out.sort(([, a], [, b]) => padKeyOrder(a) - padKeyOrder(b))
 }
 
 function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {

@@ -10,6 +10,7 @@ import {
   newAgentKey,
   prepare,
   snapshotOf,
+  toAgentName,
   toKind,
   checkSummary,
 } from '../shared/agent'
@@ -49,6 +50,7 @@ describe('agent identity', () => {
     expect(toKind('claude')).toBe('Claude')
     expect(toKind('CODEX')).toBe('Codex')
     expect(toKind('two words')).toBeUndefined()
+    expect(toKind('x'.repeat(20))).toBe('X' + 'x'.repeat(19))
     expect(toKind('x'.repeat(21))).toBeUndefined()
     expect(toKind(3)).toBeUndefined()
   })
@@ -61,10 +63,17 @@ describe('agent identity', () => {
     expect(isAgentName('Groovy Claude', 'Codex')).toBe(false)
   })
 
+  it('writes an agent name one way, whatever its case and spacing', () => {
+    expect(toAgentName('  groovy   CLAUDE ', 'Claude')).toBe('Groovy Claude')
+    expect(toAgentName('Groovy Otter', 'Claude')).toBeUndefined()
+  })
+
   it('makes keys and public ids that are unrelated', () => {
     const key = newAgentKey()
+    const id = newAgentId()
     expect(isAgentKey(key)).toBe(true)
-    expect(newAgentId()).not.toContain(key)
+    expect(id).toMatch(/^[0-9a-f]{16}$/)
+    expect(key).not.toContain(id)
     expect(isAgentKey('short')).toBe(false)
   })
 
@@ -182,7 +191,11 @@ describe('prepare', () => {
     n = 0
     const out = prepare(
       [
-        { op: 'addTrack', ref: 'new:0', track: { name: 'A', bars: 1, hits: [] } },
+        {
+          op: 'addTrack',
+          ref: 'new:0',
+          track: { name: 'A', bars: 1, hits: [{ padId: 'r0c0', beat: 0 }] },
+        },
         { op: 'setTrack', id: 'new:0', patch: { gain: 0.5 } },
         { op: 'removeTrack', id: 'new:0' },
         { op: 'removeTrack', id: 't9' },
@@ -197,14 +210,67 @@ describe('prepare', () => {
     ])
   })
 
-  it('refuses a ref that is not new: and a short name', () => {
+  it('refuses a ref that is not new: and up to 32 letters, digits, _ or -', () => {
+    for (const ref of ['t9', 'new:', `new:${'a'.repeat(33)}`, 'new:a b', 'new:kick!']) {
+      expect(
+        prepare(
+          [
+            {
+              op: 'addTrack',
+              ref,
+              track: { name: 'A', bars: 1, hits: [{ padId: 'r0c0', beat: 0 }] },
+            },
+          ],
+          agent,
+          mint,
+        )[0],
+      ).toHaveProperty('issues')
+    }
     expect(
       prepare(
-        [{ op: 'addTrack', ref: 't9', track: { name: 'A', bars: 1, hits: [] } }],
+        [
+          {
+            op: 'addTrack',
+            ref: `new:${'a'.repeat(32)}`,
+            track: { name: 'A', bars: 1, hits: [{ padId: 'r0c0', beat: 0 }] },
+          },
+        ],
         agent,
         mint,
       )[0],
-    ).toHaveProperty('issues')
+    ).toHaveProperty('op')
+  })
+
+  it('refuses a reused ref, an unknown ref and a ref whose track was refused', () => {
+    n = 0
+    const hit = [{ padId: 'r0c0', beat: 0 }]
+    const out = prepare(
+      [
+        { op: 'addTrack', ref: 'new:a', track: { name: 'A', bars: 1, hits: hit } },
+        { op: 'addTrack', ref: 'new:a', track: { name: 'B', bars: 1, hits: hit } },
+        { op: 'setTrack', id: 'new:zz', patch: { mute: true } },
+        // A hit past the end of a 1-bar loop.
+        {
+          op: 'addTrack',
+          ref: 'new:b',
+          track: { name: 'C', bars: 1, hits: [{ padId: 'r0c0', beat: 5 }] },
+        },
+        { op: 'removeTrack', id: 'new:b' },
+      ],
+      agent,
+      mint,
+    )
+    expect(out[0]).toHaveProperty('id', 'minted-0')
+    expect(out[1]).toEqual({
+      issues: [{ message: 'Ref new:a is already used in this run', path: ['ref'] }],
+    })
+    expect(out[2]).toEqual({
+      issues: [{ message: 'No track new:zz added earlier in this run', path: ['id'] }],
+    })
+    expect(out[3]).toEqual({
+      issues: [{ message: 'Every hit must fall inside the track', path: ['track', 'hits'] }],
+    })
+    expect(out[4]).toEqual({ issues: [{ message: "Track new:b wasn't added", path: ['id'] }] })
   })
 
   it('refuses uploads and anything else an agent may not send', () => {

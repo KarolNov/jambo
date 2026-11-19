@@ -2,7 +2,7 @@ import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { Pad } from '../../shared/board'
 import {
-  PAD_KEYS,
+  padKeyOrder,
   PAUSED_MESSAGES,
   type UploadStatus as Budget,
   UPLOADS,
@@ -78,14 +78,10 @@ export function useSampleState(id: string): SampleState | undefined {
   )
 }
 
-const KEY_ORDER = PAD_KEYS.join('')
-
 /** The keys of the pads on each sound, in keyboard order. */
 export function padKeysBySound(pads: Map<string, Pad>): Map<string, string[]> {
   const out = new Map<string, string[]>()
-  const sorted = [...pads.values()].sort(
-    (a, b) => KEY_ORDER.indexOf(a.key) - KEY_ORDER.indexOf(b.key),
-  )
+  const sorted = [...pads.values()].sort((a, b) => padKeyOrder(a.key) - padKeyOrder(b.key))
   for (const p of sorted) out.set(p.soundId, [...(out.get(p.soundId) ?? []), p.key.toUpperCase()])
   return out
 }
