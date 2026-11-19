@@ -177,21 +177,24 @@
   }
 }
 
-/* The prompt to start audio sits in the bar on wider screens, and under it on phones. */
+/* The prompt to start audio sits in the bar where it has room beside a few names, and under the
+   bar below that, so it never pushes who's here onto a second line. */
 :root[data-theme] .console-unlock.console-unlock-header {
   margin: 0;
 }
-@media (min-width: 761px) {
+@media (min-width: 1000px) {
   :root[data-theme] .console-unlock.console-unlock-page {
+    display: none;
+  }
+}
+@media (max-width: 999px) {
+  :root[data-theme] .console-unlock.console-unlock-header {
     display: none;
   }
 }
 
 /* Phone width: dots only, a tighter bar. */
 @media (max-width: 760px) {
-  :root[data-theme] .console-unlock.console-unlock-header {
-    display: none;
-  }
   :root[data-theme] .console-header {
     margin: 12px 16px 20px;
     padding: 12px 14px;

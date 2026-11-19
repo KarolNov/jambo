@@ -240,21 +240,15 @@
   visibility: hidden;
 }
 
-/* Phone width: name and remove on top, then the pattern, the level, and snap, Effects and mute;
-   the Effects strip under them all */
-@media (max-width: 760px) {
-  :root[data-theme] .console-mixer {
-    margin: 28px 16px 0;
-    padding: 14px;
-  }
+/* Too narrow for one line (tablets, a narrow window): ring, name, pattern and remove, then the
+   level beside snap, Effects and mute; the Effects strip under them all. */
+@media (max-width: 900px) {
   :root[data-theme] .console-channel {
-    grid-template-columns: 36px 1fr auto auto;
+    grid-template-columns: 36px minmax(90px, 180px) 1fr auto auto auto;
     grid-template-areas:
-      'ring title title remove'
-      'pattern pattern pattern pattern'
-      'fader fader fader fader'
-      'snap snap effects mute';
-    gap: 12px;
+      'ring title pattern pattern pattern remove'
+      'fader fader fader snap effects mute';
+    gap: 12px 16px;
   }
   :root[data-theme] .console-ring {
     grid-area: ring;
@@ -283,5 +277,22 @@
   :root[data-theme] .console-channel-error {
     grid-column: 1 / -1;
     margin: 0;
+  }
+}
+
+/* Phone width: name and remove on top, then the pattern, the level, and snap, Effects and mute. */
+@media (max-width: 760px) {
+  :root[data-theme] .console-mixer {
+    margin: 28px 16px 0;
+    padding: 14px;
+  }
+  :root[data-theme] .console-channel {
+    grid-template-columns: 36px 1fr auto auto;
+    grid-template-areas:
+      'ring title title remove'
+      'pattern pattern pattern pattern'
+      'fader fader fader fader'
+      'snap snap effects mute';
+    gap: 12px;
   }
 }

@@ -18,7 +18,7 @@ export function Console({ slug, status }: { slug: string; status: ConnectionStat
     <main className="console">
       <Header slug={slug} status={status} />
       {DEBUG && <Debug />}
-      {/* Under the header on phones; wider screens show it in the header. */}
+      {/* Under the header below 1000px; wider screens show it in the header. */}
       <Unlock className="console-unlock-page" />
       <Deck slug={slug} />
       <Mixer />
