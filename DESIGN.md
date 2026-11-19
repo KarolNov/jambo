@@ -53,6 +53,9 @@ control's own shadow. No outer outlines. Every control must show it on `:focus-v
   `src/board/colors.ts` (or `SWATCHES` in `src/theme/palette.ts`). Never store or hard-code a hex.
 - A control that belongs to something coloured takes the colour as a prop (`color` on `Range` and
   `Knob`), which sets `--ui-c`. Without one it uses `--accent-2`. `Pad` lights in `--glow`.
+- Someone else moving a shared control shows in their colour: pass `heldBy` (a `Holder`: their
+  name and swatch) to `Range` or `Knob`, which rings it in that colour and keeps the bubble up with
+  their name. Report your own drags with `onDragChange` so others see yours.
 - Red means record or destroy (`--accent`, `tone="danger"`). Don't use it for anything else.
 
 ## Motion and haptics

@@ -482,6 +482,21 @@
   opacity: 1;
   transform: translate(-50%, 0) scale(1);
 }
+/* Someone else is moving it: their colour rings the cap, and the bubble shows with their name. */
+:root[data-theme] .ui-fader.is-held .ui-range::-webkit-slider-thumb {
+  box-shadow:
+    var(--cap-shadow),
+    0 0 0 2px var(--ui-held);
+}
+:root[data-theme] .ui-fader.is-held .ui-range::-moz-range-thumb {
+  box-shadow:
+    var(--cap-shadow),
+    0 0 0 2px var(--ui-held);
+}
+:root[data-theme] .ui-fader.is-held .ui-fader-bubble {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
 @media (prefers-reduced-motion: reduce) {
   /* The cap and lights move without easing; the bubble just appears. */
   :root[data-theme] .ui-range::-webkit-slider-thumb,
@@ -773,6 +788,20 @@
 :root[data-theme] .ui-knob.is-dragging .ui-knob-bubble {
   opacity: 1;
   transform: translate(-50%, 0) scale(1);
+}
+/* Someone else is turning it: their colour rings the knob, and the bubble shows with their name. */
+:root[data-theme] .ui-knob.is-held .ui-knob-dial {
+  box-shadow:
+    var(--inset-sm),
+    0 0 0 2px var(--ui-held);
+}
+:root[data-theme] .ui-knob.is-held .ui-knob-bubble {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+/* The name of whoever else is turning a control, in their colour, before the value. */
+:root[data-theme] .ui-held-name {
+  font-weight: 700;
 }
 @media (prefers-reduced-motion: reduce) {
   /* The cap turns without easing; the bubble just appears. */

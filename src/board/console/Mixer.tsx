@@ -7,13 +7,14 @@ import {
   soundOf,
   type Track,
 } from '../../../shared/board'
-import { Button, IconButton, Knob, Range, Select } from '../../ui'
+import { Button, type Holder, IconButton, Knob, Range, Select } from '../../ui'
 import { useSwatch } from '../colors'
 import { tracksAtom } from '../model'
+import { controlKey, holdControl, type Person, useHolders } from '../presence'
 import { useSession } from '../session'
 import { AiMark } from './AiMark'
 import { beatPosition, loopSummary, SNAP_OPTIONS, SOUND_READOUTS, soundChanged } from './loops'
-import { byAgent } from './people'
+import { byAgent, personName } from './people'
 import './mixer.css'
 
 const SNAP_GROUPS = [{ options: SNAP_OPTIONS }]
@@ -23,9 +24,14 @@ const percent = (v: number) => `${Math.round(v * 100)}%`
 /** Loops whose Effects strip is open: an atom, so it survives the mixer remounting. */
 const openStripsAtom = atom<ReadonlySet<string>>(new Set<string>())
 
+/** What a live control takes to show who else is turning it, and to say when you are. */
+type Shared = { heldBy?: Holder; onDragChange: (dragging: boolean) => void }
+
 /** The mixer tray: every loop in the jam as a row anyone can play with. */
 export function Mixer() {
   const tracks = useAtomValue(tracksAtom)
+  const { jam, me } = useSession()
+  const holders = useHolders(jam.awareness, me.id)
   // Forget the strips of loops that are gone (removed, or another jam's).
   const setOpenStrips = useSetAtom(openStripsAtom)
   useEffect(() => {
@@ -44,7 +50,7 @@ export function Mixer() {
       ) : (
         <ol className="console-channels">
           {[...tracks].map(([id, track]) => (
-            <Channel key={id} id={id} track={track} />
+            <Channel key={id} id={id} track={track} holders={holders} />
           ))}
         </ol>
       )}
@@ -54,10 +60,18 @@ export function Mixer() {
 
 /**
  * One loop: progress ring · name and length · pattern · level · snap · Effects · mute · remove,
- * then its Effects strip when open.
+ * then its Effects strip when open. The level and sound knobs show who else is moving them.
  */
-function Channel({ id, track }: { id: string; track: Track }) {
-  const { board } = useSession()
+function Channel({
+  id,
+  track,
+  holders,
+}: {
+  id: string
+  track: Track
+  holders: ReadonlyMap<string, Person>
+}) {
+  const { board, jam, me } = useSession()
   const [draft, setDraft] = useState<string>()
   const [error, setError] = useState<string>()
   const row = useRef<HTMLLIElement>(null)
@@ -73,6 +87,14 @@ function Channel({ id, track }: { id: string; track: Track }) {
       return next
     })
   const changed = soundChanged(track)
+  const shared = (control: string): Shared => {
+    const key = controlKey(id, control)
+    const p = holders.get(key)
+    return {
+      heldBy: p && { name: personName(p, me.id), color: swatch(p.color) },
+      onDragChange: (dragging) => holdControl(jam.awareness, key, dragging),
+    }
+  }
 
   const set = (patch: Parameters<ReturnType<typeof board.track>['set']>[0]) => {
     const r = board.track(id).set(patch)
@@ -141,6 +163,7 @@ function Channel({ id, track }: { id: string; track: Track }) {
         format={percent}
         value={track.gain}
         onChange={(gain) => set({ gain })}
+        {...shared('gain')}
       />
       <div className="console-snap">
         <span aria-hidden>Snap</span>
@@ -178,7 +201,9 @@ function Channel({ id, track }: { id: string; track: Track }) {
       >
         ✕
       </IconButton>
-      {open && <EffectsStrip id={id} track={track} color={swatch(track.color)} set={set} />}
+      {open && (
+        <EffectsStrip id={id} track={track} color={swatch(track.color)} set={set} shared={shared} />
+      )}
       {error && (
         <p id={`${id}-error`} className="console-channel-error" role="alert">
           {error}
@@ -194,11 +219,13 @@ function EffectsStrip({
   track,
   color,
   set,
+  shared,
 }: {
   id: string
   track: Track
   color: string
   set: (patch: Partial<Record<keyof typeof SOUND_KNOBS, number>>) => void
+  shared: (control: string) => Shared
 }) {
   const sound = soundOf(track)
   return (
@@ -224,6 +251,7 @@ function EffectsStrip({
               format={format}
               value={sound[k]}
               onChange={(v) => set({ [k]: v })}
+              {...shared(k)}
             />
             <span className="console-effects-name" aria-hidden>
               {label}
