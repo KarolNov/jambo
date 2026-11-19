@@ -53,9 +53,28 @@ export function IconButton({
   )
 }
 
+export type SwitchProps = Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'checked' | 'onChange' | 'children'
+> & {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  /** Its visible label. Without one, give it an `aria-label`. */
+  children?: ReactNode
+  /** rocker (default): an I/O rocker that tips; slide: a knob that slides along a track. */
+  variant?: 'rocker' | 'slide'
+  /** The off mark: the rocker's left side (default O), or the slide's knob while off. */
+  off?: ReactNode
+  /** The on mark: the rocker's right side (default I), or the slide's knob while on. */
+  on?: ReactNode
+}
+
 /**
- * An on/off switch: an I/O rocker that tips down toward the side that is on, with the I lit in
- * the accent when on, then its label. Flipping it ticks on phones that support haptics.
+ * An on/off switch, then its label. The rocker tips down toward the side that is on, with the I
+ * lit in the accent when on. The slide moves a knob along an inset track onto the side that is
+ * on, stretching while held; with marks, the knob shows the current one, like an LED readout,
+ * and without them the track lights behind it. Flipping either ticks on phones
+ * that support haptics.
  *
  * Underneath it is a native `<input type="checkbox" switch>`, invisible and laid over the whole
  * control, so a tap lands on a real switch: iOS Safari gives that its own haptic tick, which
@@ -65,15 +84,14 @@ export function Switch({
   checked,
   onChange,
   children,
+  variant = 'rocker',
+  off = variant === 'rocker' ? 'O' : null,
+  on = variant === 'rocker' ? 'I' : null,
   className = '',
   ...rest
-}: Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'checked' | 'onChange' | 'children'> & {
-  checked: boolean
-  onChange: (checked: boolean) => void
-  children: ReactNode
-}) {
+}: SwitchProps) {
   return (
-    <label className={`ui-switch ${className}`}>
+    <label className={`ui-switch ui-switch-${variant} ${className}`}>
       <input
         type="checkbox"
         // Safari's native switch: React passes the unknown attribute through as written.
@@ -87,12 +105,30 @@ export function Switch({
         }}
         {...rest}
       />
-      <span className="ui-rocker" aria-hidden>
-        <span className="ui-rocker-plate">
-          <span className="ui-rocker-o">O</span>
-          <span className="ui-rocker-i">I</span>
+      {variant === 'rocker' ? (
+        <span className="ui-rocker" aria-hidden>
+          <span className="ui-rocker-plate">
+            <span className="ui-rocker-o">{off}</span>
+            <span className="ui-rocker-i">{on}</span>
+          </span>
         </span>
-      </span>
+      ) : (
+        <span className="ui-slide" aria-hidden>
+          <span className="ui-slide-well">
+            <span className="ui-slide-carriage">
+              {!off && !on && <span className="ui-slide-fill" />}
+              <span className="ui-slide-knob">
+                {(off || on) && (
+                  <>
+                    <span className="ui-slide-off">{off}</span>
+                    <span className="ui-slide-on">{on}</span>
+                  </>
+                )}
+              </span>
+            </span>
+          </span>
+        </span>
+      )}
       {children}
     </label>
   )

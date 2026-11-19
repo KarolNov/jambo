@@ -187,6 +187,119 @@
   }
 }
 
+/* ── Switch, slide: a knob that slides along a track ────────────────────── */
+:root[data-theme] .ui-slide {
+  --slide-w: 62px;
+  --slide-knob: 26px;
+  --slide-pad: 4px;
+  --slide-travel: calc(var(--slide-w) - var(--slide-knob) - 2 * var(--slide-pad));
+  position: relative;
+  flex: none;
+  width: var(--slide-w);
+  height: calc(var(--slide-knob) + 2 * var(--slide-pad));
+  border-radius: 999px;
+  background: var(--bg);
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 1px var(--line);
+}
+/* What moves: the knob and, behind it, the lit fill, as one piece. The well clips it to the
+   track's inside, where the knob covers the fill exactly while off. */
+:root[data-theme] .ui-slide-well {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(var(--slide-pad) round 999px);
+}
+:root[data-theme] .ui-slide-carriage {
+  position: absolute;
+  top: var(--slide-pad);
+  left: var(--slide-pad);
+  width: var(--slide-knob);
+  height: var(--slide-knob);
+  transition: transform 0.38s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+:root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-slide-carriage {
+  transform: translateX(var(--slide-travel));
+}
+:root[data-theme] .ui-slide-fill {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: calc(var(--slide-travel) + var(--slide-knob));
+  height: 100%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-2) 70%, var(--bg));
+}
+/* While held the knob stretches toward where it will go: that says it has been grabbed. */
+:root[data-theme] .ui-slide-knob {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--bg);
+  /* Shaded inside its own edge, not with a cast shadow: a soft raise spills a haze onto the lit
+     track, and the well's clip would cut a cast one off. */
+  box-shadow:
+    inset 0 1px 0 var(--hi),
+    inset 0 -2px 3px color-mix(in srgb, var(--lo) 70%, transparent),
+    inset 0 0 0 1px var(--line);
+  transition:
+    width 0.18s ease-out,
+    left 0.18s ease-out;
+}
+:root[data-theme] .ui-switch:active .ui-slide-knob {
+  width: calc(100% + 6px);
+}
+:root[data-theme] .ui-switch:active:has(> .ui-switch-input:checked) .ui-slide-knob {
+  left: -6px;
+}
+/* With marks, the knob is a little readout: it shows the current one in the accent and flips
+   to the other at once, like an LED display. No fade, no glow, so it stays crisp. */
+:root[data-theme] .ui-slide-knob {
+  display: grid;
+  place-items: center;
+}
+:root[data-theme] .ui-slide-off,
+:root[data-theme] .ui-slide-on {
+  grid-area: 1 / 1;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--accent-2);
+}
+:root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-slide-off,
+:root[data-theme] .ui-switch:has(> .ui-switch-input:not(:checked)) .ui-slide-on {
+  visibility: hidden;
+}
+:root[data-theme] .ui-slide svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+:root[data-theme] .ui-switch:has(> .ui-switch-input:focus-visible) .ui-slide {
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--focus);
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Jumps across without the spring or the stretch. */
+  :root[data-theme] .ui-slide-carriage,
+  :root[data-theme] .ui-slide-knob {
+    transition: none;
+  }
+  :root[data-theme] .ui-switch:active .ui-slide-knob {
+    width: 100%;
+    left: 0;
+  }
+}
+
 /* ── Range: a mixer fader ───────────────────────────────────────────────── */
 /* The wrapper holds the ticks, the LED strip and the bubble around the native input. It gets
    --f (0–1, where the value sits) and --lit (the lit share of the LEDs) from the component.
@@ -451,7 +564,8 @@
   border-top: 1px solid var(--line);
 }
 :root[data-theme] .ui-option-label {
-  padding: 6px 12px 4px;
+  /* Room below, so a highlighted option's well doesn't touch the group's label. */
+  padding: 6px 12px 10px;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -666,4 +780,167 @@
   :root[data-theme] .ui-knob-bubble {
     transition: none;
   }
+}
+
+/* ── Pad: a soft rubber square ──────────────────────────────────────────── */
+/* Pressed by you: pushed in, with a ring in --glow. Hit by a loop: lit from inside in --glow. */
+:root[data-theme] .ui-pad {
+  position: relative;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: none;
+  cursor: pointer;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 18px;
+  box-shadow: var(--raise);
+  text-align: left;
+  touch-action: manipulation;
+  user-select: none;
+  transition: box-shadow 0.18s ease-out;
+}
+/* A loop hit is a light inside the rubber: an even wash over the whole pad (::after),
+   gathering softly toward the sides, and a faint halo it spills onto the console (::before). No
+   crisp lines anywhere: those read as neon, not light through rubber. Both switch on at once and
+   fade out together. */
+:root[data-theme] .ui-pad::before,
+:root[data-theme] .ui-pad::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.5s cubic-bezier(0.2, 0.7, 0.3, 1);
+  pointer-events: none;
+}
+:root[data-theme] .ui-pad::before {
+  box-shadow: 0 0 32px 0 color-mix(in srgb, var(--glow) 22%, transparent);
+}
+:root[data-theme] .ui-pad::after {
+  /* a broad, even wash over the whole pad, only a touch brighter in the middle, with more light
+     gathering at the edges: a lit panel rather than a spot */
+  background:
+    radial-gradient(
+      ellipse farthest-side at 50% 50%,
+      color-mix(in srgb, var(--glow-core, var(--glow)) 40%, transparent) 0%,
+      color-mix(in srgb, var(--glow) 22%, transparent) 60%,
+      transparent 100%
+    ),
+    color-mix(in srgb, var(--glow) 20%, transparent);
+  box-shadow: inset 0 0 30px 0 color-mix(in srgb, var(--glow) 28%, transparent);
+  mix-blend-mode: var(--glow-blend, normal);
+}
+:root[data-theme='dark'] .ui-pad {
+  /* on the dark console the light adds to the rubber rather than painting over it, and its core
+     burns near white; on the light one a white core would read as a hole */
+  --glow-blend: screen;
+  --glow-core: color-mix(in srgb, var(--glow) 55%, white);
+}
+:root[data-theme] .ui-pad.glow::before,
+:root[data-theme] .ui-pad.glow::after {
+  opacity: 0.9;
+  transition: none;
+}
+:root[data-theme] .ui-pad.glow {
+  transition: none;
+}
+:root[data-theme] .ui-pad.pressed {
+  box-shadow:
+    var(--inset),
+    inset 0 0 0 2px var(--glow);
+  transition: none;
+}
+:root[data-theme] .ui-pad:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--raise),
+    inset 0 0 0 2px var(--focus);
+}
+/* The key: its letter moulded out of the pad's rubber, only just standing out of it. Its face is
+   the pad's own colour, barely lighter, ringed evenly on every side by a soft, blurred rim in one
+   darker rubber tone (an unshifted shadow, so it spills out the same on every side). It sits
+   under the glow layer, so a hit lights it like the rest of the pad. */
+:root[data-theme] .ui-pad-key {
+  --rim: var(--lo);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  color: color-mix(in srgb, var(--hi) 15%, var(--bg));
+  text-shadow:
+    0 0 2px var(--rim),
+    0 0 6px var(--rim);
+  transition:
+    transform 0.18s ease-out,
+    text-shadow 0.18s ease-out;
+}
+/* The dark console's shadow tone sits too close to its rubber to show: go deeper there, and lift
+   the face a little so the letter keeps its shape */
+:root[data-theme='dark'] .ui-pad-key {
+  --rim: rgb(0 0 0 / 0.75);
+  color: color-mix(in srgb, var(--hi) 45%, var(--bg));
+}
+/* Pressing the pad pushes the letter in with it */
+:root[data-theme] .ui-pad.pressed .ui-pad-key {
+  transform: scale(0.96);
+  text-shadow: 0 0 2px var(--rim);
+  transition: none;
+}
+:root[data-theme] .ui-pad-sound {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.15;
+  position: relative;
+  z-index: 1;
+  /* Long names (uploads take up to 40 characters) wrap, then end in an ellipsis on line three */
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+/* Editing: a badge says a click opens the sound menu */
+:root[data-theme] .ui-pad-edit {
+  /* "opens a menu": a down chevron in a small well, like the Snap select's */
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: var(--inset-sm);
+  color: var(--accent-2);
+}
+:root[data-theme] .ui-pad-edit::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+:root[data-theme] .ui-pad[aria-expanded='true'] .ui-pad-edit::before {
+  top: 9px;
+  transform: rotate(225deg);
+}
+:root[data-theme] .ui-pad[aria-expanded='true'] {
+  box-shadow:
+    var(--raise),
+    inset 0 0 0 2px var(--accent-2);
+}
+
+:root[data-theme] .ui-pad-sound-loading {
+  opacity: 0.5;
+}
+:root[data-theme] .ui-pad-sound-missing {
+  color: var(--accent);
 }

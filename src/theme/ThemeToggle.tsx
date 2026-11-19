@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react'
+import { Switch } from '../ui'
 import { setTheme, useTheme } from './theme'
 
 const Sun = () => (
@@ -15,22 +17,35 @@ const Moon = () => (
   </svg>
 )
 
-/** A soft two-position switch, sun then moon, with the knob over the theme being shown. */
+/** How long the knob travels before the page swaps theme (the swap stops all transitions). */
+const SLIDE_MS = 240
+
+/**
+ * The theme's switch: a sliding `Switch` whose knob sits over the sun or the moon. The knob
+ * slides first and the theme follows, because the swap freezes transitions and crossfades the
+ * page as one.
+ */
 export function ThemeToggle() {
   const dark = useTheme() === 'dark'
+  const [on, setOn] = useState(dark)
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => setOn(dark), [dark])
+  useEffect(() => () => clearTimeout(timer.current), [])
   return (
-    <button
-      type="button"
+    <Switch
+      variant="slide"
       className="theme-toggle"
-      role="switch"
-      aria-checked={dark}
+      checked={on}
+      onChange={(next) => {
+        setOn(next)
+        clearTimeout(timer.current)
+        const still = matchMedia('(prefers-reduced-motion: reduce)').matches
+        timer.current = setTimeout(() => setTheme(next ? 'dark' : 'light'), still ? 0 : SLIDE_MS)
+      }}
+      off={<Sun />}
+      on={<Moon />}
       aria-label="Dark mode"
-      title={dark ? 'Switch to light' : 'Switch to dark'}
-      onClick={() => setTheme(dark ? 'light' : 'dark')}
-    >
-      <span className="theme-toggle-knob" aria-hidden />
-      <Sun />
-      <Moon />
-    </button>
+      title={on ? 'Switch to light' : 'Switch to dark'}
+    />
   )
 }

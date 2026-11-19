@@ -1,9 +1,15 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { isJamSlug } from '../shared/slug'
 import { Jam } from './board/Jam'
 import { useThemedPage } from './theme/theme'
 
-/** Routes `/` to a new jam and `/jam/:slug` to its board. No router library: two routes. */
+// The design showcase, loaded only when someone opens /ds, so the jam's bundle stays as it was.
+const Showcase = lazy(() => import('./ds/Showcase'))
+
+/**
+ * Routes `/` to a new jam, `/jam/:slug` to its board and `/ds` to the design showcase. No router
+ * library: three routes.
+ */
 export function App() {
   useThemedPage()
   const path = window.location.pathname
@@ -13,6 +19,12 @@ export function App() {
     return isJamSlug(slug) ? <Jam slug={slug} /> : <NotFound />
   }
   if (path === '/') return <NewJam />
+  if (path === '/ds' || path === '/ds/')
+    return (
+      <Suspense fallback={<main className="center">Loading…</main>}>
+        <Showcase />
+      </Suspense>
+    )
   return <NotFound />
 }
 

@@ -1,0 +1,174 @@
+/*
+ * The /ds showcase's layout. Only the page around the demos lives here: the controls bring their
+ * own CSS from src/ui, so what /ds shows is what the jam ships.
+ */
+:root[data-theme] .ds {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 32px 16px 96px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+:root[data-theme] .ds code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.9em;
+}
+:root[data-theme] .ds-muted {
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
+:root[data-theme] .ds-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px 24px;
+}
+:root[data-theme] .ds-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+}
+:root[data-theme] .ds-tools {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+:root[data-theme] .ds-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 8px;
+}
+:root[data-theme] .ds-nav a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--muted);
+  box-shadow: var(--raise-sm);
+}
+:root[data-theme] .ds-nav a:hover {
+  color: var(--accent-2);
+}
+:root[data-theme] .ds-nav a:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--raise-sm),
+    inset 0 0 0 2px var(--focus);
+}
+
+:root[data-theme] .ds-entry {
+  margin-top: 40px;
+  scroll-margin-top: 16px;
+}
+:root[data-theme] .ds-entry h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+:root[data-theme] .ds-entry h2 code {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+:root[data-theme] .ds-states {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+:root[data-theme] .ds-state {
+  margin: 0;
+  padding: 16px;
+  border-radius: 20px;
+  box-shadow: var(--inset-sm);
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 12px;
+}
+:root[data-theme] .ds-demo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  /* room for the fader's and knob's value bubbles */
+  padding-top: 18px;
+}
+:root[data-theme] .ds-demo > .ui-fader {
+  flex: 1;
+}
+:root[data-theme] .ds-demo > .ui-pad,
+:root[data-theme] .ds-demo > .ds-anchor > .ui-pad {
+  width: 112px;
+}
+:root[data-theme] .ds-state figcaption,
+:root[data-theme] .ds-token figcaption,
+:root[data-theme] .ds-depth figcaption {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+}
+:root[data-theme] .ds-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+:root[data-theme] .ds-anchor {
+  display: inline-block;
+}
+:root[data-theme] .ds-popover-text {
+  margin: 0;
+  padding: 12px 14px;
+  max-width: 240px;
+  font-size: 14px;
+}
+
+:root[data-theme] .ds-rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 8px 24px;
+  margin-top: 12px;
+}
+:root[data-theme] .ds-rules h3 {
+  margin: 8px 0 4px;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+:root[data-theme] .ds-rules ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+:root[data-theme] .ds-tokens,
+:root[data-theme] .ds-depths {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+:root[data-theme] .ds-token,
+:root[data-theme] .ds-depth {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+:root[data-theme] .ds-token span {
+  height: 48px;
+  border-radius: 14px;
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .ds-depth span {
+  height: 64px;
+  border-radius: 18px;
+  background: var(--bg);
+}

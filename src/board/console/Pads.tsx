@@ -2,7 +2,7 @@ import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { ColorName } from '../../../shared/colors'
 import { SOUND_IDS, SOUNDS, soundName } from '../../../shared/sounds'
-import { Button, type Group, OptionList, Popover } from '../../ui'
+import { Button, type Group, OptionList, Pad, type PadProps, Popover } from '../../ui'
 import { useSwatch } from '../colors'
 import { padsAtom, soundsAtom, tracksAtom } from '../model'
 import { isTyping } from '../typing'
@@ -153,14 +153,15 @@ function PadGrid({
   return (
     <div className={`console-pads ${editing ? 'is-editing' : ''}`} role="group" aria-label="Pads">
       {grid.map(([id, pad]) => (
-        <button
+        <ConsolePad
           key={id}
-          type="button"
           ref={(el) => {
             if (el) els.current.set(id, el)
             else els.current.delete(id)
           }}
-          className="console-pad"
+          keyLabel={pad.key}
+          soundId={pad.soundId}
+          editing={editing}
           style={{ gridRow: pad.row + 1, gridColumn: pad.col + 1 }}
           onPointerDown={editing ? undefined : () => hit(id)}
           onClick={
@@ -174,11 +175,7 @@ function PadGrid({
           aria-haspopup={editing ? 'listbox' : undefined}
           aria-expanded={editing ? picking?.padId === id : undefined}
           aria-keyshortcuts={editing ? undefined : pad.key}
-        >
-          <span className="console-pad-key">{pad.key.toUpperCase()}</span>
-          <PadSound soundId={pad.soundId} />
-          {editing && <span className="console-pad-edit" aria-hidden />}
-        </button>
+        />
       ))}
       {picking && picked && (
         <Popover anchor={picking.anchor} onClose={() => setPicking(undefined)}>
@@ -200,25 +197,24 @@ function PadGrid({
   )
 }
 
-/** A pad's sound name: the kit's, or an upload's with its uploader's dot (dimmed while loading). */
-function PadSound({ soundId }: { soundId: string }) {
+/** A pad showing its sound: the kit's name, or an upload's with its uploader's dot and state. */
+function ConsolePad({
+  soundId,
+  ...rest
+}: Omit<PadProps, 'name' | 'dot' | 'status'> & { soundId: string }) {
   const sounds = useAtomValue(soundsAtom)
   const upload = sounds.get(soundId)
   const state = useSampleState(soundId)
   const uploader = useUploader()
   const swatch = useSwatch()
-  if (!upload) return <span className="console-pad-sound">{soundName(soundId) ?? 'Empty'}</span>
+  if (!upload) return <Pad name={soundName(soundId) ?? 'Empty'} {...rest} />
   return (
-    <span className={`console-pad-sound console-pad-sound-${state ?? 'loading'}`}>
-      <span
-        className="ui-dot"
-        style={{ background: swatch(upload.color) }}
-        title={uploader(upload)}
-        aria-label={uploader(upload)}
-      />
-      {upload.name}
-      {state === 'missing' && ' (missing)'}
-    </span>
+    <Pad
+      name={upload.name}
+      dot={{ color: swatch(upload.color), title: uploader(upload) }}
+      status={state ?? 'loading'}
+      {...rest}
+    />
   )
 }
 
