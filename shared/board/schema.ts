@@ -14,6 +14,39 @@ export const BEATS_PER_BAR = 4
 /** Quantize grids in beats: 0 is off, 0.25 is a sixteenth note. */
 export const QUANTIZE = [0, 0.125, 0.25, 0.5, 1] as const
 
+/**
+ * A track's sound knobs: each one's range, step and default. A track stores none, some or all of
+ * them; a missing knob plays at its default, which leaves the sound unchanged. Shared by the
+ * schema, the engine, the mixer and the agent docs.
+ */
+export const SOUND_KNOBS = {
+  /** How much of the track goes into the shared room. */
+  reverb: { min: 0, max: 1, step: 0.01, default: 0 },
+  /** How loud the tempo-timed echo is. */
+  echo: { min: 0, max: 1, step: 0.01, default: 0 },
+  /** Below 0 darkens (low-pass), above 0 thins (high-pass). */
+  tone: { min: -1, max: 1, step: 0.01, default: 0 },
+  /** Whole semitones; changes playback speed. */
+  pitch: { min: -12, max: 12, step: 1, default: 0 },
+  /** -1 is the left speaker, +1 the right. */
+  pan: { min: -1, max: 1, step: 0.01, default: 0 },
+} as const
+export type SoundKnob = keyof typeof SOUND_KNOBS
+export const SOUND_KNOB_NAMES = Object.keys(SOUND_KNOBS) as SoundKnob[]
+
+const knob = (k: SoundKnob) => {
+  const { min, max, step } = SOUND_KNOBS[k]
+  const n = z.number().min(min).max(max)
+  return (step === 1 ? n.int() : n).optional()
+}
+
+/** Every sound knob of a track, with missing ones at their defaults. */
+export function soundOf(track: Partial<Record<SoundKnob, number>>): Record<SoundKnob, number> {
+  return Object.fromEntries(
+    SOUND_KNOB_NAMES.map((k) => [k, track[k] ?? SOUND_KNOBS[k].default]),
+  ) as Record<SoundKnob, number>
+}
+
 /** The jam's settings, in the root map `meta`. */
 export const Meta = z.object({
   bpm: z.number().int().min(BPM.min).max(BPM.max),
@@ -56,8 +89,14 @@ export const Track = z
     ),
     /** The jam bar where the take began; its loop cycles from there. Set once, when recorded. */
     startBar: z.number().int().min(0).optional(),
-    /** Reserved for delay and stretch; always empty in v1. */
+    /** Reserved; always empty. The sound knobs below are separate fields. */
     effects: z.array(z.never()).max(0),
+    /** Sound knobs, each optional: see `SOUND_KNOBS` for ranges and defaults. */
+    reverb: knob('reverb'),
+    echo: knob('echo'),
+    tone: knob('tone'),
+    pitch: knob('pitch'),
+    pan: knob('pan'),
   })
   .refine((t) => t.hits.every((h) => h.beat < t.bars * BEATS_PER_BAR), {
     message: 'Every hit must fall inside the track',
