@@ -53,6 +53,7 @@ async function refused(name: string, args: object) {
   return !!error || !!result?.isError
 }
 
+const KNOBS = ['reverb', 'echo', 'tone', 'pitch', 'pan']
 const OPS = ['setTempo', 'assignPad', 'replaceSound', 'addTrack', 'setTrack', 'removeTrack']
 
 describe('the MCP server', () => {
@@ -69,13 +70,14 @@ describe('the MCP server', () => {
     )
     expect(init.result.serverInfo.name).toBe('jambo')
     const instructions: string = init.result.instructions
-    for (const word of [...OPS, 'bpm', 'pads', 'sounds', 'tracks', 'here'])
+    for (const word of [...OPS, 'bpm', 'pads', 'sounds', 'tracks', 'here', ...KNOBS])
       expect(instructions).toContain(word)
     const list = await rpc('tools/list', {}, ip)
     const tools: { name: string; inputSchema: unknown }[] = list.result.tools
     expect(tools.map((t) => t.name)).toEqual(expect.arrayContaining(['join', 'run', 'leave']))
     const runSchema = JSON.stringify(tools.find((t) => t.name === 'run')!.inputSchema)
     for (const op of OPS) expect(runSchema).toContain(`"${op}"`)
+    for (const knob of KNOBS) expect(runSchema).toContain(`"${knob}"`)
   })
 
   it('refuses a jam that is not one', async () => {

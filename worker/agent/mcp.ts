@@ -9,9 +9,10 @@ import {
   DEFAULT_KIND,
   isAgentKey,
   jamSlugOf,
+  knobHelp,
   toKind,
 } from '../../shared/agent'
-import { BPM, LIMITS, QUANTIZE } from '../../shared/board'
+import { BPM, LIMITS, QUANTIZE, SOUND_KNOB_NAMES } from '../../shared/board'
 import { COLOR_NAMES, toColorName } from '../../shared/colors'
 import { UPLOADS } from '../../shared/sounds'
 import { toUploadLayout } from '../../shared/wav'
@@ -19,6 +20,10 @@ import type { AgentHello } from './roster'
 
 /** Tool calls per minute per address: the AGENT_RUNS limit in `wrangler.jsonc`, keep them equal. */
 const AGENT_CALLS_PER_MINUTE = 20
+
+/** The sound knobs, one line each, for the instructions. */
+const KNOB_LINES = SOUND_KNOB_NAMES.map((k) => `    ${k}: ${knobHelp(k)}`).join('\n')
+const KNOB_FIELDS = SOUND_KNOB_NAMES.map((k) => `${k}?`).join(', ')
 
 /**
  * What the server tells every client, so one without the `/jam` skill still knows how to play:
@@ -32,7 +37,7 @@ join returns board, the jam as it is now:
   bpm: tempo (${BPM.min}-${BPM.max})
   pads: [{ id, key, row, col, soundId }]: the 16 pads; tracks hit pads by id
   sounds: [{ id, name, kind: 'kit' | 'upload', category?, by?, durationMs? }]
-  tracks: [{ id, name, author, color, bars, hits: [{ padId, beat }], gain, mute, quantize, startBar?, effects }]
+  tracks: [{ id, name, author, color, bars, hits: [{ padId, beat }], gain, mute, quantize, startBar?, effects, ${KNOB_FIELDS} }]: a missing knob is at its default
   here: [{ name, kind, color }]: people (kind 'person') and agents
 Others change the jam too: call join again to read it fresh.
 
@@ -40,8 +45,10 @@ run takes ops, a JSON array of 1-${AGENT_LIMITS.ops} operations, and summary (1-
   { op: 'setTempo', bpm }: only while the jam has no tracks
   { op: 'assignPad', padId, soundId }: a kit sound id or an upload id
   { op: 'replaceSound', from, to }: moves every pad on one sound to another
-  { op: 'addTrack', ref?, track: { name, bars, hits, gain?, quantize? } }: bars 1-${LIMITS.bars}; hits [{ padId, beat }] with 0 <= beat < bars * 4 (beats, 4 per bar), 1-${LIMITS.hitsPerTrack} of them; gain 0-1.5 (default 1); quantize one of ${QUANTIZE.join(', ')} beats (default 0.25). The track is yours: author and colour are set for you. ref, like "new:kicks", lets later operations in the same run use the track as an id. A jam holds ${LIMITS.tracks} tracks.
-  { op: 'setTrack', id, patch: { name?, gain?, mute?, quantize? } }
+  { op: 'addTrack', ref?, track: { name, bars, hits, gain?, quantize?, ${KNOB_FIELDS} } }: bars 1-${LIMITS.bars}; hits [{ padId, beat }] with 0 <= beat < bars * 4 (beats, 4 per bar), 1-${LIMITS.hitsPerTrack} of them; gain 0-1.5 (default 1); quantize one of ${QUANTIZE.join(', ')} beats (default 0.25). The track is yours: author and colour are set for you. ref, like "new:kicks", lets later operations in the same run use the track as an id. A jam holds ${LIMITS.tracks} tracks.
+  { op: 'setTrack', id, patch: { name?, gain?, mute?, quantize?, ${KNOB_FIELDS} } }
+  The sound knobs, on addTrack and setTrack; each changes how the whole track sounds:
+${KNOB_LINES}
   { op: 'removeTrack', id }
 Tracks hit pads, so to use a sound, assign it to a pad and hit that pad. The operations apply in order as one change; each gets a result { op, ok, issues?, id? } (id: the new track's), and refused ones change nothing. If any operation doesn't fit the schema, nothing applies. run answers { summary, ops, agent }.
 

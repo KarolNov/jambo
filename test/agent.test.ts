@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
-import { apply, seedBoard, type Track } from '../shared/board'
+import { apply, type Op, seedBoard, type Track } from '../shared/board'
 import {
   isAgentAuthor,
   isAgentKey,
@@ -187,6 +187,63 @@ describe('prepare', () => {
         },
       },
     })
+  })
+
+  it('passes the sound knobs an agent sets, and only those', () => {
+    n = 0
+    const hits = [{ padId: 'r0c0', beat: 0 }]
+    const out = prepare(
+      [
+        {
+          op: 'addTrack',
+          ref: 'new:wet',
+          track: { name: 'Wet', bars: 1, hits, reverb: 0.3, pitch: -2, pan: -0.5 },
+        },
+        { op: 'setTrack', id: 'new:wet', patch: { echo: 0.2, tone: -0.4 } },
+      ],
+      agent,
+      mint,
+    )
+    expect(out[0]).toMatchObject({ op: { track: { reverb: 0.3, pitch: -2, pan: -0.5 } } })
+    const added = (out[0] as { op: { track: Track } }).op.track
+    expect(added).not.toHaveProperty('echo')
+    expect(added).not.toHaveProperty('tone')
+    expect(out[1]).toEqual({
+      op: { op: 'setTrack', id: 'minted-0', patch: { echo: 0.2, tone: -0.4 } },
+    })
+  })
+
+  it('refuses a sound knob out of range, and a pitch between semitones', () => {
+    const hits = [{ padId: 'r0c0', beat: 0 }]
+    for (const knobs of [
+      { reverb: 1.5 },
+      { tone: -2 },
+      { pitch: 13 },
+      { pitch: 0.5 },
+      { pan: 2 },
+    ]) {
+      const [p] = prepare(
+        [{ op: 'addTrack', track: { name: 'A', bars: 1, hits, ...knobs } }],
+        agent,
+        mint,
+      )
+      expect(p).toHaveProperty('issues')
+      expect((p as { issues: { path?: unknown[] }[] }).issues[0]?.path).toEqual([
+        'track',
+        Object.keys(knobs)[0],
+      ])
+    }
+  })
+
+  it('refuses a setTrack knob out of range when it applies', () => {
+    const doc = new Y.Doc()
+    seedBoard(doc)
+    apply(doc, [{ op: 'addTrack', id: 't1', track: track('One') }], SYSTEM)
+    const [p] = prepare([{ op: 'setTrack', id: 't1', patch: { reverb: 2 } }], agent, mint)
+    expect(p).toHaveProperty('op')
+    const [r] = apply(doc, [(p as { op: Op }).op], SYSTEM)
+    expect(r).toMatchObject({ ok: false })
+    expect(doc.getMap('tracks').get('t1')).toBeDefined()
   })
 
   it('resolves refs to the ids it minted', () => {

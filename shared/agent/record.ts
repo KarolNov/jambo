@@ -8,10 +8,32 @@ import {
   ReplaceSound,
   SetTempo,
   SetTrack,
+  SOUND_KNOB_NAMES,
+  SOUND_KNOBS,
+  type SoundKnob,
   Track,
 } from '../board'
 import type { ColorName } from '../colors'
 import { AGENT_AUTHOR_PREFIX } from './identity'
+
+/** What each sound knob does, for agents: its range and default come from `SOUND_KNOBS`. */
+const KNOB_HELP: Record<SoundKnob, string> = {
+  reverb: 'Room: how much goes into the shared reverb',
+  echo: 'Echo: how loud the tempo-timed echo is',
+  tone: 'Tone: below 0 darker, above 0 thinner',
+  pitch: 'Pitch in whole semitones; also changes speed',
+  pan: 'Pan: -1 left, 1 right',
+}
+
+/** One sentence per knob: what it does, its range and its default. */
+export function knobHelp(k: SoundKnob): string {
+  const { min, max, default: d } = SOUND_KNOBS[k]
+  return `${KNOB_HELP[k]}; ${min} to ${max}, default ${d}`
+}
+
+const knobDrafts = Object.fromEntries(
+  SOUND_KNOB_NAMES.map((k) => [k, z.number().optional().describe(knobHelp(k))]),
+) as Record<SoundKnob, z.ZodOptional<z.ZodNumber>>
 
 /**
  * The operations an agent may send in a run, as JSON. Only board changes a person can make; never
@@ -31,6 +53,7 @@ const TrackDraft = z.object({
     .describe('The hits of the loop'),
   gain: z.number().optional().describe('Level 0-1.5, default 1'),
   quantize: z.number().optional().describe('Snap in beats, default 0.25'),
+  ...knobDrafts,
 })
 
 /** Names a track added earlier in the same run, before it has an id. */
@@ -49,7 +72,9 @@ export const AgentCall = z.discriminatedUnion('op', [
       track: TrackDraft,
     })
     .describe('Add a loop; its author and colour are yours'),
-  SetTrack.describe('Change a track: name, gain, mute, quantize'),
+  SetTrack.describe(
+    `Change a track: name, gain, mute, quantize or a sound knob (${SOUND_KNOB_NAMES.join(', ')})`,
+  ),
   RemoveTrack.describe('Remove any track'),
 ])
 export type AgentCall = z.infer<typeof AgentCall>
@@ -117,6 +142,10 @@ export function prepare(
           mute: false,
           quantize: t.quantize ?? 0.25,
           effects: [],
+          // Only the knobs the agent set: a missing one plays at its default.
+          ...Object.fromEntries(
+            SOUND_KNOB_NAMES.filter((k) => t[k] !== undefined).map((k) => [k, t[k]]),
+          ),
         }
         // Checked here, so a ref never stands for a track that was refused.
         const checked = Track.safeParse(track)
