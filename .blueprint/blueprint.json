@@ -315,6 +315,13 @@
         "https://github.com/KarolNov/jambo/pull/30",
         "https://github.com/KarolNov/jambo/pull/31"
       ]
+    },
+    "sound-knobs": {
+      "brief": "https://app.notion.com/p/41d43cce21f281cbb6e6ebaa7ef8bd82",
+      "review": "https://app.notion.com/p/41d43cce21f281c1a5abe82126b05408",
+      "tickets": "https://app.notion.com/p/41d43cce21f281c1a5abe82126b05408",
+      "status": "approved",
+      "baseCommit": "773fb246c302303c4992cf777dfe16fe1591d350"
     }
   }
 }
