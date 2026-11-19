@@ -1,5 +1,5 @@
 import type { Hit, Track } from '../../shared/board'
-import { BEATS_PER_BAR } from '../../shared/board'
+import { BEATS_PER_BAR, BPM, soundOf } from '../../shared/board'
 import {
   SHIFT_THRESHOLD_MS,
   audioShift,
@@ -18,6 +18,14 @@ import {
   trackStart,
 } from '../../shared/looper'
 import type { JamClock } from './clock'
+import {
+  ECHO_FEEDBACK,
+  KNOB_RAMP,
+  echoSeconds,
+  pitchRate,
+  reverbImpulse,
+  toneFilter,
+} from './knobs'
 import type { SampleLoader } from './samples'
 import { click, renderKit } from './synth'
 import { keepAwake, preferPlayback } from './session'
@@ -45,9 +53,22 @@ export interface PadHit {
   trackId?: string
 }
 
+/**
+ * A loop's chain: hits → filter (tone) → panner (pan) → gain (level, mute) → master, with the
+ * gain also feeding the shared reverb and echo through its sends, so a muted loop sends nothing.
+ */
+interface Chain {
+  filter: BiquadFilterNode
+  panner: StereoPannerNode
+  gain: GainNode
+  reverb: GainNode
+  echo: GainNode
+}
+
 interface Playing {
   track: Track
-  gain: GainNode
+  /** Undefined until audio starts. */
+  chain?: Chain
   /** For a track this client just recorded: schedule from here (room ms) once, so hits missed since its loop came round still sound. */
   catchUpFrom?: number
 }
@@ -62,6 +83,10 @@ interface Playing {
 export class Engine {
   private ctx?: AudioContext
   private master?: GainNode
+  /** The shared room every loop's reverb send feeds. */
+  private reverb?: ConvolverNode
+  /** The shared echo every loop's echo send feeds; its time follows the tempo. */
+  private echo?: DelayNode
   private buffers = new Map<string, AudioBuffer>()
   /** Room ms → audio seconds: `audio = room / 1000 + shift`. Undefined until the clock is agreed. */
   private shift?: number
@@ -128,10 +153,25 @@ export class Engine {
     const master = ctx.createGain()
     master.gain.value = 0.8
     master.connect(ctx.destination)
+    const [left, right] = reverbImpulse(ctx.sampleRate)
+    const impulse = ctx.createBuffer(2, left.length, ctx.sampleRate)
+    impulse.copyToChannel(left, 0)
+    impulse.copyToChannel(right, 1)
+    const reverb = ctx.createConvolver()
+    reverb.buffer = impulse
+    reverb.connect(master)
+    const echo = ctx.createDelay(echoSeconds(BPM.min))
+    echo.delayTime.value = echoSeconds(this.bpm)
+    const feedback = ctx.createGain()
+    feedback.gain.value = ECHO_FEEDBACK
+    echo.connect(feedback).connect(echo)
+    echo.connect(master)
     this.buffers = await renderKit(ctx.sampleRate)
     this.samples.attach(ctx)
     this.ctx = ctx
     this.master = master
+    this.reverb = reverb
+    this.echo = echo
     for (const p of this.playing.values()) this.attach(p)
     this.timer = setInterval(() => this.tick(), TICK_MS)
     this.emit()
@@ -197,8 +237,8 @@ export class Engine {
     this.pads = state.pads
     for (const [id, p] of this.playing) {
       if (!state.tracks.has(id)) {
-        // Tracks added before audio started have no gain node yet.
-        p.gain?.disconnect()
+        // Tracks added before audio started have no chain yet.
+        if (p.chain) for (const node of Object.values(p.chain)) node.disconnect()
         this.playing.delete(id)
       }
     }
@@ -206,12 +246,12 @@ export class Engine {
       const existing = this.playing.get(id)
       if (existing) {
         existing.track = track
-        this.setGain(existing)
+        this.setSound(existing)
         continue
       }
       // Someone else's track plays from its current point in its loop; one this client just
       // recorded also plays what its second cycle has already passed.
-      const p: Playing = { track, gain: undefined! }
+      const p: Playing = { track }
       const takeBpm = this.claimed.get(id)
       this.claimed.delete(id)
       // A take whose tempo changed under it has no second cycle on this grid to catch up with.
@@ -223,14 +263,48 @@ export class Engine {
   }
 
   private attach(p: Playing) {
-    p.gain = this.ctx!.createGain()
-    p.gain.connect(this.master!)
-    this.setGain(p)
+    const ctx = this.ctx!
+    const chain: Chain = {
+      filter: ctx.createBiquadFilter(),
+      panner: ctx.createStereoPanner(),
+      gain: ctx.createGain(),
+      reverb: ctx.createGain(),
+      echo: ctx.createGain(),
+    }
+    chain.filter.connect(chain.panner).connect(chain.gain).connect(this.master!)
+    chain.gain.connect(chain.reverb).connect(this.reverb!)
+    chain.gain.connect(chain.echo).connect(this.echo!)
+    p.chain = chain
+    this.setSound(p, true)
   }
 
-  private setGain(p: Playing) {
-    if (!p.gain || !this.ctx) return
-    p.gain.gain.setTargetAtTime(p.track.mute ? 0 : p.track.gain, this.ctx.currentTime, 0.01)
+  /** Moves a loop's chain to its track's level, mute and knobs; `now` jumps there instead of ramping. */
+  private setSound(p: Playing, now = false) {
+    const ctx = this.ctx
+    const chain = p.chain
+    if (!chain || !ctx) return
+    const set = (param: AudioParam, value: number) => {
+      if (now) param.value = value
+      else param.setTargetAtTime(value, ctx.currentTime, KNOB_RAMP)
+    }
+    const sound = soundOf(p.track)
+    set(chain.gain.gain, p.track.mute ? 0 : p.track.gain)
+    set(chain.reverb.gain, sound.reverb)
+    set(chain.echo.gain, sound.echo)
+    set(chain.panner.pan, sound.pan)
+    const tone = toneFilter(sound.tone)
+    // A type can't ramp; both sides meet "open" at 0, so the switch is quiet.
+    if (chain.filter.type !== tone.type) chain.filter.type = tone.type
+    set(chain.filter.frequency, tone.frequency)
+  }
+
+  /** Keeps the echo on a dotted eighth of the current tempo. */
+  private syncEcho() {
+    const echo = this.echo
+    if (!echo || !this.ctx) return
+    const seconds = echoSeconds(this.bpm)
+    if (Math.abs(echo.delayTime.value - seconds) > 1e-4)
+      echo.delayTime.setTargetAtTime(seconds, this.ctx.currentTime, KNOB_RAMP)
   }
 
   /** Plays a pad now, and records the hit if a take is running. */
@@ -248,12 +322,13 @@ export class Engine {
     }
   }
 
-  private play(soundId: string | undefined, at: number, out: AudioNode) {
+  private play(soundId: string | undefined, at: number, out: AudioNode, rate = 1) {
     // An upload that hasn't loaded yet plays nothing; its hits sound once it has.
     const buffer = soundId ? (this.buffers.get(soundId) ?? this.samples.get(soundId)) : undefined
     if (!buffer || !this.ctx) return
     const src = this.ctx.createBufferSource()
     src.buffer = buffer
+    src.playbackRate.value = rate
     src.connect(out)
     src.start(at)
   }
@@ -377,6 +452,7 @@ export class Engine {
   private tick() {
     const ctx = this.ctx!
     this.advanceRecorder()
+    this.syncEcho()
     // Loops wait for the clock; once it is agreed they start on the jam's grid.
     if (!this.ensureShift()) return
     const candidate = audioShift(this.heard(ctx), this.clock.offset!, performance.timeOrigin)
@@ -413,11 +489,13 @@ export class Engine {
       // A just-recorded track's next loop may have begun before it was added: play what it missed now.
       const start = Math.min(from, p.catchUpFrom ?? from)
       p.catchUpFrom = undefined
-      if (!p.gain || p.track.mute) continue
+      if (!p.chain || p.track.mute) continue
+      // Pitch is read per hit, so a change applies from the next one.
+      const rate = pitchRate(soundOf(p.track).pitch)
       const origin = trackStart(p.track, this.bpm) / 1000
       for (const hit of hitsInWindow(p.track, origin, this.bpm, start / 1000, to / 1000)) {
         const at = Math.max(ctx.currentTime, roomToAudio(hit.time * 1000, shift))
-        this.play(this.pads.get(hit.padId), at, p.gain)
+        this.play(this.pads.get(hit.padId), at, p.chain.filter, rate)
         this.announceAt({ padId: hit.padId, trackId }, at)
       }
     }
