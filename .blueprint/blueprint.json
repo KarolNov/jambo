@@ -201,6 +201,15 @@
         "worker/agent/**",
         "skills/jam/**"
       ]
+    },
+    "ui": {
+      "ref": null,
+      "anchors": [
+        "src/ui/**",
+        "src/theme/**",
+        "src/ds/**",
+        "DESIGN.md"
+      ]
     }
   },
   "changes": {
@@ -250,6 +259,14 @@
       "tickets": "https://app.notion.com/p/41c43cce21f2817dbde5fd13005bd6fe",
       "status": "approved",
       "baseCommit": "4a346b7ef58026e7386fc8b472cab67a1f6ab888"
+    },
+    "ds-showcase": {
+      "brief": "https://app.notion.com/p/41d43cce21f281e386fde1b35adcc8c7",
+      "review": "https://app.notion.com/p/41d43cce21f281a8aeaef3f7dcd653d1",
+      "playground": "https://app.notion.com/p/41d43cce21f281a8aeaef3f7dcd653d1",
+      "tickets": "https://app.notion.com/p/41d43cce21f281a8aeaef3f7dcd653d1",
+      "status": "approved",
+      "baseCommit": "45dac49612cec21f963712dd8f4a5be5b59c1cc5"
     }
   }
 }
