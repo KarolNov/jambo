@@ -4,11 +4,14 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
   useEffect,
+  useId,
   useRef,
   useState,
 } from 'react'
-import { fraction, litFraction, snap, stepBy } from './fader'
+import { fraction, litFraction, snap } from './fader'
 import { haptic } from './haptics'
+import { useScrub } from './scrub'
+import { keyValue } from './scrubSteps'
 import './ui.css'
 
 type Tone = 'default' | 'primary' | 'danger' | 'quiet'
@@ -118,17 +121,8 @@ export type RangeProps = Omit<
   format?: (value: number) => string
 }
 
-/** How many key steps each key moves; Home and End go to the ends. */
-const KEY_DELTA: Partial<Record<string, number>> = {
-  ArrowRight: 1,
-  ArrowUp: 1,
-  ArrowLeft: -1,
-  ArrowDown: -1,
-  PageUp: 5,
-  PageDown: -5,
-  Home: -Infinity,
-  End: Infinity,
-}
+/** How many key steps Page Up and Page Down move the fader. */
+const PAGE_STEPS = 5
 
 /**
  * A mixer fader: a thin slot, a solid cap with ridges and an index line, an LED strip lit to the
@@ -245,18 +239,213 @@ export function Range({
         }}
         onKeyDown={(e) => {
           onKeyDown?.(e)
-          const delta = KEY_DELTA[e.key]
-          if (e.defaultPrevented || delta === undefined) return
+          if (e.defaultPrevented) return
+          const v = keyValue(e, shown, { min, max, step: keyStep }, PAGE_STEPS)
+          if (v === undefined) return
           e.preventDefault()
-          const v = Number.isFinite(delta)
-            ? stepBy(shown, delta, keyStep, min, max)
-            : delta > 0
-              ? max
-              : min
           if (v !== shown) onChange(v)
         }}
         {...rest}
       />
+    </span>
+  )
+}
+
+export type ScrubFieldProps = Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'value' | 'defaultValue' | 'onChange' | 'min' | 'max' | 'step' | 'children'
+> & {
+  /** The label, which is also the drag handle: drag it sideways to change the value. */
+  label: ReactNode
+  value: number
+  /** Called once per change: on release after a scrub, on Enter or blur after typing, per arrow. */
+  onChange: (value: number) => void
+  min?: number
+  max?: number
+  step?: number
+  /** Pixels of drag per step (default 4). */
+  pixelsPerStep?: number
+  /** Beside the field, inside the control: steppers, say. */
+  start?: ReactNode
+  end?: ReactNode
+}
+
+/**
+ * A number field whose label scrubs it, like a design tool's input labels: drag the label right
+ * to raise the value, left to lower it, Shift for ten steps. The field shows the value while
+ * dragging and applies it once on release; Escape puts it back. The field can also be typed in
+ * (Enter or leaving it applies, Escape cancels) and stepped with the arrow keys. Typed values go
+ * to `onChange` as typed, so the owner clamps them and can say why. Disabled, the label doesn't
+ * scrub.
+ */
+export function ScrubField({
+  label,
+  value,
+  onChange,
+  min = -Infinity,
+  max = Infinity,
+  step = 1,
+  pixelsPerStep = 4,
+  start,
+  end,
+  disabled,
+  className = '',
+  id,
+  onKeyDown,
+  onBlur,
+  ...rest
+}: ScrubFieldProps) {
+  const autoId = useId()
+  const fieldId = id ?? autoId
+  // The number being typed; applied on Enter or when the field loses focus. A scrub drops it, so
+  // the dragged value is the one that stays.
+  const [typed, setTyped] = useState<string>()
+  const scrub = useScrub({
+    value,
+    onCommit: onChange,
+    onStart: () => setTyped(undefined),
+    min,
+    max,
+    step,
+    pixelsPerStep,
+    disabled,
+  })
+  // Set on Escape, so the blur that follows doesn't apply what was typed.
+  const cancelled = useRef(false)
+  const allowed = new RegExp(`[^0-9${Number.isInteger(step) ? '' : '.'}${min < 0 ? '-' : ''}]`, 'g')
+  const shown = scrub.dragging ? String(scrub.shown) : (typed ?? String(value))
+
+  return (
+    <span
+      className={`ui-scrub ${scrub.dragging ? 'is-scrubbing' : ''} ${className}`}
+      aria-disabled={disabled || undefined}
+    >
+      <label htmlFor={fieldId} className="ui-scrub-label" {...scrub.handlers}>
+        {label}
+      </label>
+      {start}
+      <input
+        {...rest}
+        id={fieldId}
+        className="ui-scrub-field"
+        inputMode={Number.isInteger(step) ? 'numeric' : 'decimal'}
+        value={shown}
+        disabled={disabled}
+        readOnly={scrub.dragging}
+        onChange={(e) => setTyped(e.target.value.replace(allowed, ''))}
+        onKeyDown={(e) => {
+          onKeyDown?.(e)
+          if (e.defaultPrevented) return
+          if (e.key === 'Enter') e.currentTarget.blur()
+          if (e.key === 'Escape') {
+            cancelled.current = true
+            setTyped(undefined)
+            e.currentTarget.blur()
+          }
+          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault()
+            const next = keyValue(e, value, { min, max, step })
+            setTyped(undefined)
+            if (next !== undefined && next !== value) onChange(next)
+          }
+        }}
+        onBlur={(e) => {
+          onBlur?.(e)
+          const n = typed === undefined || typed.trim() === '' ? NaN : Number(typed)
+          setTyped(undefined)
+          if (cancelled.current) cancelled.current = false
+          else if (Number.isFinite(n) && n !== value) onChange(n)
+        }}
+      />
+      {end}
+    </span>
+  )
+}
+
+export type KnobProps = {
+  label: string
+  value: number
+  /** Called on release after a drag, and per key press or double-click reset. */
+  onChange: (value: number) => void
+  min?: number
+  max?: number
+  step?: number
+  /** Where a double-click puts it (default: `min`). */
+  defaultValue?: number
+  /** The arc lit to the value, and the cap's index line (default: the focus accent). */
+  color?: string
+  /** How the value reads in the bubble and to screen readers (default: the number). */
+  format?: (value: number) => string
+  disabled?: boolean
+  className?: string
+}
+
+/**
+ * A rotary knob: a raised cap with an index line, in a ring lit to the value in `color`. Drag up
+ * or right to turn it up, down or left to turn it down, Shift for ten steps; the value shows in a
+ * bubble while turning and applies once on release, and Escape puts it back. Arrows, Page Up/Down,
+ * Home and End turn it from the keyboard; a double-click resets it to `defaultValue`. Screen
+ * readers hear a slider.
+ */
+export function Knob({
+  label,
+  value,
+  onChange,
+  min = 0,
+  max = 1,
+  step = 0.01,
+  defaultValue = min,
+  color,
+  format = String,
+  disabled = false,
+  className = '',
+}: KnobProps) {
+  // The whole sweep takes about 200px of drag, but never less than a pixel a step.
+  const pixelsPerStep = Math.max(1, 200 / ((max - min) / step))
+  const scrub = useScrub({
+    value,
+    onCommit: onChange,
+    min,
+    max,
+    step,
+    pixelsPerStep,
+    axis: 'xy',
+    disabled,
+  })
+  const f = fraction(scrub.shown, min, max)
+  const vars = { '--f': f } as CSSProperties
+  if (color) Object.assign(vars, { '--ui-c': color })
+  return (
+    <span className={`ui-knob ${scrub.dragging ? 'is-dragging' : ''} ${className}`} style={vars}>
+      <span className="ui-knob-bubble" aria-hidden>
+        {format(scrub.shown)}
+      </span>
+      <span
+        role="slider"
+        tabIndex={disabled ? -1 : 0}
+        aria-label={label}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={scrub.shown}
+        aria-valuetext={format(scrub.shown)}
+        aria-disabled={disabled || undefined}
+        aria-orientation="vertical"
+        className="ui-knob-dial"
+        {...scrub.handlers}
+        onDoubleClick={() => {
+          if (!disabled && defaultValue !== value) onChange(defaultValue)
+        }}
+        onKeyDown={(e) => {
+          if (disabled || scrub.dragging) return
+          const v = keyValue(e, value, { min, max, step })
+          if (v === undefined) return
+          e.preventDefault()
+          // Keys don't tick, as the fader's don't.
+          if (v !== value) onChange(v)
+        }}
+      >
+        <span className="ui-knob-cap" aria-hidden />
+      </span>
     </span>
   )
 }
