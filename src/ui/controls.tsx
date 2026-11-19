@@ -139,7 +139,7 @@ export type Holder = { name: string; color: string }
 
 /** What a live control shared with others takes, to show who else is turning it. */
 type SharedProps = {
-  /** Someone else turning it now: a ring in their colour, and their name in the bubble. */
+  /** Someone else turning it now: a ring in their colour, and their name in the bubble unless you drag it too. */
   heldBy?: Holder
   /** Called with true when a drag starts, and false when it ends or the control goes mid-drag. */
   onDragChange?: (dragging: boolean) => void
@@ -158,16 +158,16 @@ function useDragReport(dragging: boolean, onDragChange?: (dragging: boolean) => 
   }, [dragging])
 }
 
-/** A bubble's text: the value, after the name of whoever else is turning it. */
-function bubbleText(value: string, heldBy?: Holder) {
-  if (!heldBy) return value
+/**
+ * A bubble's text: the value while you drag, or the name of whoever else is turning it (the
+ * control itself shows their value).
+ */
+function bubbleText(value: string, dragging: boolean, heldBy?: Holder) {
+  if (dragging || !heldBy) return value
   return (
-    <>
-      <span className="ui-held-name" style={{ color: heldBy.color }}>
-        {heldBy.name}
-      </span>{' '}
-      {value}
-    </>
+    <span className="ui-held-name" style={{ color: heldBy.color }}>
+      {heldBy.name}
+    </span>
   )
 }
 
@@ -297,7 +297,7 @@ export function Range({
       )}
       <span className="ui-fader-leds" aria-hidden />
       <span className="ui-fader-bubble" aria-hidden>
-        {bubbleText(format(shown), heldBy)}
+        {bubbleText(format(shown), dragging, heldBy)}
       </span>
       <input
         type="range"
@@ -518,7 +518,7 @@ export function Knob({
       style={vars}
     >
       <span className="ui-knob-bubble" aria-hidden>
-        {bubbleText(format(scrub.shown), heldBy)}
+        {bubbleText(format(scrub.shown), scrub.dragging, heldBy)}
       </span>
       <span
         role="slider"

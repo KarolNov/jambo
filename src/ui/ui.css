@@ -799,7 +799,7 @@
   opacity: 1;
   transform: translate(-50%, 0) scale(1);
 }
-/* The name of whoever else is turning a control, in their colour, before the value. */
+/* The name of whoever else is turning a control, in their colour. */
 :root[data-theme] .ui-held-name {
   font-weight: 700;
 }
