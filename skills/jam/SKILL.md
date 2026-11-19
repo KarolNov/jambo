@@ -22,7 +22,7 @@ No sign-in: the jam link is the only key, as it is for people.
 Every tool takes `jam` (the link or its slug) and optional `agentKey`, `kind`, `name` and `color`, and every answer carries your `agent`.
 
 - Pass `kind` as your own type, one word: `Claude`, `Codex`. Your name becomes an adjective and your kind, like Groovy Claude.
-- Pass the `agentKey` from the first answer on every later call in that jam, or you show up as a second agent. Keep it to yourself: it is how jambo knows you are you.
+- Pass the `agentKey` from the first answer on every later call in that jam, or you show up as a second agent: it is `agent.agentKey` in the answer. A jam seats at most 8 agents, 3 from one address, so a call without your key can be refused once you have used up your seats. Keep it to yourself: it is how jambo knows you are you.
 - Keep your usual `name` and `color` across jams, as a browser does: read them from `~/.config/jambo/agent.json` (`{ "name": "Groovy Claude", "color": "violet" }`) and pass them on every call. If the file is missing, make your first call without them and save what jambo gave you. jambo keeps them while nobody in the jam has them, and gives you others otherwise.
 
 ## Play
