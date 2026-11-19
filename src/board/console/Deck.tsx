@@ -166,7 +166,7 @@ function Transport({
           )}
         </div>
         <Switch checked={metronome} onChange={setMetronome}>
-          Click
+          Metronome
         </Switch>
       </div>
       {message && (

@@ -17,16 +17,16 @@ run `pnpm dev` and open it to see what this page describes.
 Use the CSS variables, never hex values. A token exists in both themes; dark has its own values,
 never an inverted light one.
 
-| Variable                   | For                                                         |
-| -------------------------- | ----------------------------------------------------------- |
-| `--bg`                     | The one surface everything is moulded from.                 |
-| `--hi`, `--lo`             | The lit and shaded sides of a shadow. Use via depth tokens. |
-| `--text`, `--muted`        | Text, and secondary text (captions, hints, units).          |
-| `--accent`                 | Record and destructive actions, errors.                     |
-| `--accent-2`               | Selection, "open", hover, the default focus and value tint. |
-| `--flat`, `--line`         | High-contrast plates that carry data (hit patterns, grids). |
-| `--focus`                  | Keyboard focus rings. A jam sets it to your colour.         |
-| `--cap-top` … `--cap-drop` | The fader cap's and rocker's shading. Controls only.        |
+| Variable                   | For                                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
+| `--bg`                     | The one surface everything is moulded from.                                               |
+| `--hi`, `--lo`             | The lit and shaded sides of a shadow. Use via depth tokens.                               |
+| `--text`, `--muted`        | Text, and secondary text (captions, hints, units).                                        |
+| `--accent`                 | Record and destructive actions, errors.                                                   |
+| `--accent-2`               | Selection, "open", hover, the default focus and value tint. A jam sets it to your colour. |
+| `--flat`, `--line`         | High-contrast plates that carry data (hit patterns, grids).                               |
+| `--focus`                  | Keyboard focus rings. A jam sets it to your colour.                                       |
+| `--cap-top` … `--cap-drop` | The fader cap's and rocker's shading. Controls only.                                      |
 
 Text keeps 4.5:1 against `--bg` (7:1 for body text); collaborator colours keep 3:1.
 `test/theme.test.ts` checks both.
