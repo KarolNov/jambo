@@ -82,21 +82,36 @@ describe('slider keys', () => {
 })
 
 describe('a live drag', () => {
-  /** Frames that run only when `tick` is called, and a log of what was applied. */
+  /**
+   * Frames that run only when `tick` is called, a log of what was applied, and the board: what
+   * is applied lands there, and `peer` changes it as someone else would.
+   */
   function setup(start: number) {
     const queued = new Map<number, () => void>()
     let next = 1
     const applied: number[] = []
-    const drag = liveDrag(start, (v) => applied.push(v), {
-      request: (run) => (queued.set(next, run), next++),
-      cancel: (id) => queued.delete(id),
-    })
+    let board = start
+    const drag = liveDrag(
+      start,
+      (v) => {
+        applied.push(v)
+        board = v
+      },
+      () => board,
+      {
+        request: (run) => (queued.set(next, run), next++),
+        cancel: (id) => queued.delete(id),
+      },
+    )
     const tick = () => {
       const runs = [...queued.values()]
       queued.clear()
       for (const run of runs) run()
     }
-    return { drag, applied, tick }
+    const peer = (v: number) => {
+      board = v
+    }
+    return { drag, applied, tick, peer, board: () => board }
   }
 
   it('applies at most one value a frame, the latest', () => {
@@ -146,5 +161,42 @@ describe('a live drag', () => {
     drag.end(false)
     tick()
     expect(applied).toEqual([])
+  })
+
+  it('applies nothing on release when it never moved', () => {
+    const { drag, applied, peer } = setup(0.5)
+    peer(0.9)
+    drag.end(true)
+    expect(applied).toEqual([])
+  })
+
+  it('applies the released value over a peer change', () => {
+    const { drag, applied, tick, peer, board } = setup(0)
+    drag.move(0.5)
+    tick()
+    peer(0.9)
+    drag.end(true)
+    expect(applied).toEqual([0.5, 0.5])
+    expect(board()).toBe(0.5)
+  })
+
+  it('leaves a peer change in place when cancelled', () => {
+    const { drag, applied, tick, peer, board } = setup(0.2)
+    drag.move(0.5)
+    tick()
+    peer(0.9)
+    drag.end(false)
+    expect(applied).toEqual([0.5])
+    expect(board()).toBe(0.9)
+  })
+
+  it('applies nothing more once dropped', () => {
+    const { drag, applied, tick } = setup(0)
+    drag.move(0.3)
+    tick()
+    drag.move(0.6)
+    drag.drop()
+    tick()
+    expect(applied).toEqual([0.3])
   })
 })

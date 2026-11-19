@@ -1,4 +1,4 @@
-import { useAtomValue } from 'jotai'
+import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react'
 import {
   BEATS_PER_BAR,
@@ -20,12 +20,21 @@ const SNAP_GROUPS = [{ options: SNAP_OPTIONS }]
 /** The level fader's tick marks, every 0.25; it sticks at unity (1.0). */
 const LEVEL_MARKS = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5]
 const percent = (v: number) => `${Math.round(v * 100)}%`
-/** Loops whose Sound strip is open: kept for the page's life, so it survives the mixer remounting. */
-const openStrips = new Set<string>()
+/** Loops whose Effects strip is open: an atom, so it survives the mixer remounting. */
+const openStripsAtom = atom<ReadonlySet<string>>(new Set<string>())
 
 /** The mixer tray: every loop in the jam as a row anyone can play with. */
 export function Mixer() {
   const tracks = useAtomValue(tracksAtom)
+  // Forget the strips of loops that are gone (removed, or another jam's).
+  const setOpenStrips = useSetAtom(openStripsAtom)
+  useEffect(() => {
+    setOpenStrips((open) =>
+      [...open].every((id) => tracks.has(id))
+        ? open
+        : new Set([...open].filter((id) => tracks.has(id))),
+    )
+  }, [tracks, setOpenStrips])
   return (
     <section className="console-mixer" aria-label="Loops">
       {tracks.size === 0 ? (
@@ -44,8 +53,8 @@ export function Mixer() {
 }
 
 /**
- * One loop: progress ring · name and length · pattern · level · snap · Sound · mute · remove,
- * then its Sound strip when open.
+ * One loop: progress ring · name and length · pattern · level · snap · Effects · mute · remove,
+ * then its Effects strip when open.
  */
 function Channel({ id, track }: { id: string; track: Track }) {
   const { board } = useSession()
@@ -54,12 +63,16 @@ function Channel({ id, track }: { id: string; track: Track }) {
   const row = useRef<HTMLLIElement>(null)
   usePlayhead(id, row)
   const swatch = useSwatch()
-  const [open, setOpen] = useState(() => openStrips.has(id))
-  const toggle = () => {
-    if (open) openStrips.delete(id)
-    else openStrips.add(id)
-    setOpen(!open)
-  }
+  const [openStrips, setOpenStrips] = useAtom(openStripsAtom)
+  const open = openStrips.has(id)
+  const toggle = () =>
+    setOpenStrips((was) => {
+      const next = new Set(was)
+      if (open) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  const changed = soundChanged(track)
 
   const set = (patch: Parameters<ReturnType<typeof board.track>['set']>[0]) => {
     const r = board.track(id).set(patch)
@@ -140,14 +153,14 @@ function Channel({ id, track }: { id: string; track: Track }) {
       </div>
       <Button
         size="sm"
-        className="console-sound-toggle"
+        className="console-effects-toggle"
         aria-expanded={open}
-        aria-controls={`${id}-sound`}
-        aria-label={soundChanged(track) ? 'Sound, changed' : 'Sound'}
+        aria-controls={open ? `${id}-effects` : undefined}
+        aria-label={changed ? 'Effects, changed' : 'Effects'}
         onClick={toggle}
       >
-        Sound
-        {soundChanged(track) && <span className="console-sound-dot" aria-hidden />}
+        Effects
+        <span className={`console-effects-dot ${changed ? 'is-on' : ''}`} aria-hidden />
       </Button>
       <Button
         size="sm"
@@ -165,7 +178,7 @@ function Channel({ id, track }: { id: string; track: Track }) {
       >
         ✕
       </IconButton>
-      {open && <SoundStrip id={id} track={track} color={swatch(track.color)} set={set} />}
+      {open && <EffectsStrip id={id} track={track} color={swatch(track.color)} set={set} />}
       {error && (
         <p id={`${id}-error`} className="console-channel-error" role="alert">
           {error}
@@ -176,7 +189,7 @@ function Channel({ id, track }: { id: string; track: Track }) {
 }
 
 /** A loop's five sound knobs, live for everyone, each with its name and reading under it. */
-function SoundStrip({
+function EffectsStrip({
   id,
   track,
   color,
@@ -190,16 +203,16 @@ function SoundStrip({
   const sound = soundOf(track)
   return (
     <div
-      id={`${id}-sound`}
-      className="console-sound"
+      id={`${id}-effects`}
+      className="console-effects"
       role="group"
-      aria-label={`Sound of ${track.name}`}
+      aria-label={`Effects of ${track.name}`}
     >
       {SOUND_KNOB_NAMES.map((k) => {
         const { min, max, step, default: home } = SOUND_KNOBS[k]
         const { label, format } = SOUND_READOUTS[k]
         return (
-          <div key={k} className="console-sound-knob">
+          <div key={k} className="console-effects-knob">
             <Knob
               live
               label={`${label} of ${track.name}`}
@@ -212,10 +225,10 @@ function SoundStrip({
               value={sound[k]}
               onChange={(v) => set({ [k]: v })}
             />
-            <span className="console-sound-name" aria-hidden>
+            <span className="console-effects-name" aria-hidden>
               {label}
             </span>
-            <span className="console-sound-value" aria-hidden>
+            <span className="console-effects-value" aria-hidden>
               {format(sound[k])}
             </span>
           </div>

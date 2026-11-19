@@ -125,7 +125,7 @@ By default it applies once, on release. With `live` it applies as it turns, at m
 it happens and a cancel puts it back for everyone.
 
 - Use for a secondary continuous parameter where a fader would take too much room, such as a
-  loop's sound knobs in the mixer's Sound strip (live, in the loop's colour).
+  loop's sound knobs in the mixer's Effects strip (live, in the loop's colour).
 - Make it `live` when others hear or see the value as it changes; leave it on release when each
   change is costly or only the end value matters.
 - Not for the main level of something (`Range`) or typed values (`ScrubField`).

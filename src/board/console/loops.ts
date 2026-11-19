@@ -34,7 +34,7 @@ export const beatPosition = (beat: number, bars: number) =>
 
 const pct = (v: number) => Math.round(Math.abs(v) * 100)
 
-/** How each sound knob is named and reads under it in the Sound strip. */
+/** How each sound knob is named and reads under it in the Effects strip. */
 export const SOUND_READOUTS: Record<SoundKnob, { label: string; format: (v: number) => string }> = {
   reverb: { label: 'Reverb', format: (v) => `${pct(v)}%` },
   echo: { label: 'Echo', format: (v) => `${pct(v)}%` },
@@ -53,7 +53,7 @@ export const SOUND_READOUTS: Record<SoundKnob, { label: string; format: (v: numb
   },
 }
 
-/** Whether any of a track's sound knobs is away from its default: the Sound toggle's dot. */
+/** Whether any of a track's sound knobs is away from its default: the Effects toggle's dot. */
 export const soundChanged = (track: Partial<Record<SoundKnob, number>>) => {
   const sound = soundOf(track)
   return SOUND_KNOB_NAMES.some((k) => sound[k] !== SOUND_KNOBS[k].default)

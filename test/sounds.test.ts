@@ -107,18 +107,22 @@ describe('uploading a sound', () => {
 
   it(`refuses the ${UPLOADS.perJam + 1}th sound in a jam`, async () => {
     const slug = 'funky-otter-sp05'
-    // One real upload, then the rest listed in the room directly: 32 uploads in a row outlast
-    // the test timeout on CI, and the cap counts what the board lists.
+    // A real upload first and last, the rest listed in the room directly: 32 uploads in a row
+    // outlast the test timeout on CI, and the cap counts what the board lists.
     const first = await upload(slug)
     expect(first.status).toBe(201)
     const { sound } = (await first.json()) as { sound: Sound }
     await runInDurableObject(env.Board.getByName(slug), (instance) => {
       const doc = (instance as unknown as { document: Y.Doc }).document
-      for (let i = 1; i < UPLOADS.perJam; i++) {
+      for (let i = 2; i < UPLOADS.perJam; i++) {
         const [r] = apply(doc, [{ op: 'addSound', id: newUploadId(), sound }], ROOM)
         expect(r?.ok).toBe(true)
       }
     })
+    const last = await upload(slug)
+    expect(last.status).toBe(201)
+    const { id } = (await last.json()) as { id: string }
+    expect(await env.SOUND_FILES.head(soundKey(slug, id))).not.toBeNull()
     const res = await upload(slug)
     expect(res.status).toBe(409)
     expect(await res.json()).toEqual({ error: `This jam already has ${UPLOADS.perJam} sounds` })

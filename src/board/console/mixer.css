@@ -19,7 +19,7 @@
   list-style: none;
 }
 
-/* One loop: ring · name · pattern · level · snap · Sound · mute · remove, then its Sound strip */
+/* One loop: ring · name · pattern · level · snap · Effects · mute · remove, then its Effects strip */
 :root[data-theme] .console-channel {
   display: grid;
   grid-template-columns:
@@ -171,23 +171,27 @@
   color: var(--accent);
 }
 
-/* The Sound toggle opens the strip; a dot in the loop's colour says a knob is off its default. */
-:root[data-theme] .console-sound-toggle {
+/* The Effects toggle opens the strip; a dot in the loop's colour says a knob is off its default.
+   The dot always takes its room, so the row doesn't shift when it shows. */
+:root[data-theme] .console-effects-toggle {
   gap: 6px;
 }
-:root[data-theme] .console-sound-toggle[aria-expanded='true'] {
+:root[data-theme] .console-effects-toggle[aria-expanded='true'] {
   color: var(--text);
 }
-:root[data-theme] .console-sound-dot {
+:root[data-theme] .console-effects-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--c);
   box-shadow: 0 0 4px color-mix(in srgb, var(--c) 60%, transparent);
 }
+:root[data-theme] .console-effects-dot:not(.is-on) {
+  visibility: hidden;
+}
 
-/* The Sound strip: an inset shelf across the row, the knobs wrapping rather than shrinking. */
-:root[data-theme] .console-sound {
+/* The Effects strip: an inset shelf across the row, the knobs wrapping rather than shrinking. */
+:root[data-theme] .console-effects {
   grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
@@ -198,30 +202,39 @@
   border-radius: 14px;
   box-shadow: var(--inset-sm);
 }
-:root[data-theme] .console-sound-knob {
+/* Each knob's cell is one fixed column, wide enough for the longest reading ("Bright 100%"), so
+   no reading moves a knob. */
+:root[data-theme] .console-effects-knob {
   display: grid;
+  grid-template-columns: 100%;
   justify-items: center;
   gap: 2px;
-  width: 64px;
+  width: 84px;
 }
-:root[data-theme] .console-sound-knob .ui-knob {
+:root[data-theme] .console-effects-knob .ui-knob {
   margin-bottom: 4px;
 }
-:root[data-theme] .console-sound-name {
+:root[data-theme] .console-effects-name {
   font-size: 12px;
   font-weight: 700;
   color: var(--muted);
 }
-:root[data-theme] .console-sound-value {
+:root[data-theme] .console-effects-value {
   font-size: 12px;
   font-weight: 750;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
   color: var(--text);
 }
+/* While a knob turns, its bubble shows the value: the reading under it would trail it a frame. */
+:root[data-theme] .console-effects-knob:has(.ui-knob.is-dragging) .console-effects-value {
+  visibility: hidden;
+}
 
-/* Phone width: name and remove on top, then the pattern, the level, and snap, Sound and mute;
-   the Sound strip under them all */
+/* Phone width: name and remove on top, then the pattern, the level, and snap, Effects and mute;
+   the Effects strip under them all */
 @media (max-width: 760px) {
   :root[data-theme] .console-mixer {
     margin: 28px 16px 0;
@@ -233,7 +246,7 @@
       'ring title title remove'
       'pattern pattern pattern pattern'
       'fader fader fader fader'
-      'snap snap sound mute';
+      'snap snap effects mute';
     gap: 12px;
   }
   :root[data-theme] .console-ring {
@@ -257,8 +270,8 @@
   :root[data-theme] .console-mute {
     grid-area: mute;
   }
-  :root[data-theme] .console-sound-toggle {
-    grid-area: sound;
+  :root[data-theme] .console-effects-toggle {
+    grid-area: effects;
   }
   :root[data-theme] .console-channel-error {
     grid-column: 1 / -1;
