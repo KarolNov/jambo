@@ -5,7 +5,6 @@ import { z } from 'zod'
 import {
   AGENT_LIMITS,
   AgentCall,
-  checkSummary,
   DEFAULT_KIND,
   isAgentKey,
   jamSlugOf,
@@ -15,13 +14,16 @@ import { BPM, LIMITS, QUANTIZE } from '../../shared/board'
 import { COLOR_NAMES, toColorName } from '../../shared/colors'
 import type { AgentHello } from './roster'
 
+/** Tool calls per minute per address: the AGENT_RUNS limit in `wrangler.jsonc`, keep them equal. */
+const AGENT_CALLS_PER_MINUTE = 20
+
 /**
  * What the server tells every client, so one without the `/jam` skill still knows how to play:
  * the jam it reads and the operations it sends.
  */
 export const INSTRUCTIONS = `jambo is a collaborative music board. Each jam has a link like https://<host>/jam/funky-otter-k7q2; the link (or its slug) is the only key.
 
-Tools: join, run, leave. Any call puts you in the jam's "Who's here"; 5 minutes without a call takes you out, and leave does it at once. Every tool takes jam (link or slug) and optional agentKey, kind (your type, one word like Claude), name and color. Every tool returns agentKey: pass it to every later call to stay the same agent. Your name is an adjective and your kind, like "Groovy Claude"; pass the same name and color each time to keep them while free.
+Tools: join, run, leave. join and run put you in the jam's "Who's here"; ${AGENT_LIMITS.idleMs / 60_000} minutes without a call takes you out, and leave does it at once. Every tool takes jam (link or slug) and optional agentKey, kind (your type, one word like Claude), name and color (one of ${COLOR_NAMES.join(', ')}). join and run answer agent: { agentKey, id, kind, name, color }; pass agent.agentKey to every later call to stay the same agent, or each call without it joins as a new one. leave answers { jam, left }. A jam seats at most ${AGENT_LIMITS.perJam} agents, ${AGENT_LIMITS.perAddress} from one address; an agent already in it always gets back in with its agentKey. Your name is an adjective and your kind, like "Groovy Claude"; pass the same name and color each time to keep them while free.
 
 join returns board, the jam as it is now:
   bpm: tempo (${BPM.min}-${BPM.max})
@@ -40,7 +42,7 @@ run takes ops, a JSON array of 1-${AGENT_LIMITS.ops} operations, and summary (1-
   { op: 'removeTrack', id }
 Tracks hit pads, so to use a sound, assign it to a pad and hit that pad. The operations apply in order as one change; each gets a result { op, ok, issues?, id? } (id: the new track's), and refused ones change nothing. If any operation doesn't fit the schema, nothing applies. run answers { summary, ops, agent }.
 
-Calls are limited to 20 a minute per address.`
+Calls are limited to ${AGENT_CALLS_PER_MINUTE} a minute per address.`
 
 /** Every tool's inputs that say which jam and which agent. */
 const who = {
@@ -54,10 +56,13 @@ const who = {
     .string()
     .optional()
     .describe('Your usual name, an adjective and your kind, like Groovy Claude'),
-  color: z.enum(COLOR_NAMES).optional().describe('Your usual colour'),
+  color: z
+    .string()
+    .optional()
+    .describe(`Your usual colour, one of ${COLOR_NAMES.join(', ')}`),
 }
 
-type Who = { jam: string; agentKey?: string; kind?: string; name?: string; color?: string }
+type Who = z.infer<z.ZodObject<typeof who>>
 
 type ToolResult = {
   content: { type: 'text'; text: string }[]
@@ -65,17 +70,29 @@ type ToolResult = {
 }
 
 const reply = (value: unknown): ToolResult => ({
-  content: [{ type: 'text', text: JSON.stringify(value, null, 2) }],
+  content: [{ type: 'text', text: JSON.stringify(value) }],
 })
 const refuse = (message: string, extra: object = {}): ToolResult => ({
-  content: [{ type: 'text', text: JSON.stringify({ error: message, ...extra }, null, 2) }],
+  content: [{ type: 'text', text: JSON.stringify({ error: message, ...extra }) }],
   isError: true,
 })
 
 class Refusal extends Error {}
 
-/** The jam's slug and the agent's hello, or a refusal. */
-function resolve(input: Who): { slug: string; hello: AgentHello } {
+/**
+ * A one-way tag of the caller's `address` in jam `slug`, so the room can count a caller's agents
+ * without holding the address itself.
+ */
+async function addressTag(address: string, slug: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`${slug}\n${address}`),
+  )
+  return Array.from(new Uint8Array(digest, 0, 8), (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+/** The jam's slug and the agent's hello, from caller `address`, or a refusal. */
+async function resolve(input: Who, address: string): Promise<{ slug: string; hello: AgentHello }> {
   const slug = jamSlugOf(input.jam)
   if (!slug) throw new Refusal(`${JSON.stringify(input.jam)} is not a jam link`)
   if (input.agentKey !== undefined && !isAgentKey(input.agentKey))
@@ -86,6 +103,8 @@ function resolve(input: Who): { slug: string; hello: AgentHello } {
     if (!kind) throw new Refusal('kind is one word of 1 to 20 letters or digits, like Claude')
   }
   const color = toColorName(input.color)
+  if (input.color !== undefined && !color)
+    throw new Refusal(`color is one of ${COLOR_NAMES.join(', ')}`)
   return {
     slug,
     hello: {
@@ -93,6 +112,7 @@ function resolve(input: Who): { slug: string; hello: AgentHello } {
       ...(kind ? { kind } : {}),
       ...(input.name ? { name: input.name.trim() } : {}),
       ...(color ? { color } : {}),
+      from: await addressTag(address, slug),
     },
   }
 }
@@ -106,7 +126,7 @@ export function jamboMcpServer(env: Env, address: string) {
 
   /** Wraps a tool: rate limit, then turns refusals into tool errors. */
   const tool =
-    <I extends Who>(fn: (input: I) => Promise<ToolResult>) =>
+    <I extends Who>(name: string, fn: (input: I) => Promise<ToolResult>) =>
     async (input: I): Promise<ToolResult> => {
       const { success } = await env.AGENT_RUNS.limit({ key: address })
       if (!success) return refuse('too many requests, try again in a minute')
@@ -114,7 +134,8 @@ export function jamboMcpServer(env: Env, address: string) {
         return await fn(input)
       } catch (e) {
         if (e instanceof Refusal) return refuse(e.message)
-        throw e
+        console.error('mcp tool failed', { tool: name, jam: input.jam, error: String(e) })
+        return refuse('Something went wrong in the jam; try again')
       }
     }
 
@@ -134,11 +155,11 @@ export function jamboMcpServer(env: Env, address: string) {
         "Appear in a jam's Who's here and read the jam as it is now. run joins you too; call join again to read fresh state.",
       inputSchema: z.object(who),
     },
-    tool(async (input) => {
-      const { slug, hello } = resolve(input)
-      const r = await room(slug)
-      const agent = await r.agentJoin(hello)
-      return reply({ jam: slug, agent: identity(agent), board: await r.snapshot() })
+    tool('join', async (input) => {
+      const { slug, hello } = await resolve(input, address)
+      const joined = await (await room(slug)).agentJoinAndRead(hello)
+      if ('error' in joined) return refuse(joined.error)
+      return reply({ jam: slug, agent: identity(joined.agent), board: joined.board })
     }),
   )
 
@@ -157,10 +178,8 @@ export function jamboMcpServer(env: Env, address: string) {
         summary: z.string().describe(`What this run does, 1-${AGENT_LIMITS.summaryMax} characters`),
       }),
     },
-    tool(async (input) => {
-      const { slug, hello } = resolve(input)
-      const summary = checkSummary(input.summary)
-      if ('error' in summary) return refuse(summary.error)
+    tool('run', async (input) => {
+      const { slug, hello } = await resolve(input, address)
       const result = await (await room(slug)).runAgentOps(hello, input.ops, input.summary)
       if ('error' in result) return refuse(result.error)
       return reply({
@@ -177,8 +196,8 @@ export function jamboMcpServer(env: Env, address: string) {
       description: "Leave the jam's Who's here now.",
       inputSchema: z.object(who),
     },
-    tool(async (input) => {
-      const { slug, hello } = resolve(input)
+    tool('leave', async (input) => {
+      const { slug, hello } = await resolve(input, address)
       if (!hello.key) return refuse('leave needs the agentKey you were given')
       const left = await (await room(slug)).agentLeave(hello.key)
       return reply({ jam: slug, left })

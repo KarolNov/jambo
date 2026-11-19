@@ -18,6 +18,8 @@ export interface PresentAgent {
   name: string
   color: ColorName
   summary?: string
+  /** A one-way tag of the caller's address in this jam, for the per-address cap; never shown. */
+  from?: string
   /** When it last acted, in ms since the epoch. */
   lastSeen: number
 }
@@ -37,7 +39,16 @@ export interface AgentHello {
   kind?: string
   name?: string
   color?: ColorName
+  /** A one-way tag of the caller's address in this jam (see `addressTag`). */
+  from?: string
 }
+
+/** Why a new agent wasn't seated: the jam or the caller already has as many as allowed. */
+export const jamFull = (perAddress: boolean) => ({
+  error: perAddress
+    ? `You already have ${AGENT_LIMITS.perAddress} agents in this jam; pass your agentKey to rejoin as one of them`
+    : `This jam has ${AGENT_LIMITS.perJam} agents; pass your agentKey to rejoin as yourself`,
+})
 
 const PRESENT_KEY = 'agents'
 
@@ -87,13 +98,14 @@ export class Roster {
    * Seats an agent, or renews one already present, setting its `summary` when given. `people` are
    * the people's seats right now. The agent keeps its seat while present; a new or returning one
    * is seated like a person. A key the room didn't make, or a kind that isn't one, is ignored.
+   * A new agent is refused when the jam, or the caller's address, already has its most.
    */
   async join(
     hello: AgentHello,
     people: readonly Seat[],
     summary?: string,
     now = Date.now(),
-  ): Promise<PresentAgent> {
+  ): Promise<PresentAgent | { error: string }> {
     const present = await this.load()
     const key = isAgentKey(hello.key) ? hello.key : newAgentKey()
     const id = present.get(key)?.id ?? (await agentIdOf(key, this.jam()))
@@ -102,9 +114,17 @@ export class Roster {
     if (agent) {
       agent.lastSeen = now
     } else {
+      const others = [...present.values()]
+      if (others.length >= AGENT_LIMITS.perJam) return jamFull(false)
+      if (
+        hello.from !== undefined &&
+        others.filter((a) => a.from === hello.from).length >= AGENT_LIMITS.perAddress
+      )
+        return jamFull(true)
       const kind = toKind(hello.kind) ?? DEFAULT_KIND
       const seat = seatAgent([...people, ...this.seats(key)], key, kind, hello)
       agent = { key, id, kind, name: seat.name, color: seat.color, lastSeen: now }
+      if (hello.from !== undefined) agent.from = hello.from
       present.set(key, agent)
     }
     if (summary !== undefined) agent.summary = summary

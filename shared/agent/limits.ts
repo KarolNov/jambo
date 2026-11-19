@@ -4,6 +4,10 @@ export const AGENT_LIMITS = {
   ops: 64,
   summaryMin: 1,
   summaryMax: 140,
+  /** Most agents present in one jam at once. */
+  perJam: 8,
+  /** Most agents present in one jam from one caller address. */
+  perAddress: 3,
   /** An agent with no action for this long leaves the jam. */
   idleMs: 5 * 60 * 1000,
 } as const

@@ -187,10 +187,20 @@ export class Board extends YServer<Env> {
    * Puts an agent in the jam, or renews one already here, and tells everyone. Every tool call
    * comes through here, so each renews the agent's presence.
    */
-  async agentJoin(hello: AgentHello): Promise<AgentView & { key: string }> {
+  async agentJoin(hello: AgentHello): Promise<(AgentView & { key: string }) | { error: string }> {
     const agent = await this.roster.join(hello, this.peopleSeats())
+    if ('error' in agent) return agent
     await this.agentActed()
     return { key: agent.key, ...toView(agent) }
+  }
+
+  /** `agentJoin` and `snapshot` in one call, so `join` over MCP costs one round trip. */
+  async agentJoinAndRead(
+    hello: AgentHello,
+  ): Promise<{ agent: AgentView & { key: string }; board: Snapshot } | { error: string }> {
+    const agent = await this.agentJoin(hello)
+    if ('error' in agent) return agent
+    return { agent, board: snapshotOf(this.document, this.here()) }
   }
 
   /** After an agent joins or acts: tells everyone, and counts it as a visit for retention. */
@@ -222,6 +232,7 @@ export class Board extends YServer<Env> {
     if (calls.length < 1 || calls.length > AGENT_LIMITS.ops)
       return { error: `A run holds 1 to ${AGENT_LIMITS.ops} operations` }
     const agent = await this.roster.join(hello, this.peopleSeats(), checked.summary)
+    if ('error' in agent) return agent
     const prepared = prepare(calls, { id: agent.id, color: agent.color })
     const ops = prepared.flatMap((p) => ('op' in p ? [p.op] : []))
     const applied = apply(this.document, ops, { kind: 'ai', id: AGENT_AUTHOR_PREFIX + agent.id })

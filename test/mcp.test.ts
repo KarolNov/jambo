@@ -165,13 +165,28 @@ describe('the MCP server', () => {
     person.close()
   })
 
+  it('seats at most 3 agents from one address; a key gets back in', async () => {
+    const ip = newAddress()
+    const jam = 'funky-otter-mc07'
+    const keys: string[] = []
+    for (let i = 0; i < 3; i++) keys.push((await call('join', { jam }, ip)).body.agent.agentKey)
+    const fourth = await call('join', { jam }, ip)
+    expect(fourth.isError).toBe(true)
+    expect(fourth.body.error).toMatch(/pass your agentKey/)
+    expect((await call('join', { jam, agentKey: keys[0] }, ip)).isError).toBe(false)
+    expect((await call('join', { jam })).isError).toBe(false)
+  })
+
   it('refuses the 21st call from one address within a minute', async () => {
     const ip = newAddress()
+    let agentKey: string | undefined
     for (let i = 0; i < 20; i++) {
-      const out = await call('join', { jam: 'funky-otter-mc05', kind: 'claude' }, ip)
+      const jam = { jam: 'funky-otter-mc05', kind: 'claude', ...(agentKey ? { agentKey } : {}) }
+      const out = await call('join', jam, ip)
       expect(out.isError).toBe(false)
+      agentKey = out.body.agent.agentKey
     }
-    const out = await call('join', { jam: 'funky-otter-mc05' }, ip)
+    const out = await call('join', { jam: 'funky-otter-mc05', agentKey }, ip)
     expect(out).toEqual({
       isError: true,
       body: { error: 'too many requests, try again in a minute' },

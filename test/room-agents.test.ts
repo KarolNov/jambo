@@ -7,9 +7,20 @@ import { apply, ROOTS, type Track } from '../shared/board'
 import { AGENT_LIMITS } from '../shared/agent'
 import { hello, parseSeatMessage } from '../shared/seats'
 import type { AgentView } from '../worker/agent/roster'
+import type { Board } from '../worker/board'
 import { connectBoard, until } from './client'
 
 const room = (slug: string) => getServerByName(env.Board, slug)
+
+/** Joins an agent that must be seated. */
+async function seated(
+  r: Awaited<ReturnType<typeof room>>,
+  hello: Parameters<Board['agentJoin']>[0],
+) {
+  const a = await r.agentJoin(hello)
+  if ('error' in a) throw new Error(a.error)
+  return a
+}
 
 const agentsSeenBy = (awareness: { getStates: () => Map<number, Record<string, unknown>> }) =>
   [...awareness.getStates().values()].flatMap((s) => (s.agents as AgentView[] | undefined) ?? [])
@@ -41,19 +52,19 @@ const ageAgents = (slug: string) =>
 describe('agents in the room', () => {
   it('seats an agent with a key, an adjective-and-kind name and a public id', async () => {
     const r = await room('funky-otter-ag01')
-    const a = await r.agentJoin({ kind: 'Claude' })
+    const a = await seated(r, { kind: 'Claude' })
     expect(a.key).toMatch(/^[0-9a-f]{32}$/)
     expect(a.name).toMatch(/^[A-Z][a-z]+ Claude$/)
     expect(a.id).not.toBe(a.key)
     // The same key is the same agent.
-    const again = await r.agentJoin({ key: a.key, kind: 'Claude' })
+    const again = await seated(r, { key: a.key, kind: 'Claude' })
     expect(again).toMatchObject({ id: a.id, name: a.name, color: a.color })
   })
 
   it('gives two Claudes asking for one name different names', async () => {
     const r = await room('funky-otter-ag02')
-    const a = await r.agentJoin({ kind: 'Claude', name: 'Groovy Claude', color: 'sky' })
-    const b = await r.agentJoin({ kind: 'Claude', name: 'Groovy Claude', color: 'sky' })
+    const a = await seated(r, { kind: 'Claude', name: 'Groovy Claude', color: 'sky' })
+    const b = await seated(r, { kind: 'Claude', name: 'Groovy Claude', color: 'sky' })
     expect(a.name).toBe('Groovy Claude')
     expect(b.name).toMatch(/ Claude$/)
     expect(b.name).not.toBe('Groovy Claude')
@@ -62,24 +73,24 @@ describe('agents in the room', () => {
 
   it('writes a chosen name one way, so spacing and case make no second Groovy Claude', async () => {
     const r = await room('funky-otter-ag14')
-    const a = await r.agentJoin({ kind: 'Claude', name: 'groovy  CLAUDE' })
-    const b = await r.agentJoin({ kind: 'Claude', name: 'Groovy Claude' })
+    const a = await seated(r, { kind: 'Claude', name: 'groovy  CLAUDE' })
+    const b = await seated(r, { kind: 'Claude', name: 'Groovy Claude' })
     expect(a.name).toBe('Groovy Claude')
     expect(b.name).not.toBe('Groovy Claude')
   })
 
   it('ignores a key the room did not make and a kind that is not one', async () => {
     const r = await room('funky-otter-ag15')
-    const a = await r.agentJoin({ key: 'pk', kind: 'claude' })
+    const a = await seated(r, { key: 'pk', kind: 'claude' })
     expect(a.key).toMatch(/^[0-9a-f]{32}$/)
     expect(a.kind).toBe('Claude')
-    const b = await r.agentJoin({ kind: 'not one word' })
+    const b = await seated(r, { kind: 'not one word' })
     expect(b.kind).toBe('Agent')
   })
 
   it('keeps an agent from taking a person-style name', async () => {
     const r = await room('funky-otter-ag03')
-    const a = await r.agentJoin({ kind: 'Claude', name: 'Groovy Otter' })
+    const a = await seated(r, { kind: 'Claude', name: 'Groovy Otter' })
     expect(a.name).toMatch(/^[A-Z][a-z]+ Claude$/)
   })
 
@@ -87,7 +98,7 @@ describe('agents in the room', () => {
     const slug = 'funky-otter-ag04'
     const early = await connectBoard(slug)
     const r = await room(slug)
-    const a = await r.agentJoin({ kind: 'Claude' })
+    const a = await seated(r, { kind: 'Claude' })
     await until(() => agentsSeenBy(early.awareness).some((x) => x.id === a.id))
     const late = await connectBoard(slug)
     await until(() => agentsSeenBy(late.awareness).some((x) => x.id === a.id))
@@ -106,7 +117,7 @@ describe('agents in the room', () => {
     const slug = 'funky-otter-ag05'
     const client = await connectBoard(slug)
     const r = await room(slug)
-    const a = await r.agentJoin({ kind: 'Claude' })
+    const a = await seated(r, { kind: 'Claude' })
     await until(() => agentsSeenBy(client.awareness).length === 1)
     expect(await r.agentLeave(a.key)).toBe(true)
     await until(() => agentsSeenBy(client.awareness).length === 0)
@@ -132,7 +143,7 @@ describe('agents in the room', () => {
     person.sendCustom(hello('pk', 'Groovy Otter', 'teal'))
     await until(() => seatOf(person) !== undefined)
     const r = await room(slug)
-    const a = await r.agentJoin({ kind: 'Codex' })
+    const a = await seated(r, { kind: 'Codex' })
     expect((await r.snapshot()).here).toEqual([
       { name: 'Groovy Otter', kind: 'person', color: 'teal' },
       { name: a.name, kind: 'Codex', color: a.color },
@@ -159,6 +170,33 @@ describe('agent seats and people', () => {
     await until(() => seatOf(q) !== undefined)
     expect(seatOf(q)?.color).toBe('sky')
     q.close()
+  })
+})
+
+describe('agent caps', () => {
+  it('seats at most perAddress agents from one address, and any number of returns', async () => {
+    const r = await room('funky-otter-ag15')
+    const first = await seated(r, { kind: 'Claude', from: 'a' })
+    for (let i = 1; i < AGENT_LIMITS.perAddress; i++) await seated(r, { kind: 'Claude', from: 'a' })
+    expect(await r.agentJoin({ kind: 'Claude', from: 'a' })).toHaveProperty('error')
+    expect(await r.runAgentOps({ kind: 'Claude', from: 'a' }, [beat], 'One more')).toHaveProperty(
+      'error',
+    )
+    expect((await r.snapshot()).tracks).toEqual([])
+    // An agent already here gets back in; another address still gets a seat.
+    expect(await seated(r, { key: first.key, from: 'a' })).toMatchObject({ id: first.id })
+    await seated(r, { kind: 'Claude', from: 'b' })
+  })
+
+  it('seats at most perJam agents in one jam', async () => {
+    const r = await room('funky-otter-ag16')
+    for (let i = 0; i < AGENT_LIMITS.perJam; i++) await seated(r, { kind: 'Claude', from: `${i}` })
+    expect(await r.agentJoin({ kind: 'Claude', from: 'new' })).toEqual({
+      error: `This jam has ${AGENT_LIMITS.perJam} agents; pass your agentKey to rejoin as yourself`,
+    })
+    expect((await r.snapshot()).here.filter((p) => p.kind === 'Claude')).toHaveLength(
+      AGENT_LIMITS.perJam,
+    )
   })
 })
 
