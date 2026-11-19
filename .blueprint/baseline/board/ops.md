@@ -36,7 +36,7 @@ A tempo change SHALL be refused while the jam has tracks. Only tracks that pass 
 
 ### Requirement: Track limits
 
-A jam SHALL hold at most 32 readable tracks. A track SHALL have 1 to 16 bars, 1 to 512 hits that all fall inside its loop, a name of 1 to 40 characters after trimming, a level from 0 to 1.5, a snap of off, 1/32, 1/16, 1/8 or 1/4, and no effects.
+A jam SHALL hold at most 32 readable tracks. A track SHALL have 1 to 16 bars, 1 to 512 hits that all fall inside its loop, a name of 1 to 40 characters after trimming, a level from 0 to 1.5, a snap of off, 1/32, 1/16, 1/8 or 1/4, no effects, and optionally a reverb and an echo from 0 to 1, a tone and a pan from -1 to 1, and a pitch of a whole number of semitones from -12 to 12.
 
 - **Scenario: Hit outside the loop**
   - **WHEN** an operation adds a one-bar track with a hit on beat 4
@@ -45,6 +45,9 @@ A jam SHALL hold at most 32 readable tracks. A track SHALL have 1 to 16 bars, 1 
   - **GIVEN** a jam with 32 tracks
   - **WHEN** an operation adds another
   - **THEN** it is refused
+- **Scenario: Pitch out of range**
+  - **WHEN** an operation sets a track's pitch to 13, or to 2.5
+  - **THEN** it is refused and the track keeps its pitch
 
 ### Requirement: Pad sounds from the kit or uploads
 
@@ -87,11 +90,14 @@ Moving every pad from one sound to another SHALL be one operation. The new sound
 
 ### Requirement: Editable track fields
 
-After a track is added, only its name, level, mute and snap SHALL be changeable; its bars, hits, author and colour SHALL stay as recorded.
+After a track is added, only its name, level, mute, snap, reverb, echo, tone, pitch and pan SHALL be changeable; its bars, hits, author and colour SHALL stay as recorded.
 
 - **Scenario: Mute and rename**
   - **WHEN** an operation sets a track's mute and name
   - **THEN** both change and its hits stay the same
+- **Scenario: Set sound knobs**
+  - **WHEN** an operation sets a track's reverb to 0.5 and pan to -0.3
+  - **THEN** both change and its other settings stay the same
 
 ### Requirement: Unknown targets
 
