@@ -26,7 +26,7 @@ The MCP server SHALL describe, in its instructions and tool schemas, the jam an 
 
 ### Requirement: Agent identity
 
-Every tool SHALL accept an optional agent key, kind, usual name and usual colour, and `join`, `run` and `upload_sound` SHALL return the agent's key, name and colour; without a key, a new agent SHALL be made. A key jambo didn't make, a kind that isn't one word of 1 to 20 letters or digits, or a colour that isn't one of the eight SHALL be refused. The key SHALL be private to the agent: the board and presence SHALL show only a separate public id, the same in a jam for the same key and different from one jam to the next. An agent's name SHALL be an adjective followed by its kind (default Agent), like Groovy Claude. The room SHALL seat an agent as it seats people: its usual name if it has that form and nobody here has it, else a fresh adjective with the same kind that nobody here has, comparing names without case; its usual colour if free, else the first free one, and past eight the least used.
+Every tool SHALL accept an optional agent key, kind, usual name and usual colour, and `join`, `run` and `upload_sound` SHALL return the agent's key, name and colour; without a key, a new agent SHALL be made. A key jambo didn't make, a kind that isn't one word of 1 to 20 letters or digits, or a colour that isn't one of the eight SHALL be refused. The key SHALL be private to the agent: the board and presence SHALL show only a separate public id, the same in a jam for the same key and different from one jam to the next. An agent's name SHALL be an adjective followed by its kind (default Agent), like Groovy Claude. The room SHALL seat an agent as it seats people: its usual name if it has that form and nobody here has it, else a fresh adjective with the same kind that nobody here has, comparing names without case; its usual colour if free, else the first free one, and past eight the least used. While present, an agent SHALL take a kind, name or colour it passes when nobody else here has it, and keep its own otherwise; a new kind its name doesn't fit SHALL get it a fresh name of that kind.
 
 - **Scenario: First action**
   - **WHEN** an agent calls `run` with no agent key and the kind Claude
@@ -42,6 +42,27 @@ Every tool SHALL accept an optional agent key, kind, usual name and usual colour
 - **Scenario: Person-style name**
   - **WHEN** an agent of kind Claude asks for the name Groovy Otter
   - **THEN** it gets a name ending in Claude
+- **Scenario: Rename while here**
+  - **GIVEN** Twangy Claude in a jam with Groovy Claude
+  - **WHEN** it calls `run` asking for Funky Claude and amber, then for Groovy Claude
+  - **THEN** it becomes Funky Claude in amber, and stays Funky Claude
+
+### Requirement: Returning agent keeps its identity
+
+An agent that comes back with its key after it left or idled out SHALL be seated asking for the kind, name and colour it had when it left, unless it passes others, for up to 7 days after it left. It SHALL get each of them only while nobody here has it. A jam SHALL remember at most 64 agents that left, forgetting the longest gone first. It SHALL store no agent key for this.
+
+- **Scenario: Back after idling out**
+  - **GIVEN** Funky Claude in amber idled out of a jam
+  - **WHEN** it calls `run` with its key and no name or colour
+  - **THEN** it is Funky Claude in amber again, with the same public id
+- **Scenario: Name taken meanwhile**
+  - **GIVEN** Funky Claude left, and another agent then took the name Funky Claude
+  - **WHEN** Funky Claude comes back with its key
+  - **THEN** it gets the same public id under another adjective with Claude
+- **Scenario: Gone too long**
+  - **GIVEN** an agent left a jam more than 7 days ago
+  - **WHEN** it comes back with its key and no kind or name
+  - **THEN** it is seated as a new agent of kind Agent, with the same public id
 
 ### Requirement: Presence follows activity
 
