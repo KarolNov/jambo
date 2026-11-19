@@ -12,6 +12,7 @@ import type { Track } from './schema'
  * b.tempo(110)
  * b.pad('r0c0').assign('kick')
  * b.track(id).set({ mute: true })
+ * b.track(id).set({ reverb: 0.4, pitch: -5 })
  * ```
  */
 export function board(doc: Y.Doc, origin: Origin) {

@@ -8,6 +8,11 @@ export const TrackPatch = z
     gain: z.number(),
     mute: z.boolean(),
     quantize: z.number(),
+    reverb: z.number(),
+    echo: z.number(),
+    tone: z.number(),
+    pitch: z.number(),
+    pan: z.number(),
   })
   .partial()
 export type TrackPatch = z.infer<typeof TrackPatch>

@@ -1,7 +1,20 @@
 import { read } from 'duratom/core'
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
-import { apply, board, Meta, Pad, ROOTS, SHAPES, Sound, Track, type Op } from '../shared/board'
+import {
+  apply,
+  board,
+  Meta,
+  Pad,
+  ROOTS,
+  SHAPES,
+  Sound,
+  SOUND_KNOB_NAMES,
+  SOUND_KNOBS,
+  soundOf,
+  Track,
+  type Op,
+} from '../shared/board'
 import { isUploadId, newUploadId, SOUNDS, UPLOADS } from '../shared/sounds'
 
 const me = { kind: 'user', id: 'me' } as const
@@ -188,6 +201,79 @@ describe('apply', () => {
     apply(b, ops, me)
     expect(a.getMap(ROOTS.tracks).toJSON()).toEqual(b.getMap(ROOTS.tracks).toJSON())
     expect(a.getMap(ROOTS.meta).toJSON()).toEqual(b.getMap(ROOTS.meta).toJSON())
+  })
+})
+
+describe('sound knobs', () => {
+  it('reads a track without knobs at the defaults, so older jams sound the same', () => {
+    const doc = seededDoc()
+    apply(doc, [{ op: 'addTrack', id: 't1', track: track() }], me)
+    const t = v(readTrack(doc, 't1'))!
+    expect(t.reverb).toBeUndefined()
+    expect(soundOf(t)).toEqual({ reverb: 0, echo: 0, tone: 0, pitch: 0, pan: 0 })
+    for (const k of SOUND_KNOB_NAMES) expect(soundOf(t)[k]).toBe(SOUND_KNOBS[k].default)
+  })
+
+  it('adds a track with knobs and fills only the missing ones with defaults', () => {
+    const doc = seededDoc()
+    const [result] = apply(
+      doc,
+      [{ op: 'addTrack', id: 't1', track: track({ echo: 0.4, pan: 0.5 }) }],
+      me,
+    )
+    expect(result).toEqual({ ok: true })
+    const t = v(readTrack(doc, 't1'))!
+    expect(t).toMatchObject({ echo: 0.4, pan: 0.5 })
+    expect(soundOf(t)).toEqual({ reverb: 0, echo: 0.4, tone: 0, pitch: 0, pan: 0.5 })
+  })
+
+  it('sets knobs and leaves the other settings as they were', () => {
+    const doc = seededDoc()
+    apply(doc, [{ op: 'addTrack', id: 't1', track: track({ gain: 0.8, tone: -0.4 }) }], me)
+    const before = v(readTrack(doc, 't1'))!
+    expect(board(doc, me).track('t1').set({ reverb: 0.5, pan: -0.3 })).toEqual({ ok: true })
+    expect(v(readTrack(doc, 't1'))).toEqual({ ...before, reverb: 0.5, pan: -0.3 })
+  })
+
+  it('takes every knob at both ends of its range', () => {
+    const doc = seededDoc()
+    apply(doc, [{ op: 'addTrack', id: 't1', track: track() }], me)
+    for (const k of SOUND_KNOB_NAMES) {
+      const { min, max } = SOUND_KNOBS[k]
+      expect(
+        board(doc, me)
+          .track('t1')
+          .set({ [k]: min }),
+      ).toEqual({ ok: true })
+      expect(
+        board(doc, me)
+          .track('t1')
+          .set({ [k]: max }),
+      ).toEqual({ ok: true })
+      expect(v(readTrack(doc, 't1'))?.[k]).toBe(max)
+    }
+  })
+
+  it.each([
+    ['reverb', -0.1],
+    ['reverb', 1.1],
+    ['echo', 2],
+    ['tone', -1.5],
+    ['pan', 1.01],
+    ['pitch', 13],
+    ['pitch', -13],
+    ['pitch', 2.5],
+  ] as const)('refuses %s %s and keeps the track as it was', (k, value) => {
+    const doc = seededDoc()
+    apply(doc, [{ op: 'addTrack', id: 't1', track: track({ pitch: 3 }) }], me)
+    const before = Y.encodeStateAsUpdate(doc)
+    const [set] = apply(doc, [{ op: 'setTrack', id: 't1', patch: { [k]: value } }], me)
+    expect(set?.ok).toBe(false)
+    expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
+    expect(v(readTrack(doc, 't1'))?.pitch).toBe(3)
+    const [add] = apply(doc, [{ op: 'addTrack', id: 't2', track: track({ [k]: value }) }], me)
+    expect(add?.ok).toBe(false)
+    expect(tracksOf(doc).has('t2')).toBe(false)
   })
 })
 
