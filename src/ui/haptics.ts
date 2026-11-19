@@ -22,6 +22,8 @@ let haptics: WebHaptics | undefined
  */
 export function haptic(kind: HapticKind): void {
   if (typeof window === 'undefined' || !window.matchMedia?.('(any-pointer: coarse)').matches) return
+  // Without the Vibration API (iOS), a Switch is a native switch that ticks on its own.
+  if (kind === 'flip' && !WebHaptics.isSupported) return
   try {
     haptics ??= new WebHaptics()
     // Full intensity: below 1 the library pulses on and off, which cuts these short ticks in half.

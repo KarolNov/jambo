@@ -102,6 +102,20 @@
   border: none;
   box-shadow: none;
   cursor: pointer;
+  position: relative;
+  /* No grey flash over the control and its label when tapped (iOS, Android). */
+  -webkit-tap-highlight-color: transparent;
+}
+/* The real switch, invisible and over the whole control, so every tap lands on it. */
+:root[data-theme] .ui-switch-input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
 }
 /* The bezel: an inset well with a faint rim, so it reads where shadows are subtle (dark). */
 :root[data-theme] .ui-rocker {
@@ -140,7 +154,7 @@
     background 0.2s,
     box-shadow 0.2s;
 }
-:root[data-theme] .ui-switch[aria-checked='true'] .ui-rocker-plate {
+:root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-rocker-plate {
   background: linear-gradient(
     90deg,
     var(--bg),
@@ -150,21 +164,18 @@
   box-shadow: -4px 2px 6px -2px var(--lo);
   transform: rotateY(-14deg);
 }
-:root[data-theme] .ui-switch[aria-checked='false'] .ui-rocker-o {
+:root[data-theme] .ui-switch:has(> .ui-switch-input:not(:checked)) .ui-rocker-o {
   color: var(--text);
 }
-:root[data-theme] .ui-switch[aria-checked='true'] .ui-rocker-i {
+:root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-rocker-i {
   color: var(--accent-2);
   text-shadow: 0 0 6px var(--accent-2);
 }
-:root[data-theme] .ui-switch:disabled {
+:root[data-theme] .ui-switch:has(> .ui-switch-input:disabled) {
   opacity: 0.45;
   cursor: default;
 }
-:root[data-theme] .ui-switch:focus-visible {
-  outline: none;
-}
-:root[data-theme] .ui-switch:focus-visible .ui-rocker {
+:root[data-theme] .ui-switch:has(> .ui-switch-input:focus-visible) .ui-rocker {
   box-shadow:
     var(--inset-sm),
     inset 0 0 0 2px var(--focus);
@@ -182,6 +193,7 @@
    The cap is 22px wide, so marks and lights run between the cap's centres at either end. */
 :root[data-theme] .ui-fader {
   --cap-w: 22px;
+  -webkit-tap-highlight-color: transparent;
   position: relative;
   display: block;
   min-width: 80px;

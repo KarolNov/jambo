@@ -53,6 +53,10 @@ export function IconButton({
 /**
  * An on/off switch: an I/O rocker that tips down toward the side that is on, with the I lit in
  * the accent when on, then its label. Flipping it ticks on phones that support haptics.
+ *
+ * Underneath it is a native `<input type="checkbox" switch>`, invisible and laid over the whole
+ * control, so a tap lands on a real switch: iOS Safari gives that its own haptic tick, which
+ * scripts can no longer trigger there (iOS 26.5 closed that). Elsewhere `haptic('flip')` ticks.
  */
 export function Switch({
   checked,
@@ -60,23 +64,26 @@ export function Switch({
   children,
   className = '',
   ...rest
-}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onChange'> & {
+}: Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'checked' | 'onChange' | 'children'> & {
   checked: boolean
   onChange: (checked: boolean) => void
   children: ReactNode
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      className={`ui-switch ${className}`}
-      onClick={() => {
-        haptic('flip')
-        onChange(!checked)
-      }}
-      {...rest}
-    >
+    <label className={`ui-switch ${className}`}>
+      <input
+        type="checkbox"
+        // Safari's native switch: React passes the unknown attribute through as written.
+        {...{ switch: '' }}
+        role="switch"
+        className="ui-switch-input"
+        checked={checked}
+        onChange={(e) => {
+          haptic('flip')
+          onChange(e.target.checked)
+        }}
+        {...rest}
+      />
       <span className="ui-rocker" aria-hidden>
         <span className="ui-rocker-plate">
           <span className="ui-rocker-o">O</span>
@@ -84,7 +91,7 @@ export function Switch({
         </span>
       </span>
       {children}
-    </button>
+    </label>
   )
 }
 
