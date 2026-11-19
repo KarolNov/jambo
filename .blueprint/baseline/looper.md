@@ -6,7 +6,7 @@ Record loops from pad hits and keep every loop in the jam playing together.
 
 ### Requirement: Tempo
 
-A jam SHALL have one tempo, a whole number of BPM from 40 to 240 (default 100), in 4/4. It SHALL change only while the jam has no tracks and no take is being recorded.
+A jam SHALL have one tempo, a whole number of BPM from 40 to 240 (default 100), in 4/4. It SHALL change only while the jam has no tracks and no take is being recorded. Besides typing it and stepping it, someone SHALL be able to scrub it by dragging its BPM label, which changes it for everyone once they let go.
 
 - **Scenario: Locked by tracks**
   - **GIVEN** a jam with one track
@@ -22,6 +22,10 @@ A jam SHALL have one tempo, a whole number of BPM from 40 to 240 (default 100), 
 - **Scenario: Cancel an edit**
   - **WHEN** someone types a tempo and presses Escape, or clears the field and leaves it
   - **THEN** the tempo stays as it was
+- **Scenario: Scrub the tempo**
+  - **GIVEN** a jam at 100 BPM with no tracks
+  - **WHEN** someone drags the BPM label to the right and lets go at 112
+  - **THEN** the tempo is 112 for everyone in the jam, applied once
 
 ### Requirement: Count-in
 

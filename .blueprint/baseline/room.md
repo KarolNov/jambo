@@ -123,7 +123,7 @@ The room SHALL give each person and each agent in a jam a name nobody else there
 
 ### Requirement: Sound storage
 
-The room SHALL store each upload's audio outside the board, list it on the board only after the audio is stored, serve it to anyone with the jam's link, and delete it after its listing is removed or the jam goes 90 days unvisited. Served files SHALL be cacheable for a day, so a deleted file stops being served within a day. It SHALL refuse bodies over 900,000 bytes, anything other than 10 s or less of mono 16-bit 44.1 kHz WAV, more than 10 writes per minute from one address, more than 120 downloads that miss the edge cache per minute from one address, and uploads while it is deleting the jam's expired audio.
+The room SHALL store each upload's audio outside the board, list it on the board only after the audio is stored, serve it to anyone with the jam's link, and delete it after its listing is removed or the jam goes 90 days with nobody opening it and no agent acting in it. Served files SHALL be cacheable for a day, so a deleted file stops being served within a day. It SHALL refuse bodies over 900,000 bytes, anything other than 10 s or less of mono 16-bit 44.1 kHz WAV, more than 10 writes per minute from one address, more than 120 downloads that miss the edge cache per minute from one address, and uploads while it is deleting the jam's expired audio.
 
 - **Scenario: Serve**
   - **WHEN** a client requests a listed upload
@@ -137,6 +137,10 @@ The room SHALL store each upload's audio outside the board, list it on the board
 - **Scenario: Too many downloads**
   - **WHEN** one address makes a 121st download that misses the edge cache within a minute
   - **THEN** it is refused with "too many downloads"
+- **Scenario: An agent keeps the sounds**
+  - **GIVEN** a jam nobody has opened for 89 days
+  - **WHEN** an agent runs operations in it
+  - **THEN** its uploads are kept for another 90 days
 - **Scenario: Clearing old sounds**
   - **GIVEN** the room is deleting a jam's audio after 90 days unvisited
   - **WHEN** someone uploads a sound to that jam
