@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Switch } from '../ui'
 import { setTheme, useTheme } from './theme'
 
@@ -17,20 +17,14 @@ const Moon = () => (
   </svg>
 )
 
-/** How long the knob travels before the page swaps theme (the swap stops all transitions). */
-const SLIDE_MS = 240
-
 /**
  * The theme's switch: a sliding `Switch` whose knob sits over the sun or the moon. The knob
- * slides first and the theme follows, because the swap freezes transitions and crossfades the
- * page as one.
+ * moves at once; the theme follows when it lands (setTheme waits for running transitions).
  */
 export function ThemeToggle() {
   const dark = useTheme() === 'dark'
   const [on, setOn] = useState(dark)
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => setOn(dark), [dark])
-  useEffect(() => () => clearTimeout(timer.current), [])
   return (
     <Switch
       variant="slide"
@@ -38,9 +32,7 @@ export function ThemeToggle() {
       checked={on}
       onChange={(next) => {
         setOn(next)
-        clearTimeout(timer.current)
-        const still = matchMedia('(prefers-reduced-motion: reduce)').matches
-        timer.current = setTimeout(() => setTheme(next ? 'dark' : 'light'), still ? 0 : SLIDE_MS)
+        setTheme(next ? 'dark' : 'light')
       }}
       off={<Sun />}
       on={<Moon />}

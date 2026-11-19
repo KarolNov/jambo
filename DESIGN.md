@@ -163,7 +163,8 @@ by ↑ ↓ Home End and Enter or Space. It takes focus when it mounts.
 
 A pad's face (`PadProps`): a soft rubber square with its key moulded in and its sound's name,
 optionally a `dot`, a sample `status`, and the `editing` badge. `lit="pressed"` pushes it in with
-a ring in `glow`; `lit="glow"` lights it from inside. Purely presentational.
+a ring in `tint` (else `--glow`, then `--accent-2`); `lit="glow"` lights it from inside. Purely
+presentational.
 
 - Use for a pad that plays a sound. The owner decides what a press does.
 - For live hits, set the `pressed` and `glow` classes and `--glow` on the element directly, as

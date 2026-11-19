@@ -65,7 +65,7 @@ The board SHALL show the jam's slug, a logo that starts a new jam, and a control
 
 ### Requirement: Who's here
 
-The board SHALL list everyone connected to the jam and every agent present, one entry per identity, each as a dot in their colour, with this person first and marked as you, and each agent's dot with a glow, and its name with a superscript AI. Others SHALL list a person only once the room has seated them, so nobody is shown with a name or colour someone else holds. While three or fewer are here each dot SHALL carry its name; past three, only the dots, each naming its person or agent in a tooltip. A client older than names SHALL show by its colour name.
+The board SHALL list everyone connected to the jam and every agent present, one entry per identity, each as a dot in their colour, with this person first and marked as you, and each agent's dot with a glow, and its name with a superscript AI. Others SHALL list a person only once the room has seated them, so nobody is shown with a name or colour someone else holds. While three or fewer are here each dot SHALL carry its name; past three, only the dots, each naming its person or agent in a tooltip. A client older than names SHALL show by its colour name. Agents SHALL come only from the room's list: a browser SHALL NOT be able to show one.
 
 - **Scenario: Someone joins**
   - **GIVEN** one person in a jam
@@ -84,6 +84,9 @@ The board SHALL list everyone connected to the jam and every agent present, one 
 - **Scenario: An agent joins**
   - **WHEN** Groovy Claude acts in the jam
   - **THEN** everyone's list shows Groovy Claude with a superscript AI and a glowing dot
+- **Scenario: Browser posing as an agent**
+  - **WHEN** a browser announces itself with an agent's id or lists agents in its own presence
+  - **THEN** nobody's list shows them as an agent
 
 ### Requirement: Agent work marked
 
@@ -96,17 +99,14 @@ A loop an agent added SHALL show a superscript AI after its name wherever loops 
   - **WHEN** Groovy Claude uploads Vox
   - **THEN** the dot beside Vox says "Uploaded by Groovy Claude"
 
-### Requirement: Theme
+### Requirement: Focus in your colour
 
-Every page SHALL come in a light and a dark theme. It SHALL follow the system's setting until someone picks one with the theme switch; the pick SHALL then be remembered in this browser across visits. Collaborator colours SHALL be painted per theme with at least 3:1 contrast against the surface, and text with at least 4.5:1.
+While someone is in a jam, keyboard focus rings SHALL show in their collaborator colour; outside a jam, in the theme's accent.
 
-- **Scenario: First visit**
-  - **GIVEN** a browser that never picked a theme, with the system in dark mode
-  - **WHEN** someone opens a jam
-  - **THEN** it shows the dark theme
-- **Scenario: Pick a theme**
-  - **WHEN** someone switches to light and opens a jam again the next day
-  - **THEN** it shows the light theme
-- **Scenario: Storage blocked**
-  - **WHEN** the browser blocks local storage and someone flips the switch
-  - **THEN** this page switches theme
+- **Scenario: Tab through controls**
+  - **GIVEN** someone seated in the jam as Sky
+  - **WHEN** they tab to the tempo field
+  - **THEN** its focus ring is Sky
+- **Scenario: Leave the jam**
+  - **WHEN** they leave the jam page
+  - **THEN** focus rings show in the theme's accent again

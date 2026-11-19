@@ -80,7 +80,7 @@ An upload SHALL be removable only while no pad uses it. Replacing an upload SHAL
 
 ### Requirement: Uploads expire
 
-A jam's uploaded audio SHALL be deleted after 90 days in which nobody opened the jam. The board SHALL stay, and pads on deleted uploads SHALL read Empty.
+A jam's uploaded audio SHALL be deleted after 90 days in which nobody opened the jam and no agent acted in it. The board SHALL stay, and pads on deleted uploads SHALL read Empty.
 
 - **Scenario: Abandoned jam**
   - **GIVEN** a jam with uploads that nobody has opened for 90 days

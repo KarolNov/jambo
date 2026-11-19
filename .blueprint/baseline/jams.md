@@ -43,7 +43,7 @@ The app SHALL refuse jam links whose slug does not have the jam link format, bot
   - **WHEN** someone opens `/jam/../../etc` or connects to the board of `not a slug`
   - **THEN** they get a not-found page, and the connection is refused with no board created
 - **Scenario: Unknown page**
-  - **WHEN** someone opens a path that is neither `/` nor a jam link
+  - **WHEN** someone opens a path that is neither `/`, `/ds` nor a jam link
   - **THEN** they get a "No jam here" page with a link to start a new jam
 
 ### Requirement: Link is access

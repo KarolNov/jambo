@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { Component, lazy, type ReactNode, Suspense, useEffect, useState } from 'react'
 import { isJamSlug } from '../shared/slug'
 import { Jam } from './board/Jam'
 import { useThemedPage } from './theme/theme'
@@ -21,9 +21,11 @@ export function App() {
   if (path === '/') return <NewJam />
   if (path === '/ds' || path === '/ds/')
     return (
-      <Suspense fallback={<main className="center">Loading…</main>}>
-        <Showcase />
-      </Suspense>
+      <LoadFailed>
+        <Suspense fallback={<main className="center">Loading…</main>}>
+          <Showcase />
+        </Suspense>
+      </LoadFailed>
     )
   return <NotFound />
 }
@@ -48,6 +50,24 @@ function NewJam() {
     }
   }, [])
   return <main className="center">{error ?? 'Starting a jam…'}</main>
+}
+
+/** Shows a reload link instead of a blank page when a lazy chunk fails to load (a new deploy, offline). */
+class LoadFailed extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  render() {
+    if (!this.state.failed) return this.props.children
+    return (
+      <main className="center">
+        <p>
+          Could not load this page. <a href="">Reload</a>
+        </p>
+      </main>
+    )
+  }
 }
 
 function NotFound() {

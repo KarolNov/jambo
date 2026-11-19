@@ -197,11 +197,14 @@ function PadGrid({
   )
 }
 
-/** A pad showing its sound: the kit's name, or an upload's with its uploader's dot and state. */
+/**
+ * A pad showing its sound: the kit's name, or an upload's with its uploader's dot and state. No
+ * `lit` or `tint`: PadGrid flashes pads straight on the element (see `flash`).
+ */
 function ConsolePad({
   soundId,
   ...rest
-}: Omit<PadProps, 'name' | 'dot' | 'status'> & { soundId: string }) {
+}: Omit<PadProps, 'name' | 'dot' | 'status' | 'lit' | 'tint'> & { soundId: string }) {
   const sounds = useAtomValue(soundsAtom)
   const upload = sounds.get(soundId)
   const state = useSampleState(soundId)
