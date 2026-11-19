@@ -1,6 +1,7 @@
 /*
- * The console's pads and sound editing. Pads are soft rubber squares: your press pushes one in
- * (an inner ring in your colour), a loop hit lights it from inside in the loop's colour.
+ * The console's pads and sound editing. Each pad's face is the ui kit's Pad (src/ui): your press
+ * pushes one in (an inner ring in your colour), a loop hit lights it from inside in the loop's
+ * colour.
  */
 :root[data-theme] .console-unlock {
   display: flex;
@@ -18,174 +19,11 @@
   }
 }
 
-/* Pads: soft rubber squares. Pressed by you: pushed in. Hit by a loop: lit in its colour. */
+/* The 4×4 grid of pads */
 :root[data-theme] .console-pads {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 18px;
-}
-:root[data-theme] .console-pad {
-  position: relative;
-  font: inherit;
-  color: var(--text);
-  background: var(--bg);
-  border: none;
-  cursor: pointer;
-  aspect-ratio: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 10px 12px;
-  border-radius: 18px;
-  box-shadow: var(--raise);
-  text-align: left;
-  touch-action: manipulation;
-  user-select: none;
-  transition: box-shadow 0.18s ease-out;
-}
-/* A loop hit is a light inside the rubber: an even wash over the whole pad (::after),
-   gathering softly toward the sides, and a faint halo it spills onto the console (::before). No
-   crisp lines anywhere: those read as neon, not light through rubber. Both switch on at once and
-   fade out together. */
-:root[data-theme] .console-pad::before,
-:root[data-theme] .console-pad::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  opacity: 0;
-  transition: opacity 0.5s cubic-bezier(0.2, 0.7, 0.3, 1);
-  pointer-events: none;
-}
-:root[data-theme] .console-pad::before {
-  box-shadow: 0 0 32px 0 color-mix(in srgb, var(--glow) 22%, transparent);
-}
-:root[data-theme] .console-pad::after {
-  /* a broad, even wash over the whole pad, only a touch brighter in the middle, with more light
-     gathering at the edges: a lit panel rather than a spot */
-  background:
-    radial-gradient(
-      ellipse farthest-side at 50% 50%,
-      color-mix(in srgb, var(--glow-core, var(--glow)) 40%, transparent) 0%,
-      color-mix(in srgb, var(--glow) 22%, transparent) 60%,
-      transparent 100%
-    ),
-    color-mix(in srgb, var(--glow) 20%, transparent);
-  box-shadow: inset 0 0 30px 0 color-mix(in srgb, var(--glow) 28%, transparent);
-  mix-blend-mode: var(--glow-blend, normal);
-}
-:root[data-theme='dark'] .console-pad {
-  /* on the dark console the light adds to the rubber rather than painting over it, and its core
-     burns near white; on the light one a white core would read as a hole */
-  --glow-blend: screen;
-  --glow-core: color-mix(in srgb, var(--glow) 55%, white);
-}
-:root[data-theme] .console-pad.glow::before,
-:root[data-theme] .console-pad.glow::after {
-  opacity: 0.9;
-  transition: none;
-}
-:root[data-theme] .console-pad.glow {
-  transition: none;
-}
-:root[data-theme] .console-pad.pressed {
-  box-shadow:
-    var(--inset),
-    inset 0 0 0 2px var(--glow);
-  transition: none;
-}
-:root[data-theme] .console-pad:focus-visible {
-  outline: none;
-  box-shadow:
-    var(--raise),
-    inset 0 0 0 2px var(--focus);
-}
-/* The key: its letter moulded out of the pad's rubber, only just standing out of it. Its face is
-   the pad's own colour, barely lighter, ringed evenly on every side by a soft, blurred rim in one
-   darker rubber tone (an unshifted shadow, so it spills out the same on every side). It sits
-   under the glow layer, so a hit lights it like the rest of the pad. */
-:root[data-theme] .console-pad-key {
-  --rim: var(--lo);
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1;
-  color: color-mix(in srgb, var(--hi) 15%, var(--bg));
-  text-shadow:
-    0 0 2px var(--rim),
-    0 0 6px var(--rim);
-  transition:
-    transform 0.18s ease-out,
-    text-shadow 0.18s ease-out;
-}
-/* The dark console's shadow tone sits too close to its rubber to show: go deeper there, and lift
-   the face a little so the letter keeps its shape */
-:root[data-theme='dark'] .console-pad-key {
-  --rim: rgb(0 0 0 / 0.75);
-  color: color-mix(in srgb, var(--hi) 45%, var(--bg));
-}
-/* Pressing the pad pushes the letter in with it */
-:root[data-theme] .console-pad.pressed .console-pad-key {
-  transform: scale(0.96);
-  text-shadow: 0 0 2px var(--rim);
-  transition: none;
-}
-:root[data-theme] .console-pad-sound {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.15;
-  position: relative;
-  z-index: 1;
-  /* Long names (uploads take up to 40 characters) wrap, then end in an ellipsis on line three */
-  overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  overflow: hidden;
-}
-
-/* Change sounds: pads stay raised; a badge marks them, a click opens the sound menu */
-:root[data-theme] .console-pads.is-editing .console-pad {
-  cursor: pointer;
-}
-:root[data-theme] .console-pad-edit {
-  /* "opens a menu": a down chevron in a small well, like the Snap select's */
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  box-shadow: var(--inset-sm);
-  color: var(--accent-2);
-}
-:root[data-theme] .console-pad-edit::before {
-  content: '';
-  position: absolute;
-  left: 8px;
-  top: 6px;
-  width: 6px;
-  height: 6px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(45deg);
-}
-:root[data-theme] .console-pad[aria-expanded='true'] .console-pad-edit::before {
-  top: 9px;
-  transform: rotate(225deg);
-}
-:root[data-theme] .console-pad[aria-expanded='true'] {
-  box-shadow:
-    var(--raise),
-    inset 0 0 0 2px var(--accent-2);
-}
-
-:root[data-theme] .console-pad-sound-loading {
-  opacity: 0.5;
-}
-:root[data-theme] .console-pad-sound-missing {
-  color: var(--accent);
 }
 
 /* The upload dialog and uploads list */

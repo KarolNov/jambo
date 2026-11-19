@@ -5,6 +5,7 @@ Collaborative music board on Cloudflare Workers: Hono + React SPA in one Worker 
 - Write to the board doc only through the board SDK in `shared/board/` (operations applied by `apply`); read it through duratom atoms (`src/board/model.ts`). duratom's rules are in `node_modules/duratom/skills/duratom/SKILL.md`.
 - New kinds of change get a new operation in `shared/board/ops.ts` with tests in `test/board.test.ts`, never a direct doc write.
 - Slug rules are shared by Worker and client in `shared/slug.ts`.
+- For UI work, follow `DESIGN.md` (tokens, depth, focus, colour, when to use each `src/ui` control); `/ds` shows the controls live.
 - After changing `wrangler.jsonc`, run `pnpm cf-typegen` to regenerate `worker-configuration.d.ts`.
 - Check work with `pnpm typecheck`, `pnpm test` and `pnpm format:check`.
 
