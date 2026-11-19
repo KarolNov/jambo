@@ -1,4 +1,12 @@
-import { AGENT_LIMITS, DEFAULT_KIND, newAgentId, newAgentKey, seatAgent } from '../../shared/agent'
+import {
+  AGENT_LIMITS,
+  agentIdOf,
+  DEFAULT_KIND,
+  isAgentKey,
+  newAgentKey,
+  seatAgent,
+  toKind,
+} from '../../shared/agent'
 import type { ColorName } from '../../shared/colors'
 import type { Seat } from '../../shared/seats'
 
@@ -32,8 +40,6 @@ export interface AgentHello {
 }
 
 const PRESENT_KEY = 'agents'
-/** Per agent key: the public id it was given, so a returning agent keeps its id. */
-const ID_PREFIX = 'agentId:'
 
 export const toView = (a: PresentAgent): AgentView => ({
   id: a.id,
@@ -51,7 +57,11 @@ export const toView = (a: PresentAgent): AgentView => ({
 export class Roster {
   private present: Map<string, PresentAgent> | undefined
 
-  constructor(private readonly storage: DurableObjectStorage) {}
+  /** `jam` names the jam, so an agent's public id differs from one jam to the next. */
+  constructor(
+    private readonly storage: DurableObjectStorage,
+    private readonly jam: () => string,
+  ) {}
 
   async load(): Promise<Map<string, PresentAgent>> {
     if (!this.present) {
@@ -74,33 +84,32 @@ export class Roster {
   }
 
   /**
-   * Seats an agent, or renews one already present. `people` are the people's seats right now. The
-   * agent keeps its seat while present; a new or returning one is seated like a person.
+   * Seats an agent, or renews one already present, setting its `summary` when given. `people` are
+   * the people's seats right now. The agent keeps its seat while present; a new or returning one
+   * is seated like a person. A key the room didn't make, or a kind that isn't one, is ignored.
    */
-  async join(hello: AgentHello, people: readonly Seat[], now = Date.now()): Promise<PresentAgent> {
+  async join(
+    hello: AgentHello,
+    people: readonly Seat[],
+    summary?: string,
+    now = Date.now(),
+  ): Promise<PresentAgent> {
     const present = await this.load()
-    const key = hello.key ?? newAgentKey()
-    const id = (await this.storage.get<string>(ID_PREFIX + key)) ?? newAgentId()
+    const key = isAgentKey(hello.key) ? hello.key : newAgentKey()
+    const id = present.get(key)?.id ?? (await agentIdOf(key, this.jam()))
     // From here no awaits until the seat is in the map, so seats can't race.
     let agent = present.get(key)
     if (agent) {
       agent.lastSeen = now
     } else {
-      const kind = hello.kind ?? DEFAULT_KIND
+      const kind = toKind(hello.kind) ?? DEFAULT_KIND
       const seat = seatAgent([...people, ...this.seats(key)], key, kind, hello)
       agent = { key, id, kind, name: seat.name, color: seat.color, lastSeen: now }
       present.set(key, agent)
     }
-    await this.storage.put(ID_PREFIX + key, agent.id)
+    if (summary !== undefined) agent.summary = summary
     await this.save()
     return agent
-  }
-
-  async setSummary(key: string, summary: string) {
-    const agent = (await this.load()).get(key)
-    if (!agent) return
-    agent.summary = summary
-    await this.save()
   }
 
   async leave(key: string): Promise<boolean> {

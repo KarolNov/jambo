@@ -60,6 +60,23 @@ describe('agents in the room', () => {
     expect(b.color).not.toBe('sky')
   })
 
+  it('writes a chosen name one way, so spacing and case make no second Groovy Claude', async () => {
+    const r = await room('funky-otter-ag14')
+    const a = await r.agentJoin({ kind: 'Claude', name: 'groovy  CLAUDE' })
+    const b = await r.agentJoin({ kind: 'Claude', name: 'Groovy Claude' })
+    expect(a.name).toBe('Groovy Claude')
+    expect(b.name).not.toBe('Groovy Claude')
+  })
+
+  it('ignores a key the room did not make and a kind that is not one', async () => {
+    const r = await room('funky-otter-ag15')
+    const a = await r.agentJoin({ key: 'pk', kind: 'claude' })
+    expect(a.key).toMatch(/^[0-9a-f]{32}$/)
+    expect(a.kind).toBe('Claude')
+    const b = await r.agentJoin({ kind: 'not one word' })
+    expect(b.kind).toBe('Agent')
+  })
+
   it('keeps an agent from taking a person-style name', async () => {
     const r = await room('funky-otter-ag03')
     const a = await r.agentJoin({ kind: 'Claude', name: 'Groovy Otter' })
@@ -229,5 +246,46 @@ describe('agent runs', () => {
       error: 'A run needs a summary',
     })
     expect((await r.snapshot()).here).toEqual([])
+  })
+})
+
+describe('one alarm for retention and agents', () => {
+  const stored = <T>(slug: string, key: string) =>
+    runInDurableObject(env.Board.getByName(slug), (_i, state) => state.storage.get<T>(key))
+  const alarmOf = (slug: string) =>
+    runInDurableObject(env.Board.getByName(slug), (_i, state) => state.storage.getAlarm())
+
+  it('keeps a retention alarm set before agents as the retention time', async () => {
+    const slug = 'funky-otter-ag20'
+    const r = await room(slug)
+    const legacy = Date.now() + 60_000
+    await runInDurableObject(env.Board.getByName(slug), (_i, state) =>
+      state.storage.setAlarm(legacy),
+    )
+    await r.agentJoin({ kind: 'Claude' })
+    expect(await stored<number>(slug, 'retainUntil')).toBe(legacy)
+    expect(await alarmOf(slug)).toBe(legacy)
+  })
+
+  it('holds retention while an agent is here, and runs it once the agent idles out', async () => {
+    const slug = 'funky-otter-ag21'
+    const r = await room(slug)
+    await r.agentJoin({ kind: 'Claude' })
+    const due = () =>
+      runInDurableObject(env.Board.getByName(slug), (_i, state) =>
+        state.storage.put('retainUntil', Date.now() - 1),
+      )
+
+    await due()
+    expect(await runDurableObjectAlarm(env.Board.getByName(slug))).toBe(true)
+    expect((await r.snapshot()).here).toHaveLength(1)
+    expect(await stored<number>(slug, 'retainUntil')).toBeGreaterThan(Date.now() + 86_400_000)
+
+    await due()
+    await ageAgents(slug)
+    expect(await runDurableObjectAlarm(env.Board.getByName(slug))).toBe(true)
+    expect((await r.snapshot()).here).toEqual([])
+    expect(await stored(slug, 'retainUntil')).toBeUndefined()
+    expect(await alarmOf(slug)).toBeNull()
   })
 })

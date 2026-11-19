@@ -1,6 +1,6 @@
 import { COLOR_NAMES, type ColorName } from '../colors'
 import { assignSeat, type Seat } from '../seats'
-import { allAgentNames, isAgentName, randomAgentName } from './identity'
+import { allAgentNames, randomAgentName, toAgentName } from './identity'
 
 /**
  * An agent's seat in a jam where `others` (people and other agents) are already seated, keyed by
@@ -16,7 +16,7 @@ export function seatAgent(
   random: () => number = Math.random,
 ): Seat {
   const pick = () => randomAgentName(kind, random)
-  const name = usual.name && isAgentName(usual.name, kind) ? usual.name : pick()
+  const name = (usual.name && toAgentName(usual.name, kind)) || pick()
   const color = usual.color ?? COLOR_NAMES[Math.floor(random() * COLOR_NAMES.length)]!
   return assignSeat(others, key, { name, color }, pick, () => allAgentNames(kind))
 }

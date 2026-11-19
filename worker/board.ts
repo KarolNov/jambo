@@ -105,7 +105,7 @@ export class Board extends YServer<Env> {
   /** Whether the retention alarm is deleting this jam's audio right now. */
   private expiring = false
   /** Agents present in this jam over MCP. */
-  private readonly roster = new Roster(this.ctx.storage)
+  private readonly roster = new Roster(this.ctx.storage, () => this.name)
   private agentRefresh: ReturnType<typeof setInterval> | null = null
 
   override async onLoad() {
@@ -131,6 +131,8 @@ export class Board extends YServer<Env> {
     super.onConnect(connection, ctx)
     // A visit keeps the jam's audio for another retention period.
     this.ctx.waitUntil(this.keepSounds())
+    // Someone is here to see the agents now: keep their state fresh.
+    this.refreshAgents()
   }
 
   override onCustomMessage(connection: Connection, message: string) {
@@ -186,9 +188,15 @@ export class Board extends YServer<Env> {
    */
   async agentJoin(hello: AgentHello): Promise<AgentView & { key: string }> {
     const agent = await this.roster.join(hello, this.peopleSeats())
-    this.publishAgents()
-    await this.schedule()
+    await this.agentActed()
     return { key: agent.key, ...toView(agent) }
+  }
+
+  /** After an agent joins or acts: tells everyone, and counts it as a visit for retention. */
+  private async agentActed() {
+    this.publishAgents()
+    await this.keepSounds()
+    await this.schedule()
   }
 
   /** Takes an agent out of the jam at once. */
@@ -210,7 +218,7 @@ export class Board extends YServer<Env> {
   ): Promise<AgentRunResult | { error: string }> {
     const checked = checkSummary(summaryText)
     if ('error' in checked) return checked
-    const agent = await this.agentJoin(hello)
+    const agent = await this.roster.join(hello, this.peopleSeats(), checked.summary)
     const prepared = prepare(calls, { id: agent.id, color: agent.color })
     const ops = prepared.flatMap((p) => ('op' in p ? [p.op] : []))
     const applied = apply(this.document, ops, { kind: 'ai', id: AGENT_AUTHOR_PREFIX + agent.id })
@@ -223,24 +231,28 @@ export class Board extends YServer<Env> {
       if (!r.ok) return { op: name, ok: false, issues: r.issues.map(plainIssue) }
       return { op: name, ok: true, ...(p.id ? { id: p.id } : {}) }
     })
-    await this.roster.setSummary(agent.key, checked.summary)
-    this.publishAgents()
-    return { agent: { ...agent, summary: checked.summary }, summary: checked.summary, ops: results }
+    await this.agentActed()
+    return { agent: { key: agent.key, ...toView(agent) }, summary: checked.summary, ops: results }
   }
 
-  /**
-   * Publishes the agents present in the room's own awareness state, which every browser in the
-   * jam receives; keeps re-sending it while any are here, so browsers don't drop it as stale.
-   */
+  /** Publishes the agents present in the room's awareness state, which every browser receives. */
   private publishAgents() {
     const agents = this.roster.list().map(toView)
     this.setRoomState(agents.length > 0 ? { agents } : null)
-    if (agents.length > 0 && this.agentRefresh === null) {
-      this.agentRefresh = setInterval(() => {
-        if (this.roster.list().length === 0) return this.stopAgentRefresh()
-        this.setRoomState({ ...this.document.awareness.getLocalState() })
-      }, AGENT_REFRESH_MS)
-    } else if (agents.length === 0) this.stopAgentRefresh()
+    this.refreshAgents()
+  }
+
+  /**
+   * Keeps re-sending the agents while any are here and someone is connected, so browsers don't
+   * drop them as stale; with nobody connected there is nobody to send to.
+   */
+  private refreshAgents() {
+    const needed = () => this.roster.list().length > 0 && [...this.getConnections()].length > 0
+    if (!needed()) return this.stopAgentRefresh()
+    this.agentRefresh ??= setInterval(() => {
+      if (!needed()) return this.stopAgentRefresh()
+      this.setRoomState({ ...this.document.awareness.getLocalState() })
+    }, AGENT_REFRESH_MS)
   }
 
   /**
@@ -400,23 +412,26 @@ export class Board extends YServer<Env> {
     const agentDue = this.roster.nextExpiry()
     const v2 = await this.ctx.storage.get(ALARM_V2_KEY)
     const retainUntil = await this.ctx.storage.get<number>(RETAIN_KEY)
-    // This alarm is retention's when retention was the earlier of the two; alarms set before
-    // agents were all retention.
+    // Retention runs once it is due, or when it is what the alarm was set for (it comes before any
+    // agent idles out); alarms set before agents were all retention.
     const forRetention = v2
-      ? retainUntil !== undefined && (agentDue === undefined || retainUntil <= agentDue)
+      ? retainUntil !== undefined &&
+        (retainUntil <= Date.now() || agentDue === undefined || retainUntil <= agentDue)
       : true
     if (await this.roster.expire()) this.publishAgents()
     if (forRetention) await this.retain()
     await this.schedule()
   }
 
-  /** Retention: with nobody here, deletes the jam's audio and unlists its uploads. */
+  /**
+   * Retention: with nobody here, people or agents, deletes the jam's audio and unlists its
+   * uploads. The due time is cleared only once that is done, so a failed run is retried.
+   */
   private async retain() {
-    if ([...this.getConnections()].length > 0) {
+    if ([...this.getConnections()].length > 0 || this.roster.list().length > 0) {
       await this.ctx.storage.put(RETAIN_KEY, Date.now() + SOUND_RETENTION_MS)
       return
     }
-    await this.ctx.storage.delete(RETAIN_KEY)
     // Uploads wait until this is done, so expiring can't unlist one that lands meanwhile.
     this.expiring = true
     try {
@@ -447,6 +462,7 @@ export class Board extends YServer<Env> {
       } else {
         await this.ctx.storage.put(EXPIRED_KEY, true)
       }
+      await this.ctx.storage.delete(RETAIN_KEY)
     } finally {
       this.expiring = false
     }

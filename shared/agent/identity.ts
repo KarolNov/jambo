@@ -64,9 +64,13 @@ export function newAgentKey(): string {
   return hex(crypto.getRandomValues(new Uint8Array(16)))
 }
 
-/** A new public agent id, unrelated to the key. */
-export function newAgentId(): string {
-  return hex(crypto.getRandomValues(new Uint8Array(8)))
+/**
+ * An agent's public id in jam `jam`: a one-way hash of its key, so the same key always gets the
+ * same id there without the room storing one, and the id gives the key away to nobody.
+ */
+export async function agentIdOf(key: string, jam: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${jam}\n${key}`))
+  return hex(new Uint8Array(digest, 0, 8))
 }
 
 const hex = (bytes: Uint8Array) =>

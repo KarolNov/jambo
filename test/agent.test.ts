@@ -6,7 +6,7 @@ import {
   isAgentKey,
   isAgentName,
   jamSlugOf,
-  newAgentId,
+  agentIdOf,
   newAgentKey,
   prepare,
   snapshotOf,
@@ -68,12 +68,14 @@ describe('agent identity', () => {
     expect(toAgentName('Groovy Otter', 'Claude')).toBeUndefined()
   })
 
-  it('makes keys and public ids that are unrelated', () => {
+  it('makes keys and public ids that are unrelated', async () => {
     const key = newAgentKey()
-    const id = newAgentId()
+    const id = await agentIdOf(key, 'funky-otter-ab12')
     expect(isAgentKey(key)).toBe(true)
     expect(id).toMatch(/^[0-9a-f]{16}$/)
     expect(key).not.toContain(id)
+    expect(await agentIdOf(key, 'funky-otter-ab12')).toBe(id)
+    expect(await agentIdOf(key, 'funky-otter-cd34')).not.toBe(id)
     expect(isAgentKey('short')).toBe(false)
   })
 
