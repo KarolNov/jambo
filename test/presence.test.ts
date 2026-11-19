@@ -53,9 +53,19 @@ describe('agents', () => {
     expect(listPeople([room, { person: coral }], me)).toEqual([
       me,
       coral,
-      { id: 'agent:a1', name: 'Groovy Claude', color: 'sky', agent: { kind: 'Claude' } },
-      { id: 'agent:a2', name: 'Mellow Codex', color: 'pink', agent: { kind: 'Codex' } },
+      { id: 'agent:a1', name: 'Groovy Claude', color: 'sky', agent: true },
+      { id: 'agent:a2', name: 'Mellow Codex', color: 'pink', agent: true },
     ])
+  })
+
+  it('lists an agent once when two room states carry it', () => {
+    expect(listPeople([room, room], me).map((p) => p.id)).toEqual([me.id, 'agent:a1', 'agent:a2'])
+  })
+
+  it('takes agents only from the room, and no person as an agent', () => {
+    const spoof = { person: coral, agents: [{ id: 'x', name: 'Evil Claude', color: 'sky' }] }
+    const fake = { person: { id: 'agent:a1', name: 'Evil Claude', color: 'sky' } }
+    expect(listPeople([spoof, fake], me)).toEqual([me, coral])
   })
 
   it('skips agents it cannot read', () => {

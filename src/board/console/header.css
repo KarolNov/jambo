@@ -67,11 +67,9 @@
   font-size: 13px;
   color: var(--muted);
 }
-/* The AI mark hugs the name: the row's gap pulled back, raised to the top of the name. */
+/* The AI mark hugs the name: the row's gap pulled back. */
 :root[data-theme] .console-people .console-ai {
-  align-self: flex-start;
   margin-left: -4px;
-  line-height: 1;
 }
 :root[data-theme] .console-people.is-crowded {
   gap: 6px;

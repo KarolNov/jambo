@@ -93,10 +93,12 @@ function People() {
     <ul className={`console-people ${named ? '' : 'is-crowded'}`} aria-label="Who's here">
       {people.map((p) => {
         const name = personName(p, me.id)
+        const label = p.agent ? `${name}, an AI agent` : name
         return (
           <li
             key={p.id}
-            title={p.agent ? `${name}, an AI agent` : name}
+            title={label}
+            aria-label={label}
             className={p.agent ? 'is-agent' : undefined}
             style={{ '--c': swatch(p.color) } as CSSProperties}
           >
