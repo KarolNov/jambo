@@ -23,10 +23,14 @@ The board SHALL show only the parts of the board that pass its schema; a pad or 
 
 ### Requirement: Connection status
 
-The board SHALL show whether it is live, connecting or offline, and stay editable while offline.
+The board SHALL show whether it is live, connecting for the first time, reconnecting after losing its connection, or offline because the browser has no network, each with its own light, and stay editable in all of them.
 
-- **Scenario: Server unreachable**
-  - **WHEN** the connection drops
+- **Scenario: Connection drops**
+  - **GIVEN** a connected board
+  - **WHEN** the server becomes unreachable
+  - **THEN** the board says it is reconnecting, its tooltip says edits will sync when it is back, and it stays editable
+- **Scenario: No network**
+  - **WHEN** the browser loses its network
   - **THEN** the board says it is offline, its tooltip says edits will sync when back, and it stays editable
 
 ### Requirement: Your identity
@@ -65,7 +69,7 @@ The board SHALL show the jam's slug, a logo that starts a new jam, and a control
 
 ### Requirement: Who's here
 
-The board SHALL list everyone connected to the jam and every agent present, one entry per identity, each as a dot in their colour, with this person first and marked as you, and each agent's dot with a glow, and its name with a superscript AI. Others SHALL list a person only once the room has seated them, so nobody is shown with a name or colour someone else holds. While three or fewer are here each dot SHALL carry its name; past three, only the dots, each naming its person or agent in a tooltip. A client older than names SHALL show by its colour name. Agents SHALL come only from the room's list: a browser SHALL NOT be able to show one.
+The board SHALL list everyone connected to the jam and every agent present, one entry per identity, each as a dot in their colour, with this person first and marked as you, and each agent's dot with a glow, and its name with a superscript AI in its colour. Others SHALL list a person only once the room has seated them, so nobody is shown with a name or colour someone else holds. While three or fewer are here each dot SHALL carry its name; past three, only the dots, each naming its person or agent in a tooltip. A client older than names SHALL show by its colour name. Agents SHALL come only from the room's list: a browser SHALL NOT be able to show one.
 
 - **Scenario: Someone joins**
   - **GIVEN** one person in a jam
@@ -88,9 +92,25 @@ The board SHALL list everyone connected to the jam and every agent present, one 
   - **WHEN** a browser announces itself with an agent's id or lists agents in its own presence
   - **THEN** nobody's list shows them as an agent
 
+### Requirement: Who's turning a control
+
+While someone drags a loop's level or one of its sound knobs, everyone else in the jam SHALL see that control ringed in their colour with their name beside it, until they let go, cancel, or the control goes away. It SHALL NOT stop anyone else from moving the control, and someone's other tabs SHALL NOT show them as turning it.
+
+- **Scenario: Someone turns the reverb**
+  - **GIVEN** two people in a jam with a loop's Effects strip open
+  - **WHEN** Misty Yak drags the loop's Reverb knob
+  - **THEN** the other person sees that knob ringed in Misty Yak's colour with Misty Yak's name above it, and its value moving
+- **Scenario: Let go**
+  - **WHEN** Misty Yak lets go, presses Escape, or closes the strip mid-drag
+  - **THEN** the ring and name disappear for everyone
+- **Scenario: Both at once**
+  - **GIVEN** Misty Yak dragging a loop's level
+  - **WHEN** someone else drags it too
+  - **THEN** they can, and they see Misty Yak's ring while they do
+
 ### Requirement: Agent work marked
 
-A loop an agent added SHALL show a superscript AI after its name wherever loops are listed, and a sound an agent uploaded SHALL name the agent as its uploader.
+A loop an agent added SHALL show a superscript AI in the loop's colour after its name wherever loops are listed, and a sound an agent uploaded SHALL name the agent as its uploader.
 
 - **Scenario: Agent beat**
   - **WHEN** an agent adds a loop
@@ -101,12 +121,16 @@ A loop an agent added SHALL show a superscript AI after its name wherever loops 
 
 ### Requirement: Focus in your colour
 
-While someone is in a jam, keyboard focus rings SHALL show in their collaborator colour; outside a jam, in the theme's accent.
+While someone is in a jam, keyboard focus rings, hover highlights and lit controls that take the theme's accent SHALL show in their collaborator colour; outside a jam, in the theme's accent.
 
 - **Scenario: Tab through controls**
   - **GIVEN** someone seated in the jam as Sky
   - **WHEN** they tab to the tempo field
   - **THEN** its focus ring is Sky
+- **Scenario: Hover and switches**
+  - **GIVEN** someone seated as Amber with the metronome on
+  - **WHEN** they point at Change sounds
+  - **THEN** its label and the metronome's lit I are Amber
 - **Scenario: Leave the jam**
   - **WHEN** they leave the jam page
-  - **THEN** focus rings show in the theme's accent again
+  - **THEN** focus rings and highlights show in the theme's accent again

@@ -25,17 +25,17 @@
       "specVersion": "89e07e1a60b73554",
       "anchorsFiles": {
         "shared/agent/identity.ts": "7255c8e36b80",
-        "shared/agent/index.ts": "32adef0b5e71",
+        "shared/agent/index.ts": "b9ef0e798a4e",
         "shared/agent/limits.ts": "e309866642fd",
         "shared/agent/link.ts": "c936b9cdd9bf",
-        "shared/agent/record.ts": "16204f435cc9",
+        "shared/agent/record.ts": "c9aff89071cb",
         "shared/agent/seat.ts": "e8d0659161b8",
         "shared/agent/snapshot.ts": "31018f0ae58c",
         "shared/board/apply.ts": "00a8a7c4073c",
         "shared/board/index.ts": "b39594adab7d",
-        "shared/board/ops.ts": "10f17f31d782",
-        "shared/board/schema.ts": "509c3c07af79",
-        "shared/board/sdk.ts": "bf705d5b1ff9",
+        "shared/board/ops.ts": "ac549660a041",
+        "shared/board/schema.ts": "7886b4b9587a",
+        "shared/board/sdk.ts": "6fafc07c2757",
         "shared/board/seed.ts": "d5eb014f0cd8",
         "shared/clock.ts": "1dd908e91d40",
         "shared/colors.ts": "c468471135c8",
@@ -50,7 +50,7 @@
         "src/App.tsx": "e939cfa58e13",
         "worker/index.ts": "54ae3089e9f6"
       },
-      "syncedCommit": "e5fb82ae0d9bb5fee63bec6760b97fa0bc967cff"
+      "syncedCommit": "9fd9be7d7fab9aa7d6a66d04666fb1f9dfef0463"
     },
     "room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
@@ -63,13 +63,13 @@
       ],
       "specVersion": "81e2c006adaeeca6",
       "anchorsFiles": {
-        "src/board/doc.ts": "f03410fb7517",
+        "src/board/doc.ts": "f88a4fbb0525",
         "worker/board.ts": "2eb8e95bb633",
         "worker/index.ts": "54ae3089e9f6",
         "worker/quota.ts": "fa0709c13df2",
         "worker/sounds.ts": "548f085c2ba4"
       },
-      "syncedCommit": "e5fb82ae0d9bb5fee63bec6760b97fa0bc967cff"
+      "syncedCommit": "9fd9be7d7fab9aa7d6a66d04666fb1f9dfef0463"
     },
     "board": {
       "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
@@ -83,31 +83,31 @@
         "src/board/colors.ts",
         "src/board/console/**"
       ],
-      "specVersion": "c15be0b27f75cbb9",
+      "specVersion": "fd57c65be9842322",
       "anchorsFiles": {
         "src/board/Jam.tsx": "ddb0ab20402d",
         "src/board/colors.ts": "d21c9da0a9fa",
         "src/board/console/AiMark.tsx": "a01ab3b0aaee",
-        "src/board/console/Console.tsx": "28ca840cd774",
-        "src/board/console/Deck.tsx": "3fb36110e7d0",
-        "src/board/console/Header.tsx": "1a4a8fcdd9b3",
-        "src/board/console/Mixer.tsx": "000af0b31802",
-        "src/board/console/Pads.tsx": "1d8879497b2d",
-        "src/board/console/console.css": "6565abe89606",
-        "src/board/console/deck.css": "3bd7ca396653",
-        "src/board/console/header.css": "b946118a5c8e",
-        "src/board/console/loops.ts": "739dc66699f6",
-        "src/board/console/mixer.css": "4c20ced66ca8",
+        "src/board/console/Console.tsx": "f38c1a5735ac",
+        "src/board/console/Deck.tsx": "c82790ccb25b",
+        "src/board/console/Header.tsx": "3f65c2e3dd2f",
+        "src/board/console/Mixer.tsx": "cf7df23a124e",
+        "src/board/console/Pads.tsx": "8dd994f0a5ad",
+        "src/board/console/console.css": "fb666aae1697",
+        "src/board/console/deck.css": "f1458785969b",
+        "src/board/console/header.css": "99c4701b91ad",
+        "src/board/console/loops.ts": "42ef8492a4ca",
+        "src/board/console/mixer.css": "7feff420f509",
         "src/board/console/pads.css": "37acce0ade93",
         "src/board/console/people.ts": "c947df332ba9",
         "src/board/console/share.ts": "41845818fcbf",
         "src/board/identity.ts": "d1d2eaa5cab9",
         "src/board/model.ts": "62d108e90ddd",
-        "src/board/presence.ts": "0c5a67bc3005",
+        "src/board/presence.ts": "7e5ca7e98a09",
         "src/board/seat.ts": "efa33b9e925b",
         "src/board/session.ts": "74ea6cbdbb7f"
       },
-      "syncedCommit": "e5fb82ae0d9bb5fee63bec6760b97fa0bc967cff"
+      "syncedCommit": "9fd9be7d7fab9aa7d6a66d04666fb1f9dfef0463"
     },
     "board/ops": {
       "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
@@ -167,10 +167,10 @@
       "specVersion": "b4d7412062abcf71",
       "anchorsFiles": {
         "src/board/Uploads.tsx": "e14f1254d8b4",
-        "src/board/console/Pads.tsx": "1d8879497b2d",
+        "src/board/console/Pads.tsx": "8dd994f0a5ad",
         "src/board/typing.ts": "9749aa39cc94"
       },
-      "syncedCommit": "e5fb82ae0d9bb5fee63bec6760b97fa0bc967cff"
+      "syncedCommit": "9fd9be7d7fab9aa7d6a66d04666fb1f9dfef0463"
     },
     "sounds": {
       "ref": "https://app.notion.com/p/41c43cce21f2810f8bb0f1ed9935a67d",
