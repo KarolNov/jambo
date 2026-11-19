@@ -17,16 +17,17 @@ run `pnpm dev` and open it to see what this page describes.
 Use the CSS variables, never hex values. A token exists in both themes; dark has its own values,
 never an inverted light one.
 
-| Variable                   | For                                                         |
-| -------------------------- | ----------------------------------------------------------- |
-| `--bg`                     | The one surface everything is moulded from.                 |
-| `--hi`, `--lo`             | The lit and shaded sides of a shadow. Use via depth tokens. |
-| `--text`, `--muted`        | Text, and secondary text (captions, hints, units).          |
-| `--accent`                 | Record and destructive actions, errors.                     |
-| `--accent-2`               | Selection, "open", hover, the default focus and value tint. |
-| `--flat`, `--line`         | High-contrast plates that carry data (hit patterns, grids). |
-| `--focus`                  | Keyboard focus rings. A jam sets it to your colour.         |
-| `--cap-top` … `--cap-drop` | The fader cap's and rocker's shading. Controls only.        |
+| Variable                   | For                                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
+| `--bg`                     | The one surface everything is moulded from.                                               |
+| `--hi`, `--lo`             | The lit and shaded sides of a shadow. Use via depth tokens.                               |
+| `--text`, `--muted`        | Text, and secondary text (captions, hints, units).                                        |
+| `--accent`                 | Record and destructive actions, errors.                                                   |
+| `--accent-2`               | Selection, "open", hover, the default focus and value tint. A jam sets it to your colour. |
+| `--flat`, `--line`         | High-contrast plates that carry data (hit patterns, grids).                               |
+| `--ok`, `--info`           | Status lights only: green for live, blue for trying again.                                |
+| `--focus`                  | Keyboard focus rings. A jam sets it to your colour.                                       |
+| `--cap-top` … `--cap-drop` | The fader cap's and rocker's shading. Controls only.                                      |
 
 Text keeps 4.5:1 against `--bg` (7:1 for body text); collaborator colours keep 3:1.
 `test/theme.test.ts` checks both.
@@ -53,6 +54,9 @@ control's own shadow. No outer outlines. Every control must show it on `:focus-v
   `src/board/colors.ts` (or `SWATCHES` in `src/theme/palette.ts`). Never store or hard-code a hex.
 - A control that belongs to something coloured takes the colour as a prop (`color` on `Range` and
   `Knob`), which sets `--ui-c`. Without one it uses `--accent-2`. `Pad` lights in `--glow`.
+- Someone else moving a shared control shows in their colour: pass `heldBy` (a `Holder`: their
+  name and swatch) to `Range` or `Knob`, which rings it in that colour and keeps the bubble up with
+  their name. Report your own drags with `onDragChange` so others see yours.
 - Red means record or destroy (`--accent`, `tone="danger"`). Don't use it for anything else.
 
 ## Motion and haptics
@@ -126,6 +130,9 @@ it happens and a cancel puts it back for everyone.
 
 - Use for a secondary continuous parameter where a fader would take too much room, such as a
   loop's sound knobs in the mixer's Effects strip (live, in the loop's colour).
+- Give it `segments` (the mixer uses 16) beside faders: its ring splits into that many lights like
+  the fader's LED strip, lit a whole light at a time. Pick an even count so a centred knob lights
+  exactly half. Leave it out elsewhere for a continuous ring.
 - Make it `live` when others hear or see the value as it changes; leave it on release when each
   change is costly or only the end value matters.
 - Not for the main level of something (`Range`) or typed values (`ScrubField`).

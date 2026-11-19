@@ -1,6 +1,7 @@
 /** The soft console's controls. They need a themed page (src/theme) to look right. */
 export {
   Button,
+  type Holder,
   type ButtonProps,
   IconButton,
   Knob,

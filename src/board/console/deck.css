@@ -90,11 +90,51 @@
   gap: 12px;
 }
 :root[data-theme] .console-tempo {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
   color: var(--muted);
+}
+/* Locked, the tempo's disabled parts let taps through to the row, which explains the lock. */
+:root[data-theme] .console-tempo.is-locked .ui-scrub-label,
+:root[data-theme] .console-tempo.is-locked .ui-scrub-field,
+:root[data-theme] .console-tempo.is-locked .ui-icon-button:disabled {
+  pointer-events: none;
+}
+/* The lock: right after BPM, and a button, so keys and screen readers reach the explanation. */
+:root[data-theme] .console-tempo-lock {
+  margin: -8px -4px -8px -8px;
+  padding: 8px 4px;
+  border: none;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1;
+  background: none;
+  cursor: help;
+}
+:root[data-theme] .console-tempo-lock:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--focus);
+}
+/* Why the tempo is locked, under the row for a few seconds after a tap. */
+:root[data-theme] .console-tempo-tip {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 10;
+  width: max-content;
+  max-width: min(280px, 80vw);
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+  box-shadow: var(--float);
+  pointer-events: none;
 }
 :root[data-theme] .console-message {
   margin: 0;

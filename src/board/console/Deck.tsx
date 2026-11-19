@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { BPM } from '../../../shared/board'
 import type { RecorderState } from '../../audio/engine'
 import { Button, IconButton, ScrubField, Switch } from '../../ui'
@@ -64,6 +64,25 @@ const RECORD_LABEL: Record<RecorderState['phase'], string> = {
   recording: 'Stop',
 }
 
+/** Why the tempo can't change: the tip a tap on the locked tempo shows. */
+const TEMPO_LOCKED = "Tempo is locked while the jam has loops, since they're all timed to it"
+
+/** How long the tip stays up after a tap. */
+const TIP_MS = 3000
+
+/** A tip shown for a while after `show`, again from the start on each call. */
+function useTip() {
+  const [shown, setShown] = useState(false)
+  const timer = useRef(0)
+  useEffect(() => () => clearTimeout(timer.current), [])
+  const show = () => {
+    setShown(true)
+    clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setShown(false), TIP_MS)
+  }
+  return { shown, show }
+}
+
 /** Record / stop (Space too), the tempo stepper, and the metronome switch. */
 function Transport({
   bpm,
@@ -77,6 +96,7 @@ function Transport({
   setMetronome,
 }: ReturnType<typeof useTransport>) {
   const syncing = state.phase === 'idle' && !synced
+  const tip = useTip()
 
   return (
     <div className="console-transport">
@@ -93,9 +113,11 @@ function Transport({
         {syncing ? 'Syncing…' : RECORD_LABEL[state.phase]}
       </Button>
       <div className="console-tempo-row">
+        {/* Locked, a tap anywhere on the tempo (its disabled parts let taps through) or on the
+            lock says why, on phones too. */}
         <div
-          className="console-tempo"
-          title={locked ? 'Tempo is locked while the jam has loops' : undefined}
+          className={`console-tempo ${locked ? 'is-locked' : ''}`}
+          onClick={locked ? tip.show : undefined}
         >
           {/* The BPM label scrubs the tempo; it applies once, on release, for everyone. */}
           <ScrubField
@@ -108,13 +130,24 @@ function Transport({
             maxLength={3}
             disabled={locked}
             start={
-              <IconButton
-                label="Slower"
-                disabled={locked || bpm <= BPM.min}
-                onClick={() => setTempo(bpm - 1)}
-              >
-                −
-              </IconButton>
+              <>
+                {locked && (
+                  <button
+                    type="button"
+                    className="console-tempo-lock"
+                    aria-label="Why is the tempo locked?"
+                  >
+                    🔒
+                  </button>
+                )}
+                <IconButton
+                  label="Slower"
+                  disabled={locked || bpm <= BPM.min}
+                  onClick={() => setTempo(bpm - 1)}
+                >
+                  −
+                </IconButton>
+              </>
             }
             end={
               <IconButton
@@ -126,10 +159,14 @@ function Transport({
               </IconButton>
             }
           />
-          {locked && <span aria-label="locked">🔒</span>}
+          {locked && tip.shown && (
+            <span className="console-tempo-tip" role="status">
+              {TEMPO_LOCKED}
+            </span>
+          )}
         </div>
         <Switch checked={metronome} onChange={setMetronome}>
-          Click
+          Metronome
         </Switch>
       </div>
       {message && (

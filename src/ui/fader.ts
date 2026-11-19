@@ -16,9 +16,12 @@ export function fraction(value: number, min: number, max: number): number {
   return max > min ? Math.min(1, Math.max(0, (value - min) / (max - min))) : 0
 }
 
-/** How much of the LED strip is lit for fraction `f`: whole lights only, a light on from its middle. */
-export function litFraction(f: number): number {
-  return Math.floor(f * LEDS + 0.5) / LEDS
+/**
+ * How much of a strip of `leds` lights is lit for fraction `f`: whole lights only, a light on from
+ * its middle.
+ */
+export function litFraction(f: number, leds = LEDS): number {
+  return Math.floor(f * leds + 0.5) / leds
 }
 
 /**

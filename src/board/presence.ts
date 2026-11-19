@@ -85,3 +85,55 @@ export function usePeople(awareness: Awareness, me: Person): Person[] {
   }, [awareness, me])
   return people
 }
+
+/** A live control as presence names it: a loop's knob or fader, `<trackId>.<control>`. */
+export const controlKey = (trackId: string, control: string) => `${trackId}.${control}`
+
+/**
+ * Who else is turning each control, by control key: the first person found per control. Never you,
+ * even from another tab of yours, since that is still you turning it.
+ */
+export function listHolders(states: Iterable<unknown>, meId: string): Map<string, Person> {
+  const holders = new Map<string, Person>()
+  for (const state of states) {
+    const s = state as { person?: unknown; control?: unknown } | null
+    if (typeof s?.control !== 'string') continue
+    const person = toPerson(s.person)
+    if (person && person.id !== meId && !holders.has(s.control)) holders.set(s.control, person)
+  }
+  return holders
+}
+
+/**
+ * Tells everyone this browser is turning `control` (`held`), or has let it go. Letting go clears it
+ * only while it is still the one published, so a second finger's drag isn't cleared by the first.
+ */
+export function holdControl(awareness: Awareness, control: string, held: boolean) {
+  const state = awareness.getLocalState()
+  if (!state) return // Left the jam.
+  if (held) awareness.setLocalState({ ...state, control })
+  else if (state.control === control) {
+    const { control: _, ...rest } = state
+    awareness.setLocalState(rest)
+  }
+}
+
+const sameHolders = (a: Map<string, Person>, b: Map<string, Person>) =>
+  a.size === b.size && [...a].every(([k, p]) => b.get(k) === p || sameHolder(b.get(k), p))
+const sameHolder = (a: Person | undefined, b: Person) =>
+  a?.id === b.id && a.name === b.name && a.color === b.color
+
+/** Who else is turning which control, re-rendering only when that changes. */
+export function useHolders(awareness: Awareness, meId: string): Map<string, Person> {
+  const [holders, setHolders] = useState(() => listHolders(awareness.getStates().values(), meId))
+  useEffect(() => {
+    const onChange = () => {
+      const next = listHolders(awareness.getStates().values(), meId)
+      setHolders((was) => (sameHolders(was, next) ? was : next))
+    }
+    awareness.on('change', onChange)
+    onChange()
+    return () => awareness.off('change', onChange)
+  }, [awareness, meId])
+  return holders
+}

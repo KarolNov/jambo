@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { Awareness } from 'y-protocols/awareness'
 import * as Y from 'yjs'
-import { joinPresence, listPeople } from '../src/board/presence'
+import {
+  controlKey,
+  holdControl,
+  joinPresence,
+  listHolders,
+  listPeople,
+} from '../src/board/presence'
 import { Me } from '../src/board/seat'
 
 const me = { id: 'me', color: 'teal' } as const
@@ -94,6 +100,77 @@ describe('joinPresence', () => {
     })
     expect(me.usual).toEqual({ name: 'Groovy Otter', color: 'sky' })
     leave()
+    expect(awareness.getLocalState()).toBeNull()
+  })
+})
+
+describe('listHolders', () => {
+  const knob = controlKey('t1', 'reverb')
+
+  it('names who else is turning each control', () => {
+    const states = [{ person: coral, control: knob }, { person: { id: 'x', color: 'sky' } }]
+    expect(listHolders(states, me.id)).toEqual(new Map([[knob, coral]]))
+  })
+
+  it('never lists you, even turning it from another tab', () => {
+    expect(listHolders([{ person: me, control: knob }], me.id).size).toBe(0)
+  })
+
+  it('keeps the first person on a control two people turn at once', () => {
+    const sky = { id: 's', color: 'sky' } as const
+    const states = [
+      { person: coral, control: knob },
+      { person: sky, control: knob },
+    ]
+    expect(listHolders(states, me.id).get(knob)).toEqual(coral)
+  })
+
+  it('skips a control without a readable person, and agents', () => {
+    const states = [{ control: knob }, { person: { id: 'agent:a', color: 'sky' }, control: knob }]
+    expect(listHolders(states, me.id).size).toBe(0)
+  })
+})
+
+describe('holdControl', () => {
+  const seated = () => {
+    const awareness = new Awareness(new Y.Doc())
+    const me = new Me({ id: 'me', key: 'k', name: 'Groovy Otter', color: 'sky' })
+    const leave = joinPresence(awareness, me)
+    me.seat({ name: 'Groovy Otter', color: 'sky' })
+    return { awareness, me, leave }
+  }
+
+  it('publishes the control while held and clears it when let go, keeping the person', () => {
+    const { awareness } = seated()
+    holdControl(awareness, 't1.gain', true)
+    expect(awareness.getLocalState()?.control).toBe('t1.gain')
+    holdControl(awareness, 't1.gain', false)
+    expect(awareness.getLocalState()).not.toHaveProperty('control')
+    expect(awareness.getLocalState()?.person).toMatchObject({ id: 'me' })
+  })
+
+  it('keeps the person and the held control when the room renames you mid-drag', () => {
+    const { awareness, me } = seated()
+    holdControl(awareness, 't1.gain', true)
+    me.seat({ name: 'Misty Yak', color: 'teal' })
+    expect(awareness.getLocalState()).toMatchObject({
+      person: { name: 'Misty Yak' },
+      control: 't1.gain',
+    })
+  })
+
+  it('leaves a newer control alone when an older one is let go', () => {
+    const { awareness } = seated()
+    holdControl(awareness, 't1.gain', true)
+    holdControl(awareness, 't1.reverb', true)
+    holdControl(awareness, 't1.gain', false)
+    expect(awareness.getLocalState()?.control).toBe('t1.reverb')
+  })
+
+  it('does nothing after you leave the jam', () => {
+    const { awareness, leave } = seated()
+    leave()
+    holdControl(awareness, 't1.gain', true)
     expect(awareness.getLocalState()).toBeNull()
   })
 })

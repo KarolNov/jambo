@@ -60,7 +60,7 @@ A switch SHALL show whether it is on in one of two looks: an I/O rocker that tip
 
 ### Requirement: Knob
 
-A knob SHALL turn when dragged up or right (increasing) and down or left (decreasing), in steps, with Shift for ten steps at a time, showing its value while turning. By default it SHALL apply the value once on release; a live knob SHALL instead apply it as it turns, at most once a frame. It SHALL take the arrow keys, Page Up and Page Down, Home and End. A double-click SHALL reset it to its default. Escape during a drag SHALL return it to where the drag started; a live knob SHALL apply that value again unless someone else changed it during the drag. A live knob pressed without moving SHALL apply nothing. It SHALL announce itself as a slider with its value.
+A knob SHALL turn when dragged up or right (increasing) and down or left (decreasing), in steps, with Shift for ten steps at a time, showing its value while turning. By default it SHALL apply the value once on release; a live knob SHALL instead apply it as it turns, at most once a frame. It SHALL take the arrow keys, Page Up and Page Down, Home and End. A double-click SHALL reset it to its default. Escape during a drag SHALL return it to where the drag started; a live knob SHALL apply that value again unless someone else changed it during the drag. A live knob pressed without moving SHALL apply nothing. A knob MAY be segmented into a number of lights; its ring SHALL then light a whole light at a time, as a slider's strip does. It SHALL announce itself as a slider with its value.
 
 - **Scenario: Turn and cancel**
   - **GIVEN** a knob at 0.5
@@ -73,6 +73,23 @@ A knob SHALL turn when dragged up or right (increasing) and down or left (decrea
   - **GIVEN** a live knob at 0
   - **WHEN** someone drags it up slowly to 0.6
   - **THEN** the values in between are applied as it turns, no more than one a frame, and 0.6 is applied last
+- **Scenario: Segmented knob**
+  - **GIVEN** a knob split into 16 lights, at its middle value
+  - **WHEN** someone looks at it
+  - **THEN** exactly 8 lights are lit, ending at 12 o'clock
+
+### Requirement: Someone else moving a control
+
+A slider or knob SHALL be able to show that someone else is moving it: ringed in that person's colour, with their name in its bubble in their colour instead of the value. Whoever is dragging it themselves SHALL still see their own value in the bubble.
+
+- **Scenario: Watch someone turn a knob**
+  - **GIVEN** a knob that Misty Yak is turning
+  - **WHEN** someone else looks at it
+  - **THEN** it is ringed in Misty Yak's colour, its bubble reads "Misty Yak", and its arc follows the value
+- **Scenario: Drag it too**
+  - **GIVEN** a slider that Misty Yak is dragging
+  - **WHEN** someone else drags it as well
+  - **THEN** their bubble shows their own value, and Misty Yak's ring stays
 
 ### Requirement: Scrub a number
 

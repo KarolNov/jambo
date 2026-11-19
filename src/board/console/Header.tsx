@@ -7,6 +7,7 @@ import { usePeople } from '../presence'
 import { useSeat } from '../seat'
 import { useSession } from '../session'
 import { AiMark } from './AiMark'
+import { Unlock } from './Pads'
 import { namesPeople, personName } from './people'
 import { jamLink, shareLink, type ShareResult } from './share'
 import './header.css'
@@ -14,7 +15,11 @@ import './header.css'
 const STATUS: Record<ConnectionStatus, { label: string; title?: string }> = {
   connected: { label: 'Live' },
   connecting: { label: 'Connecting…' },
-  offline: { label: 'Offline', title: 'Offline: your edits will sync when you are back' },
+  reconnecting: {
+    label: 'Reconnecting…',
+    title: 'Lost the connection, trying again: your edits will sync when it is back',
+  },
+  offline: { label: 'Offline', title: 'No network: your edits will sync when you are back' },
 }
 
 const TIPS: Partial<Record<ShareResult, string>> = {
@@ -22,15 +27,22 @@ const TIPS: Partial<Record<ShareResult, string>> = {
   failed: "Couldn't copy the link",
 }
 
-/** The console's header: logo, the jam's name and share button, who's here, connection, theme. */
+/**
+ * The console's header: logo, the jam's name and share button, the prompt to start audio (from
+ * 1000px; narrower screens show it under the header), who's here, connection, theme.
+ */
 export function Header({ slug, status }: { slug: string; status: ConnectionStatus }) {
   return (
     <header className="console-header">
-      <a className="console-logo" href="/">
-        jambo
-      </a>
-      <span className="console-slug">{slug}</span>
+      {/* The logo and the jam's name sit on one baseline. */}
+      <span className="console-title">
+        <a className="console-logo" href="/">
+          jambo
+        </a>
+        <span className="console-slug">{slug}</span>
+      </span>
       <ShareButton slug={slug} />
+      <Unlock className="console-unlock-header" />
       <div className="console-header-end">
         <People />
         <span

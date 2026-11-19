@@ -50,5 +50,8 @@ describe('fader lights', () => {
     expect(litFraction(1)).toBe(1)
     expect(litFraction(0.5 / LEDS)).toBe(1 / LEDS)
     expect(litFraction(0.49 / LEDS)).toBe(0)
+    expect(litFraction(0.5 / 16, 16)).toBe(1 / 16)
+    expect(litFraction(0.49 / 16, 16)).toBe(0)
+    expect(litFraction(0.5, 16)).toBe(0.5)
   })
 })

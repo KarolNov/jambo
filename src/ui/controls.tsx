@@ -134,6 +134,46 @@ export function Switch({
   )
 }
 
+/** Someone else turning a control right now, as it shows them: their name, in their colour. */
+export type Holder = { name: string; color: string }
+
+/** What a live control shared with others takes, to show who else is turning it. */
+type SharedProps = {
+  /** Someone else turning it now: a ring in their colour, and their name in the bubble unless you drag it too. */
+  heldBy?: Holder
+  /** Called with true when a drag starts, and false when it ends or the control goes mid-drag. */
+  onDragChange?: (dragging: boolean) => void
+}
+
+/** Reports `dragging` to `onDragChange` as it starts and stops, and stops it on unmount. */
+function useDragReport(dragging: boolean, onDragChange?: (dragging: boolean) => void) {
+  const report = useRef(onDragChange)
+  useEffect(() => {
+    report.current = onDragChange
+  })
+  useEffect(() => {
+    if (!dragging) return
+    report.current?.(true)
+    return () => report.current?.(false)
+  }, [dragging])
+}
+
+/**
+ * A bubble's text: the value while you drag, or the name of whoever else is turning it (the
+ * control itself shows their value).
+ */
+function bubbleText(value: string, dragging: boolean, heldBy?: Holder) {
+  if (dragging || !heldBy) return value
+  return (
+    <span className="ui-held-name" style={{ color: heldBy.color }}>
+      {heldBy.name}
+    </span>
+  )
+}
+
+const heldVars = (heldBy?: Holder) =>
+  heldBy ? ({ '--ui-held': heldBy.color } as CSSProperties) : undefined
+
 export type RangeProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
   'type' | 'value' | 'defaultValue' | 'onChange' | 'min' | 'max' | 'step'
@@ -155,7 +195,7 @@ export type RangeProps = Omit<
   detent?: number
   /** How the value reads in the bubble and to screen readers (default: the number). */
   format?: (value: number) => string
-}
+} & SharedProps
 
 /** How many key steps Page Up and Page Down move the fader. */
 const PAGE_STEPS = 5
@@ -163,7 +203,8 @@ const PAGE_STEPS = 5
 /**
  * A mixer fader: a thin slot, a solid cap with ridges and an index line, an LED strip lit to the
  * value in `color`, optional tick marks and a detent. The value shows in a bubble while dragged.
- * It stays a native range input, so keys and screen readers work as usual.
+ * While someone else drags it (`heldBy`), the cap is ringed in their colour and the bubble names
+ * them. It stays a native range input, so keys and screen readers work as usual.
  */
 export function Range({
   label,
@@ -177,6 +218,8 @@ export function Range({
   marks,
   detent,
   format = String,
+  heldBy,
+  onDragChange,
   className = '',
   style,
   onKeyDown,
@@ -184,6 +227,7 @@ export function Range({
   ...rest
 }: RangeProps) {
   const [dragging, setDragging] = useState(false)
+  useDragReport(dragging, onDragChange)
   // While dragged, the fader shows `draft` at once and hands it on at most once a frame, so a
   // drag doesn't send a change for every 0.01 it passes.
   const [draft, setDraft] = useState<number>()
@@ -237,8 +281,8 @@ export function Range({
   if (color) Object.assign(vars, { '--ui-c': color })
   return (
     <span
-      className={`ui-fader ${dragging ? 'is-dragging' : ''} ${className}`}
-      style={{ ...style, ...vars }}
+      className={`ui-fader ${dragging ? 'is-dragging' : ''} ${heldBy ? 'is-held' : ''} ${className}`}
+      style={{ ...style, ...vars, ...heldVars(heldBy) }}
     >
       {marks && (
         <span className="ui-fader-ticks" aria-hidden>
@@ -253,12 +297,13 @@ export function Range({
       )}
       <span className="ui-fader-leds" aria-hidden />
       <span className="ui-fader-bubble" aria-hidden>
-        {format(shown)}
+        {bubbleText(format(shown), dragging, heldBy)}
       </span>
       <input
         type="range"
         aria-label={label}
         aria-valuetext={format(shown)}
+        aria-description={heldBy && `${heldBy.name} is moving it`}
         className="ui-range"
         min={min}
         max={max}
@@ -420,9 +465,15 @@ export type KnobProps = {
   color?: string
   /** How the value reads in the bubble and to screen readers (default: the number). */
   format?: (value: number) => string
+  /**
+   * Split the ring into this many lights, lit a whole light at a time as the fader's LED strip is;
+   * use it beside faders. An even count lights a centred knob exactly half. Without it the ring is
+   * continuous.
+   */
+  segments?: number
   disabled?: boolean
   className?: string
-}
+} & SharedProps
 
 /**
  * A rotary knob: a raised cap with an index line, in a ring lit to the value in `color`. Drag up
@@ -430,7 +481,8 @@ export type KnobProps = {
  * bubble while turning and applies once on release, and Escape puts it back. A `live` knob applies
  * as it turns, once a frame, and Escape applies the start value again unless a peer has changed
  * it since. Arrows, Page Up/Down,
- * Home and End turn it from the keyboard; a double-click resets it to `defaultValue`. Screen
+ * Home and End turn it from the keyboard; a double-click resets it to `defaultValue`. While
+ * someone else turns it (`heldBy`), it is ringed in their colour and the bubble names them. Screen
  * readers hear a slider.
  */
 export function Knob({
@@ -444,7 +496,10 @@ export function Knob({
   color,
   format = String,
   live = false,
+  segments,
   disabled = false,
+  heldBy,
+  onDragChange,
   className = '',
 }: KnobProps) {
   // The whole sweep takes about 200px of drag, but never less than a pixel a step.
@@ -460,13 +515,20 @@ export function Knob({
     live,
     disabled,
   })
+  useDragReport(scrub.dragging, onDragChange)
   const f = fraction(scrub.shown, min, max)
-  const vars = { '--f': f } as CSSProperties
+  const lights = segments && Math.max(1, Math.round(segments))
+  const lit = lights ? litFraction(f, lights) : f
+  const vars = { '--f': f, '--lit': lit, ...heldVars(heldBy) } as CSSProperties
+  if (lights) Object.assign(vars, { '--segments': lights })
   if (color) Object.assign(vars, { '--ui-c': color })
   return (
-    <span className={`ui-knob ${scrub.dragging ? 'is-dragging' : ''} ${className}`} style={vars}>
+    <span
+      className={`ui-knob ${lights ? 'is-segmented' : ''} ${scrub.dragging ? 'is-dragging' : ''} ${heldBy ? 'is-held' : ''} ${className}`}
+      style={vars}
+    >
       <span className="ui-knob-bubble" aria-hidden>
-        {format(scrub.shown)}
+        {bubbleText(format(scrub.shown), scrub.dragging, heldBy)}
       </span>
       <span
         role="slider"
@@ -477,6 +539,7 @@ export function Knob({
         aria-valuenow={scrub.shown}
         aria-valuetext={format(scrub.shown)}
         aria-disabled={disabled || undefined}
+        aria-description={heldBy && `${heldBy.name} is turning it`}
         aria-orientation="vertical"
         className="ui-knob-dial"
         {...scrub.handlers}

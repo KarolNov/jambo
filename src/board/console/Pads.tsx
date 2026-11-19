@@ -264,7 +264,7 @@ export function SoundEditor({ slug, editing }: { slug: string; editing: boolean 
 }
 
 /** A prompt to start audio, until it is: browsers only allow it from a click or key. */
-export function Unlock() {
+export function Unlock({ className = '' }: { className?: string }) {
   const { engine } = useSession()
   const ready = useSyncExternalStore(
     (l) => engine.subscribe(l),
@@ -272,7 +272,11 @@ export function Unlock() {
   )
   if (ready) return null
   return (
-    <Button tone="primary" className="console-unlock" onClick={() => void engine.unlock()}>
+    <Button
+      tone="primary"
+      className={`console-unlock ${className}`}
+      onClick={() => void engine.unlock()}
+    >
       Tap to start audio
     </Button>
   )

@@ -18,6 +18,8 @@ import {
   Select,
   Switch,
 } from '../ui'
+import { SWATCHES } from '../theme/palette'
+import { useTheme } from '../theme/theme'
 import { ThemeToggle } from '../theme/ThemeToggle'
 
 export interface Entry {
@@ -76,16 +78,25 @@ function SwitchDemo({
   )
 }
 
+/** Someone else turning a demo control, in a collaborator colour for the theme. */
+function usePeer(held?: boolean) {
+  const theme = useTheme()
+  return held ? { name: 'Misty Yak', color: SWATCHES.violet[theme] } : undefined
+}
+
 function RangeDemo({
   start,
   disabled,
   marks,
+  held,
 }: {
   start: number
   disabled?: boolean
   marks?: boolean
+  held?: boolean
 }) {
   const [value, setValue] = useState(start)
+  const peer = usePeer(held)
   return (
     <Range
       label="Level"
@@ -97,6 +108,7 @@ function RangeDemo({
       detent={marks ? 1 : undefined}
       format={level}
       disabled={disabled}
+      heldBy={peer}
     />
   )
 }
@@ -105,12 +117,17 @@ function KnobDemo({
   start,
   disabled,
   live,
+  held,
+  segments,
 }: {
   start: number
   disabled?: boolean
   live?: boolean
+  held?: boolean
+  segments?: number
 }) {
   const [value, setValue] = useState(start)
+  const peer = usePeer(held)
   // A live knob's owner sees each change as it turns: count them, to show it applies once a frame.
   const [changes, setChanges] = useState(0)
   const knob = (
@@ -124,7 +141,9 @@ function KnobDemo({
       defaultValue={live ? 0 : 0.5}
       format={percent}
       live={live}
+      segments={segments}
       disabled={disabled}
+      heldBy={peer}
     />
   )
   if (!live) return knob
@@ -314,6 +333,7 @@ export const CATALOGUE: Entry[] = [
       { label: 'At unity, with marks and a detent', demo: <RangeDemo start={1} marks /> },
       { label: 'Low, no marks', demo: <RangeDemo start={0.3} /> },
       { label: 'Disabled', demo: <RangeDemo start={0.6} marks disabled /> },
+      { label: 'Moved by someone else', demo: <RangeDemo start={0.8} marks held /> },
     ],
     use: [
       'A continuous level people adjust by feel, such as a loop’s volume.',
@@ -334,16 +354,19 @@ export const CATALOGUE: Entry[] = [
       { label: 'Full', demo: <KnobDemo start={1} /> },
       { label: 'Disabled', demo: <KnobDemo start={0.25} disabled /> },
       { label: 'Live: applies as it turns', demo: <KnobDemo start={0} live /> },
+      { label: '16 segments, beside faders', demo: <KnobDemo start={0.6} segments={16} /> },
+      { label: '8 segments', demo: <KnobDemo start={0.5} segments={8} /> },
+      { label: 'Turned by someone else', demo: <KnobDemo start={0.7} live held /> },
     ],
     use: [
       'A secondary continuous parameter where a fader would take too much room.',
       'Give it a defaultValue that double-click returns to.',
+      'Segment its ring (segments={16}) beside faders, so it lights like their LED strips; an even count lights a centred knob exactly half.',
       'Make it live when everyone should hear the change while it turns (a loop’s sound knobs); it applies once a frame and Escape applies the start value again.',
     ],
     avoid: [
       'The main level of something: use Range, which reads at a glance.',
       'Values people type: use ScrubField.',
-      'Anywhere in the jam yet: it waits for a control that needs it.',
     ],
   },
   {
