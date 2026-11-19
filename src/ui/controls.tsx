@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { fraction, KNOB_LEDS, litFraction, snap } from './fader'
+import { fraction, litFraction, snap } from './fader'
 import { haptic } from './haptics'
 import { ANIMATION_FRAMES, useScrub } from './scrub'
 import { keyValue, type LiveDrag, liveDrag } from './scrubSteps'
@@ -466,10 +466,11 @@ export type KnobProps = {
   /** How the value reads in the bubble and to screen readers (default: the number). */
   format?: (value: number) => string
   /**
-   * How the ring lights: continuous (default), or segmented into lights as the fader's LED strip
-   * is, lit whole lights at a time; use it beside faders.
+   * Split the ring into this many lights, lit a whole light at a time as the fader's LED strip is;
+   * use it beside faders. An even count lights a centred knob exactly half. Without it the ring is
+   * continuous.
    */
-  fill?: 'continuous' | 'segmented'
+  segments?: number
   disabled?: boolean
   className?: string
 } & SharedProps
@@ -495,7 +496,7 @@ export function Knob({
   color,
   format = String,
   live = false,
-  fill = 'continuous',
+  segments,
   disabled = false,
   heldBy,
   onDragChange,
@@ -516,12 +517,14 @@ export function Knob({
   })
   useDragReport(scrub.dragging, onDragChange)
   const f = fraction(scrub.shown, min, max)
-  const lit = fill === 'segmented' ? litFraction(f, KNOB_LEDS) : f
+  const lights = segments && Math.max(1, Math.round(segments))
+  const lit = lights ? litFraction(f, lights) : f
   const vars = { '--f': f, '--lit': lit, ...heldVars(heldBy) } as CSSProperties
+  if (lights) Object.assign(vars, { '--segments': lights })
   if (color) Object.assign(vars, { '--ui-c': color })
   return (
     <span
-      className={`ui-knob ui-knob-${fill} ${scrub.dragging ? 'is-dragging' : ''} ${heldBy ? 'is-held' : ''} ${className}`}
+      className={`ui-knob ${lights ? 'is-segmented' : ''} ${scrub.dragging ? 'is-dragging' : ''} ${heldBy ? 'is-held' : ''} ${className}`}
       style={vars}
     >
       <span className="ui-knob-bubble" aria-hidden>

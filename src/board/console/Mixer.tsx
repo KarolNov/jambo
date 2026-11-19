@@ -242,7 +242,7 @@ function EffectsStrip({
           <div key={k} className="console-effects-knob">
             <Knob
               live
-              fill="segmented"
+              segments={16}
               label={`${label} of ${track.name}`}
               color={color}
               min={min}

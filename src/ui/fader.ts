@@ -6,12 +6,6 @@ export const DETENT_RANGE = 0.04
 /** The number of lights in the fader's LED strip. */
 export const LEDS = 24
 
-/**
- * The number of lights around a segmented knob's ring, about 17° each of its 270° sweep. Even, so a
- * centred knob (pan, pitch) lights exactly half.
- */
-export const KNOB_LEDS = 16
-
 /** `value` snapped to `detent` when it lands within {@link DETENT_RANGE} of it. */
 export function snap(value: number, detent?: number): number {
   return detent !== undefined && Math.abs(value - detent) < DETENT_RANGE ? detent : value

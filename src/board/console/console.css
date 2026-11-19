@@ -17,14 +17,15 @@
   margin: 0;
 }
 
-/* "AI" as a superscript after a name: an agent in Who's here, a loop an agent added. */
+/* "AI" as a superscript after a name: an agent in Who's here, a loop an agent added. It takes the
+   agent's colour (the loop's) from --c on its row. */
 :root[data-theme] .console-ai {
   margin-left: 1px;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.06em;
   line-height: 1;
-  color: var(--accent-2);
+  color: var(--c, var(--accent-2));
   /* Both places it sits are flex rows: raised to the top of the name there. */
   align-self: flex-start;
 }

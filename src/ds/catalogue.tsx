@@ -118,13 +118,13 @@ function KnobDemo({
   disabled,
   live,
   held,
-  segmented,
+  segments,
 }: {
   start: number
   disabled?: boolean
   live?: boolean
   held?: boolean
-  segmented?: boolean
+  segments?: number
 }) {
   const [value, setValue] = useState(start)
   const peer = usePeer(held)
@@ -141,7 +141,7 @@ function KnobDemo({
       defaultValue={live ? 0 : 0.5}
       format={percent}
       live={live}
-      fill={segmented ? 'segmented' : undefined}
+      segments={segments}
       disabled={disabled}
       heldBy={peer}
     />
@@ -354,19 +354,19 @@ export const CATALOGUE: Entry[] = [
       { label: 'Full', demo: <KnobDemo start={1} /> },
       { label: 'Disabled', demo: <KnobDemo start={0.25} disabled /> },
       { label: 'Live: applies as it turns', demo: <KnobDemo start={0} live /> },
-      { label: 'Segmented, beside faders', demo: <KnobDemo start={0.6} segmented /> },
+      { label: '16 segments, beside faders', demo: <KnobDemo start={0.6} segments={16} /> },
+      { label: '8 segments', demo: <KnobDemo start={0.5} segments={8} /> },
       { label: 'Turned by someone else', demo: <KnobDemo start={0.7} live held /> },
     ],
     use: [
       'A secondary continuous parameter where a fader would take too much room.',
       'Give it a defaultValue that double-click returns to.',
-      'Segment its ring (fill="segmented") beside faders, so it lights like their LED strips.',
+      'Segment its ring (segments={16}) beside faders, so it lights like their LED strips; an even count lights a centred knob exactly half.',
       'Make it live when everyone should hear the change while it turns (a loop’s sound knobs); it applies once a frame and Escape applies the start value again.',
     ],
     avoid: [
       'The main level of something: use Range, which reads at a glance.',
       'Values people type: use ScrubField.',
-      'Anywhere in the jam yet: it waits for a control that needs it.',
     ],
   },
   {
