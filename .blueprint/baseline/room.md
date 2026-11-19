@@ -80,9 +80,18 @@ The room SHALL pass each client's presence to everyone else in the jam, and SHAL
   - **WHEN** one closes its connection
   - **THEN** the other stops seeing its presence within a few seconds
 
+### Requirement: Agent presence
+
+The room SHALL publish the agents present in its jam, each with its public id, name, colour and latest summary, to everyone connected, and SHALL remove an agent 5 minutes after its last action even with nobody connected.
+
+- **Scenario: Late joiner**
+  - **GIVEN** an agent present in a jam
+  - **WHEN** a person opens the jam
+  - **THEN** they see the agent in Who's here
+
 ### Requirement: Seats
 
-The room SHALL give each person in a jam a name nobody else there has, and a colour nobody else there has while one of the eight is free. It SHALL know a person by a key private to their browser, never by the id others in the jam can see. A person SHALL get the name and colour they already have in another tab. Otherwise they SHALL get the name they ask for if nobody here has it, else a fresh adjective and animal nobody here has, comparing names without case; and the colour they ask for if it is free, else the first free one, and past eight people the least used colour. Names and colours SHALL be free again once everyone holding them has left.
+The room SHALL give each person and each agent in a jam a name nobody else there has, and a colour nobody else there has while one of the eight is free. It SHALL know a person by a key private to their browser, and an agent by a key private to it, never by the id others in the jam can see. A person SHALL get the name and colour they already have in another tab. Otherwise they SHALL get the name they ask for if nobody here has it, else a fresh adjective and animal nobody here has, comparing names without case; and the colour they ask for if it is free, else the first free one, and past eight people the least used colour. An agent's name SHALL be an adjective and its kind, a fresh adjective when the name it asks for is taken or isn't of that form, and its colour SHALL be chosen as a person's is. Names and colours SHALL be free again once everyone holding them has left, and an agent's once it leaves or idles out.
 
 - **Scenario: Shared usual name and colour**
   - **GIVEN** three people who ask for Groovy Otter and Sky
@@ -103,6 +112,14 @@ The room SHALL give each person in a jam a name nobody else there has, and a col
   - **GIVEN** eight people in a jam, one per colour
   - **WHEN** a ninth joins
   - **THEN** they get the least used colour, the one they asked for on a tie, and a name nobody else there has
+- **Scenario: Agent holds a colour**
+  - **GIVEN** Groovy Claude in Sky in a jam
+  - **WHEN** a person whose usual colour is Sky joins
+  - **THEN** they get another colour
+- **Scenario: Agent idles out**
+  - **GIVEN** Groovy Claude in Sky, idle for 5 minutes
+  - **WHEN** a person whose usual colour is Sky joins
+  - **THEN** they get Sky
 
 ### Requirement: Sound storage
 

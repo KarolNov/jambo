@@ -65,7 +65,7 @@ The board SHALL show the jam's slug, a logo that starts a new jam, and a control
 
 ### Requirement: Who's here
 
-The board SHALL list everyone connected to the jam, one entry per identity, each as a dot in their colour, with this person first and marked as you. Others SHALL list a person only once the room has seated them, so nobody is shown with a name or colour someone else holds. While three or fewer people are here each dot SHALL carry its person's name; past three, only the dots, each naming its person in a tooltip. A client older than names SHALL show by its colour name.
+The board SHALL list everyone connected to the jam and every agent present, one entry per identity, each as a dot in their colour, with this person first and marked as you, and each agent's dot with an AI badge and a dashed ring. Others SHALL list a person only once the room has seated them, so nobody is shown with a name or colour someone else holds. While three or fewer are here each dot SHALL carry its name; past three, only the dots, each naming its person or agent in a tooltip. A client older than names SHALL show by its colour name.
 
 - **Scenario: Someone joins**
   - **GIVEN** one person in a jam
@@ -81,6 +81,20 @@ The board SHALL list everyone connected to the jam, one entry per identity, each
   - **GIVEN** four people in a jam
   - **WHEN** one of them looks at who's here
   - **THEN** they see four dots, each naming its person on hover
+- **Scenario: An agent joins**
+  - **WHEN** Groovy Claude acts in the jam
+  - **THEN** everyone's list shows Groovy Claude with an AI badge and a dashed ring
+
+### Requirement: Agent work marked
+
+A loop an agent added SHALL show an AI badge wherever loops are listed, and a sound an agent uploaded SHALL name the agent as its uploader.
+
+- **Scenario: Agent beat**
+  - **WHEN** an agent adds a loop
+  - **THEN** its row shows the AI badge, and loops people recorded do not
+- **Scenario: Agent upload**
+  - **WHEN** Groovy Claude uploads Vox
+  - **THEN** the dot beside Vox says "Uploaded by Groovy Claude"
 
 ### Requirement: Theme
 
