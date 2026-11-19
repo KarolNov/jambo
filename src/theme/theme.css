@@ -19,11 +19,24 @@
   background: var(--bg);
   color: var(--text);
 }
+/* The fader cap's shading: a solid block lighter than the surface in both themes, so it reads in
+   the dark as well as the light. top/bot light it from above; edge is a ridge's lit side and
+   groove its shaded side; drop is the shadow it casts on the slot. */
 :root[data-theme='light'] {
   color-scheme: light;
+  --cap-top: #fffdf9;
+  --cap-bot: #d9cfc2;
+  --cap-edge: rgb(255 255 255 / 0.95);
+  --cap-groove: rgb(90 70 50 / 0.28);
+  --cap-drop: rgb(70 50 30 / 0.35);
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
+  --cap-top: #5e574e;
+  --cap-bot: #3e3832;
+  --cap-edge: rgb(255 255 255 / 0.18);
+  --cap-groove: rgb(0 0 0 / 0.45);
+  --cap-drop: rgb(0 0 0 / 0.6);
 }
 
 /* While the theme swaps, nothing animates on its own: the page crossfades as one. */

@@ -88,7 +88,7 @@
   stroke-linejoin: round;
 }
 
-/* ── Switch ─────────────────────────────────────────────────────────────── */
+/* ── Switch: an I/O rocker ──────────────────────────────────────────────── */
 :root[data-theme] .ui-switch {
   display: inline-flex;
   align-items: center;
@@ -102,102 +102,280 @@
   border: none;
   box-shadow: none;
   cursor: pointer;
-}
-:root[data-theme] .ui-switch-track {
   position: relative;
-  width: 42px;
-  height: 24px;
-  border-radius: 999px;
+  /* No grey flash over the control and its label when tapped (iOS, Android). */
+  -webkit-tap-highlight-color: transparent;
+}
+/* The real switch, invisible and over the whole control, so every tap lands on it. */
+:root[data-theme] .ui-switch-input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+/* The bezel: an inset well with a faint rim, so it reads where shadows are subtle (dark). */
+:root[data-theme] .ui-rocker {
+  position: relative;
+  flex: none;
+  width: 58px;
+  height: 32px;
+  border-radius: 9px;
   background: var(--bg);
-  /* A faint rim as well as the inset, so the switch reads even where shadows are subtle (dark). */
   box-shadow:
     var(--inset-sm),
     inset 0 0 0 1px var(--line);
+  perspective: 120px;
 }
-:root[data-theme] .ui-switch-knob {
+/* The plate tips down toward the side that is on: O on the left, I on the right. */
+:root[data-theme] .ui-rocker-plate {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  /* Off: a muted knob; on: the accent. */
-  background: color-mix(in srgb, var(--muted) 45%, var(--bg));
-  box-shadow: var(--raise-sm);
+  inset: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  place-items: center;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--lo) 35%, var(--bg)),
+    var(--hi) 50%,
+    var(--bg)
+  );
+  box-shadow: 4px 2px 6px -2px var(--lo);
+  transform: rotateY(14deg);
   transition:
-    left 0.15s,
-    background 0.15s;
+    transform 0.2s cubic-bezier(0.5, 1.8, 0.5, 1),
+    background 0.2s,
+    box-shadow 0.2s;
 }
-:root[data-theme] .ui-switch[aria-checked='true'] .ui-switch-knob {
-  left: 21px;
-  background: var(--accent-2);
+:root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-rocker-plate {
+  background: linear-gradient(
+    90deg,
+    var(--bg),
+    var(--hi) 50%,
+    color-mix(in srgb, var(--lo) 35%, var(--bg))
+  );
+  box-shadow: -4px 2px 6px -2px var(--lo);
+  transform: rotateY(-14deg);
 }
-:root[data-theme] .ui-switch:focus-visible {
-  outline: none;
+:root[data-theme] .ui-switch:has(> .ui-switch-input:not(:checked)) .ui-rocker-o {
+  color: var(--text);
 }
-:root[data-theme] .ui-switch:focus-visible .ui-switch-track {
+:root[data-theme] .ui-switch:has(> .ui-switch-input:checked) .ui-rocker-i {
+  color: var(--accent-2);
+  text-shadow: 0 0 6px var(--accent-2);
+}
+:root[data-theme] .ui-switch:has(> .ui-switch-input:disabled) {
+  opacity: 0.45;
+  cursor: default;
+}
+:root[data-theme] .ui-switch:has(> .ui-switch-input:focus-visible) .ui-rocker {
   box-shadow:
     var(--inset-sm),
     inset 0 0 0 2px var(--focus);
 }
 @media (prefers-reduced-motion: reduce) {
-  :root[data-theme] .ui-switch-knob {
+  /* Tips without the spring. */
+  :root[data-theme] .ui-rocker-plate {
     transition: none;
   }
 }
 
-/* ── Range ──────────────────────────────────────────────────────────────── */
+/* ── Range: a mixer fader ───────────────────────────────────────────────── */
+/* The wrapper holds the ticks, the LED strip and the bubble around the native input. It gets
+   --f (0–1, where the value sits) and --lit (the lit share of the LEDs) from the component.
+   The cap is 22px wide, so marks and lights run between the cap's centres at either end. */
+:root[data-theme] .ui-fader {
+  --cap-w: 22px;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  display: block;
+  min-width: 80px;
+}
 :root[data-theme] .ui-range {
   appearance: none;
   -webkit-appearance: none;
+  display: block;
   width: 100%;
-  height: 22px;
+  height: 48px;
   margin: 0;
   background: transparent;
   cursor: pointer;
+  /* Sideways drags move the fader; a vertical swipe that starts on it still scrolls the page. */
+  touch-action: pan-y;
+  /* The cap: a solid block lit from above, with engraved ridges (a groove and a light edge each)
+     and an index line in the control's colour through its middle. Shared by both engines' thumbs. */
+  --cap-bg:
+    linear-gradient(var(--ui-c, var(--accent-2)), var(--ui-c, var(--accent-2))) 50% 50% / 2px 100%
+      no-repeat,
+    repeating-linear-gradient(
+        90deg,
+        var(--cap-groove) 0 1px,
+        var(--cap-edge) 1px 2px,
+        transparent 2px 4px
+      )
+      50% 50% / 15px 62% no-repeat,
+    linear-gradient(180deg, var(--cap-top), var(--cap-bot));
+  --cap-shadow:
+    inset 0 1px 0 var(--cap-edge), inset 0 -2px 2px rgb(0 0 0 / 0.14), 0 1px 1px var(--cap-drop),
+    0 5px 9px -3px var(--cap-drop);
 }
 :root[data-theme] .ui-range::-webkit-slider-runnable-track {
-  height: 8px;
-  border-radius: 8px;
-  background: var(--bg);
-  box-shadow: var(--inset-sm);
+  height: 6px;
+  border-radius: 6px;
+  background: var(--flat);
+  box-shadow:
+    inset 1px 1px 3px var(--lo),
+    inset -1px -1px 2px var(--hi);
 }
 :root[data-theme] .ui-range::-moz-range-track {
-  height: 8px;
-  border-radius: 8px;
-  background: var(--bg);
-  box-shadow: var(--inset-sm);
+  height: 6px;
+  border-radius: 6px;
+  background: var(--flat);
+  box-shadow: inset 1px 1px 3px var(--lo);
 }
+/* The two engines' thumbs need separate rules: one unknown pseudo-element drops a whole list. */
 :root[data-theme] .ui-range::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 22px;
-  height: 22px;
-  margin-top: -7px;
-  border-radius: 50%;
-  background: var(--bg);
-  box-shadow: var(--raise-sm);
-  border: 3px solid var(--ui-c, var(--accent-2));
+  width: var(--cap-w);
+  height: 32px;
+  margin-top: -13px;
+  border: none;
+  border-radius: 5px;
+  background: var(--cap-bg);
+  box-shadow: var(--cap-shadow);
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
 }
 :root[data-theme] .ui-range::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--bg);
-  box-shadow: var(--raise-sm);
-  border: 3px solid var(--ui-c, var(--accent-2));
+  width: var(--cap-w);
+  height: 32px;
+  border: none;
+  border-radius: 5px;
+  background: var(--cap-bg);
+  box-shadow: var(--cap-shadow);
+}
+/* Held: the cap sinks a little. */
+:root[data-theme] .ui-range:active::-webkit-slider-thumb {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 1px 0 var(--cap-edge),
+    0 1px 1px var(--cap-drop),
+    0 2px 3px -1px var(--cap-drop);
+}
+:root[data-theme] .ui-range:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 :root[data-theme] .ui-range:focus-visible {
   outline: none;
 }
 :root[data-theme] .ui-range:focus-visible::-webkit-slider-runnable-track {
   box-shadow:
-    var(--inset-sm),
-    inset 0 0 0 2px var(--focus);
+    inset 1px 1px 3px var(--lo),
+    0 0 0 2px var(--focus);
 }
 :root[data-theme] .ui-range:focus-visible::-moz-range-track {
   box-shadow:
-    var(--inset-sm),
-    inset 0 0 0 2px var(--focus);
+    inset 1px 1px 3px var(--lo),
+    0 0 0 2px var(--focus);
+}
+
+/* Tick marks above the slot; the detent's mark is taller and darker. */
+:root[data-theme] .ui-fader-ticks {
+  position: absolute;
+  top: 1px;
+  left: calc(var(--cap-w) / 2);
+  right: calc(var(--cap-w) / 2);
+  height: 5px;
+  pointer-events: none;
+}
+:root[data-theme] .ui-fader-ticks b {
+  position: absolute;
+  width: 1px;
+  height: 5px;
+  background: var(--muted);
+  opacity: 0.5;
+}
+:root[data-theme] .ui-fader-ticks b.is-detent {
+  top: -2px;
+  width: 2px;
+  height: 7px;
+  margin-left: -0.5px;
+  background: var(--text);
+  opacity: 0.9;
+}
+
+/* The LED strip below the slot: 24 lights, lit up to the value in the control's colour. Two
+   layers of the same segments; the lit one is clipped to --lit. */
+:root[data-theme] .ui-fader-leds,
+:root[data-theme] .ui-fader-leds::after {
+  --seg: linear-gradient(90deg, var(--led) 0 calc(100% - 2px), transparent 0) 0 0 / calc(100% / 24)
+    100% repeat-x;
+}
+:root[data-theme] .ui-fader-leds {
+  --led: var(--line);
+  position: absolute;
+  bottom: 1px;
+  left: calc(var(--cap-w) / 2);
+  right: calc(var(--cap-w) / 2 - 2px);
+  height: 4px;
+  background: var(--seg);
+  pointer-events: none;
+}
+:root[data-theme] .ui-fader-leds::after {
+  --led: var(--ui-c, var(--accent-2));
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--seg);
+  /* The strip runs 2px past the ticks so the last light's gap falls outside; clip over the
+     ticks' width (100% - 2px), so the lit edge lines up with the marks and the cap. */
+  clip-path: inset(0 calc((1 - var(--lit)) * (100% - 2px) + 2px) 0 0);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--ui-c, var(--accent-2)) 60%, transparent));
+  transition: clip-path 0.08s;
+}
+
+/* The value, beside the cap while it is dragged. */
+:root[data-theme] .ui-fader-bubble {
+  position: absolute;
+  bottom: calc(100% - 4px);
+  left: calc(var(--f) * (100% - var(--cap-w)) + var(--cap-w) / 2);
+  padding: 3px 7px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ui-c, var(--accent-2));
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+  opacity: 0;
+  transform: translate(-50%, 4px) scale(0.85);
+  transition:
+    opacity 0.12s,
+    transform 0.12s;
+  pointer-events: none;
+  z-index: 1;
+}
+:root[data-theme] .ui-fader.is-dragging .ui-fader-bubble {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  /* The cap and lights move without easing; the bubble just appears. */
+  :root[data-theme] .ui-range::-webkit-slider-thumb,
+  :root[data-theme] .ui-fader-leds::after,
+  :root[data-theme] .ui-fader-bubble {
+    transition: none;
+  }
 }
 
 /* ── Select (opens a popover menu) ──────────────────────────────────────── */
