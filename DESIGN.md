@@ -199,15 +199,16 @@ Otherwise presentational, except that a primary press with a finger or mouse tap
 
 ### Tabs
 
-A row of tabs over one panel (`TabsProps`, each tab a `Tab`: `id`, `label`, `content`,
-optional `disabled`). The strip is an inset well, the tabs are raised keys and the selected one is
-pressed in, in `--ui-c` (else `--accent-2`); the panel is a raised card. ← → move along the tabs
+Folder tabs over one panel (`TabsProps`, each tab a `Tab`: `id`, `label`, `content`, optional
+`disabled`). The panel is a raised card and the selected tab grows out of it as one surface,
+labelled in `--ui-c` (else `--accent-2`); the other tabs sit behind the card. Where the tabs
+don't fit, neighbours overlap by up to their side padding (`src/ui/tabFit.ts`), so every label
+stays readable; past that the strip scrolls sideways. ← → move along the tabs
 and select as they go, Home and End jump to the ends, and Tab moves into the panel. Pass `value`
 and `onChange` to control it, or `defaultValue` to let it keep the selection.
 
 - Use for a few parallel versions of the same content where people want one at a time, such as
-  the setup steps per AI app on `/about`. Keep labels short so the strip stays one or two rows on
-  a phone.
+  the setup steps per AI app on `/about`. Keep labels short so they fit on a phone.
 - Not for choosing a value that changes the music or the jam (`Select`, `Switch`), for content
   people compare or read in order (show it all), or inside another `Tabs`.
 

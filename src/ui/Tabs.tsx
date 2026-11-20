@@ -1,5 +1,6 @@
-import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from 'react'
+import { type KeyboardEvent, type ReactNode, useId, useLayoutEffect, useRef, useState } from 'react'
 import { stepIndex } from './listNav'
+import { tabStep } from './tabFit'
 import './ui.css'
 
 export interface Tab {
@@ -24,8 +25,10 @@ export type TabsProps = {
 }
 
 /**
- * A row of tabs over one panel (`TabsProps`). The strip is an inset well, the tabs are raised keys
- * and the selected one is pressed in, in `--ui-c` (else `--accent-2`); the panel is a raised card.
+ * Folder tabs over one panel (`TabsProps`). The panel is a raised card and the selected tab grows
+ * out of it as one surface, labelled in `--ui-c` (else `--accent-2`); the other tabs sit behind the
+ * card. Where they don't fit, neighbouring tabs overlap a little (`tabStep`); past that the strip
+ * scrolls sideways.
  * ← → move along the tabs and select as they go, Home and End jump to the ends; Tab moves from
  * the selected tab into the panel. Screen readers hear a tablist.
  */
@@ -40,6 +43,27 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
     tabs.findIndex((t) => t.id === selected),
   )
   const refs = useRef<(HTMLButtonElement | null)[]>([])
+  const strip = useRef<HTMLDivElement>(null)
+
+  // Fit the tabs to the strip: spaced while there is room, overlapping a little when there isn't.
+  useLayoutEffect(() => {
+    const el = strip.current
+    if (!el) return
+    const fit = () => {
+      const style = getComputedStyle(el)
+      const available =
+        el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+      const tabEls = refs.current.slice(0, tabs.length).filter((t) => t !== null)
+      const widths = tabEls.map((t) => t.offsetWidth)
+      // Overlap no further than a tab's side padding, so every label stays readable.
+      const padding = tabEls[0] ? parseFloat(getComputedStyle(tabEls[0]).paddingLeft) : 0
+      el.style.setProperty('--tab-step', `${tabStep(widths, available, padding)}px`)
+    }
+    fit()
+    const observer = new ResizeObserver(fit)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [tabs.length])
 
   const select = (i: number, focus = false) => {
     const tab = tabs[i]
@@ -68,7 +92,13 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
   const current = tabs[index]
   return (
     <div className={`ui-tabs ${className}`}>
-      <div className="ui-tablist" role="tablist" aria-label={label} onKeyDown={onKeyDown}>
+      <div
+        ref={strip}
+        className="ui-tablist"
+        role="tablist"
+        aria-label={label}
+        onKeyDown={onKeyDown}
+      >
         {tabs.map((t, i) => (
           <button
             key={t.id}
