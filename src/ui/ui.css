@@ -1103,6 +1103,9 @@
   border-radius: 14px 14px 0 0;
   box-shadow: var(--raise-sm);
   cursor: pointer;
+  /* No grey flash over the tab, and its foot under the card, when tapped (iOS, Android). */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   transition: color 0.12s;
 }
 :root[data-theme] .ui-tablist .ui-tab {
@@ -1114,7 +1117,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-:root[data-theme] .ui-tab:hover:not(:disabled) {
+:root[data-theme] .ui-tab:hover:not(:disabled, [aria-selected='true']) {
   color: var(--text);
 }
 /* The selected tab: above the card and the card's colour, its shadow cut where the card begins. */
