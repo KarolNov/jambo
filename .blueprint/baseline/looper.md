@@ -50,6 +50,20 @@ After the count-in, every pad hit SHALL be captured with its position in beats u
   - **WHEN** the first hit lands 1/8 beat before the take starts
   - **THEN** it is stored on beat 0
 
+### Requirement: Take display
+
+While a take is being recorded, the readout SHALL show it in place of the tempo, as heard. During the count-in it SHALL show the count (1–4); while recording, the bar being recorded, counted from 1. Beside it, the beats of the bar SHALL show as 1 2 3 4 with the current one lit in the recorder's colour. Under them, a lane SHALL show the take so far, growing a bar at a time up to 16 bars, with a playhead and each hit where it will play, snapped to 1/16. Only the person recording SHALL see it, and between takes the readout SHALL show the tempo again.
+
+- **Scenario: Count along**
+  - **WHEN** someone presses record and plays into the take's second bar
+  - **THEN** the readout counts 1 to 4 through the count-in, then shows bar 1, then bar 2 on a two-bar lane, with the current beat lit
+- **Scenario: See where a hit lands**
+  - **WHEN** someone plays a hit at beat 1.1 of a take
+  - **THEN** a mark shows on the lane at beat 1 right away, and after stop the track stores 1.1
+- **Scenario: Others keep the tempo**
+  - **WHEN** one person in a jam records
+  - **THEN** everyone else's readout keeps showing the tempo
+
 ### Requirement: Whole bars
 
 A take's length SHALL round up to whole bars, from 1 to 16 bars. A stop up to 1/8 bar past a bar line SHALL count as on it. Hits past the end SHALL be dropped, and a track SHALL keep at most 512 hits.
