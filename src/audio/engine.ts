@@ -425,6 +425,17 @@ export class Engine {
     return ((now - start) % loop) / loop
   }
 
+  /**
+   * The take so far, as heard: `beat` counts from its first beat (negative before it, during the
+   * count-in) and `hits` are those played so far, unsnapped. Undefined between takes.
+   */
+  take(): { beat: number; hits: readonly Hit[] } | undefined {
+    const rec = this.recorder
+    const now = this.heardNow()
+    if (rec.phase === 'idle' || now === undefined) return undefined
+    return { beat: (now - rec.recordStart) / (beatSeconds(this.bpm) * 1000), hits: this.takeHits }
+  }
+
   /** For the `?debug` readout: the next downbeat, in room ms. */
   nextDownbeat(): number | undefined {
     const now = this.clock.now()

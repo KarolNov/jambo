@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { BPM } from '../../../shared/board'
 import type { RecorderState } from '../../audio/engine'
 import { Button, IconButton, ScrubField, Switch } from '../../ui'
+import { useSwatch } from '../colors'
+import { useSession } from '../session'
 import { useTransport } from '../useTransport'
 import { SoundEditor } from './Pads'
+import { TakeLane } from './TakeLane'
 import './deck.css'
 
 /** The deck: the pads beside the tempo readout, the transport, and Change sounds. */
@@ -36,7 +39,7 @@ const PHASE: Record<RecorderState['phase'], string> = {
   recording: 'Recording',
 }
 
-/** The tempo, large, and what the recorder is doing. */
+/** The tempo, large, and what the recorder is doing; during a take, the take as it is recorded. */
 function Readout({
   bpm,
   phase,
@@ -46,6 +49,18 @@ function Readout({
   phase: RecorderState['phase']
   synced: boolean
 }) {
+  const { me } = useSession()
+  const swatch = useSwatch()
+  if (phase !== 'idle')
+    return (
+      <div
+        className="console-readout is-take"
+        style={{ '--c': swatch(me.color) } as CSSProperties}
+        aria-hidden
+      >
+        <TakeLane />
+      </div>
+    )
   return (
     <div className="console-readout" aria-hidden>
       <span className="console-bpm">{bpm}</span>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { BPM } from '../shared/board'
+import { BPM, LIMITS } from '../shared/board'
 import { byAgent, namesPeople, personName, uploadedBy } from '../src/board/console/people'
-import { TEMPO_RANGE, takeName, tempoFor } from '../src/board/transport'
+import { TEMPO_RANGE, takeMarks, takeName, takeView, tempoFor } from '../src/board/transport'
 
 describe('naming a take', () => {
   it("is the recorder's name and the next number after the jam's takes with it", () => {
@@ -15,6 +15,48 @@ describe('naming a take', () => {
     expect(takeName('Groovy Otter', [{ name: 'Groovy Otter Remix' }, { name: 'Groovy 9' }])).toBe(
       'Groovy Otter 1',
     )
+  })
+})
+
+describe('the take lane', () => {
+  it('waits, then counts the count-in bar 1 to 4', () => {
+    expect(takeView(-6)).toEqual({ stage: 'waiting' })
+    expect(takeView(-4)).toEqual({ stage: 'count-in', count: 1 })
+    expect(takeView(-2.5)).toEqual({ stage: 'count-in', count: 2 })
+    expect(takeView(-0.01)).toEqual({ stage: 'count-in', count: 4 })
+  })
+
+  it('shows the bar and beat recorded, on a lane that grows a bar at a time', () => {
+    expect(takeView(0)).toEqual({ stage: 'recording', bar: 1, beat: 1, bars: 1 })
+    expect(takeView(3.9)).toEqual({ stage: 'recording', bar: 1, beat: 4, bars: 1 })
+    expect(takeView(5.2)).toEqual({ stage: 'recording', bar: 2, beat: 2, bars: 2 })
+  })
+
+  it('stops growing the lane at the longest loop', () => {
+    const view = takeView(LIMITS.bars * 4 + 1)
+    expect(view).toMatchObject({ bar: LIMITS.bars + 1, bars: LIMITS.bars })
+  })
+
+  it('puts hits where they will play: snapped to 1/16, an early one on the first beat', () => {
+    const hits = [
+      { padId: 'a', beat: -0.2 },
+      { padId: 'b', beat: 1.1 },
+      { padId: 'c', beat: 2.4 },
+    ]
+    expect(takeMarks(hits, 1)).toEqual([
+      { padId: 'a', beat: 0 },
+      { padId: 'b', beat: 1 },
+      { padId: 'c', beat: 2.5 },
+    ])
+  })
+
+  it('leaves out hits too early for the take and past the lane', () => {
+    const hits = [
+      { padId: 'a', beat: -1 },
+      { padId: 'b', beat: 3.9 },
+    ]
+    expect(takeMarks(hits, 1)).toEqual([])
+    expect(takeMarks(hits, 2)).toEqual([{ padId: 'b', beat: 4 }])
   })
 })
 
