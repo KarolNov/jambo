@@ -14,3 +14,4 @@ export {
 } from './controls'
 export { type Group, type Option, OptionList, Popover, Select } from './Menu'
 export { Pad, type PadProps } from './Pad'
+export { type Tab, Tabs, type TabsProps } from './Tabs'

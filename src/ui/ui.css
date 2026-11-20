@@ -987,3 +987,68 @@
 :root[data-theme] .ui-pad-sound-missing {
   color: var(--accent);
 }
+
+/* ── Tabs ───────────────────────────────────────────────────────────────── */
+/* The strip is an inset well; tabs are raised keys and the selected one is pressed in. */
+:root[data-theme] .ui-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 16px;
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .ui-tab {
+  padding: 7px 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--bg);
+  border: none;
+  border-radius: 11px;
+  box-shadow: var(--raise-sm);
+  cursor: pointer;
+  transition:
+    box-shadow 0.12s,
+    color 0.12s;
+}
+:root[data-theme] .ui-tab:hover:not(:disabled) {
+  color: var(--ui-c, var(--accent-2));
+}
+:root[data-theme] .ui-tab[aria-selected='true'] {
+  color: var(--ui-c, var(--accent-2));
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .ui-tab:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+:root[data-theme] .ui-tab:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--raise-sm),
+    inset 0 0 0 2px var(--focus);
+}
+:root[data-theme] .ui-tab[aria-selected='true']:focus-visible {
+  box-shadow:
+    var(--inset-sm),
+    inset 0 0 0 2px var(--focus);
+}
+:root[data-theme] .ui-tabpanel {
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: 18px;
+  box-shadow: var(--raise);
+}
+:root[data-theme] .ui-tabpanel:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--raise),
+    inset 0 0 0 2px var(--focus);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] .ui-tab {
+    transition: none;
+  }
+}
