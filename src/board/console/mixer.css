@@ -259,7 +259,7 @@
   :root[data-theme] .console-remove {
     grid-area: remove;
   }
-  :root[data-theme] .console-pattern {
+  :root[data-theme] .console-channel .console-pattern {
     grid-area: pattern;
   }
   :root[data-theme] .console-fader {

@@ -54,6 +54,42 @@
   color: var(--accent-2);
 }
 
+/* During a take the readout shows the bar large, the beat of the bar as numbers lit like LEDs in
+   your colour, and the take so far on a lane; it keeps the tempo's height, so nothing below moves. */
+:root[data-theme] .console-readout.is-take {
+  grid-template-columns: auto auto 1fr;
+  column-gap: 8px;
+}
+:root[data-theme] .console-take-big[data-stage='count-in'] {
+  color: var(--accent-2);
+}
+:root[data-theme] .console-take-big[data-stage='waiting'] {
+  color: var(--line);
+}
+:root[data-theme] .console-take-beats {
+  display: flex;
+  gap: 6px;
+  justify-self: end;
+  align-self: center;
+  font-size: 21px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+/* An unlit LED: there, but dark. */
+:root[data-theme] .console-take-beats span {
+  color: var(--line);
+}
+:root[data-theme] .console-take-beats span.is-lit {
+  color: var(--c);
+  text-shadow: 0 0 12px var(--c);
+}
+:root[data-theme] .console-take-lane {
+  grid-column: 1 / -1;
+  height: 18px;
+  margin-top: 6px;
+}
+
 /* The transport: a big record key, the tempo stepper, the click switch. */
 :root[data-theme] .console-transport {
   display: flex;

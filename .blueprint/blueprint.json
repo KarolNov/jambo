@@ -92,15 +92,16 @@
         "src/board/colors.ts": "d21c9da0a9fa",
         "src/board/console/AiMark.tsx": "a01ab3b0aaee",
         "src/board/console/Console.tsx": "f38c1a5735ac",
-        "src/board/console/Deck.tsx": "c82790ccb25b",
+        "src/board/console/Deck.tsx": "30738c6c6756",
         "src/board/console/Header.tsx": "c9cf7c94ae96",
         "src/board/console/Mixer.tsx": "cf7df23a124e",
         "src/board/console/Pads.tsx": "8dd994f0a5ad",
+        "src/board/console/TakeLane.tsx": "4b9d6eb3c34c",
         "src/board/console/console.css": "fb666aae1697",
-        "src/board/console/deck.css": "9277a34542af",
+        "src/board/console/deck.css": "45c06b8bc645",
         "src/board/console/header.css": "71283a0a4c5f",
         "src/board/console/loops.ts": "42ef8492a4ca",
-        "src/board/console/mixer.css": "7feff420f509",
+        "src/board/console/mixer.css": "0007f8afdcc4",
         "src/board/console/pads.css": "a921d00fc2cf",
         "src/board/console/people.ts": "c947df332ba9",
         "src/board/console/share.ts": "41845818fcbf",
@@ -110,7 +111,7 @@
         "src/board/seat.ts": "efa33b9e925b",
         "src/board/session.ts": "74ea6cbdbb7f"
       },
-      "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
+      "syncedCommit": "5b4efecf839423ad94144e4dbff65cace55401d2"
     },
     "board/ops": {
       "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
@@ -141,25 +142,25 @@
         "src/board/useTransport.ts",
         "src/board/transport.ts"
       ],
-      "specVersion": "58be587d2edacde6",
+      "specVersion": "0f4e82b3f543e549",
       "anchorsFiles": {
         "shared/clock.ts": "1dd908e91d40",
         "src/audio/clock.ts": "c0378e84a7cb",
-        "src/audio/engine.ts": "941e1017f095",
+        "src/audio/engine.ts": "8d99cda9bc0e",
         "src/audio/knobs.ts": "dbbd2773232e",
         "src/audio/samples.ts": "093a12daee1a",
         "src/audio/session.ts": "2e1ec86333d1",
         "src/audio/synth.ts": "bbba5b7d5b5b",
         "src/audio/upload.ts": "9d3467419e28",
         "src/board/Debug.tsx": "80d7db772bb5",
-        "src/board/console/Deck.tsx": "c82790ccb25b",
+        "src/board/console/Deck.tsx": "30738c6c6756",
         "src/board/console/Mixer.tsx": "cf7df23a124e",
         "src/board/console/loops.ts": "42ef8492a4ca",
-        "src/board/transport.ts": "cee162c2b1a7",
+        "src/board/transport.ts": "deccd619446c",
         "src/board/useEngineState.ts": "f06f1956d95d",
-        "src/board/useTransport.ts": "754386647e7d"
+        "src/board/useTransport.ts": "85fff8d0f3b4"
       },
-      "syncedCommit": "b62a61a008f9842ad33e3a9c193d983c536180a0"
+      "syncedCommit": "5b4efecf839423ad94144e4dbff65cace55401d2"
     },
     "pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",

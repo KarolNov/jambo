@@ -4,7 +4,7 @@ import { newId } from '../../shared/board'
 import { bpmAtom, tracksAtom } from './model'
 import { isTyping } from './typing'
 import { useSession } from './session'
-import { TEMPO_RANGE, takeName, tempoFor } from './transport'
+import { TAKE_QUANTIZE, TEMPO_RANGE, takeName, tempoFor } from './transport'
 import { useRecorderState } from './useEngineState'
 
 /**
@@ -52,7 +52,7 @@ export function useTransport() {
       startBar: take.startBar,
       gain: 1,
       mute: false,
-      quantize: 0.25,
+      quantize: TAKE_QUANTIZE,
       effects: [],
     })
     setMessage(r.ok ? undefined : r.issues[0]?.message)
