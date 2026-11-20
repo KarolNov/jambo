@@ -328,7 +328,7 @@ export const CATALOGUE: Entry[] = [
   {
     name: 'Range',
     summary:
-      'A mixer fader: a solid cap in a thin slot, an LED strip lit to the value in its colour, tick marks and a detent. The value shows while dragged. On phones a drag ticks lightly per light of the strip, firmer on the detent.',
+      'A mixer fader: a solid cap in a thin slot, an LED strip lit to the value in its colour, tick marks and a detent. The value shows while dragged. On Android a drag ticks lightly per light of the strip, firmer on the detent.',
     states: [
       { label: 'At unity, with marks and a detent', demo: <RangeDemo start={1} marks /> },
       { label: 'Low, no marks', demo: <RangeDemo start={0.3} /> },
@@ -348,7 +348,7 @@ export const CATALOGUE: Entry[] = [
   {
     name: 'Knob',
     summary:
-      'A rotary control: drag up or right to turn it up, Shift for ten steps, Escape to put it back, double-click to reset. Applies on release, or once a frame as it turns when live. On phones a turn ticks lightly per light of its ring. Screen readers hear a slider.',
+      'A rotary control: drag up or right to turn it up, Shift for ten steps, Escape to put it back, double-click to reset. Applies on release, or once a frame as it turns when live. On Android a turn ticks lightly per light of its ring. Screen readers hear a slider.',
     states: [
       { label: 'Middle', demo: <KnobDemo start={0.5} /> },
       { label: 'Full', demo: <KnobDemo start={1} /> },
@@ -420,7 +420,7 @@ export const CATALOGUE: Entry[] = [
   {
     name: 'Pad',
     summary:
-      'A pad’s face: a soft rubber square with its key moulded in and its sound’s name. Pressed, it is pushed in with a ring in --glow; lit, light spreads from inside it. A press taps on phones; a loop’s hit never does.',
+      'A pad’s face: a soft rubber square with its key moulded in and its sound’s name. Pressed, it is pushed in with a ring in --glow; lit, light spreads from inside it. A press taps on Android; a loop’s hit never does.',
     states: [
       { label: 'Resting', demo: <Pad keyLabel="q" name="Kick" /> },
       { label: 'Pressed', demo: <Pad keyLabel="w" name="Snare" lit="pressed" /> },

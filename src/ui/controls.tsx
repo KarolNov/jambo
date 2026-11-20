@@ -203,7 +203,7 @@ const PAGE_STEPS = 5
 /**
  * A mixer fader: a thin slot, a solid cap with ridges and an index line, an LED strip lit to the
  * value in `color`, optional tick marks and a detent. The value shows in a bubble while dragged.
- * On phones, a drag ticks lightly as it passes each light of the strip (throttled, so a fast drag
+ * On Android phones, a drag ticks lightly as it passes each light of the strip (throttled, so a fast drag
  * doesn't buzz) and firmer as it lands on the detent; keys don't tick.
  * While someone else drags it (`heldBy`), the cap is ringed in their colour and the bubble names
  * them. It stays a native range input, so keys and screen readers work as usual.
@@ -485,7 +485,7 @@ export type KnobProps = {
  * or right to turn it up, down or left to turn it down, Shift for ten steps; the value shows in a
  * bubble while turning and applies once on release, and Escape puts it back. A `live` knob applies
  * as it turns, once a frame, and Escape applies the start value again unless a peer has changed
- * it since. On phones a turn ticks lightly as it passes each light of the ring, throttled so a
+ * it since. On Android phones a turn ticks lightly as it passes each light of the ring, throttled so a
  * fast turn doesn't buzz. Arrows, Page Up/Down, Home and End turn it from the keyboard, silently; a double-click resets it to `defaultValue`. While
  * someone else turns it (`heldBy`), it is ringed in their colour and the bubble names them. Screen
  * readers hear a slider.

@@ -68,6 +68,8 @@ control's own shadow. No outer outlines. Every control must show it on `:focus-v
   scrub's step), `detent` as a fader lands on its detent, `flip` as a switch changes, `tap` as a
   pad is pressed. Steps are throttled (`MIN_GAP_MS` in `src/ui/hapticGate.ts`), so a fast drag
   ticks now and then instead of buzzing. Keys never tick.
+- iOS Safari gives scripts no haptics (iOS 26.5 closed the hidden-switch trick), so only a native
+  switch under the finger ticks there (`Switch`). Every other kind ticks on Android only.
 - A drag previews locally and applies once, on release (`useScrub`). Don't send a board operation
   per pixel.
 
@@ -118,7 +120,7 @@ A mixer fader: a solid cap in a thin slot, an LED strip lit to the value in `col
 `marks` and a `detent` that drags stick to. The value shows in a bubble while dragged
 (`format` decides how it reads). It stays a native range input.
 
-On phones a drag ticks lightly as it passes each light of the LED strip and firmer as it lands
+On Android phones a drag ticks lightly as it passes each light of the LED strip and firmer as it lands
 on the detent.
 
 - Use for a continuous level adjusted by feel, such as a loop's volume. Give it marks where
@@ -135,7 +137,7 @@ By default it applies once, on release. With `live` it applies as it turns, at m
 (as `Range` does), and Escape applies the start value again, so everyone hears the change while
 it happens and a cancel puts it back for everyone.
 
-On phones a turn ticks lightly as it passes each light of the ring (`segments`, else 24), or each
+On Android phones a turn ticks lightly as it passes each light of the ring (`segments`, else 24), or each
 step when there are fewer steps than that. Keys and the double-click reset don't tick.
 
 - Use for a secondary continuous parameter where a fader would take too much room, such as a
@@ -187,7 +189,7 @@ by ↑ ↓ Home End and Enter or Space. It takes focus when it mounts.
 A pad's face (`PadProps`): a soft rubber square with its key moulded in and its sound's name,
 optionally a `dot`, a sample `status`, and the `editing` badge. `lit="pressed"` pushes it in with
 a ring in `tint` (else `--glow`, then `--accent-2`); `lit="glow"` lights it from inside.
-Otherwise presentational, except that a primary press with a finger or mouse taps on phones
+Otherwise presentational, except that a primary press with a finger or mouse taps on Android phones
 (`haptic('tap')`). `lit` and the console's flashes for loop hits never tap.
 
 - Use for a pad that plays a sound. The owner decides what a press does.

@@ -29,7 +29,7 @@ export type PadProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
  * A pad's face: a soft rubber square with its key letter moulded in and its sound's name. Pressed,
  * it is pushed in with a ring in `tint`; lit, light spreads from inside it in `tint`. Otherwise
  * presentational: the console decides what a press does. Pressing it with a finger or the mouse
- * taps on phones; `lit` and the console's flashes (a loop's hits) never do.
+ * taps on Android phones (iOS gives scripts no haptics); `lit` and the console's flashes (a loop's hits) never do.
  */
 export function Pad({
   keyLabel,
