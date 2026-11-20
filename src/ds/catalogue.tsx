@@ -482,7 +482,7 @@ export const CATALOGUE: Entry[] = [
   {
     name: 'Tabs',
     summary:
-      'Folder tabs over one panel: the selected tab grows out of the raised card as one surface, the others sit behind it. ← → Home End move along the tabs.',
+      'Folder tabs over one panel: the selected tab is part of the raised card, the others sit behind it. Tabs that don\'t fit go behind "+N", a menu of them. ← → Home End move through every tab.',
     states: [
       { label: 'Uncontrolled', demo: <Tabs label="AI apps" tabs={TAB_DEMO} /> },
       {
@@ -498,7 +498,7 @@ export const CATALOGUE: Entry[] = [
     ],
     use: [
       'A few parallel versions of the same content where people want one at a time, such as setup steps per app on /about.',
-      'Short labels: on a phone the tabs overlap a little to fit, and scroll past that.',
+      'Short labels, so more of them fit before "+N" (as in these narrow demos).',
     ],
     avoid: [
       'Picking a value that changes the music or the jam: use Select or Switch.',

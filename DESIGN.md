@@ -203,15 +203,16 @@ the console's flashes for loop hits never tap.
 ### Tabs
 
 Folder tabs over one panel (`TabsProps`, each tab a `Tab`: `id`, `label`, `content`, optional
-`disabled`). The panel is a raised card and the selected tab grows out of it as one surface,
-labelled in `--ui-c` (else `--accent-2`); the other tabs sit behind the card. Where the tabs
-don't fit, neighbours overlap by up to their side padding (`src/ui/tabFit.ts`), so every label
-stays readable; past that the strip scrolls sideways. ← → move along the tabs
-and select as they go, Home and End jump to the ends, and Tab moves into the panel. Pass `value`
-and `onChange` to control it, or `defaultValue` to let it keep the selection.
+`disabled`). The panel is a raised card and the selected tab is part of it, labelled in `--ui-c`
+(else `--accent-2`); the other tabs sit behind the card. Selecting swaps them at once: only the
+label's colour eases. Tabs that don't fit go behind a "+N" tab that opens a menu of them
+(`src/ui/tabFit.ts`); the selected tab always shows, in place of the last one that fits. ← →
+move through every tab, shown or not, and select as they go, Home and End jump to the ends, and
+Tab moves on to "+N", then into the panel. Pass `value` and `onChange` to control it, or
+`defaultValue` to let it keep the selection.
 
 - Use for a few parallel versions of the same content where people want one at a time, such as
-  the setup steps per AI app on `/about`. Keep labels short so they fit on a phone.
+  the setup steps per AI app on `/about`. Keep labels short, so more of them fit before "+N".
 - Not for choosing a value that changes the music or the jam (`Select`, `Switch`), for content
   people compare or read in order (show it all), or inside another `Tabs`.
 

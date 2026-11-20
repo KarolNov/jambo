@@ -1063,37 +1063,39 @@
 
 /* ── Tabs ───────────────────────────────────────────────────────────────── */
 /*
- * Folder tabs: the panel is a raised card and the selected tab grows out of it, one surface.
- * The other tabs sit behind the card, their feet tucked under it. Layers: tabs 0, panel 1,
- * selected tab 2. Where the tabs don't fit, Tabs sets --tab-step negative so neighbours overlap
- * (src/ui/tabFit.ts); past that the strip scrolls. Its padding and matching negative margin leave
- * room for the tabs' shadows inside the scroll box.
+ * Folder tabs: the panel is a raised card and the selected tab is part of it, one surface. The
+ * other tabs sit behind the card, a shade back, their feet tucked under it. Layers: tabs 0,
+ * panel 1, selected tab 2. Tabs that don't fit go behind "+N" (Tabs measures; tabFit.ts).
+ * Selecting a tab swaps these at once: nothing animates but the label's colour.
  */
 :root[data-theme] .ui-tabs {
   --tab-tuck: 14px;
   position: relative;
-  /* Shrink to the space it has, so the strip scrolls rather than pushing the page wider. */
   min-width: 0;
-  max-width: 100%;
+}
+:root[data-theme] .ui-tabstrip {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  padding: 0 16px;
+  margin-bottom: calc(-1 * var(--tab-tuck));
 }
 :root[data-theme] .ui-tablist {
   display: flex;
-  margin: -14px -14px calc(-1 * var(--tab-tuck));
-  padding: 14px 30px 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-:root[data-theme] .ui-tablist::-webkit-scrollbar {
-  display: none;
+  gap: 6px;
+  min-width: 0;
 }
 :root[data-theme] .ui-tab {
   position: relative;
   z-index: 0;
   flex: none;
-  padding: 10px 18px calc(10px + var(--tab-tuck));
+  max-width: 100%;
+  padding: 10px 16px calc(10px + var(--tab-tuck));
   font: inherit;
   font-size: 14px;
   font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
   color: var(--muted);
   /* A shade back from the card, as a tab behind it would be. */
   background: color-mix(in srgb, var(--bg) 88%, var(--lo));
@@ -1103,15 +1105,19 @@
   cursor: pointer;
   transition: color 0.12s;
 }
-:root[data-theme] .ui-tab + .ui-tab {
-  margin-left: var(--tab-step, 8px);
+:root[data-theme] .ui-tablist .ui-tab {
+  flex: 0 1 auto;
+  min-width: 0;
 }
-/* An overlapped tab comes forward while pointed at, still behind the card. */
+:root[data-theme] .ui-tab-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 :root[data-theme] .ui-tab:hover:not(:disabled) {
-  z-index: 1;
   color: var(--text);
 }
-/* The selected tab: above the card, its shadow cut off where the card begins. */
+/* The selected tab: above the card and the card's colour, its shadow cut where the card begins. */
 :root[data-theme] .ui-tab[aria-selected='true'] {
   z-index: 2;
   color: var(--ui-c, var(--accent-2));
@@ -1126,6 +1132,9 @@
   border-radius: inherit;
   box-shadow: var(--raise);
   clip-path: inset(-30px -30px 0 -30px);
+}
+:root[data-theme] .ui-tab-more[aria-expanded='true'] {
+  color: var(--ui-c, var(--accent-2));
 }
 :root[data-theme] .ui-tab:disabled {
   opacity: 0.45;
@@ -1143,6 +1152,21 @@
   box-shadow: inset 0 0 0 2px var(--focus);
   pointer-events: none;
 }
+/* A copy of every tab, laid out but never seen, for Tabs to measure. */
+:root[data-theme] .ui-tabstrip-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+:root[data-theme] .ui-tabstrip-measure .ui-tab {
+  max-width: none;
+}
 :root[data-theme] .ui-tabpanel {
   position: relative;
   z-index: 1;
@@ -1158,12 +1182,15 @@
     inset 0 0 0 2px var(--focus);
 }
 @media (max-width: 520px) {
-  :root[data-theme] .ui-tablist {
-    padding-inline: 12px;
+  :root[data-theme] .ui-tabstrip {
+    padding: 0 12px;
   }
   :root[data-theme] .ui-tab {
-    padding-inline: 8px;
-    font-size: 12px;
+    padding-inline: 12px;
+    font-size: 13px;
+  }
+  :root[data-theme] .ui-tabpanel {
+    padding: 18px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -1,12 +1,22 @@
-import { type KeyboardEvent, type ReactNode, useId, useLayoutEffect, useRef, useState } from 'react'
+import {
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import { stepIndex } from './listNav'
-import { tabStep } from './tabFit'
+import { OptionList, Popover } from './Menu'
+import { visibleTabs } from './tabFit'
 import './ui.css'
 
 export interface Tab {
   /** Stable id, unique among the tabs; it is also the value `onChange` reports. */
   id: string
-  label: ReactNode
+  /** The tab's name, on the tab and in the "+N" menu. */
+  label: string
   /** What the panel shows while this tab is selected. */
   content: ReactNode
   disabled?: boolean
@@ -25,12 +35,11 @@ export type TabsProps = {
 }
 
 /**
- * Folder tabs over one panel (`TabsProps`). The panel is a raised card and the selected tab grows
- * out of it as one surface, labelled in `--ui-c` (else `--accent-2`); the other tabs sit behind the
- * card. Where they don't fit, neighbouring tabs overlap a little (`tabStep`); past that the strip
- * scrolls sideways.
- * ← → move along the tabs and select as they go, Home and End jump to the ends; Tab moves from
- * the selected tab into the panel. Screen readers hear a tablist.
+ * Folder tabs over one panel (`TabsProps`). The panel is a raised card and the selected tab is
+ * part of it, labelled in `--ui-c` (else `--accent-2`); the other tabs sit behind the card. Tabs
+ * that don't fit go behind a "+N" tab that opens a menu of them (`visibleTabs`); the selected tab
+ * always shows. ← → move through every tab, shown or not, and select as they go; Home and End
+ * jump to the ends; Tab moves on to "+N", then into the panel. Screen readers hear a tablist.
  */
 export function Tabs({ tabs, label, value, defaultValue, onChange, className = '' }: TabsProps) {
   const base = useId()
@@ -42,35 +51,52 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
     0,
     tabs.findIndex((t) => t.id === selected),
   )
-  const refs = useRef<(HTMLButtonElement | null)[]>([])
-  const strip = useRef<HTMLDivElement>(null)
 
-  // Fit the tabs to the strip: spaced while there is room, overlapping a little when there isn't.
+  const strip = useRef<HTMLDivElement>(null)
+  const measure = useRef<HTMLDivElement>(null)
+  const moreButton = useRef<HTMLButtonElement>(null)
+  const refs = useRef(new Map<string, HTMLButtonElement>())
+  const focusAfter = useRef<string>(undefined)
+  const [widths, setWidths] = useState<{ tabs: number[]; more: number; available: number }>()
+  const [menu, setMenu] = useState(false)
+
+  // Measure every tab once (in a hidden copy of the strip) and the strip's width as it changes.
   useLayoutEffect(() => {
     const el = strip.current
-    if (!el) return
+    const copy = measure.current
+    if (!el || !copy) return
     const fit = () => {
       const style = getComputedStyle(el)
       const available =
         el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
-      const tabEls = refs.current.slice(0, tabs.length).filter((t) => t !== null)
-      const widths = tabEls.map((t) => t.offsetWidth)
-      // Overlap no further than a tab's side padding, so every label stays readable.
-      const padding = tabEls[0] ? parseFloat(getComputedStyle(tabEls[0]).paddingLeft) : 0
-      el.style.setProperty('--tab-step', `${tabStep(widths, available, padding)}px`)
+      const buttons = [...copy.children] as HTMLElement[]
+      const more = buttons.pop()?.offsetWidth ?? 0
+      setWidths({ tabs: buttons.map((b) => b.offsetWidth), more, available })
     }
     fit()
     const observer = new ResizeObserver(fit)
     observer.observe(el)
     return () => observer.disconnect()
-  }, [tabs.length])
+  }, [tabs])
+
+  const shown = widths
+    ? visibleTabs(widths.tabs, index, widths.available, widths.more)
+    : tabs.map((_, i) => i)
+  const hidden = tabs.filter((_, i) => !shown.includes(i))
+
+  // A key moved to a tab: focus it once it's on screen (it may just have come out of "+N").
+  useEffect(() => {
+    if (!focusAfter.current) return
+    refs.current.get(focusAfter.current)?.focus()
+    focusAfter.current = undefined
+  })
 
   const select = (i: number, focus = false) => {
     const tab = tabs[i]
     if (!tab || tab.disabled) return
     if (value === undefined) setOwn(tab.id)
     if (tab.id !== selected) onChange?.(tab.id)
-    if (focus) refs.current[i]?.focus()
+    if (focus) focusAfter.current = tab.id
   }
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -92,33 +118,76 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
   const current = tabs[index]
   return (
     <div className={`ui-tabs ${className}`}>
-      <div
-        ref={strip}
-        className="ui-tablist"
-        role="tablist"
-        aria-label={label}
-        onKeyDown={onKeyDown}
-      >
-        {tabs.map((t, i) => (
+      <div className="ui-tabstrip" ref={strip}>
+        <div className="ui-tablist" role="tablist" aria-label={label} onKeyDown={onKeyDown}>
+          {shown.map((i) => {
+            const t = tabs[i]!
+            return (
+              <button
+                key={t.id}
+                ref={(el) => {
+                  if (el) refs.current.set(t.id, el)
+                  else refs.current.delete(t.id)
+                }}
+                type="button"
+                role="tab"
+                id={`${base}-tab-${i}`}
+                aria-controls={`${base}-panel`}
+                aria-selected={i === index}
+                tabIndex={i === index ? 0 : -1}
+                disabled={t.disabled}
+                className="ui-tab"
+                onClick={() => select(i)}
+              >
+                <span className="ui-tab-label">{t.label}</span>
+              </button>
+            )
+          })}
+        </div>
+        {hidden.length > 0 && (
           <button
-            key={t.id}
-            ref={(el) => {
-              refs.current[i] = el
-            }}
+            ref={moreButton}
             type="button"
-            role="tab"
-            id={`${base}-tab-${i}`}
-            aria-controls={`${base}-panel`}
-            aria-selected={i === index}
-            tabIndex={i === index ? 0 : -1}
-            disabled={t.disabled}
-            className="ui-tab"
-            onClick={() => select(i)}
+            className="ui-tab ui-tab-more"
+            aria-haspopup="listbox"
+            aria-expanded={menu}
+            aria-label={`${hidden.length} more: ${hidden.map((t) => t.label).join(', ')}`}
+            title={hidden.map((t) => t.label).join(', ')}
+            onClick={() => setMenu((m) => !m)}
           >
-            {t.label}
+            +{hidden.length}
           </button>
-        ))}
+        )}
+        {/* A hidden copy of every tab and the widest "+N", to measure what fits. */}
+        <div className="ui-tabstrip-measure" ref={measure} aria-hidden>
+          {tabs.map((t) => (
+            <span key={t.id} className="ui-tab">
+              {t.label}
+            </span>
+          ))}
+          <span className="ui-tab ui-tab-more">+{tabs.length}</span>
+        </div>
       </div>
+      {menu && moreButton.current && (
+        <Popover anchor={moreButton.current} onClose={() => setMenu(false)}>
+          <OptionList
+            label={`More of ${label}`}
+            value={selected ?? ''}
+            groups={[
+              {
+                options: hidden.map((t) => ({ value: t.id, label: t.label, disabled: t.disabled })),
+              },
+            ]}
+            onSelect={(id) => {
+              setMenu(false)
+              select(
+                tabs.findIndex((t) => t.id === id),
+                true,
+              )
+            }}
+          />
+        </Popover>
+      )}
       <div
         className="ui-tabpanel"
         role="tabpanel"

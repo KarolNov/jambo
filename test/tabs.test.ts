@@ -1,24 +1,28 @@
 import { describe, expect, it } from 'vitest'
-import { TAB_GAP, tabStep } from '../src/ui/tabFit'
+import { TAB_GAP, visibleTabs } from '../src/ui/tabFit'
+
+const W = [60, 100, 80, 70, 60, 50] // six tabs: 420 wide, 450 with their gaps (6 px)
+const MORE = 40
 
 describe('folder tabs fitting their strip', () => {
-  it('keeps the gap while the tabs fit', () => {
-    expect(tabStep([60, 80, 70], 400, 12)).toBe(TAB_GAP)
+  it('shows every tab while they fit', () => {
+    expect(visibleTabs(W, 0, 420 + 5 * TAB_GAP, MORE)).toEqual([0, 1, 2, 3, 4, 5])
   })
 
-  it('closes the gap, then overlaps, just enough to fit', () => {
-    // 210 of tabs in 214: 2 px between each.
-    expect(tabStep([60, 80, 70], 214, 12)).toBe(2)
-    // 210 of tabs in 190: each neighbour covers 10 px.
-    expect(tabStep([60, 80, 70], 190, 12)).toBe(-10)
+  it('shows as many of the first tabs as fit beside "+N"', () => {
+    // 60 + 100 + 80 + 2 gaps = 252, + gap + 40 = 298
+    expect(visibleTabs(W, 0, 300, MORE)).toEqual([0, 1, 2])
   })
 
-  it('overlaps no further than the side padding, so labels stay readable; the strip scrolls past that', () => {
-    expect(tabStep([60, 80, 70], 50, 12)).toBe(-12)
+  it('keeps the selected tab in view, in place of the last one that fits', () => {
+    expect(visibleTabs(W, 4, 300, MORE)).toEqual([0, 1, 4])
   })
 
-  it('has nothing to fit with one tab or none', () => {
-    expect(tabStep([120], 40, 12)).toBe(TAB_GAP)
-    expect(tabStep([], 40, 12)).toBe(TAB_GAP)
+  it('shows at least the selected tab', () => {
+    expect(visibleTabs(W, 3, 50, MORE)).toEqual([3])
+  })
+
+  it('has nothing to fit with no tabs', () => {
+    expect(visibleTabs([], 0, 100, MORE)).toEqual([])
   })
 })
