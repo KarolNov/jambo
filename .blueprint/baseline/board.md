@@ -67,6 +67,15 @@ The board SHALL show the jam's slug, a logo that starts a new jam, and a control
   - **WHEN** someone presses Share this jam on a phone
   - **THEN** the system share sheet opens with the jam's link
 
+### Requirement: About link
+
+The board SHALL link to the about page, where people learn how to play and how to bring their AI, opening it in a new tab so the jam keeps playing.
+
+- **Scenario: Open about from a jam**
+  - **GIVEN** a jam with loops playing
+  - **WHEN** someone presses About · Add your AI
+  - **THEN** `/about` opens in a new tab and the jam keeps playing in the first
+
 ### Requirement: Who's here
 
 The board SHALL list everyone connected to the jam and every agent present, one entry per identity, each as a dot in their colour, with this person first and marked as you, and each agent's dot with a glow, and its name with a superscript AI in its colour. Others SHALL list a person only once the room has seated them, so nobody is shown with a name or colour someone else holds. While three or fewer are here each dot SHALL carry its name; past three, only the dots, each naming its person or agent in a tooltip. A client older than names SHALL show by its colour name. Agents SHALL come only from the room's list: a browser SHALL NOT be able to show one.

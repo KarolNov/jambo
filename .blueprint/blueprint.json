@@ -20,9 +20,10 @@
       "anchors": [
         "shared/**",
         "worker/index.ts",
-        "src/App.tsx"
+        "src/App.tsx",
+        "src/about/**"
       ],
-      "specVersion": "89e07e1a60b73554",
+      "specVersion": "a8298ca0a4d096f2",
       "anchorsFiles": {
         "shared/agent/identity.ts": "7255c8e36b80",
         "shared/agent/index.ts": "b9ef0e798a4e",
@@ -47,10 +48,12 @@
         "shared/sounds.ts": "d0aeb2d77590",
         "shared/wav.ts": "bd5840f52c3f",
         "shared/words.ts": "093dd86b1435",
-        "src/App.tsx": "e939cfa58e13",
-        "worker/index.ts": "54ae3089e9f6"
+        "src/App.tsx": "2ea3aba66dd9",
+        "src/about/About.tsx": "14a050c462d8",
+        "src/about/about.css": "daa982f514e2",
+        "worker/index.ts": "7006ed34cbe2"
       },
-      "syncedCommit": "7b8bd573ef360b0a3a724bc9f76b64b49d0e2522"
+      "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
     },
     "room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
@@ -65,11 +68,11 @@
       "anchorsFiles": {
         "src/board/doc.ts": "f88a4fbb0525",
         "worker/board.ts": "2eb8e95bb633",
-        "worker/index.ts": "54ae3089e9f6",
+        "worker/index.ts": "7006ed34cbe2",
         "worker/quota.ts": "fa0709c13df2",
         "worker/sounds.ts": "548f085c2ba4"
       },
-      "syncedCommit": "9fd9be7d7fab9aa7d6a66d04666fb1f9dfef0463"
+      "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
     },
     "board": {
       "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
@@ -83,19 +86,19 @@
         "src/board/colors.ts",
         "src/board/console/**"
       ],
-      "specVersion": "fd57c65be9842322",
+      "specVersion": "a203ac9b690ee17b",
       "anchorsFiles": {
         "src/board/Jam.tsx": "ddb0ab20402d",
         "src/board/colors.ts": "d21c9da0a9fa",
         "src/board/console/AiMark.tsx": "a01ab3b0aaee",
         "src/board/console/Console.tsx": "f38c1a5735ac",
         "src/board/console/Deck.tsx": "c82790ccb25b",
-        "src/board/console/Header.tsx": "3f65c2e3dd2f",
+        "src/board/console/Header.tsx": "c9cf7c94ae96",
         "src/board/console/Mixer.tsx": "cf7df23a124e",
         "src/board/console/Pads.tsx": "8dd994f0a5ad",
         "src/board/console/console.css": "fb666aae1697",
-        "src/board/console/deck.css": "6eb4b113d84f",
-        "src/board/console/header.css": "99c4701b91ad",
+        "src/board/console/deck.css": "9277a34542af",
+        "src/board/console/header.css": "71283a0a4c5f",
         "src/board/console/loops.ts": "42ef8492a4ca",
         "src/board/console/mixer.css": "7feff420f509",
         "src/board/console/pads.css": "a921d00fc2cf",
@@ -107,7 +110,7 @@
         "src/board/seat.ts": "efa33b9e925b",
         "src/board/session.ts": "74ea6cbdbb7f"
       },
-      "syncedCommit": "5b5764d14a285b5553259c99e2a6ffbc3cd685a6"
+      "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
     },
     "board/ops": {
       "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
@@ -208,11 +211,11 @@
         "shared/agent/record.ts": "c9aff89071cb",
         "shared/agent/seat.ts": "e8d0659161b8",
         "shared/agent/snapshot.ts": "31018f0ae58c",
-        "skills/jam/SKILL.md": "34098883ae62",
+        "skills/jam/SKILL.md": "d3b554a5fa11",
         "worker/agent/mcp.ts": "d7eb83f64fcc",
         "worker/agent/roster.ts": "1d797b63f037"
       },
-      "syncedCommit": "7b8bd573ef360b0a3a724bc9f76b64b49d0e2522"
+      "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
     },
     "ui": {
       "ref": "https://app.notion.com/p/41d43cce21f281d291ccec92edb7d20d",
@@ -222,29 +225,31 @@
         "src/ds/**",
         "DESIGN.md"
       ],
-      "specVersion": "18a3e5fff81b674e",
+      "specVersion": "7b6d4b575b6bf34f",
       "anchorsFiles": {
-        "DESIGN.md": "5b665c36ff25",
+        "DESIGN.md": "9f54da599a01",
         "src/ds/Showcase.tsx": "ac8e134e3886",
-        "src/ds/catalogue.tsx": "726224454d69",
-        "src/ds/ds.css": "dba1ad7ac21a",
+        "src/ds/catalogue.tsx": "ca7f50aa3ed4",
+        "src/ds/ds.css": "0d516be7a69e",
         "src/theme/ThemeToggle.tsx": "d9f25bb631c3",
         "src/theme/palette.ts": "131b04f179ed",
         "src/theme/theme.css": "69360aacdbdf",
         "src/theme/theme.ts": "d344ee870e57",
         "src/ui/Menu.tsx": "2d9775cf6df9",
-        "src/ui/Pad.tsx": "8c81f04ac5a8",
+        "src/ui/Pad.tsx": "2ec906c70a2d",
+        "src/ui/Tabs.tsx": "b1309b5f7c14",
         "src/ui/controls.tsx": "68a30002f029",
         "src/ui/fader.ts": "b6a4197f3ee7",
         "src/ui/hapticGate.ts": "66c140b29280",
         "src/ui/haptics.ts": "4a416fa0ba68",
-        "src/ui/index.ts": "1861f48ccf58",
+        "src/ui/index.ts": "5a64f77a0c1c",
         "src/ui/listNav.ts": "5b2ced68cb10",
         "src/ui/scrub.ts": "2ae745b3622b",
         "src/ui/scrubSteps.ts": "51776600539b",
-        "src/ui/ui.css": "4fba3bc59528"
+        "src/ui/tabFit.ts": "9c71b760a6cb",
+        "src/ui/ui.css": "075dc08357a3"
       },
-      "syncedCommit": "5b5764d14a285b5553259c99e2a6ffbc3cd685a6"
+      "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
     }
   },
   "changes": {
