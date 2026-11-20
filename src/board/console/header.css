@@ -225,3 +225,24 @@
     white-space: nowrap;
   }
 }
+
+/* The about page, which also says how to bring an AI into the jam. */
+:root[data-theme] .console-about {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--muted);
+  box-shadow: var(--raise-sm);
+}
+:root[data-theme] .console-about:hover {
+  color: var(--accent-2);
+}
+:root[data-theme] .console-about:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--raise-sm),
+    inset 0 0 0 2px var(--focus);
+}

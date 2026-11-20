@@ -1,14 +1,24 @@
-import { Component, lazy, type ReactNode, Suspense, useEffect, useState } from 'react'
+import {
+  Component,
+  type ComponentType,
+  lazy,
+  type ReactNode,
+  Suspense,
+  useEffect,
+  useState,
+} from 'react'
 import { isJamSlug } from '../shared/slug'
 import { Jam } from './board/Jam'
 import { useThemedPage } from './theme/theme'
 
 // The design showcase, loaded only when someone opens /ds, so the jam's bundle stays as it was.
 const Showcase = lazy(() => import('./ds/Showcase'))
+// The about page, lazy for the same reason.
+const About = lazy(() => import('./about/About'))
 
 /**
- * Routes `/` to a new jam, `/jam/:slug` to its board and `/ds` to the design showcase. No router
- * library: three routes.
+ * Routes `/` to a new jam, `/jam/:slug` to its board, `/about` (or `/docs`) to the about page and
+ * `/ds` to the design showcase. No router library: four routes.
  */
 export function App() {
   useThemedPage()
@@ -19,15 +29,20 @@ export function App() {
     return isJamSlug(slug) ? <Jam slug={slug} /> : <NotFound />
   }
   if (path === '/') return <NewJam />
-  if (path === '/ds' || path === '/ds/')
-    return (
-      <LoadFailed>
-        <Suspense fallback={<main className="center">Loading…</main>}>
-          <Showcase />
-        </Suspense>
-      </LoadFailed>
-    )
+  if (/^\/(about|docs)\/?$/.test(path)) return <Lazy page={About} />
+  if (path === '/ds' || path === '/ds/') return <Lazy page={Showcase} />
   return <NotFound />
+}
+
+/** A lazy page, with a loading line and a reload link if its chunk fails to load. */
+function Lazy({ page: Page }: { page: ComponentType }) {
+  return (
+    <LoadFailed>
+      <Suspense fallback={<main className="center">Loading…</main>}>
+        <Page />
+      </Suspense>
+    </LoadFailed>
+  )
 }
 
 /** Asks the Worker for a new slug and replaces `/` with the jam's link. */
@@ -75,7 +90,7 @@ function NotFound() {
     <main className="center">
       <h1>No jam here</h1>
       <p>
-        <a href="/">Start a new jam</a>
+        <a href="/">Start a new jam</a> · <a href="/about">What is jambo?</a>
       </p>
     </main>
   )
