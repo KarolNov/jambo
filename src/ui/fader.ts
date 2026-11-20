@@ -21,7 +21,24 @@ export function fraction(value: number, min: number, max: number): number {
  * its middle.
  */
 export function litFraction(f: number, leds = LEDS): number {
-  return Math.floor(f * leds + 0.5) / leds
+  return notch(f, leds) / leds
+}
+
+/**
+ * Which of `count` notches fraction `f` sits on, counted as the LED strip lights them (a notch
+ * from its middle). A drag ticks when this changes, so it ticks per light, not per 0.01.
+ */
+export function notch(f: number, count = LEDS): number {
+  return Math.floor(f * count + 0.5)
+}
+
+/**
+ * How many notches a control from `min` to `max` in `step`s ticks across: one per step when there
+ * are few, else one per light of its `lights` (default the LED strip's).
+ */
+export function notchCount(min: number, max: number, step: number, lights = LEDS): number {
+  const steps = step > 0 && max > min ? Math.round((max - min) / step) : 1
+  return Math.max(1, Math.min(steps, lights))
 }
 
 /**

@@ -38,6 +38,11 @@ export type ScrubOptions = Partial<ScrubRange> & {
   /** Apply the value while dragging, not only on release. */
   live?: boolean
   disabled?: boolean
+  /**
+   * Whether moving from one value to the next ticks on phones (default: every step does). A knob
+   * ticks only where a light of its ring changes. Ticks are throttled either way.
+   */
+  ticks?: (from: number, to: number) => boolean
 }
 
 type Drag = {
@@ -53,7 +58,8 @@ type Drag = {
  * Drag to change a number, for a knob or a scrub label. The value previews locally while
  * dragged (`shown`) and is handed to `onCommit` once on release; Escape or a lost pointer puts
  * it back without committing. Live, it is also handed on as it moves, once a frame, and Escape
- * hands back the start value unless a peer has changed it since. Each step ticks on phones. Spread `handlers` on the drag handle.
+ * hands back the start value unless a peer has changed it since. Steps tick on phones (those
+ * `ticks` allows, throttled). Spread `handlers` on the drag handle.
  */
 export function useScrub({
   value,
@@ -66,6 +72,7 @@ export function useScrub({
   axis = 'x',
   live = false,
   disabled = false,
+  ticks,
 }: ScrubOptions) {
   const [draft, setDraft] = useState<number>()
   const drag = useRef<Drag>(undefined)
@@ -168,7 +175,7 @@ export function useScrub({
       d.anchor = next.anchor
       if (next.value === was) return
       d.moved = true
-      haptic('step')
+      if (!ticks || ticks(was, next.value)) haptic('step')
       current.current = next.value
       setDraft(next.value)
       sender.current?.move(next.value)
