@@ -6,7 +6,7 @@ import './about.css'
 const REPO = 'https://github.com/KarolNov/jambo'
 
 /**
- * The about page at /about (and /docs): what jambo is, how to play, and how to bring an AI agent
+ * The about page at /about: what jambo is, how to play, and how to bring an AI agent
  * into a jam over MCP. Lazy-loaded by App, so it doesn't grow the jam's bundle.
  */
 export default function About() {

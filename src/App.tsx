@@ -17,7 +17,7 @@ const Showcase = lazy(() => import('./ds/Showcase'))
 const About = lazy(() => import('./about/About'))
 
 /**
- * Routes `/` to a new jam, `/jam/:slug` to its board, `/about` (or `/docs`) to the about page and
+ * Routes `/` to a new jam, `/jam/:slug` to its board, `/about` to the about page (the Worker redirects `/docs` there) and
  * `/ds` to the design showcase. No router library: four routes.
  */
 export function App() {
@@ -29,7 +29,7 @@ export function App() {
     return isJamSlug(slug) ? <Jam slug={slug} /> : <NotFound />
   }
   if (path === '/') return <NewJam />
-  if (/^\/(about|docs)\/?$/.test(path)) return <Lazy page={About} />
+  if (path === '/about' || path === '/about/') return <Lazy page={About} />
   if (path === '/ds' || path === '/ds/') return <Lazy page={Showcase} />
   return <NotFound />
 }
