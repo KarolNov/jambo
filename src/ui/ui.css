@@ -977,19 +977,37 @@
   min-width: 0;
 }
 :root[data-theme] .ui-pad-sound {
+  /* two lines of room under every pad, so the grid's rows stay even */
+  min-height: 2.4em;
   font-size: 13px;
   font-weight: 600;
   line-height: 1.2;
   text-align: center;
-  /* Long names (uploads take up to 40 characters) wrap, then end in an ellipsis on line two; two
-     lines of room are kept under every pad so the grid's rows stay even */
-  min-height: 2.4em;
+}
+/* The name, centred under the pad. A dot stands in its own column before it, centred on the name's
+   one or two lines, and the name's lines then align to each other beside it. */
+:root[data-theme] .ui-pad-sound-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  vertical-align: top;
+}
+:root[data-theme] .ui-pad-sound-line > .ui-dot {
+  margin: 0;
+}
+:root[data-theme] .ui-pad-sound-name {
+  min-width: 0;
+  /* Long names (uploads take up to 40 characters) wrap, then end in an ellipsis on line two */
   overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
+}
+:root[data-theme] .ui-dot + .ui-pad-sound-name {
+  text-align: left;
 }
 
 /* Editing: a badge says a click opens the sound menu */

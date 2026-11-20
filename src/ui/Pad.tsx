@@ -79,9 +79,13 @@ export function Pad({
         title={name}
         aria-hidden
       >
-        {dot && <span className="ui-dot" style={{ background: dot.color }} title={dot.title} />}
-        {name}
-        {status === 'missing' && ' (missing)'}
+        <span className="ui-pad-sound-line">
+          {dot && <span className="ui-dot" style={{ background: dot.color }} title={dot.title} />}
+          <span className="ui-pad-sound-name">
+            {name}
+            {status === 'missing' && ' (missing)'}
+          </span>
+        </span>
       </span>
     </div>
   )
