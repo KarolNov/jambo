@@ -126,7 +126,7 @@ On Android phones, flipping a switch, a slider landing on its detent, a slider p
 
 ### Requirement: Pad
 
-A pad SHALL show its key moulded into the middle of a raised rubber square, and its sound's name printed under it, centred, up to two lines and then an ellipsis, with the whole name on hover; the name SHALL never overlap the key. An uploaded sound's name SHALL carry its uploader's dot in a column of its own beside the name, show dimmed while loading, and end in "(missing)" when its file is gone. Pressed, a pad SHALL sink and squash slightly (only sink with reduced motion); lit by a loop, light SHALL spread from inside it. Screen readers SHALL hear a button named by its sound, then "(missing)" if so, then its uploader.
+A pad SHALL show its key moulded into the middle of a raised rubber square, and its sound's name printed under it, centred, up to two lines and then an ellipsis, with the whole name on hover; the name SHALL never overlap the key. An uploaded sound's name SHALL carry its uploader's dot in a column of its own beside the name, show dimmed while loading, and end in "(missing)" when its file is gone. Pressed, a pad SHALL sink and squash slightly (only sink with reduced motion); lit by a loop, light SHALL spread from inside it. Screen readers SHALL hear a button named by its key, then its sound, then "(missing)" if so, then its uploader; hovering the pad or its name SHALL show the whole name.
 
 - **Scenario: Long upload name**
   - **GIVEN** a pad whose sound is a 40-character upload, on a phone

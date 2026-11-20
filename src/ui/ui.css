@@ -834,13 +834,14 @@
   --pad-bevel:
     inset 1.5px 1.5px 1px color-mix(in srgb, var(--hi) 70%, transparent),
     inset -2px -2px 5px color-mix(in srgb, var(--lo) 55%, transparent);
-  /* black specks of fractal noise; their strength is --pad-grain */
+  /* black specks of fractal noise, laid on as --pad-grain-layers */
   --pad-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  --pad-grain-layers: var(--pad-grain);
   position: relative;
   font: inherit;
   color: var(--text);
   background:
-    var(--pad-grain),
+    var(--pad-grain-layers),
     radial-gradient(
       130% 130% at 28% 22%,
       color-mix(in srgb, var(--hi) 45%, var(--bg)),
@@ -852,22 +853,20 @@
   cursor: pointer;
   aspect-ratio: 1;
   container-type: inline-size;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  padding: 10px 12px;
+  /* one cell, filled by the key */
+  display: grid;
+  padding: 12px;
   border-radius: 20px;
   box-shadow: var(--raise), var(--pad-bevel);
-  text-align: left;
   touch-action: manipulation;
   user-select: none;
   transition:
     box-shadow 0.18s ease-out,
     transform 0.18s ease-out;
 }
-/* The dark rubber needs denser specks for the same grain */
+/* The dark rubber needs denser specks for the same grain: three layers of it (about 0.25 alpha) */
 :root[data-theme='dark'] .ui-pad {
-  --pad-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  --pad-grain-layers: var(--pad-grain), var(--pad-grain), var(--pad-grain);
 }
 /* A loop hit is a light inside the rubber: an even wash over the whole pad (::after),
    gathering softly toward the sides, and a faint halo it spills onto the console (::before). No
@@ -912,7 +911,16 @@
   transition: none;
 }
 :root[data-theme] .ui-pad.glow {
-  transition: none;
+  /* the light is instant, but a press over it still eases back out of its squash */
+  transition: transform 0.18s ease-out;
+}
+/* before .pressed, so a focused pad still shows its press */
+:root[data-theme] .ui-pad:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--raise),
+    var(--pad-bevel),
+    inset 0 0 0 2px var(--focus);
 }
 :root[data-theme] .ui-pad.pressed {
   /* the rubber gives: it sinks into the console and squashes a little */
@@ -921,13 +929,6 @@
     var(--inset),
     inset 0 0 0 2px var(--glow, var(--accent-2));
   transition: none;
-}
-:root[data-theme] .ui-pad:focus-visible {
-  outline: none;
-  box-shadow:
-    var(--raise),
-    var(--pad-bevel),
-    inset 0 0 0 2px var(--focus);
 }
 /* The key: its letter moulded out of the pad's rubber, raised a little off the dome. Its face is
    the pad's own colour, and the shape comes from light, the way a moulded legend shows: a lit edge
@@ -938,7 +939,6 @@
   --key-lit: var(--hi);
   --key-shade: color-mix(in srgb, var(--lo) 85%, var(--text));
   --key-cast: color-mix(in srgb, var(--lo) 80%, transparent);
-  flex: 1;
   display: grid;
   place-items: center;
   font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;

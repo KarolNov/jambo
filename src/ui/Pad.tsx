@@ -8,7 +8,7 @@ export type PadProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
   keyLabel: string
   /**
    * The sound's name, printed on the console under the pad: up to two lines, then an ellipsis,
-   * whole in its tooltip. It is also the pad's accessible name.
+   * whole in its tooltip. With the key, it is also the pad's accessible name.
    */
   name: string
   /** A dot before the name, e.g. who uploaded the sound. */
@@ -52,9 +52,9 @@ export function Pad({
   ...rest
 }: PadProps) {
   const vars = tint ? ({ '--glow': tint } as CSSProperties) : undefined
-  const label = [name + (status === 'missing' ? ' (missing)' : ''), dot?.title]
-    .filter(Boolean)
-    .join(', ')
+  const full = name + (status === 'missing' ? ' (missing)' : '')
+  // The key first, as the pad read before, so pads on the same sound stay apart
+  const label = [`${keyLabel.toUpperCase()} ${full}`, dot?.title].filter(Boolean).join(', ')
   return (
     <div className="ui-pad-slot" style={style}>
       <button
@@ -62,6 +62,7 @@ export function Pad({
         className={`ui-pad ${lit ?? ''} ${className}`}
         style={vars}
         aria-label={label}
+        title={full}
         {...rest}
         onPointerDown={(e) => {
           // The person's own press, so it may tap. A primary press only, and not while disabled.
@@ -76,15 +77,12 @@ export function Pad({
       </button>
       <span
         className={`ui-pad-sound ${status ? `ui-pad-sound-${status}` : ''}`}
-        title={name}
+        title={full}
         aria-hidden
       >
         <span className="ui-pad-sound-line">
           {dot && <span className="ui-dot" style={{ background: dot.color }} title={dot.title} />}
-          <span className="ui-pad-sound-name">
-            {name}
-            {status === 'missing' && ' (missing)'}
-          </span>
+          <span className="ui-pad-sound-name">{full}</span>
         </span>
       </span>
     </div>

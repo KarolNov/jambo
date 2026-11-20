@@ -160,13 +160,10 @@
     font-size: 11.5px;
   }
 }
-/* The narrowest phones: tighter pads and labels, so "Cowbell" fits a 64px pad */
+/* The narrowest phones: tighter pads and smaller names, so "Cowbell" fits on one line under a 64px pad */
 @media (max-width: 360px) {
   :root[data-theme] .console-deck .console-pads {
     gap: 8px 10px;
-  }
-  :root[data-theme] .console-deck .ui-pad {
-    padding: 9px;
   }
   :root[data-theme] .console-deck .ui-pad-sound {
     font-size: 11px;

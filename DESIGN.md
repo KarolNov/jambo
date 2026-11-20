@@ -188,8 +188,8 @@ by ↑ ↓ Home End and Enter or Space. It takes focus when it mounts.
 
 A pad's face (`PadProps`): a soft rubber square with its key moulded into the middle, and its
 sound's name printed on the console under it (up to two lines, then an ellipsis), optionally with
-a `dot` and a sample `status`, plus the `editing` badge. The name is also the pad's accessible
-name. `ref` and the button props go on the rubber pad; `style` lays out the slot that holds the
+a `dot` and a sample `status`, plus the `editing` badge. The key and name are the pad's accessible
+name and the name its tooltip. `ref` and the button props go on the rubber pad; `style` lays out the slot that holds the
 pad and its name, such as its grid cell. `lit="pressed"` pushes it in with a ring in `tint` (else
 `--glow`, then `--accent-2`); `lit="glow"` lights it from inside. Otherwise presentational, except
 that a primary press with a finger or mouse taps on Android phones (`haptic('tap')`). `lit` and
