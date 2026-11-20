@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, CSSProperties, Ref } from 'react'
+import { haptic } from './haptics'
 import './ui.css'
 
 export type PadProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
@@ -26,8 +27,9 @@ export type PadProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
 
 /**
  * A pad's face: a soft rubber square with its key letter moulded in and its sound's name. Pressed,
- * it is pushed in with a ring in `tint`; lit, light spreads from inside it in `tint`. Purely
- * presentational: the console decides what a press does.
+ * it is pushed in with a ring in `tint`; lit, light spreads from inside it in `tint`. Otherwise
+ * presentational: the console decides what a press does. Pressing it with a finger or the mouse
+ * taps on Android phones (iOS gives scripts no haptics); `lit` and the console's flashes (a loop's hits) never do.
  */
 export function Pad({
   keyLabel,
@@ -40,6 +42,7 @@ export function Pad({
   className = '',
   style,
   type = 'button',
+  onPointerDown,
   ...rest
 }: PadProps) {
   const vars = tint ? ({ '--glow': tint } as CSSProperties) : undefined
@@ -49,6 +52,11 @@ export function Pad({
       className={`ui-pad ${lit ?? ''} ${className}`}
       style={vars ? { ...style, ...vars } : style}
       {...rest}
+      onPointerDown={(e) => {
+        // The person's own press, so it may tap. A primary press only, and not while disabled.
+        if (e.button === 0 && !rest.disabled) haptic('tap')
+        onPointerDown?.(e)
+      }}
     >
       <span className="ui-pad-key">{keyLabel.toUpperCase()}</span>
       <span className={`ui-pad-sound ${status ? `ui-pad-sound-${status}` : ''}`}>
