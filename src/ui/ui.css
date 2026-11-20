@@ -969,18 +969,26 @@
     0.5px 0.5px 0.5px var(--key-shade);
   transition: none;
 }
+/* The slot: the pad, with its sound's name printed on the console under it */
+:root[data-theme] .ui-pad-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
 :root[data-theme] .ui-pad-sound {
   font-size: 13px;
   font-weight: 600;
-  line-height: 1.15;
-  position: relative;
-  z-index: 1;
-  /* Long names (uploads take up to 40 characters) wrap, then end in an ellipsis on line three */
+  line-height: 1.2;
+  text-align: center;
+  /* Long names (uploads take up to 40 characters) wrap, then end in an ellipsis on line two; two
+     lines of room are kept under every pad so the grid's rows stay even */
+  min-height: 2.4em;
   overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
 }
 

@@ -23,7 +23,8 @@
 :root[data-theme] .console-pads {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
+  /* rows sit closer: each pad keeps two lines for its name under it, which is room enough */
+  gap: 6px 18px;
 }
 
 /* The upload dialog and uploads list */
