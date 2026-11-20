@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { ThemeToggle } from '../theme/ThemeToggle'
-import { Button } from '../ui'
+import { Button, Tabs } from '../ui'
 import './about.css'
 
 const REPO = 'https://github.com/KarolNov/jambo'
@@ -79,73 +79,115 @@ export default function About() {
         </p>
         <Copyable label="Server URL" value={mcp} />
 
-        <div className="about-clients">
-          <Client name="Claude" where="claude.ai, desktop and mobile">
-            <ol>
-              <li>
-                Open <strong>Settings → Connectors</strong> and choose{' '}
-                <strong>Add custom connector</strong>.
-              </li>
-              <li>
-                Name it <code>jambo</code>, paste the server URL and add it. No OAuth settings are
-                needed.
-              </li>
-              <li>In a chat, turn the jambo connector on from the tools menu.</li>
-            </ol>
-            <p className="about-note">The Free plan allows one custom connector.</p>
-          </Client>
+        <Tabs
+          className="about-clients"
+          label="AI apps"
+          tabs={[
+            {
+              id: 'claude',
+              label: 'Claude',
+              content: (
+                <Client where="claude.ai, desktop and mobile">
+                  <ol>
+                    <li>
+                      Open <strong>Settings → Connectors</strong> and choose{' '}
+                      <strong>Add custom connector</strong>.
+                    </li>
+                    <li>
+                      Name it <code>jambo</code>, paste the server URL and add it. No OAuth settings
+                      are needed.
+                    </li>
+                    <li>In a chat, turn the jambo connector on from the tools menu.</li>
+                  </ol>
+                  <p className="about-note">The Free plan allows one custom connector.</p>
+                </Client>
+              ),
+            },
 
-          <Client name="Claude Code" where="terminal">
-            <Copyable value={`claude mcp add --transport http jambo ${mcp}`} code />
-            <p className="about-note">
-              For a <code>/jam &lt;link&gt;</code> command, copy{' '}
-              <a href={`${REPO}/blob/main/skills/jam/SKILL.md`}>the jam skill</a> into{' '}
-              <code>~/.claude/skills/jam/</code>.
-            </p>
-          </Client>
+            {
+              id: 'claude-code',
+              label: 'Claude Code',
+              content: (
+                <Client where="terminal">
+                  <Copyable value={`claude mcp add --transport http jambo ${mcp}`} code />
+                  <p className="about-note">
+                    For a <code>/jam &lt;link&gt;</code> command, copy{' '}
+                    <a href={`${REPO}/blob/main/skills/jam/SKILL.md`}>the jam skill</a> into{' '}
+                    <code>~/.claude/skills/jam/</code>.
+                  </p>
+                </Client>
+              ),
+            },
 
-          <Client name="ChatGPT" where="chatgpt.com">
-            <ol>
-              <li>
-                Open <strong>Settings → Apps &amp; Connectors → Advanced settings</strong> and turn
-                on <strong>Developer mode</strong>.
-              </li>
-              <li>
-                Back in <strong>Apps &amp; Connectors</strong>, choose <strong>Create</strong>, name
-                it <code>jambo</code>, paste the server URL and pick{' '}
-                <strong>No authentication</strong>.
-              </li>
-              <li>In a chat, add jambo from the + menu under Developer mode.</li>
-            </ol>
-            <p className="about-note">
-              Developer mode is on paid plans; Business and Enterprise admins may need to allow it.
-            </p>
-          </Client>
+            {
+              id: 'chatgpt',
+              label: 'ChatGPT',
+              content: (
+                <Client where="chatgpt.com">
+                  <ol>
+                    <li>
+                      Open <strong>Settings → Apps &amp; Connectors → Advanced settings</strong> and
+                      turn on <strong>Developer mode</strong>.
+                    </li>
+                    <li>
+                      Back in <strong>Apps &amp; Connectors</strong>, choose <strong>Create</strong>
+                      , name it <code>jambo</code>, paste the server URL and pick{' '}
+                      <strong>No authentication</strong>.
+                    </li>
+                    <li>In a chat, add jambo from the + menu under Developer mode.</li>
+                  </ol>
+                  <p className="about-note">
+                    Developer mode is on paid plans; Business and Enterprise admins may need to
+                    allow it.
+                  </p>
+                </Client>
+              ),
+            },
 
-          <Client name="Gemini" where="Gemini app and Gemini CLI">
-            <p>
-              In the Gemini app, where custom apps are available to you: <strong>Settings</strong> →{' '}
-              <strong>Connected apps</strong>, add a custom app and paste the server URL.
-            </p>
-            <p>In Gemini CLI:</p>
-            <Copyable value={`gemini mcp add --transport http jambo ${mcp}`} code />
-          </Client>
+            {
+              id: 'gemini',
+              label: 'Gemini',
+              content: (
+                <Client where="Gemini app and Gemini CLI">
+                  <p>
+                    In the Gemini app, where custom apps are available to you:{' '}
+                    <strong>Settings</strong> → <strong>Connected apps</strong>, add a custom app
+                    and paste the server URL.
+                  </p>
+                  <p>In Gemini CLI:</p>
+                  <Copyable value={`gemini mcp add --transport http jambo ${mcp}`} code />
+                </Client>
+              ),
+            },
 
-          <Client name="Codex" where="Codex CLI">
-            <Copyable value={`codex mcp add jambo --url ${mcp}`} code />
-          </Client>
+            {
+              id: 'codex',
+              label: 'Codex',
+              content: (
+                <Client where="Codex CLI">
+                  <Copyable value={`codex mcp add jambo --url ${mcp}`} code />
+                </Client>
+              ),
+            },
 
-          <Client name="Anything else" where="Cursor, VS Code, your own agent">
-            <p>
-              Add a remote MCP server over <strong>streamable HTTP</strong> at the server URL, with
-              no authentication. Most apps take JSON like this:
-            </p>
-            <Copyable
-              value={JSON.stringify({ mcpServers: { jambo: { url: mcp } } }, null, 2)}
-              code
-            />
-          </Client>
-        </div>
+            {
+              id: 'other',
+              label: 'Other',
+              content: (
+                <Client where="Cursor, VS Code, your own agent">
+                  <p>
+                    Add a remote MCP server over <strong>streamable HTTP</strong> at the server URL,
+                    with no authentication. Most apps take JSON like this:
+                  </p>
+                  <Copyable
+                    value={JSON.stringify({ mcpServers: { jambo: { url: mcp } } }, null, 2)}
+                    code
+                  />
+                </Client>
+              ),
+            },
+          ]}
+        />
 
         <h3>Then ask it to play</h3>
         <p className="about-muted">
@@ -166,9 +208,13 @@ export default function About() {
       <section id="project" className="about-section">
         <h2>About the project</h2>
         <p>
-          jambo is a side project by Karol Novljaković, built in the open and changed live: expect
-          new things, and the odd rough edge. A timeline for arranging loops is next.
+          jambo is a side project by <a href="https://karolnov.dev/about">Karol Novljaković</a>.
+          I've spent years building collaborative editors: syncing state between everyone in a
+          document, and making AI a collaborator in it rather than a box on the side. Almost all of
+          that work is private, under NDAs, so jambo is something I can show and share: the same
+          ideas, in the open, with music.
         </p>
+        <p>It's built in the open and changes live, so expect new things and the odd rough edge.</p>
         <p>
           It runs on Cloudflare Workers, with one Durable Object per jam keeping everyone in sync
           through Yjs, and <a href="https://github.com/KarolNov/duratom">duratom</a> (Jotai atoms
@@ -188,15 +234,13 @@ function Kbd({ children }: { children: ReactNode }) {
   return <kbd className="about-kbd">{children}</kbd>
 }
 
-/** One AI app's setup steps. */
-function Client({ name, where, children }: { name: string; where: string; children: ReactNode }) {
+/** One AI app's setup steps, in its tab: where they apply, then the steps. */
+function Client({ where, children }: { where: string; children: ReactNode }) {
   return (
-    <article className="about-client">
-      <h3>
-        {name} <span className="about-where">{where}</span>
-      </h3>
+    <div className="about-client">
+      <p className="about-where">{where}</p>
       {children}
-    </article>
+    </div>
   )
 }
 
