@@ -420,7 +420,7 @@ export const CATALOGUE: Entry[] = [
   {
     name: 'Pad',
     summary:
-      'A pad’s face: a soft rubber square with its key moulded in and its sound’s name. Pressed, it is pushed in with a ring in --glow; lit, light spreads from inside it. A press taps on Android; a loop’s hit never does.',
+      'A pad’s face: a soft rubber square with its key moulded into the middle and its sound’s name printed under it. Pressed, it is pushed in with a ring in --glow; lit, light spreads from inside it. A press taps on Android; a loop’s hit never does.',
     states: [
       { label: 'Resting', demo: <Pad keyLabel="q" name="Kick" /> },
       { label: 'Pressed', demo: <Pad keyLabel="w" name="Snare" lit="pressed" /> },
@@ -461,7 +461,7 @@ export const CATALOGUE: Entry[] = [
       },
       {
         label: 'Long name',
-        demo: <Pad keyLabel="f" name="a very long upload name that wraps onto three lines" />,
+        demo: <Pad keyLabel="f" name="a very long upload name that wraps onto two lines" />,
       },
     ],
     use: [

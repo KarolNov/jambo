@@ -94,11 +94,11 @@
         "src/board/console/Mixer.tsx": "cf7df23a124e",
         "src/board/console/Pads.tsx": "8dd994f0a5ad",
         "src/board/console/console.css": "fb666aae1697",
-        "src/board/console/deck.css": "f1458785969b",
+        "src/board/console/deck.css": "6eb4b113d84f",
         "src/board/console/header.css": "99c4701b91ad",
         "src/board/console/loops.ts": "42ef8492a4ca",
         "src/board/console/mixer.css": "7feff420f509",
-        "src/board/console/pads.css": "37acce0ade93",
+        "src/board/console/pads.css": "a921d00fc2cf",
         "src/board/console/people.ts": "c947df332ba9",
         "src/board/console/share.ts": "41845818fcbf",
         "src/board/identity.ts": "d1d2eaa5cab9",
@@ -107,7 +107,7 @@
         "src/board/seat.ts": "efa33b9e925b",
         "src/board/session.ts": "74ea6cbdbb7f"
       },
-      "syncedCommit": "9fd9be7d7fab9aa7d6a66d04666fb1f9dfef0463"
+      "syncedCommit": "5b5764d14a285b5553259c99e2a6ffbc3cd685a6"
     },
     "board/ops": {
       "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
@@ -222,28 +222,29 @@
         "src/ds/**",
         "DESIGN.md"
       ],
-      "specVersion": "a2ab4c0c7cd1caf3",
+      "specVersion": "18a3e5fff81b674e",
       "anchorsFiles": {
-        "DESIGN.md": "527bce869123",
+        "DESIGN.md": "5b665c36ff25",
         "src/ds/Showcase.tsx": "ac8e134e3886",
-        "src/ds/catalogue.tsx": "bd0f93394675",
-        "src/ds/ds.css": "d2c2ffbf9b63",
+        "src/ds/catalogue.tsx": "726224454d69",
+        "src/ds/ds.css": "dba1ad7ac21a",
         "src/theme/ThemeToggle.tsx": "d9f25bb631c3",
         "src/theme/palette.ts": "131b04f179ed",
         "src/theme/theme.css": "69360aacdbdf",
         "src/theme/theme.ts": "d344ee870e57",
         "src/ui/Menu.tsx": "2d9775cf6df9",
-        "src/ui/Pad.tsx": "f0b6b6149ebe",
-        "src/ui/controls.tsx": "7bb0fe97a0a0",
-        "src/ui/fader.ts": "0e8d2c9acca4",
-        "src/ui/haptics.ts": "5a3288047b64",
+        "src/ui/Pad.tsx": "8c81f04ac5a8",
+        "src/ui/controls.tsx": "68a30002f029",
+        "src/ui/fader.ts": "b6a4197f3ee7",
+        "src/ui/hapticGate.ts": "66c140b29280",
+        "src/ui/haptics.ts": "4a416fa0ba68",
         "src/ui/index.ts": "1861f48ccf58",
         "src/ui/listNav.ts": "5b2ced68cb10",
-        "src/ui/scrub.ts": "3184ca5112fd",
+        "src/ui/scrub.ts": "2ae745b3622b",
         "src/ui/scrubSteps.ts": "51776600539b",
-        "src/ui/ui.css": "ea03ebb7bcf6"
+        "src/ui/ui.css": "4fba3bc59528"
       },
-      "syncedCommit": "b62a61a008f9842ad33e3a9c193d983c536180a0"
+      "syncedCommit": "5b5764d14a285b5553259c99e2a6ffbc3cd685a6"
     }
   },
   "changes": {

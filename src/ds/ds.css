@@ -111,8 +111,8 @@
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
-:root[data-theme] .ds-demo > .ui-pad,
-:root[data-theme] .ds-demo > .ds-anchor > .ui-pad {
+:root[data-theme] .ds-demo > .ui-pad-slot,
+:root[data-theme] .ds-demo > .ds-anchor > .ui-pad-slot {
   width: 112px;
 }
 :root[data-theme] .ds-state figcaption,

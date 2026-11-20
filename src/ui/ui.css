@@ -826,26 +826,47 @@
 }
 
 /* ── Pad: a soft rubber square ──────────────────────────────────────────── */
-/* Pressed by you: pushed in, with a ring in --glow. Hit by a loop: lit from inside in --glow. */
+/* Pressed by you: pushed in, with a ring in --glow. Hit by a loop: lit from inside in --glow.
+   The rubber is a low dome lit from the top left (lighter near the light, a shade darker at the
+   far rim), with a rolled bevel along its edge and a fine matte grain, so it reads as moulded
+   silicone rather than flat plastic. */
 :root[data-theme] .ui-pad {
+  --pad-bevel:
+    inset 1.5px 1.5px 1px color-mix(in srgb, var(--hi) 70%, transparent),
+    inset -2px -2px 5px color-mix(in srgb, var(--lo) 55%, transparent);
+  /* black specks of fractal noise, laid on as --pad-grain-layers */
+  --pad-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  --pad-grain-layers: var(--pad-grain);
   position: relative;
   font: inherit;
   color: var(--text);
-  background: var(--bg);
+  background:
+    var(--pad-grain-layers),
+    radial-gradient(
+      130% 130% at 28% 22%,
+      color-mix(in srgb, var(--hi) 45%, var(--bg)),
+      var(--bg) 48%,
+      color-mix(in srgb, var(--lo) 28%, var(--bg))
+    ),
+    var(--bg);
   border: none;
   cursor: pointer;
   aspect-ratio: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 10px 12px;
-  border-radius: 18px;
-  box-shadow: var(--raise);
-  text-align: left;
+  container-type: inline-size;
+  /* one cell, filled by the key */
+  display: grid;
+  padding: 12px;
+  border-radius: 20px;
+  box-shadow: var(--raise), var(--pad-bevel);
   touch-action: manipulation;
   user-select: none;
-  transition: box-shadow 0.18s ease-out;
+  transition:
+    box-shadow 0.18s ease-out,
+    transform 0.18s ease-out;
+}
+/* The dark rubber needs denser specks for the same grain: three layers of it (about 0.25 alpha) */
+:root[data-theme='dark'] .ui-pad {
+  --pad-grain-layers: var(--pad-grain), var(--pad-grain), var(--pad-grain);
 }
 /* A loop hit is a light inside the rubber: an even wash over the whole pad (::after),
    gathering softly toward the sides, and a faint halo it spills onto the console (::before). No
@@ -890,33 +911,45 @@
   transition: none;
 }
 :root[data-theme] .ui-pad.glow {
-  transition: none;
+  /* the light is instant, but a press over it still eases back out of its squash */
+  transition: transform 0.18s ease-out;
+}
+/* before .pressed, so a focused pad still shows its press */
+:root[data-theme] .ui-pad:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--raise),
+    var(--pad-bevel),
+    inset 0 0 0 2px var(--focus);
 }
 :root[data-theme] .ui-pad.pressed {
+  /* the rubber gives: it sinks into the console and squashes a little */
+  transform: scale(0.965);
   box-shadow:
     var(--inset),
     inset 0 0 0 2px var(--glow, var(--accent-2));
   transition: none;
 }
-:root[data-theme] .ui-pad:focus-visible {
-  outline: none;
-  box-shadow:
-    var(--raise),
-    inset 0 0 0 2px var(--focus);
-}
-/* The key: its letter moulded out of the pad's rubber, only just standing out of it. Its face is
-   the pad's own colour, barely lighter, ringed evenly on every side by a soft, blurred rim in one
-   darker rubber tone (an unshifted shadow, so it spills out the same on every side). It sits
-   under the glow layer, so a hit lights it like the rest of the pad. */
+/* The key: its letter moulded out of the pad's rubber, raised a little off the dome. Its face is
+   the pad's own colour, and the shape comes from light, the way a moulded legend shows: a lit edge
+   up and left, a shaded edge down and right, and a short soft shadow it casts on the rubber. It is
+   sized to the pad (cqi) and sits centred above the name, under the glow layer, so a hit lights it
+   like the rest of the pad. */
 :root[data-theme] .ui-pad-key {
-  --rim: var(--lo);
-  font-size: 18px;
+  --key-lit: var(--hi);
+  --key-shade: color-mix(in srgb, var(--lo) 85%, var(--text));
+  --key-cast: color-mix(in srgb, var(--lo) 80%, transparent);
+  display: grid;
+  place-items: center;
+  font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+  font-size: clamp(18px, 30cqi, 44px);
   font-weight: 800;
   line-height: 1;
-  color: color-mix(in srgb, var(--hi) 15%, var(--bg));
+  color: color-mix(in srgb, var(--hi) 12%, var(--bg));
   text-shadow:
-    0 0 2px var(--rim),
-    0 0 6px var(--rim);
+    -1px -1px 0.5px var(--key-lit),
+    1px 1px 0.5px var(--key-shade),
+    1.5px 2px 3px var(--key-cast);
   transition:
     transform 0.18s ease-out,
     text-shadow 0.18s ease-out;
@@ -924,28 +957,57 @@
 /* The dark console's shadow tone sits too close to its rubber to show: go deeper there, and lift
    the face a little so the letter keeps its shape */
 :root[data-theme='dark'] .ui-pad-key {
-  --rim: rgb(0 0 0 / 0.75);
-  color: color-mix(in srgb, var(--hi) 45%, var(--bg));
+  --key-lit: color-mix(in srgb, var(--hi) 75%, var(--text));
+  --key-shade: rgb(0 0 0 / 0.7);
+  --key-cast: rgb(0 0 0 / 0.55);
+  color: color-mix(in srgb, var(--hi) 55%, var(--bg));
 }
-/* Pressing the pad pushes the letter in with it */
+/* Pressing the pad pushes the letter down with it: its edges flatten into the rubber */
 :root[data-theme] .ui-pad.pressed .ui-pad-key {
-  transform: scale(0.96);
-  text-shadow: 0 0 2px var(--rim);
+  text-shadow:
+    -0.5px -0.5px 0.5px var(--key-lit),
+    0.5px 0.5px 0.5px var(--key-shade);
   transition: none;
 }
+/* The slot: the pad, with its sound's name printed on the console under it */
+:root[data-theme] .ui-pad-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
 :root[data-theme] .ui-pad-sound {
+  /* two lines of room under every pad, so the grid's rows stay even */
+  min-height: 2.4em;
   font-size: 13px;
   font-weight: 600;
-  line-height: 1.15;
-  position: relative;
-  z-index: 1;
-  /* Long names (uploads take up to 40 characters) wrap, then end in an ellipsis on line three */
+  line-height: 1.2;
+  text-align: center;
+}
+/* The name, centred under the pad. A dot stands in its own column before it, centred on the name's
+   one or two lines, and the name's lines then align to each other beside it. */
+:root[data-theme] .ui-pad-sound-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  vertical-align: top;
+}
+:root[data-theme] .ui-pad-sound-line > .ui-dot {
+  margin: 0;
+}
+:root[data-theme] .ui-pad-sound-name {
+  min-width: 0;
+  /* Long names (uploads take up to 40 characters) wrap, then end in an ellipsis on line two */
   overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
+}
+:root[data-theme] .ui-dot + .ui-pad-sound-name {
+  text-align: left;
 }
 
 /* Editing: a badge says a click opens the sound menu */
@@ -978,7 +1040,18 @@
 :root[data-theme] .ui-pad[aria-expanded='true'] {
   box-shadow:
     var(--raise),
+    var(--pad-bevel),
     inset 0 0 0 2px var(--accent-2);
+}
+@media (prefers-reduced-motion: reduce) {
+  /* pressed pads sink by shading alone, without the squash */
+  :root[data-theme] .ui-pad,
+  :root[data-theme] .ui-pad-key {
+    transition: none;
+  }
+  :root[data-theme] .ui-pad.pressed {
+    transform: none;
+  }
 }
 
 :root[data-theme] .ui-pad-sound-loading {
