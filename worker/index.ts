@@ -44,6 +44,10 @@ app.use(
 // Hono's ExecutionContext type predates the runtime's; the object is the runtime's own.
 app.all('/mcp', (c) => handleMcp(c.req.raw, c.env, c.executionCtx as unknown as ExecutionContext))
 
+// The about page lives at /about; /docs, a name people guess, redirects there.
+app.get('/docs', (c) => c.redirect('/about', 301))
+app.get('/docs/', (c) => c.redirect('/about', 301))
+
 // A jam page: a well-formed slug gets the SPA, anything else is not found.
 app.get('/jam/:slug', async (c) => {
   if (!isJamSlug(c.req.param('slug'))) return c.notFound()

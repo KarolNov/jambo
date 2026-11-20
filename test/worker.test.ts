@@ -36,6 +36,14 @@ describe('api', () => {
   })
 })
 
+describe('pages', () => {
+  it.each(['/docs', '/docs/'])('redirects %s to /about', async (path) => {
+    const res = await fetchApp(path, { redirect: 'manual' })
+    expect(res.status).toBe(301)
+    expect(res.headers.get('Location')).toBe('/about')
+  })
+})
+
 describe('malformed jam links', () => {
   it('serves not found for a malformed jam page', async () => {
     expect((await fetchApp('/jam/not-a-slug')).status).toBe(404)

@@ -29,7 +29,8 @@ const TIPS: Partial<Record<ShareResult, string>> = {
 
 /**
  * The console's header: logo, the jam's name and share button, the prompt to start audio (from
- * 1000px; narrower screens show it under the header), who's here, connection, theme.
+ * 1000px; narrower screens show it under the header), who's here, connection, the about link
+ * (a new tab, so the jam keeps playing), theme.
  */
 export function Header({ slug, status }: { slug: string; status: ConnectionStatus }) {
   return (
@@ -52,6 +53,9 @@ export function Header({ slug, status }: { slug: string; status: ConnectionStatu
         >
           {STATUS[status].label}
         </span>
+        <a className="console-about" href="/about" target="_blank" rel="noopener">
+          About · Add your AI
+        </a>
         <ThemeToggle />
       </div>
     </header>

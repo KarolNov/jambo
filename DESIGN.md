@@ -200,6 +200,22 @@ the console's flashes for loop hits never tap.
   `src/board/console/Pads.tsx` does: hits come too fast for React state.
 - Not as a general-purpose button: use `Button`.
 
+### Tabs
+
+Folder tabs over one panel (`TabsProps`, each tab a `Tab`: `id`, `label`, `content`, optional
+`disabled`). The panel is a raised card and the selected tab is part of it, labelled in `--ui-c`
+(else `--accent-2`); the other tabs sit behind the card. Selecting swaps them at once: only the
+label's colour eases. Tabs that don't fit go behind a "+N" tab that opens a menu of them
+(`src/ui/tabFit.ts`); the selected tab always shows, in place of the last one that fits. ← →
+move through every tab, shown or not, and select as they go, Home and End jump to the ends, and
+Tab moves on to "+N", then into the panel. Pass `value` and `onChange` to control it, or
+`defaultValue` to let it keep the selection.
+
+- Use for a few parallel versions of the same content where people want one at a time, such as
+  the setup steps per AI app on `/about`. Keep labels short, so more of them fit before "+N".
+- Not for choosing a value that changes the music or the jam (`Select`, `Switch`), for content
+  people compare or read in order (show it all), or inside another `Tabs`.
+
 ## Don'ts
 
 - Don't restyle a `src/ui` control from feature CSS. Change it in `src/ui/ui.css` (and check `/ds`)

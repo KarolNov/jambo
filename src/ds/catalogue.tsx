@@ -17,6 +17,7 @@ import {
   ScrubField,
   Select,
   Switch,
+  Tabs,
 } from '../ui'
 import { SWATCHES } from '../theme/palette'
 import { useTheme } from '../theme/theme'
@@ -240,6 +241,12 @@ function OptionListDemo() {
     </div>
   )
 }
+
+const TAB_DEMO = [
+  { id: 'claude', label: 'Claude', content: 'Settings → Connectors → Add custom connector.' },
+  { id: 'chatgpt', label: 'ChatGPT', content: 'Turn on Developer mode, then create an app.' },
+  { id: 'other', label: 'Other', content: 'Any MCP client over streamable HTTP.' },
+]
 
 export const CATALOGUE: Entry[] = [
   {
@@ -470,6 +477,33 @@ export const CATALOGUE: Entry[] = [
     avoid: [
       'A general-purpose button: use Button.',
       'Flashing hits through React state: set the pressed and glow classes on the element, as the console does.',
+    ],
+  },
+  {
+    name: 'Tabs',
+    summary:
+      'Folder tabs over one panel: the selected tab is part of the raised card, the others sit behind it. Tabs that don\'t fit go behind "+N", a menu of them. ← → Home End move through every tab.',
+    states: [
+      { label: 'Uncontrolled', demo: <Tabs label="AI apps" tabs={TAB_DEMO} /> },
+      {
+        label: 'With a disabled tab',
+        demo: (
+          <Tabs
+            label="AI apps, one unavailable"
+            defaultValue="chatgpt"
+            tabs={[...TAB_DEMO, { id: 'soon', label: 'Soon', content: null, disabled: true }]}
+          />
+        ),
+      },
+    ],
+    use: [
+      'A few parallel versions of the same content where people want one at a time, such as setup steps per app on /about.',
+      'Short labels, so more of them fit before "+N" (as in these narrow demos).',
+    ],
+    avoid: [
+      'Picking a value that changes the music or the jam: use Select or Switch.',
+      'Content people need to compare side by side, or read in order: show it all.',
+      'Tabs inside tabs.',
     ],
   },
 ]

@@ -98,8 +98,14 @@
   /* room for the fader's and knob's value bubbles */
   padding-top: 18px;
 }
-:root[data-theme] .ds-demo > .ui-fader {
+:root[data-theme] .ds-demo > .ui-fader,
+:root[data-theme] .ds-demo > .ui-tabs {
   flex: 1;
+}
+/* Let wide demos (tabs) shrink to their cell instead of spilling into the next. */
+:root[data-theme] .ds-state,
+:root[data-theme] .ds-demo {
+  min-width: 0;
 }
 /* A live knob and what its owner has been handed so far. */
 :root[data-theme] .ds-knob-live {

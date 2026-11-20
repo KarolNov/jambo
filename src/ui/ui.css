@@ -1060,3 +1060,144 @@
 :root[data-theme] .ui-pad-sound-missing {
   color: var(--accent);
 }
+
+/* ── Tabs ───────────────────────────────────────────────────────────────── */
+/*
+ * Folder tabs: the panel is a raised card and the selected tab is part of it, one surface. The
+ * other tabs sit behind the card, a shade back, their feet tucked under it. Layers: tabs 0,
+ * panel 1, selected tab 2. Tabs that don't fit go behind "+N" (Tabs measures; tabFit.ts).
+ * Selecting a tab swaps these at once: nothing animates but the label's colour.
+ */
+:root[data-theme] .ui-tabs {
+  --tab-tuck: 14px;
+  position: relative;
+  min-width: 0;
+}
+:root[data-theme] .ui-tabstrip {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  padding: 0 16px;
+  margin-bottom: calc(-1 * var(--tab-tuck));
+}
+:root[data-theme] .ui-tablist {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+:root[data-theme] .ui-tab {
+  position: relative;
+  z-index: 0;
+  flex: none;
+  max-width: 100%;
+  padding: 10px 16px calc(10px + var(--tab-tuck));
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--muted);
+  /* A shade back from the card, as a tab behind it would be. */
+  background: color-mix(in srgb, var(--bg) 88%, var(--lo));
+  border: none;
+  border-radius: 14px 14px 0 0;
+  box-shadow: var(--raise-sm);
+  cursor: pointer;
+  /* No grey flash over the tab, and its foot under the card, when tapped (iOS, Android). */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: color 0.12s;
+}
+:root[data-theme] .ui-tablist .ui-tab {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+:root[data-theme] .ui-tab-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:root[data-theme] .ui-tab:hover:not(:disabled, [aria-selected='true']) {
+  color: var(--text);
+}
+/* The selected tab: above the card and the card's colour, its shadow cut where the card begins. */
+:root[data-theme] .ui-tab[aria-selected='true'] {
+  z-index: 2;
+  color: var(--ui-c, var(--accent-2));
+  background: var(--bg);
+  box-shadow: none;
+}
+:root[data-theme] .ui-tab[aria-selected='true']::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 var(--tab-tuck);
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: var(--raise);
+  clip-path: inset(-30px -30px 0 -30px);
+}
+:root[data-theme] .ui-tab-more[aria-expanded='true'] {
+  color: var(--ui-c, var(--accent-2));
+}
+:root[data-theme] .ui-tab:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+/* Focus: the rim inside the visible part of the tab, not the part tucked under the card. */
+:root[data-theme] .ui-tab:focus-visible {
+  outline: none;
+}
+:root[data-theme] .ui-tab:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 var(--tab-tuck);
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px var(--focus);
+  pointer-events: none;
+}
+/* A copy of every tab, laid out but never seen, for Tabs to measure. */
+:root[data-theme] .ui-tabstrip-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+:root[data-theme] .ui-tabstrip-measure .ui-tab {
+  max-width: none;
+}
+:root[data-theme] .ui-tabpanel {
+  position: relative;
+  z-index: 1;
+  padding: 22px;
+  border-radius: 18px;
+  background: var(--bg);
+  box-shadow: var(--raise);
+}
+:root[data-theme] .ui-tabpanel:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--raise),
+    inset 0 0 0 2px var(--focus);
+}
+@media (max-width: 520px) {
+  :root[data-theme] .ui-tabstrip {
+    padding: 0 12px;
+  }
+  :root[data-theme] .ui-tab {
+    padding-inline: 12px;
+    font-size: 13px;
+  }
+  :root[data-theme] .ui-tabpanel {
+    padding: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] .ui-tab {
+    transition: none;
+  }
+}

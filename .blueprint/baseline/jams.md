@@ -43,8 +43,8 @@ The app SHALL refuse jam links whose slug does not have the jam link format, bot
   - **WHEN** someone opens `/jam/../../etc` or connects to the board of `not a slug`
   - **THEN** they get a not-found page, and the connection is refused with no board created
 - **Scenario: Unknown page**
-  - **WHEN** someone opens a path that is neither `/`, `/ds` nor a jam link
-  - **THEN** they get a "No jam here" page with a link to start a new jam
+  - **WHEN** someone opens a path that is neither `/`, `/about`, `/ds` nor a jam link
+  - **THEN** they get a "No jam here" page with links to start a new jam and to the about page
 
 ### Requirement: Link is access
 
@@ -54,3 +54,14 @@ Anyone with a jam's link SHALL be able to open and edit its board, without an ac
   - **GIVEN** a jam someone is editing
   - **WHEN** they send its link to a friend who opens it
   - **THEN** the friend sees the same board and can edit it
+
+### Requirement: About page
+
+`/about` SHALL say what jambo is, how to play, how to connect an AI app over MCP, and who made it and why. It SHALL show the MCP server URL for the current host with a Copy button, and setup steps for Claude, Claude Code, ChatGPT, Gemini, Codex and other MCP clients, one app at a time. `/docs` SHALL redirect permanently to `/about`.
+
+- **Scenario: Pick an AI app**
+  - **WHEN** someone on `/about` picks ChatGPT
+  - **THEN** they see ChatGPT's setup steps, and the server URL ends in `/mcp` on the host they are on
+- **Scenario: Old docs link**
+  - **WHEN** someone opens `/docs#ai`
+  - **THEN** they land on `/about#ai`, at the Bring your AI section

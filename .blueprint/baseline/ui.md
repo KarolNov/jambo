@@ -25,7 +25,7 @@ The page at `/ds` SHALL show every shared control, each with its states (resting
 
 - **Scenario: Browse the controls**
   - **WHEN** someone opens `/ds`
-  - **THEN** they see the button, icon button, switch, slider, knob, scrub field, select, menu and pad, each with its states and rules
+  - **THEN** they see the button, icon button, switch, slider, knob, scrub field, select, menu, pad and tabs, each with its states and rules
 - **Scenario: Try another colour**
   - **WHEN** someone picks coral on `/ds`
   - **THEN** the slider's lights, the knob's arc and the focus rings turn coral
@@ -133,5 +133,24 @@ A pad SHALL show its key moulded into the middle of a raised rubber square, and 
   - **WHEN** someone looks at it
   - **THEN** the name takes two lines ending in "…" under the pad, beside its dot, and the key stays clear
 - **Scenario: Screen reader**
-  - **WHEN** a screen reader reaches the pad with Vox uploaded by Misty Yak
-  - **THEN** it hears a button "Vox, Uploaded by Misty Yak"
+  - **WHEN** a screen reader reaches the Q pad with Vox uploaded by Misty Yak
+  - **THEN** it hears a button "Q Vox, Uploaded by Misty Yak"
+
+### Requirement: Tabs
+
+Tabs SHALL show one panel at a time under a row of folder tabs: the selected tab SHALL be part of the panel's card and the others SHALL sit behind it, and selecting a tab SHALL swap them at once. Tabs that don't fit the row SHALL go behind a "+N" tab whose menu lists them and selects the one picked; the selected tab SHALL always show. A click or tap SHALL select a tab; ← and → SHALL move through every tab, shown or not, selecting as they go, wrapping at the ends and skipping disabled tabs; Home and End SHALL jump to the first and last. Screen readers SHALL hear a tab list.
+
+- **Scenario: Keyboard**
+  - **GIVEN** the first tab selected and focused
+  - **WHEN** someone presses → twice
+  - **THEN** the third tab is selected and its panel shows
+- **Scenario: Phone**
+  - **WHEN** someone opens the AI apps on `/about` on a 375px-wide phone
+  - **THEN** they see Claude, Claude Code, ChatGPT and "+3", and nothing spills past the card's edges
+- **Scenario: Pick from +N**
+  - **WHEN** they pick Codex from "+3"
+  - **THEN** Codex is selected and shows in place of ChatGPT, and "+3" lists the others
+- **Scenario: Wrap**
+  - **GIVEN** Other, the last tab, selected
+  - **WHEN** someone presses →
+  - **THEN** Claude is selected
