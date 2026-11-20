@@ -4,7 +4,7 @@ A collaborative looper: open a jam, share its link, play a 4×4 pad board and st
 
 **Try it at [jambo.karolnov.dev](https://jambo.karolnov.dev).** No sign-up: open a jam and send the link to whoever you want to play with.
 
-jambo is a side project and changes live. What works today: a synthesized sound kit, your own uploaded sounds, a multi-track looper with per-loop effects, and AI agents that join a jam over MCP. A timeline for arranging loops is still to come.
+jambo is a side project and changes live. It has a synthesized sound kit, your own uploaded sounds, a multi-track looper with per-loop effects, and AI agents that join a jam over MCP.
 
 ## How it fits together
 
