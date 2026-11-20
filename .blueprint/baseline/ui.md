@@ -105,7 +105,7 @@ A number field with a scrub label SHALL change its value as someone drags the la
 
 ### Requirement: Haptics
 
-On phones that support it, flipping a switch, crossing a slider's detent, and each step of a knob or scrub SHALL give a light haptic tick. On iPhones, where pages can't start a tick, only switches SHALL tick, as the system's own switch. Haptics SHALL come only from the person's own touch, never from loops or other people's changes. Where haptics aren't supported, the controls SHALL work the same, without them.
+On Android phones, flipping a switch, a slider landing on its detent, a slider passing each light of its strip, a knob passing each light of its ring (or each step when it has fewer), each step of a scrub, and pressing a pad SHALL give a light haptic tick, a firmer one at the detent. Steps closer together than 45 ms SHALL be dropped, so a fast drag ticks now and then instead of buzzing. Keys SHALL NOT tick. On iPhones, where pages can't start a tick, only switches SHALL tick, as the system's own switch. Haptics SHALL come only from the person's own touch or press, never from loops, other people's changes, or a pad lit by a loop's hit. Where haptics aren't supported, the controls SHALL work the same, without them.
 
 - **Scenario: Desktop**
   - **WHEN** someone flips the metronome on a laptop
@@ -113,3 +113,25 @@ On phones that support it, flipping a switch, crossing a slider's detent, and ea
 - **Scenario: Someone else's change**
   - **WHEN** another person sets a loop's level to unity
   - **THEN** this phone does not tick
+- **Scenario: Press a pad**
+  - **GIVEN** an Android phone
+  - **WHEN** someone taps a pad
+  - **THEN** it ticks, and when a loop hits that pad, it does not
+- **Scenario: Fast drag**
+  - **WHEN** someone flicks a fader from 0 to full on an Android phone
+  - **THEN** it ticks a few times along the way, not on every light
+- **Scenario: Keys**
+  - **WHEN** someone moves a fader with the arrow keys
+  - **THEN** nothing ticks
+
+### Requirement: Pad
+
+A pad SHALL show its key moulded into the middle of a raised rubber square, and its sound's name printed under it, centred, up to two lines and then an ellipsis, with the whole name on hover; the name SHALL never overlap the key. An uploaded sound's name SHALL carry its uploader's dot in a column of its own beside the name, show dimmed while loading, and end in "(missing)" when its file is gone. Pressed, a pad SHALL sink and squash slightly (only sink with reduced motion); lit by a loop, light SHALL spread from inside it. Screen readers SHALL hear a button named by its sound, then "(missing)" if so, then its uploader.
+
+- **Scenario: Long upload name**
+  - **GIVEN** a pad whose sound is a 40-character upload, on a phone
+  - **WHEN** someone looks at it
+  - **THEN** the name takes two lines ending in "…" under the pad, beside its dot, and the key stays clear
+- **Scenario: Screen reader**
+  - **WHEN** a screen reader reaches the pad with Vox uploaded by Misty Yak
+  - **THEN** it hears a button "Vox, Uploaded by Misty Yak"
