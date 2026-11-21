@@ -143,6 +143,13 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+/* A plain value, like the server URL, stays on one line and ends in an ellipsis where it doesn't fit
+   (narrow phones); Copy still copies all of it. */
+:root[data-theme] .about-copy:not(.is-code) .about-copy-value {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 :root[data-theme] .about-copy.is-code {
   align-items: flex-start;
 }
