@@ -264,7 +264,7 @@ function Copyable({ label, value, code }: { label?: string; value: string; code?
   return (
     <div className={`about-copy ${code ? 'is-code' : ''}`}>
       {label && <span className="about-copy-label">{label}</span>}
-      <pre className="about-copy-value">
+      <pre className="about-copy-value" title={code ? undefined : value}>
         <code>{value}</code>
       </pre>
       <Button size="sm" onClick={() => void copy()} aria-label={`Copy ${label ?? 'command'}`}>
