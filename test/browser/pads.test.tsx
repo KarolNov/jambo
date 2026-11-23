@@ -254,7 +254,7 @@ describe('playing the pads', () => {
   })
 })
 
-describe('picking a pad\'s sound', () => {
+describe("picking a pad's sound", () => {
   const openChangeSounds = () =>
     userEvent.click(page.getByRole('button', { name: 'Change sounds' }))
 
@@ -338,7 +338,7 @@ describe('uploading onto pads', () => {
   }
 
   // @scenario audio/sounds: Upload onto a pad
-  it("lists the upload, puts it on Q, and plays it on Q", async () => {
+  it('lists the upload, puts it on Q, and plays it on Q', async () => {
     const id = uploadId(10)
     const requests = soundServer(id)
     await renderJam(<Deck slug={SLUG} />, session)

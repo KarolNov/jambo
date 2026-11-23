@@ -152,7 +152,8 @@ describe('scrub the tempo', () => {
     pressed = true
     // Right, a pixel at a time, until the field reads 112 (the test page may be scaled).
     const shown = () => (tempoField().element() as HTMLInputElement).value
-    for (let dx = 1; dx < 200 && shown() !== '112'; dx++) await commands.mouseMove(at.x + dx, at.y, 1)
+    for (let dx = 1; dx < 200 && shown() !== '112'; dx++)
+      await commands.mouseMove(at.x + dx, at.y, 1)
     expect(shown()).toBe('112')
     expect(tempo).not.toHaveBeenCalled()
     expect(bpm()).toBe(100)

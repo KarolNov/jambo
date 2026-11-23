@@ -203,7 +203,9 @@ describe('mute', () => {
     const seconds = 2 * bar
     const muteAt = 1
     const echoing = track({ echo: 1 })
-    const playing = await render(await offline({ seconds, bpm, tracks: [echoing], metronome: false }))
+    const playing = await render(
+      await offline({ seconds, bpm, tracks: [echoing], metronome: false }),
+    )
 
     const audio = await offline({ seconds, bpm, tracks: [echoing], metronome: false })
     void audio.ctx.suspend(muteAt).then(() => {
