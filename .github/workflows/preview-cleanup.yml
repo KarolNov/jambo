@@ -82,14 +82,19 @@ jobs:
           BRANCH: ${{ steps.pr.outputs.branch }}
         run: pnpm exec wrangler preview delete --name "$BRANCH" --skip-confirmation
 
+      # Informational only: a token scoped to one Worker may not be allowed to list the account's
+      # namespaces, and that mustn't fail a cleanup that already succeeded.
       - name: Report the Preview's Durable Object namespaces
         if: steps.lookup.outputs.exists == 'true'
         env:
           PREVIEW_ID: ${{ steps.lookup.outputs.id }}
         run: |
-          curl -sf -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+          if ! curl -sf -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/durable_objects/namespaces?per_page=1000" \
-            > namespaces.json
+            > namespaces.json; then
+            echo "::notice::Couldn't list Durable Object namespaces with this token; skipping the count."
+            exit 0
+          fi
           left=$(jq --arg id "$PREVIEW_ID" '[.result[] | select(.preview.id == $id)] | length' namespaces.json)
           total=$(jq '.result | length' namespaces.json)
           if [ "$left" -gt 0 ]; then

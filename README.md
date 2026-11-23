@@ -141,7 +141,7 @@ Workers Builds deploys each pull request's branch as a [Preview](https://develop
 gh workflow run preview-cleanup.yml -f pr=<number>
 ```
 
-It needs two repository secrets: `CLOUDFLARE_ACCOUNT_ID`, and `CLOUDFLARE_API_TOKEN`, an account API token with the Workers **Editor** role on the `jambo` Worker (or the older _Account > Workers Scripts > Edit_ permission).
+It needs two repository secrets: `CLOUDFLARE_ACCOUNT_ID`, and `CLOUDFLARE_API_TOKEN`, an [account-owned API token](https://developers.cloudflare.com/workers/authorization/#use-granular-permissions-with-wrangler) with the Workers **Editor** role scoped to the `jambo` Worker.
 
 Uploaded sounds live in R2: `jambo-sounds` for production, and `jambo-sounds-preview`, shared by every pull-request preview. The cleanup workflow leaves them alone: sounds are stored under `jams/<slug>/`, and a Preview's jam slugs live only in its own Durable Objects, which are gone once it's deleted, so nothing ties a sound to the PR that uploaded it. Clear them by hand, ideally when no other PR's preview is in use:
 
