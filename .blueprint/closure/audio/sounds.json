@@ -1,0 +1,76 @@
+{
+  "mode": "symbol",
+  "files": {
+    "shared/board/apply.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "00a8a7c4073c",
+      "whole": true
+    },
+    "shared/board/index.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "b39594adab7d",
+      "whole": true
+    },
+    "shared/board/ops.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "ac549660a041",
+      "whole": true
+    },
+    "shared/board/schema.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "7886b4b9587a",
+      "whole": true
+    },
+    "shared/board/sdk.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "6fafc07c2757",
+      "whole": true
+    },
+    "shared/board/seed.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "d5eb014f0cd8",
+      "whole": true
+    },
+    "shared/colors.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "c468471135c8",
+      "whole": true
+    },
+    "shared/names.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "812ac5f26e0b",
+      "whole": true
+    },
+    "shared/words.ts": {
+      "distance": 3,
+      "via": [],
+      "hash": "093dd86b1435",
+      "whole": true
+    },
+    "src/board/identity.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "d1d2eaa5cab9",
+      "whole": true
+    }
+  },
+  "symbols": [],
+  "external": [
+    "duratom",
+    "yjs",
+    "zod"
+  ],
+  "locked": {
+    "duratom": "0.1.0",
+    "yjs": "13.6.33",
+    "zod": "4.6.6, 4.6.7"
+  }
+}

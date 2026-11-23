@@ -1,0 +1,40 @@
+{
+  "mode": "symbol",
+  "files": {
+    "shared/colors.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "c468471135c8",
+      "whole": true
+    },
+    "shared/names.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "812ac5f26e0b",
+      "whole": true
+    },
+    "shared/sounds.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "d0aeb2d77590",
+      "whole": true
+    },
+    "shared/words.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "093dd86b1435",
+      "whole": true
+    }
+  },
+  "symbols": [],
+  "external": [
+    "duratom",
+    "yjs",
+    "zod"
+  ],
+  "locked": {
+    "duratom": "0.1.0",
+    "yjs": "13.6.33",
+    "zod": "4.6.6, 4.6.7"
+  }
+}

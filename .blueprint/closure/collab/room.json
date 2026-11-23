@@ -1,0 +1,184 @@
+{
+  "mode": "symbol",
+  "files": {
+    "shared/agent/identity.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "7255c8e36b80",
+      "whole": true
+    },
+    "shared/agent/index.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "b9ef0e798a4e",
+      "whole": true
+    },
+    "shared/agent/limits.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "d4559fe10460",
+      "whole": true
+    },
+    "shared/agent/link.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "c936b9cdd9bf",
+      "whole": true
+    },
+    "shared/agent/record.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "c9aff89071cb",
+      "whole": true
+    },
+    "shared/agent/seat.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "e8d0659161b8",
+      "whole": true
+    },
+    "shared/agent/snapshot.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "31018f0ae58c",
+      "whole": true
+    },
+    "shared/board/apply.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "00a8a7c4073c",
+      "whole": true
+    },
+    "shared/board/index.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "b39594adab7d",
+      "whole": true
+    },
+    "shared/board/ops.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "ac549660a041",
+      "whole": true
+    },
+    "shared/board/schema.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "7886b4b9587a",
+      "whole": true
+    },
+    "shared/board/sdk.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "6fafc07c2757",
+      "whole": true
+    },
+    "shared/board/seed.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "d5eb014f0cd8",
+      "whole": true
+    },
+    "shared/clock.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "1dd908e91d40",
+      "whole": true
+    },
+    "shared/colors.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "c468471135c8",
+      "whole": true
+    },
+    "shared/names.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "812ac5f26e0b",
+      "whole": true
+    },
+    "shared/parties.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "f686acc22693",
+      "whole": true
+    },
+    "shared/seats.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "f05d8ce7a23b",
+      "whole": true
+    },
+    "shared/slug.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "93fbc4b73dd9",
+      "whole": true
+    },
+    "shared/sounds.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "d0aeb2d77590",
+      "whole": true
+    },
+    "shared/wav.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "bd5840f52c3f",
+      "whole": true
+    },
+    "shared/words.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "093dd86b1435",
+      "whole": true
+    },
+    "src/board/connection.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "b7d5a5fc4e00",
+      "whole": true
+    },
+    "worker/agent/mcp.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "d7eb83f64fcc",
+      "whole": true
+    },
+    "worker/agent/roster.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "1d797b63f037",
+      "whole": true
+    }
+  },
+  "symbols": [],
+  "external": [
+    "@modelcontextprotocol/server",
+    "agents",
+    "duratom",
+    "hono",
+    "hono-party",
+    "jotai",
+    "lib0",
+    "partyserver",
+    "y-partyserver",
+    "y-protocols",
+    "yjs",
+    "zod"
+  ],
+  "locked": {
+    "@modelcontextprotocol/server": "2.4.0",
+    "agents": "0.33.0",
+    "duratom": "0.1.0",
+    "hono": "4.13.19",
+    "hono-party": "2.1.0",
+    "jotai": "3.0.2",
+    "lib0": "0.2.120",
+    "partyserver": "0.5.10",
+    "y-partyserver": "2.2.0",
+    "y-protocols": "1.0.7",
+    "yjs": "13.6.33",
+    "zod": "4.6.6, 4.6.7"
+  }
+}
