@@ -46,11 +46,19 @@ export function offlineProvider(): YProvider {
   return provider
 }
 
-/** Agrees the session's clock with the jam, as the room's first pong would: room time = client time. */
-export function agreeClock({ jam }: Session) {
-  const now = performance.timeOrigin + performance.now()
-  for (const fn of listeners.get(jam.provider)?.get('custom-message') ?? []) fn(pong(now, now))
+/** Fires a provider event at its listeners, as the connection would. */
+export function emit(provider: YProvider, event: string, arg: unknown) {
+  for (const fn of listeners.get(provider)?.get(event) ?? []) fn(arg)
 }
+
+/** Agrees a clock on `provider` with the jam, as the room's first pong would: room time = client time. */
+export function agree(provider: YProvider) {
+  const now = performance.timeOrigin + performance.now()
+  emit(provider, 'custom-message', pong(now, now))
+}
+
+/** Agrees the session's clock with the jam. */
+export const agreeClock = ({ jam }: Session) => agree(jam.provider)
 
 /** What the jam's server would answer, by default: the sound budget open, uploads not found. */
 export type Routes = (url: string, init?: RequestInit) => Response | Promise<Response> | undefined

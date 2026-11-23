@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { page, userEvent } from 'vitest/browser'
+import { commands, page, userEvent } from 'vitest/browser'
 import { Deck } from '../../src/board/console/Deck'
 import { Mixer } from '../../src/board/console/Mixer'
 import { bpmAtom, tracksAtom } from '../../src/board/model'
@@ -120,5 +120,101 @@ describe('record', () => {
     await expect.element(record).toHaveAttribute('aria-busy', 'false')
     await userEvent.click(record)
     await expect.poll(() => session.engine.state.phase).not.toBe('idle')
+  })
+
+  // @scenario audio/looper: Stop during the count-in
+  it('adds no track and says nothing was recorded when stopped before the take begins', async () => {
+    agreeClock(session)
+    await renderJam(<Deck slug={SLUG} />, session)
+    await userEvent.click(page.getByRole('button', { name: 'Record' }))
+    await expect.poll(() => session.engine.state.phase).not.toBe('idle')
+    expect(session.engine.state.phase).not.toBe('recording')
+
+    await userEvent.click(page.getByRole('button', { name: /\(stop\)$/ }))
+    expect(session.engine.state.phase).toBe('idle')
+    await expect.element(page.getByText('Nothing recorded')).toBeVisible()
+    expect(session.jam.store.get(tracksAtom).size).toBe(0)
+  })
+})
+
+describe('scrub the tempo', () => {
+  let pressed = false
+  afterEach(async () => {
+    if (pressed) await commands.mouseUp()
+    pressed = false
+  })
+
+  // @scenario audio/looper: Scrub the tempo
+  it('applies the scrubbed tempo once, when the label is let go', async () => {
+    await renderJam(<Deck slug={SLUG} />, session)
+    const tempo = vi.spyOn(session.board, 'tempo')
+    const at = await commands.mouseDown('.ui-scrub-label')
+    pressed = true
+    // Right, a pixel at a time, until the field reads 112 or more (the test page may be scaled,
+    // so a pixel can be worth more than one BPM).
+    const shown = () => Number((tempoField().element() as HTMLInputElement).value)
+    for (let dx = 1; dx < 200 && shown() < 112; dx++) await commands.mouseMove(at.x + dx, at.y, 1)
+    const scrubbed = shown()
+    expect(scrubbed).toBeGreaterThanOrEqual(112)
+    expect(scrubbed).toBeLessThan(120)
+    expect(tempo).not.toHaveBeenCalled()
+    expect(bpm()).toBe(100)
+
+    await commands.mouseUp()
+    pressed = false
+    await expect.poll(bpm).toBe(scrubbed)
+    expect(tempo).toHaveBeenCalledTimes(1)
+    expect(tempo).toHaveBeenCalledWith(scrubbed)
+  })
+})
+
+describe('a take, in real time', () => {
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+  // @scenario audio/looper: Record
+  // @scenario audio/looper: Your own take
+  it('turns four hits into a new track at their beats, which loops on in time', async () => {
+    // 120 BPM: half a second a beat, two seconds a bar.
+    expect(session.board.tempo(120).ok).toBe(true)
+    agreeClock(session)
+    await renderJam(<Deck slug={SLUG} />, session)
+    const { engine } = session
+    const beatMs = 500
+
+    await userEvent.click(page.getByRole('button', { name: 'Record' }))
+    await expect.poll(() => engine.state.phase, { timeout: 6000 }).toBe('recording')
+    const rec = engine.state
+    if (rec.phase === 'idle') throw new Error('not recording')
+
+    // A beat apart from the first press, not from the end of the last one, so the driver's
+    // latency on each press doesn't add up across the take.
+    const first = performance.now()
+    for (let n = 0; n < 4; n++) {
+      await wait(first + n * beatMs - performance.now())
+      await userEvent.keyboard('1')
+    }
+    const played = engine.take()!.hits
+    expect(played).toHaveLength(4)
+    await userEvent.click(page.getByRole('button', { name: 'Stop' }))
+
+    // Record: one new track holding the four hits, on the kick's pad, a beat apart as played.
+    const tracks = [...session.jam.store.get(tracksAtom)]
+    expect(tracks).toHaveLength(1)
+    const [id, track] = tracks[0]!
+    expect(track.author).toBe(session.me.id)
+    expect(track.bars).toBe(1)
+    expect(track.hits).toEqual(played.map((h) => ({ padId: 'r0c0', beat: Math.max(0, h.beat) })))
+    for (let n = 1; n < 4; n++)
+      expect(Math.abs(track.hits[n]!.beat - track.hits[n - 1]!.beat - 1)).toBeLessThan(0.2)
+
+    // Your own take: the loop goes on from where the take is, on the take's own bar grid.
+    await wait(300)
+    const position = engine.position(id)
+    expect(position).toBeDefined()
+    const bar = 4 * beatMs
+    const expected = ((engine.clock.now()! - rec.recordStart) % bar) / bar
+    // As heard, so allow for the output's latency: within a tenth of a bar, either side of the wrap.
+    const off = Math.abs(position! - expected)
+    expect(Math.min(off, 1 - off)).toBeLessThan(0.1)
   })
 })
