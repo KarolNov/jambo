@@ -131,7 +131,19 @@ pnpm deploy       # vite build, then wrangler deploy
 
 The first deploy asks Wrangler to log in to your Cloudflare account. To run your own copy, change the R2 bucket names in `wrangler.jsonc` to buckets in your account.
 
-Uploaded sounds live in R2: `jambo-sounds` for production, and `jambo-sounds-preview`, shared by every pull-request preview. Once a PR has merged, clear what its preview uploaded:
+### Pull-request previews
+
+Workers Builds deploys each pull request's branch as a [Preview](https://developers.cloudflare.com/workers/previews/) of the `jambo` Worker (`wrangler preview`, configured by the `previews` block in `wrangler.jsonc`), named after the branch. Each Preview gets its own `Board` and `SoundQuota` Durable Object namespaces, and the Workers Free plan allows 100 namespaces per account, so closed PRs' Previews have to go.
+
+[`preview-cleanup.yml`](.github/workflows/preview-cleanup.yml) does that: when a PR is merged or closed, it deletes that PR's Preview with `wrangler preview delete`, which also deletes its deployments, Durable Object namespaces and their storage. If the Preview doesn't exist, it does nothing. To clean up after a PR by hand, run the workflow from the Actions tab (**Preview cleanup** > **Run workflow**) with the PR number, or:
+
+```bash
+gh workflow run preview-cleanup.yml -f pr=<number>
+```
+
+It needs two repository secrets: `CLOUDFLARE_ACCOUNT_ID`, and `CLOUDFLARE_API_TOKEN`, an [account-owned API token](https://developers.cloudflare.com/workers/authorization/#use-granular-permissions-with-wrangler) with the Workers **Editor** role scoped to the `jambo` Worker.
+
+Uploaded sounds live in R2: `jambo-sounds` for production, and `jambo-sounds-preview`, shared by every pull-request preview. The cleanup workflow leaves them alone: sounds are stored under `jams/<slug>/`, and a Preview's jam slugs live only in its own Durable Objects, which are gone once it's deleted, so nothing ties a sound to the PR that uploaded it. Clear them by hand, ideally when no other PR's preview is in use:
 
 ```bash
 pnpm sounds:clean-preview                                 # dry run: what would go
