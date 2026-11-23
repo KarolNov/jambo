@@ -1,4 +1,5 @@
 {
+  "version": 2,
   "docs": {
     "backend": "notion",
     "location": {
@@ -14,48 +15,51 @@
     }
   },
   "project": "https://app.notion.com/p/41b43cce21f281bc9d12e875f6557087",
+  "domains": {
+    "audio": {
+      "ref": "https://app.notion.com/p/42143cce21f28162b067f342d1ddddd0",
+      "purpose": "The sound side of a jam: the sounds pads can hold, and the engine that records loops and plays them together in time."
+    },
+    "board": {
+      "ref": "https://app.notion.com/p/42143cce21f28103aa5dd12148f6b814",
+      "purpose": "The live jam board: the page people play on, the pads on it, and the validated operations that are the only way to change it."
+    },
+    "collab": {
+      "ref": "https://app.notion.com/p/42143cce21f2817999f5e2019ad3a642",
+      "purpose": "How people and agents share a jam: the link that opens it, the room that keeps everyone's copy in sync, and agents joining over MCP."
+    }
+  },
   "specs": {
-    "jams": {
+    "collab/jams": {
       "ref": "https://app.notion.com/p/41c43cce21f281fdb0c0e24fec1ec10e",
       "anchors": [
         "shared/**",
+        "!shared/agent/**",
+        "!shared/board/**",
+        "!shared/clock.ts",
+        "!shared/sounds.ts",
+        "!shared/wav.ts",
         "worker/index.ts",
         "src/App.tsx",
         "src/about/**"
       ],
       "specVersion": "a8298ca0a4d096f2",
       "anchorsFiles": {
-        "shared/agent/identity.ts": "7255c8e36b80",
-        "shared/agent/index.ts": "b9ef0e798a4e",
-        "shared/agent/limits.ts": "d4559fe10460",
-        "shared/agent/link.ts": "c936b9cdd9bf",
-        "shared/agent/record.ts": "c9aff89071cb",
-        "shared/agent/seat.ts": "e8d0659161b8",
-        "shared/agent/snapshot.ts": "31018f0ae58c",
-        "shared/board/apply.ts": "00a8a7c4073c",
-        "shared/board/index.ts": "b39594adab7d",
-        "shared/board/ops.ts": "ac549660a041",
-        "shared/board/schema.ts": "7886b4b9587a",
-        "shared/board/sdk.ts": "6fafc07c2757",
-        "shared/board/seed.ts": "d5eb014f0cd8",
-        "shared/clock.ts": "1dd908e91d40",
         "shared/colors.ts": "c468471135c8",
         "shared/looper.ts": "7567f1bf8543",
         "shared/names.ts": "812ac5f26e0b",
         "shared/parties.ts": "f686acc22693",
         "shared/seats.ts": "f05d8ce7a23b",
         "shared/slug.ts": "93fbc4b73dd9",
-        "shared/sounds.ts": "d0aeb2d77590",
-        "shared/wav.ts": "bd5840f52c3f",
         "shared/words.ts": "093dd86b1435",
         "src/App.tsx": "2ea3aba66dd9",
-        "src/about/About.tsx": "14a050c462d8",
-        "src/about/about.css": "daa982f514e2",
+        "src/about/About.tsx": "f55514fbec86",
+        "src/about/about.css": "9fa4c0fbea95",
         "worker/index.ts": "7006ed34cbe2"
       },
-      "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
+      "syncedCommit": "bc6d2092937bc98b26d8d86913ec04b9e148ce4e"
     },
-    "room": {
+    "collab/room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
       "anchors": [
         "worker/board.ts",
@@ -74,7 +78,7 @@
       },
       "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
     },
-    "board": {
+    "board/session": {
       "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
       "anchors": [
         "src/board/model.ts",
@@ -84,7 +88,11 @@
         "src/board/presence.ts",
         "src/board/seat.ts",
         "src/board/colors.ts",
-        "src/board/console/**"
+        "src/board/console/**",
+        "!src/board/console/Deck.tsx",
+        "!src/board/console/Mixer.tsx",
+        "!src/board/console/Pads.tsx",
+        "!src/board/console/loops.ts"
       ],
       "specVersion": "a203ac9b690ee17b",
       "anchorsFiles": {
@@ -92,15 +100,11 @@
         "src/board/colors.ts": "d21c9da0a9fa",
         "src/board/console/AiMark.tsx": "a01ab3b0aaee",
         "src/board/console/Console.tsx": "f38c1a5735ac",
-        "src/board/console/Deck.tsx": "30738c6c6756",
         "src/board/console/Header.tsx": "c9cf7c94ae96",
-        "src/board/console/Mixer.tsx": "cf7df23a124e",
-        "src/board/console/Pads.tsx": "8dd994f0a5ad",
         "src/board/console/TakeLane.tsx": "4b9d6eb3c34c",
         "src/board/console/console.css": "fb666aae1697",
         "src/board/console/deck.css": "45c06b8bc645",
         "src/board/console/header.css": "71283a0a4c5f",
-        "src/board/console/loops.ts": "42ef8492a4ca",
         "src/board/console/mixer.css": "0007f8afdcc4",
         "src/board/console/pads.css": "a921d00fc2cf",
         "src/board/console/people.ts": "c947df332ba9",
@@ -129,10 +133,13 @@
       },
       "syncedCommit": "00d1392965d46f159ac9d1e6fb1590839fcdb191"
     },
-    "looper": {
+    "audio/looper": {
       "ref": "https://app.notion.com/p/41c43cce21f2816ba415d28e60bf80d5",
       "anchors": [
         "src/audio/**",
+        "!src/audio/samples.ts",
+        "!src/audio/synth.ts",
+        "!src/audio/upload.ts",
         "shared/clock.ts",
         "src/board/console/Deck.tsx",
         "src/board/console/Mixer.tsx",
@@ -148,10 +155,7 @@
         "src/audio/clock.ts": "c0378e84a7cb",
         "src/audio/engine.ts": "8d99cda9bc0e",
         "src/audio/knobs.ts": "dbbd2773232e",
-        "src/audio/samples.ts": "093a12daee1a",
         "src/audio/session.ts": "2e1ec86333d1",
-        "src/audio/synth.ts": "bbba5b7d5b5b",
-        "src/audio/upload.ts": "9d3467419e28",
         "src/board/Debug.tsx": "80d7db772bb5",
         "src/board/console/Deck.tsx": "30738c6c6756",
         "src/board/console/Mixer.tsx": "cf7df23a124e",
@@ -162,7 +166,7 @@
       },
       "syncedCommit": "5b4efecf839423ad94144e4dbff65cace55401d2"
     },
-    "pads": {
+    "board/pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
       "anchors": [
         "src/board/console/Pads.tsx",
@@ -177,7 +181,7 @@
       },
       "syncedCommit": "9fd9be7d7fab9aa7d6a66d04666fb1f9dfef0463"
     },
-    "sounds": {
+    "audio/sounds": {
       "ref": "https://app.notion.com/p/41c43cce21f2810f8bb0f1ed9935a67d",
       "anchors": [
         "shared/sounds.ts",
@@ -196,7 +200,7 @@
       },
       "syncedCommit": "e5fb82ae0d9bb5fee63bec6760b97fa0bc967cff"
     },
-    "agent": {
+    "collab/agent": {
       "ref": "https://app.notion.com/p/41d43cce21f2814bbbb8ef7ccde6b7e2",
       "anchors": [
         "shared/agent/**",
@@ -337,6 +341,96 @@
         "https://github.com/KarolNov/jambo/pull/36",
         "https://github.com/KarolNov/jambo/pull/37"
       ]
+    }
+  },
+  "tests": {
+    "kinds": {
+      "integration": [
+        "test/**/*.test.ts"
+      ]
+    }
+  },
+  "artifacts": {
+    "portfolio-page": {
+      "type": "webpage",
+      "value": "https://karolnov.dev/projects/jambo/",
+      "description": "Project page on karolnov.dev: what jambo is, how it works (Worker, Durable Objects, one write path, loops as notes, R2 uploads) and playing with AI over MCP",
+      "capabilities": [
+        "board",
+        "audio",
+        "collab"
+      ],
+      "checkedFiles": {
+        "shared/agent/identity.ts": "7255c8e36b80",
+        "shared/agent/index.ts": "b9ef0e798a4e",
+        "shared/agent/limits.ts": "d4559fe10460",
+        "shared/agent/link.ts": "c936b9cdd9bf",
+        "shared/agent/record.ts": "c9aff89071cb",
+        "shared/agent/seat.ts": "e8d0659161b8",
+        "shared/agent/snapshot.ts": "31018f0ae58c",
+        "shared/board/apply.ts": "00a8a7c4073c",
+        "shared/board/index.ts": "b39594adab7d",
+        "shared/board/ops.ts": "ac549660a041",
+        "shared/board/schema.ts": "7886b4b9587a",
+        "shared/board/sdk.ts": "6fafc07c2757",
+        "shared/board/seed.ts": "d5eb014f0cd8",
+        "shared/clock.ts": "1dd908e91d40",
+        "shared/colors.ts": "c468471135c8",
+        "shared/looper.ts": "7567f1bf8543",
+        "shared/names.ts": "812ac5f26e0b",
+        "shared/parties.ts": "f686acc22693",
+        "shared/seats.ts": "f05d8ce7a23b",
+        "shared/slug.ts": "93fbc4b73dd9",
+        "shared/sounds.ts": "d0aeb2d77590",
+        "shared/wav.ts": "bd5840f52c3f",
+        "shared/words.ts": "093dd86b1435",
+        "skills/jam/SKILL.md": "d3b554a5fa11",
+        "src/App.tsx": "2ea3aba66dd9",
+        "src/about/About.tsx": "f55514fbec86",
+        "src/about/about.css": "9fa4c0fbea95",
+        "src/audio/clock.ts": "c0378e84a7cb",
+        "src/audio/engine.ts": "8d99cda9bc0e",
+        "src/audio/knobs.ts": "dbbd2773232e",
+        "src/audio/samples.ts": "093a12daee1a",
+        "src/audio/session.ts": "2e1ec86333d1",
+        "src/audio/synth.ts": "bbba5b7d5b5b",
+        "src/audio/upload.ts": "9d3467419e28",
+        "src/board/Debug.tsx": "80d7db772bb5",
+        "src/board/Jam.tsx": "ddb0ab20402d",
+        "src/board/Uploads.tsx": "e14f1254d8b4",
+        "src/board/colors.ts": "d21c9da0a9fa",
+        "src/board/console/AiMark.tsx": "a01ab3b0aaee",
+        "src/board/console/Console.tsx": "f38c1a5735ac",
+        "src/board/console/Deck.tsx": "30738c6c6756",
+        "src/board/console/Header.tsx": "c9cf7c94ae96",
+        "src/board/console/Mixer.tsx": "cf7df23a124e",
+        "src/board/console/Pads.tsx": "8dd994f0a5ad",
+        "src/board/console/TakeLane.tsx": "4b9d6eb3c34c",
+        "src/board/console/console.css": "fb666aae1697",
+        "src/board/console/deck.css": "45c06b8bc645",
+        "src/board/console/header.css": "71283a0a4c5f",
+        "src/board/console/loops.ts": "42ef8492a4ca",
+        "src/board/console/mixer.css": "0007f8afdcc4",
+        "src/board/console/pads.css": "a921d00fc2cf",
+        "src/board/console/people.ts": "c947df332ba9",
+        "src/board/console/share.ts": "41845818fcbf",
+        "src/board/doc.ts": "f88a4fbb0525",
+        "src/board/identity.ts": "d1d2eaa5cab9",
+        "src/board/model.ts": "62d108e90ddd",
+        "src/board/presence.ts": "7e5ca7e98a09",
+        "src/board/seat.ts": "efa33b9e925b",
+        "src/board/session.ts": "74ea6cbdbb7f",
+        "src/board/transport.ts": "deccd619446c",
+        "src/board/typing.ts": "9749aa39cc94",
+        "src/board/useEngineState.ts": "f06f1956d95d",
+        "src/board/useTransport.ts": "85fff8d0f3b4",
+        "worker/agent/mcp.ts": "d7eb83f64fcc",
+        "worker/agent/roster.ts": "1d797b63f037",
+        "worker/board.ts": "2eb8e95bb633",
+        "worker/index.ts": "7006ed34cbe2",
+        "worker/quota.ts": "fa0709c13df2",
+        "worker/sounds.ts": "548f085c2ba4"
+      }
     }
   }
 }
