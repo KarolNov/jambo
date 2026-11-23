@@ -1,0 +1,98 @@
+# Deletes a pull request's Workers Preview once the PR is merged or closed. Deleting a Preview
+# deletes its deployments and its Board and SoundQuota Durable Object namespaces and storage; the
+# DO namespaces API has no delete of its own. Workers Builds names each Preview after its branch.
+# Uploaded sounds in the shared jambo-sounds-preview bucket are left alone: see the README.
+name: Preview cleanup
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number whose Preview to delete
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: preview-cleanup-${{ github.event.pull_request.number || inputs.pr }}
+
+jobs:
+  cleanup:
+    # Repository secrets aren't available to PRs from forks, and those don't get Previews.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Find the PR's branch
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_BRANCH: ${{ github.event.pull_request.head.ref }}
+          INPUT_PR: ${{ inputs.pr }}
+        run: |
+          if [ -n "$EVENT_BRANCH" ]; then
+            branch="$EVENT_BRANCH"
+          else
+            branch=$(gh pr view "$INPUT_PR" --repo "$GITHUB_REPOSITORY" --json headRefName --jq .headRefName)
+          fi
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "PR branch: $branch"
+
+      - name: Check the Preview exists
+        id: lookup
+        env:
+          BRANCH: ${{ steps.pr.outputs.branch }}
+        run: |
+          worker=$(node -p "require('wrangler').experimental_readRawConfig({config:'wrangler.jsonc'}).rawConfig.name")
+          name=$(jq -rn --arg b "$BRANCH" '$b|@uri')
+          status=$(curl -s -o preview.json -w '%{http_code}' \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/workers/$worker/previews/$name")
+          if [ "$status" = 404 ]; then
+            echo "No Preview named \"$BRANCH\" on $worker: nothing to delete."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          elif [ "$status" = 200 ]; then
+            echo "Found Preview \"$BRANCH\" ($(jq -r .result.id preview.json)) on $worker."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "id=$(jq -r .result.id preview.json)" >> "$GITHUB_OUTPUT"
+            echo "worker=$worker" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Looking up Preview \"$BRANCH\" returned HTTP $status: $(jq -c .errors preview.json 2>/dev/null)"
+            exit 1
+          fi
+
+      - name: Delete the Preview
+        if: steps.lookup.outputs.exists == 'true'
+        env:
+          BRANCH: ${{ steps.pr.outputs.branch }}
+        run: pnpm exec wrangler preview delete --name "$BRANCH" --skip-confirmation
+
+      - name: Report the Preview's Durable Object namespaces
+        if: steps.lookup.outputs.exists == 'true'
+        env:
+          PREVIEW_ID: ${{ steps.lookup.outputs.id }}
+        run: |
+          curl -sf -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/durable_objects/namespaces?per_page=1000" \
+            > namespaces.json
+          left=$(jq --arg id "$PREVIEW_ID" '[.result[] | select(.preview.id == $id)] | length' namespaces.json)
+          total=$(jq '.result | length' namespaces.json)
+          if [ "$left" -gt 0 ]; then
+            echo "::warning::$left Durable Object namespace(s) of the deleted Preview are still listed."
+          fi
+          echo "Durable Object namespaces on the account: $total (Workers Free allows 100)."
