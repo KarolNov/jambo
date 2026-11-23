@@ -98,19 +98,29 @@ describe('the sound budget', () => {
     })
   })
 
-  it('counts reads and refuses new reads once spent', async () => {
+  // @scenario collab/room: Reads spent
+  it('counts reads and refuses new reads once spent, still serving cached ones', async () => {
     await setUsage({ bytes: 0, classA: 0, classB: 0 })
     const slug = 'funky-otter-qa05'
     const a = (await (await upload(slug)).json()) as { id: string }
     const b = (await (await upload(slug)).json()) as { id: string }
-    expect((await fetchApp(`/api/jams/${slug}/sounds/${a.id}`)).status).toBe(200)
+    const cachedPath = `/api/jams/${slug}/sounds/${a.id}`
+    const first = await fetchApp(cachedPath)
+    expect(first.status).toBe(200)
+    // Reading the file lets the copy for the edge cache, which shares its stream, finish too.
+    await first.arrayBuffer()
     await until(async () => (await usage())?.classB === 1)
+    await until(
+      async () => (await caches.default.match(`http://jambo.test${cachedPath}`)) !== undefined,
+    )
 
     await setUsage({ classB: budget.classB })
     expect(await status()).toMatchObject({ reads: 'reads' })
     const refused = await fetchApp(`/api/jams/${slug}/sounds/${b.id}`)
     expect(refused.status).toBe(503)
     expect(await refused.json()).toEqual({ error: PAUSED_MESSAGES.reads })
+    // The first upload was read once already, so the edge cache answers it without a read.
+    expect((await fetchApp(cachedPath)).status).toBe(200)
   })
 
   it('gets bytes back and counts the list when retention deletes a jam’s audio', async () => {

@@ -12,6 +12,8 @@ import type YProvider from 'y-partyserver/provider'
 import { Awareness } from 'y-protocols/awareness'
 import * as Y from 'yjs'
 import { apply, newId, seedBoard, type Sound, type Track } from '../../shared/board'
+import { pong } from '../../shared/clock'
+import type { ColorName } from '../../shared/colors'
 import { JamClock } from '../../src/audio/clock'
 import { Engine } from '../../src/audio/engine'
 import { SampleLoader } from '../../src/audio/samples'
@@ -23,16 +25,31 @@ import { useThemedPage } from '../../src/theme/theme'
 
 export const SLUG = 'funky-otter-k7q2'
 
+/** Who listens for each provider event, so a test can play the room's part. */
+const listeners = new WeakMap<YProvider, Map<string, Set<(arg: unknown) => void>>>()
+
 /** A y-partyserver provider that never connects: the board stays local to the test. */
 export function offlineProvider(): YProvider {
-  return {
+  const on = new Map<string, Set<(arg: unknown) => void>>()
+  const provider = {
     wsconnected: false,
     wsconnecting: false,
     sendMessage: () => {},
-    on: () => {},
-    off: () => {},
+    on: (event: string, fn: (arg: unknown) => void) => {
+      if (!on.has(event)) on.set(event, new Set())
+      on.get(event)!.add(fn)
+    },
+    off: (event: string, fn: (arg: unknown) => void) => on.get(event)?.delete(fn),
     destroy: () => {},
   } as unknown as YProvider
+  listeners.set(provider, on)
+  return provider
+}
+
+/** Agrees the session's clock with the jam, as the room's first pong would: room time = client time. */
+export function agreeClock({ jam }: Session) {
+  const now = performance.timeOrigin + performance.now()
+  for (const fn of listeners.get(jam.provider)?.get('custom-message') ?? []) fn(pong(now, now))
 }
 
 /** What the jam's server would answer, by default: the sound budget open, uploads not found. */
@@ -52,7 +69,7 @@ export function mockServer(routes: Routes = () => undefined) {
 }
 
 /** A jam's session as `Jam` makes it, over a seeded doc and an offline provider. */
-export function makeSession(name = 'Misty Yak'): Session {
+export function makeSession(name = 'Misty Yak', color: ColorName = 'sky'): Session {
   const doc = new Y.Doc()
   seedBoard(doc)
   const store = createStore()
@@ -71,7 +88,7 @@ export function makeSession(name = 'Misty Yak'): Session {
   }
   const clock = new JamClock(provider)
   const engine = new Engine(clock, new SampleLoader(SLUG))
-  const me = new Me({ id: 'me-id', key: 'me-key', name, color: 'sky' })
+  const me = new Me({ id: 'me-id', key: 'me-key', name, color })
   return { jam, engine, me, board: makeBoard(jam, me) }
 }
 

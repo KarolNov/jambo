@@ -345,6 +345,10 @@
   },
   "tests": {
     "kinds": {
+      "browser": [
+        "test/browser/**/*.test.ts",
+        "test/browser/**/*.test.tsx"
+      ],
       "integration": [
         "test/**/*.test.ts"
       ]

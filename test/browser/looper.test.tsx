@@ -4,7 +4,7 @@ import { Deck } from '../../src/board/console/Deck'
 import { Mixer } from '../../src/board/console/Mixer'
 import { bpmAtom, tracksAtom } from '../../src/board/model'
 import type { Session } from '../../src/board/session'
-import { addTrack, endSession, makeSession, mockServer, renderJam, SLUG } from './jam'
+import { addTrack, agreeClock, endSession, makeSession, mockServer, renderJam, SLUG } from './jam'
 
 let session: Session
 
@@ -82,5 +82,43 @@ describe('tempo', () => {
       await expect.element(tempoField()).toHaveValue('100')
       await screen.unmount()
     }
+  })
+
+  // @scenario audio/looper: Locked while recording
+  it('is disabled from the count-in on, for the person recording', async () => {
+    agreeClock(session)
+    await renderJam(<Deck slug={SLUG} />, session)
+    await expect.element(tempoField()).toBeEnabled()
+    await userEvent.click(page.getByRole('button', { name: 'Record' }))
+    await expect.element(tempoField()).toBeDisabled()
+    await expect.element(page.getByRole('button', { name: 'Faster' })).toBeDisabled()
+  })
+})
+
+describe('record', () => {
+  // @scenario audio/looper: First press
+  it('starts audio and the count-in on the first press', async () => {
+    agreeClock(session)
+    await renderJam(<Deck slug={SLUG} />, session)
+    expect(session.engine.ready).toBe(false)
+    await userEvent.click(page.getByRole('button', { name: 'Record' }))
+    await expect.poll(() => session.engine.state.phase).not.toBe('idle')
+    expect(session.engine.ready).toBe(true)
+  })
+
+  // @scenario audio/looper: Record right after opening
+  it('says it is syncing until the clock is agreed, then records', async () => {
+    await renderJam(<Deck slug={SLUG} />, session)
+    const syncing = page.getByRole('button', { name: 'Syncing…' })
+    await expect.element(syncing).toHaveAttribute('aria-busy', 'true')
+    await userEvent.click(syncing)
+    await expect.poll(() => session.engine.ready).toBe(true)
+    expect(session.engine.state.phase).toBe('idle')
+
+    agreeClock(session)
+    const record = page.getByRole('button', { name: 'Record' })
+    await expect.element(record).toHaveAttribute('aria-busy', 'false')
+    await userEvent.click(record)
+    await expect.poll(() => session.engine.state.phase).not.toBe('idle')
   })
 })
