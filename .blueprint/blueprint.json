@@ -334,5 +334,12 @@
         "https://github.com/KarolNov/jambo/pull/37"
       ]
     }
+  },
+  "tests": {
+    "kinds": {
+      "integration": [
+        "test/**/*.test.ts"
+      ]
+    }
   }
 }
