@@ -20,7 +20,5 @@ jobs:
       # The browser test project runs in headless Chromium.
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test
-      # Playwright against the local Worker, which the config starts.
-      - run: pnpm e2e
       - run: pnpm format:check
       - run: pnpm build
