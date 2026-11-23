@@ -29,7 +29,7 @@ export const SLUG = 'funky-otter-k7q2'
 const listeners = new WeakMap<YProvider, Map<string, Set<(arg: unknown) => void>>>()
 
 /** A y-partyserver provider that never connects: the board stays local to the test. */
-function offlineProvider(): YProvider {
+export function offlineProvider(): YProvider {
   const on = new Map<string, Set<(arg: unknown) => void>>()
   const provider = {
     wsconnected: false,
