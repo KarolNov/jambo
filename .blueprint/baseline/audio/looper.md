@@ -182,7 +182,7 @@ While it is on, the metronome SHALL click every beat of a take, on the jam's bea
   - **GIVEN** the metronome is off
   - **WHEN** someone records
   - **THEN** only the count-in clicks
-- **Scenario: Two people record**
+- **Scenario: Two people's clicks**
   - **WHEN** two people in a jam record at the same time with the metronome on
   - **THEN** their clicks land within 20 ms of each other
 

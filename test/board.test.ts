@@ -101,6 +101,7 @@ describe('apply', () => {
     expect(tracksOf(doc).has('one-more')).toBe(false)
   })
 
+  // @scenario audio/looper: Two people record
   it('keeps takes two people add at the same time', () => {
     const a = seededDoc()
     const b = new Y.Doc()
@@ -185,6 +186,7 @@ describe('apply', () => {
 
   // @scenario board/ops: Hit outside the loop
   // @scenario board/ops: Remove a missing track
+  // @scenario board/ops: Unknown sound
   it.each([
     ['unknown op', { op: 'explode' }],
     [
@@ -572,6 +574,7 @@ describe('uploaded sounds', () => {
     expect(padSound(doc, 'r0c2')).toBe('hat')
   })
 
+  // @scenario board/ops: Replace with an unknown sound
   it('refuses to replace a sound with one the jam does not list, even with no pad on it', () => {
     const doc = seededDoc()
     expect(board(doc, me).replaceSound('u-unusedunused', id).ok).toBe(false)

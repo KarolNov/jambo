@@ -122,7 +122,7 @@
       "anchors": [
         "shared/board/**"
       ],
-      "specVersion": "6fe8b699c2b85e5d",
+      "specVersion": "a1f03ae455d4583b",
       "anchorsFiles": {
         "shared/board/apply.ts": "00a8a7c4073c",
         "shared/board/index.ts": "b39594adab7d",
@@ -131,7 +131,7 @@
         "shared/board/sdk.ts": "6fafc07c2757",
         "shared/board/seed.ts": "d5eb014f0cd8"
       },
-      "syncedCommit": "00d1392965d46f159ac9d1e6fb1590839fcdb191"
+      "syncedCommit": "dbe0739e1bb7ba5c67b15cdc9baabdca111b358a"
     },
     "audio/looper": {
       "ref": "https://app.notion.com/p/41c43cce21f2816ba415d28e60bf80d5",
@@ -149,7 +149,7 @@
         "src/board/useTransport.ts",
         "src/board/transport.ts"
       ],
-      "specVersion": "0f4e82b3f543e549",
+      "specVersion": "0d9acbd871254f83",
       "anchorsFiles": {
         "shared/clock.ts": "1dd908e91d40",
         "src/audio/clock.ts": "c0378e84a7cb",
@@ -164,7 +164,7 @@
         "src/board/useEngineState.ts": "f06f1956d95d",
         "src/board/useTransport.ts": "85fff8d0f3b4"
       },
-      "syncedCommit": "5b4efecf839423ad94144e4dbff65cace55401d2"
+      "syncedCommit": "dbe0739e1bb7ba5c67b15cdc9baabdca111b358a"
     },
     "board/pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
@@ -230,7 +230,7 @@
         "src/ds/**",
         "DESIGN.md"
       ],
-      "specVersion": "7b6d4b575b6bf34f",
+      "specVersion": "13560cc6f2aa2b24",
       "anchorsFiles": {
         "DESIGN.md": "9f54da599a01",
         "src/ds/Showcase.tsx": "ac8e134e3886",
@@ -254,7 +254,7 @@
         "src/ui/tabFit.ts": "9c71b760a6cb",
         "src/ui/ui.css": "075dc08357a3"
       },
-      "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
+      "syncedCommit": "dbe0739e1bb7ba5c67b15cdc9baabdca111b358a"
     }
   },
   "changes": {
