@@ -1,4 +1,5 @@
 {
+  "version": 2,
   "docs": {
     "backend": "notion",
     "location": {
@@ -14,39 +15,34 @@
     }
   },
   "project": "https://app.notion.com/p/41b43cce21f281bc9d12e875f6557087",
+  "domains": {
+    "board": {
+      "ref": "https://app.notion.com/p/42143cce21f28103aa5dd12148f6b814",
+      "purpose": "The live jam board: the page people play on, the pads and loops on it, and the validated operations that are the only way to change it."
+    }
+  },
   "specs": {
     "jams": {
       "ref": "https://app.notion.com/p/41c43cce21f281fdb0c0e24fec1ec10e",
       "anchors": [
         "shared/**",
+        "!shared/agent/**",
+        "!shared/board/**",
+        "!shared/clock.ts",
+        "!shared/sounds.ts",
+        "!shared/wav.ts",
         "worker/index.ts",
         "src/App.tsx",
         "src/about/**"
       ],
       "specVersion": "a8298ca0a4d096f2",
       "anchorsFiles": {
-        "shared/agent/identity.ts": "7255c8e36b80",
-        "shared/agent/index.ts": "b9ef0e798a4e",
-        "shared/agent/limits.ts": "d4559fe10460",
-        "shared/agent/link.ts": "c936b9cdd9bf",
-        "shared/agent/record.ts": "c9aff89071cb",
-        "shared/agent/seat.ts": "e8d0659161b8",
-        "shared/agent/snapshot.ts": "31018f0ae58c",
-        "shared/board/apply.ts": "00a8a7c4073c",
-        "shared/board/index.ts": "b39594adab7d",
-        "shared/board/ops.ts": "ac549660a041",
-        "shared/board/schema.ts": "7886b4b9587a",
-        "shared/board/sdk.ts": "6fafc07c2757",
-        "shared/board/seed.ts": "d5eb014f0cd8",
-        "shared/clock.ts": "1dd908e91d40",
         "shared/colors.ts": "c468471135c8",
         "shared/looper.ts": "7567f1bf8543",
         "shared/names.ts": "812ac5f26e0b",
         "shared/parties.ts": "f686acc22693",
         "shared/seats.ts": "f05d8ce7a23b",
         "shared/slug.ts": "93fbc4b73dd9",
-        "shared/sounds.ts": "d0aeb2d77590",
-        "shared/wav.ts": "bd5840f52c3f",
         "shared/words.ts": "093dd86b1435",
         "src/App.tsx": "2ea3aba66dd9",
         "src/about/About.tsx": "14a050c462d8",
@@ -74,7 +70,7 @@
       },
       "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
     },
-    "board": {
+    "board/session": {
       "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
       "anchors": [
         "src/board/model.ts",
@@ -84,7 +80,11 @@
         "src/board/presence.ts",
         "src/board/seat.ts",
         "src/board/colors.ts",
-        "src/board/console/**"
+        "src/board/console/**",
+        "!src/board/console/Deck.tsx",
+        "!src/board/console/Mixer.tsx",
+        "!src/board/console/Pads.tsx",
+        "!src/board/console/loops.ts"
       ],
       "specVersion": "a203ac9b690ee17b",
       "anchorsFiles": {
@@ -92,15 +92,11 @@
         "src/board/colors.ts": "d21c9da0a9fa",
         "src/board/console/AiMark.tsx": "a01ab3b0aaee",
         "src/board/console/Console.tsx": "f38c1a5735ac",
-        "src/board/console/Deck.tsx": "30738c6c6756",
         "src/board/console/Header.tsx": "c9cf7c94ae96",
-        "src/board/console/Mixer.tsx": "cf7df23a124e",
-        "src/board/console/Pads.tsx": "8dd994f0a5ad",
         "src/board/console/TakeLane.tsx": "4b9d6eb3c34c",
         "src/board/console/console.css": "fb666aae1697",
         "src/board/console/deck.css": "45c06b8bc645",
         "src/board/console/header.css": "71283a0a4c5f",
-        "src/board/console/loops.ts": "42ef8492a4ca",
         "src/board/console/mixer.css": "0007f8afdcc4",
         "src/board/console/pads.css": "a921d00fc2cf",
         "src/board/console/people.ts": "c947df332ba9",
@@ -129,10 +125,13 @@
       },
       "syncedCommit": "00d1392965d46f159ac9d1e6fb1590839fcdb191"
     },
-    "looper": {
+    "board/looper": {
       "ref": "https://app.notion.com/p/41c43cce21f2816ba415d28e60bf80d5",
       "anchors": [
         "src/audio/**",
+        "!src/audio/samples.ts",
+        "!src/audio/synth.ts",
+        "!src/audio/upload.ts",
         "shared/clock.ts",
         "src/board/console/Deck.tsx",
         "src/board/console/Mixer.tsx",
@@ -148,10 +147,7 @@
         "src/audio/clock.ts": "c0378e84a7cb",
         "src/audio/engine.ts": "8d99cda9bc0e",
         "src/audio/knobs.ts": "dbbd2773232e",
-        "src/audio/samples.ts": "093a12daee1a",
         "src/audio/session.ts": "2e1ec86333d1",
-        "src/audio/synth.ts": "bbba5b7d5b5b",
-        "src/audio/upload.ts": "9d3467419e28",
         "src/board/Debug.tsx": "80d7db772bb5",
         "src/board/console/Deck.tsx": "30738c6c6756",
         "src/board/console/Mixer.tsx": "cf7df23a124e",
@@ -162,7 +158,7 @@
       },
       "syncedCommit": "5b4efecf839423ad94144e4dbff65cace55401d2"
     },
-    "pads": {
+    "board/pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
       "anchors": [
         "src/board/console/Pads.tsx",
