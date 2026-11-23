@@ -91,7 +91,7 @@ importers:
         specifier: ^8
         version: 8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(yaml@2.9.1)
       vitest:
-        specifier: ^4.1.0
+        specifier: 4.1.12
         version: 4.1.12(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(@vitest/browser-playwright@4.1.12)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(yaml@2.9.1))
       vitest-browser-react:
         specifier: ^2.3.0

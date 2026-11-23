@@ -13,9 +13,12 @@ let vibrate: MockInstance<Navigator['vibrate']>
 /** An Android phone: a touchscreen (a coarse pointer) and the Vibration API. */
 function android() {
   const real = window.matchMedia.bind(window)
-  vi.stubGlobal('matchMedia', (query: string) =>
-    query === '(any-pointer: coarse)' ? { ...real(query), matches: true } : real(query),
-  )
+  vi.stubGlobal('matchMedia', (query: string) => {
+    const list = real(query)
+    // The real list, so its media and listeners still work; only `matches` is the phone's.
+    if (query === '(any-pointer: coarse)') Object.defineProperty(list, 'matches', { value: true })
+    return list
+  })
   vibrate = vi.spyOn(Navigator.prototype, 'vibrate').mockReturnValue(true)
 }
 

@@ -57,7 +57,8 @@ describe('pad keys', () => {
     )
     const hit = vi.spyOn(session.engine, 'hitPad')
     await userEvent.click(page.getByRole('textbox', { name: 'Loop name' }))
-    await userEvent.keyboard('q')
+    // The click puts the caret wherever it lands: type at the end of the name.
+    await userEvent.keyboard('{End}q')
     expect(hit).not.toHaveBeenCalled()
     await expect
       .element(page.getByRole('textbox', { name: 'Loop name' }))

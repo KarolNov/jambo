@@ -6,6 +6,6 @@
     "types": ["./worker-configuration.d.ts", "@cloudflare/vitest-plugin/types"]
   },
   "include": ["worker", "shared", "test", "worker-configuration.d.ts"],
-  // Tests of browser-only modules type-check with the app (tsconfig.app.json).
+  // Tests of browser-only modules type-check on their own (tsconfig.browser-test.json).
   "exclude": ["test/browser"]
 }

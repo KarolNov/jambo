@@ -24,14 +24,18 @@ import {
 
 const theme = () => document.documentElement.dataset.theme
 
+/** The page's size before any test resizes it, put back after each one. */
+const size = { width: window.innerWidth, height: window.innerHeight }
+
 beforeEach(() => {
   localStorage.clear()
   mockServer()
 })
 
-afterEach(() => {
+afterEach(async () => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
+  await page.viewport(size.width, size.height)
 })
 
 describe('knob', () => {
@@ -67,6 +71,13 @@ describe('knob', () => {
 })
 
 describe('scrub field', () => {
+  /** Whether the mouse is still held, so a failed test doesn't leave it down for the next. */
+  let pressed = false
+  afterEach(async () => {
+    if (pressed) await commands.mouseUp()
+    pressed = false
+  })
+
   // @scenario ui: Cancel
   it('shows its starting value and applies nothing on Escape mid-scrub', async () => {
     const onChange = vi.fn()
@@ -77,6 +88,7 @@ describe('scrub field', () => {
     )
     const field = page.getByRole('textbox', { name: 'Tempo' })
     const at = await commands.mouseDown('.ui-scrub-label')
+    pressed = true
     await commands.mouseMove(at.x + 40, at.y)
     // Mid-scrub it shows the scrubbed value...
     await expect
@@ -86,6 +98,7 @@ describe('scrub field', () => {
     await userEvent.keyboard('{Escape}')
     await expect.element(field).toHaveValue('100')
     await commands.mouseUp()
+    pressed = false
     await expect.element(field).toHaveValue('100')
     expect(onChange).not.toHaveBeenCalled()
   })
