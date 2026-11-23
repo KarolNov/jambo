@@ -120,6 +120,7 @@ pnpm test         # Vitest: the Workers runtime (routes, sync, persistence) and 
 pnpm e2e          # Playwright: real browsers against the local Worker (starts its own on :5199)
 pnpm typecheck
 pnpm format
+pnpm check        # all of the checks: format, types, test and e2e (CI runs all but e2e)
 ```
 
 `pnpm dev` runs the real Worker and Durable Object locally, so two browser tabs on the same jam link sync with each other.
