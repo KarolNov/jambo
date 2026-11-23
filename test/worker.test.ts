@@ -28,11 +28,17 @@ describe('api', () => {
     expect(await res.json()).toEqual({ ok: true })
   })
 
-  it('creates a jam with a fresh slug', async () => {
+  // @scenario collab/jams: Visit the root
+  it('creates a jam with a fresh slug whose board starts at the defaults', async () => {
     const res = await fetchApp('/api/jams', { method: 'POST' })
     expect(res.status).toBe(201)
     const { slug } = (await res.json()) as { slug: string }
     expect(isJamSlug(slug)).toBe(true)
+    const a = await connectBoard(slug)
+    expect(a.doc.getMap(ROOTS.meta).get('bpm')).toBe(100)
+    expect(a.doc.getMap(ROOTS.pads).size).toBe(16)
+    expect(a.doc.getMap(ROOTS.tracks).size).toBe(0)
+    a.close()
   })
 })
 
@@ -162,11 +168,42 @@ describe('looper board', () => {
     [...doc.getMap<Y.Map<unknown>>(ROOTS.tracks).values()].map((t) => t.get('name')).sort()
 
   // @scenario collab/room: First open
+  // @scenario collab/jams: Unused but well-formed link
   it('starts a new jam with the default tempo and 16 pads', async () => {
     const a = await connectBoard('sunny-bongo-eeee')
     expect(a.doc.getMap(ROOTS.meta).get('bpm')).toBe(100)
     expect(a.doc.getMap(ROOTS.pads).size).toBe(16)
     a.close()
+  })
+
+  // @scenario collab/room: Existing jam
+  it('leaves a set tempo and reassigned pads alone when the jam is opened again', async () => {
+    const slug = 'sunny-bongo-ex01'
+    const a = await connectBoard(slug)
+    apply(
+      a.doc,
+      [
+        { op: 'setTempo', bpm: 120 },
+        { op: 'assignPad', padId: 'r0c0', soundId: 'clap' },
+      ],
+      { kind: 'user', id: 'a' },
+    )
+    const stub = env.Board.getByName(slug)
+    await until(async () => {
+      const snapshot = await stubStorage(stub)
+      if (!snapshot) return false
+      const saved = new Y.Doc()
+      Y.applyUpdate(saved, snapshot)
+      return saved.getMap(ROOTS.meta).get('bpm') === 120
+    })
+    a.close()
+    await evictDurableObject(stub, { webSockets: 'close' })
+
+    const back = await connectBoard(slug)
+    expect(back.doc.getMap(ROOTS.meta).get('bpm')).toBe(120)
+    expect(back.doc.getMap<Y.Map<unknown>>(ROOTS.pads).get('r0c0')?.get('soundId')).toBe('clap')
+    expect(back.doc.getMap(ROOTS.pads).size).toBe(16)
+    back.close()
   })
 
   // @scenario audio/looper: Mute someone's loop

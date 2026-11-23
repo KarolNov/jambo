@@ -6,6 +6,7 @@ import { apply, type Origin, ROOTS, type Sound } from '../shared/board'
 import { isUploadId, newUploadId, UPLOAD_HEADERS, UPLOADS } from '../shared/sounds'
 import { encodeWav } from '../shared/wav'
 import { SOUND_RETENTION_MS, soundKey } from '../worker/board'
+import { getServerByName } from 'partyserver'
 import { connectBoard, until } from './client'
 
 /** The room's own origin, for the operations only it may apply. */
@@ -148,6 +149,51 @@ describe('uploading a sound', () => {
     }
   })
 
+  // @scenario collab/room: Too many downloads
+  it('allows 120 downloads that miss the edge cache a minute from one address', async () => {
+    // Unknown ids never reach the cache, so each one counts; the limiter counts per clock minute.
+    const minute = () => Math.floor(Date.now() / 60_000)
+    for (let attempt = 0; ; attempt++) {
+      const ip = newAddress()
+      const start = minute()
+      const responses = []
+      for (let i = 0; i < 121; i++)
+        responses.push(
+          await fetchApp(`/api/jams/funky-otter-dx01/sounds/${newUploadId()}`, {
+            headers: { 'CF-Connecting-IP': ip },
+          }),
+        )
+      if (minute() !== start && attempt === 0) continue
+      expect(responses.slice(0, 120).every((r) => r.status === 404)).toBe(true)
+      const last = responses[120]!
+      expect(last.status).toBe(429)
+      expect(await last.json()).toEqual({ error: 'Too many downloads, try again in a minute' })
+      return
+    }
+  })
+
+  // @scenario collab/room: Clearing old sounds
+  it('refuses uploads while the jam’s old audio is being cleared', async () => {
+    const slug = 'funky-otter-cx01'
+    const client = await connectBoard(slug)
+    const stub = env.Board.get(env.Board.idFromName(slug))
+    const setExpiring = (on: boolean) =>
+      runInDurableObject(stub, (instance) => {
+        ;(instance as unknown as { expiring: boolean }).expiring = on
+      })
+    await setExpiring(true)
+    const res = await upload(slug)
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({
+      error: 'This jam’s old sounds are being cleared, try again in a moment',
+    })
+    expect((await env.SOUND_FILES.list({ prefix: `jams/${slug}/` })).objects).toEqual([])
+    expect(soundsOf(client.doc).size).toBe(0)
+    await setExpiring(false)
+    expect((await upload(slug)).status).toBe(201)
+    client.close()
+  })
+
   it('serves not found for unknown sounds and malformed slugs', async () => {
     expect((await fetchApp('/api/jams/funky-otter-sp07/sounds/u-aaaaaaaaaaaa')).status).toBe(404)
     expect((await fetchApp('/api/jams/funky-otter-sp07/sounds/kick')).status).toBe(404)
@@ -174,6 +220,29 @@ describe('removing a sound', () => {
 })
 
 describe('retention', () => {
+  // @scenario collab/room: An agent keeps the sounds
+  it('counts an agent acting in the jam as a visit', async () => {
+    const slug = 'funky-otter-rex9'
+    const client = await connectBoard(slug)
+    const { id } = (await (await upload(slug)).json()) as { id: string }
+    await until(() => soundsOf(client.doc).has(id))
+    client.close()
+
+    const stub = env.Board.get(env.Board.idFromName(slug))
+    // Nobody has opened it for 89 days: one day of retention left.
+    const DAY = 24 * 60 * 60 * 1000
+    await runInDurableObject(stub, (_i, state) =>
+      state.storage.put('retainUntil', Date.now() + DAY),
+    )
+    const r = await getServerByName(env.Board, slug)
+    const out = await r.runAgentOps({ kind: 'Claude' }, [{ op: 'setTempo', bpm: 100 }], 'Hi')
+    expect('error' in out).toBe(false)
+    const retainUntil = await runInDurableObject(stub, (_i, state) =>
+      state.storage.get<number>('retainUntil'),
+    )
+    expect(retainUntil).toBeGreaterThan(Date.now() + SOUND_RETENTION_MS - 60_000)
+  })
+
   // @scenario audio/sounds: Abandoned jam
   it('deletes an unvisited jam’s audio and unlists its sounds, keeping the board', async () => {
     const slug = 'funky-otter-rex1'

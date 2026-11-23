@@ -113,6 +113,21 @@ describe('jam grid', () => {
     expect(trackStart({}, 120)).toBe(0)
   })
 
+  // @scenario audio/looper: A track joins
+  it('plays a track added mid-bar from its current point, on the shared bar grid', () => {
+    // 120 BPM: a bar is 2 s. A two-bar loop has played since bar 3; a one-bar loop begun at bar 5
+    // reaches this client at 11 s, halfway through bar 5.
+    const two = { bars: 2, hits: [h(0)], quantize: 0.25, startBar: 3 }
+    const one = { bars: 1, hits: [h(0), h(3)], quantize: 0.25, startBar: 5 }
+    const at = (t: typeof two) =>
+      hitsInWindow(t, trackStart(t, 120) / 1000, 120, 11, 18).map((x) => x.time)
+    // It picks up at beat 3 of the bar it is in, without waiting for the next bar.
+    expect(at(one)).toEqual([11.5, 12, 13.5, 14, 15.5, 16, 17.5])
+    // Its downbeats fall twice for each of the two-bar loop's.
+    expect(at(two)).toEqual([14])
+    expect(at(one).filter((t) => (t - 10) % 2 === 0)).toEqual([12, 14, 16])
+  })
+
   // @scenario audio/looper: Join a playing jam
   it('puts two clients on the same downbeat for a track from any time they join', () => {
     const track = { bars: 2, hits: [h(0)], quantize: 0.25, startBar: 3 }
