@@ -345,6 +345,9 @@
   },
   "tests": {
     "kinds": {
+      "e2e": [
+        "e2e/**/*.spec.ts"
+      ],
       "browser": [
         "test/browser/**/*.test.ts",
         "test/browser/**/*.test.tsx"
