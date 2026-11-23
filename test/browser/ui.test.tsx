@@ -487,7 +487,11 @@ describe('about link', () => {
     // Follow it, but keep the new tab out of the test run.
     const clicked = vi.fn((e: MouseEvent) => e.preventDefault())
     document.addEventListener('click', clicked, { once: true })
-    await userEvent.click(link)
+    try {
+      await userEvent.click(link)
+    } finally {
+      document.removeEventListener('click', clicked)
+    }
     expect(clicked).toHaveBeenCalled()
     // The jam is still here, and its audio still running.
     await expect.element(page.getByRole('group', { name: 'Pads' })).toBeVisible()

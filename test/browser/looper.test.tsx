@@ -150,19 +150,21 @@ describe('scrub the tempo', () => {
     const tempo = vi.spyOn(session.board, 'tempo')
     const at = await commands.mouseDown('.ui-scrub-label')
     pressed = true
-    // Right, a pixel at a time, until the field reads 112 (the test page may be scaled).
-    const shown = () => (tempoField().element() as HTMLInputElement).value
-    for (let dx = 1; dx < 200 && shown() !== '112'; dx++)
-      await commands.mouseMove(at.x + dx, at.y, 1)
-    expect(shown()).toBe('112')
+    // Right, a pixel at a time, until the field reads 112 or more (the test page may be scaled,
+    // so a pixel can be worth more than one BPM).
+    const shown = () => Number((tempoField().element() as HTMLInputElement).value)
+    for (let dx = 1; dx < 200 && shown() < 112; dx++) await commands.mouseMove(at.x + dx, at.y, 1)
+    const scrubbed = shown()
+    expect(scrubbed).toBeGreaterThanOrEqual(112)
+    expect(scrubbed).toBeLessThan(120)
     expect(tempo).not.toHaveBeenCalled()
     expect(bpm()).toBe(100)
 
     await commands.mouseUp()
     pressed = false
-    await expect.poll(bpm).toBe(112)
+    await expect.poll(bpm).toBe(scrubbed)
     expect(tempo).toHaveBeenCalledTimes(1)
-    expect(tempo).toHaveBeenCalledWith(112)
+    expect(tempo).toHaveBeenCalledWith(scrubbed)
   })
 })
 
@@ -184,8 +186,11 @@ describe('a take, in real time', () => {
     const rec = engine.state
     if (rec.phase === 'idle') throw new Error('not recording')
 
+    // A beat apart from the first press, not from the end of the last one, so the driver's
+    // latency on each press doesn't add up across the take.
+    const first = performance.now()
     for (let n = 0; n < 4; n++) {
-      if (n) await wait(beatMs)
+      await wait(first + n * beatMs - performance.now())
       await userEvent.keyboard('1')
     }
     const played = engine.take()!.hits

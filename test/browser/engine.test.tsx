@@ -208,16 +208,19 @@ describe('mute', () => {
     )
 
     const audio = await offline({ seconds, bpm, tracks: [echoing], metronome: false })
-    void audio.ctx.suspend(muteAt).then(() => {
-      audio.engine.update({
-        bpm,
-        pads: new Map([[PAD, 'kick']]),
-        tracks: new Map([['t0', { ...echoing, mute: true }]]),
-        uploads: new Set(),
-      })
-      void audio.ctx.resume()
+    const muting = audio.ctx.suspend(muteAt).then(() => {
+      try {
+        audio.engine.update({
+          bpm,
+          pads: new Map([[PAD, 'kick']]),
+          tracks: new Map([['t0', { ...echoing, mute: true }]]),
+          uploads: new Set(),
+        })
+      } finally {
+        void audio.ctx.resume()
+      }
     })
-    const muted = await render(audio)
+    const [muted] = await Promise.all([render(audio), muting])
 
     for (const ch of [0, 1]) {
       // Until the mute, the same sound.
@@ -238,19 +241,26 @@ describe('jam clock', () => {
   it('keeps the agreed clock, and so the downbeat, when the connection drops', async () => {
     const provider = offlineProvider()
     const clock = new JamClock(provider)
-    const engine = new Engine(clock, new SampleLoader(SLUG))
-    engines.push(engine)
-    agree(provider)
-    expect(engine.synced).toBe(true)
-    const offset = clock.offset
+    try {
+      const engine = new Engine(clock, new SampleLoader(SLUG))
+      engines.push(engine)
+      agree(provider)
+      expect(engine.synced).toBe(true)
+      const offset = clock.offset
 
-    emit(provider, 'status', { status: 'disconnected' })
-    await new Promise((r) => setTimeout(r, 50))
-    expect(engine.synced).toBe(true)
-    expect(clock.offset).toBe(offset)
-    // Room time still runs on the same offset, so the next bar line lands where it did.
-    const client = performance.timeOrigin + performance.now()
-    expect(clock.now()! - client).toBeCloseTo(offset!, 0)
-    clock.dispose()
+      // Dropped, then back: the clock keeps its offset until the room answers a new ping.
+      emit(provider, 'status', { status: 'disconnected' })
+      expect(engine.synced).toBe(true)
+      expect(clock.offset).toBe(offset)
+      emit(provider, 'status', { status: 'connected' })
+      await new Promise((r) => setTimeout(r, 50))
+      expect(engine.synced).toBe(true)
+      expect(clock.offset).toBe(offset)
+      // Room time still runs on the same offset, so the next bar line lands where it did.
+      const client = performance.timeOrigin + performance.now()
+      expect(clock.now()! - client).toBeCloseTo(offset!, 0)
+    } finally {
+      clock.dispose()
+    }
   })
 })
