@@ -9,6 +9,7 @@ import About from '../../src/about/About'
 import { Console } from '../../src/board/console/Console'
 import { Deck } from '../../src/board/console/Deck'
 import { Mixer } from '../../src/board/console/Mixer'
+import { tracksAtom } from '../../src/board/model'
 import { controlKey } from '../../src/board/presence'
 import type { Session } from '../../src/board/session'
 import Showcase from '../../src/ds/Showcase'
@@ -18,6 +19,7 @@ import { Knob, ScrubField } from '../../src/ui'
 import {
   addTrack,
   addUploads,
+  agreeClock,
   endSession,
   makeSession,
   mockServer,
@@ -441,5 +443,55 @@ describe('someone else moving a control', () => {
     )
     expect(fader().classList.contains('is-held')).toBe(true)
     expect(fader().style.getPropertyValue('--ui-held')).toBe(coral())
+  })
+
+  // @scenario board/session: Both at once
+  it("lets you drag a loop's level Misty Yak is dragging, showing their ring while you do", async () => {
+    session = makeSession('Groovy Otter')
+    const id = addTrack(session, { name: 'Bassline', gain: 0.5 })
+    const { screen } = await renderJam(<Mixer />, session)
+    mistyHolds(id, 'gain')
+    const fader = () => screen.container.querySelector<HTMLElement>('.ui-fader')!
+    await expect.poll(() => fader().classList.contains('is-held')).toBe(true)
+
+    const at = await commands.mouseDown('input[aria-label="Level of Bassline"]')
+    pressed = true
+    await commands.mouseMove(at.x + 30, at.y)
+    await expect.poll(() => fader().classList.contains('is-dragging')).toBe(true)
+    // Their ring stays on while you drag.
+    expect(fader().classList.contains('is-held')).toBe(true)
+    expect(fader().style.getPropertyValue('--ui-held')).toBe(coral())
+    await commands.mouseUp()
+    pressed = false
+    // Nothing stopped you: your drag reached the board.
+    await expect.poll(() => session.jam.store.get(tracksAtom).get(id)?.gain).not.toBe(0.5)
+  })
+})
+
+describe('about link', () => {
+  let session: Session
+  afterEach(() => endSession(session))
+
+  // @scenario board/session: Open about from a jam
+  it('opens /about in a new tab, leaving the jam playing', async () => {
+    session = makeSession()
+    addTrack(session)
+    agreeClock(session)
+    await renderJam(<Console slug={SLUG} status="connected" />, session)
+    await session.engine.unlock()
+    const link = page.getByRole('link', { name: 'About · Add your AI' })
+    await expect.element(link).toHaveAttribute('href', '/about')
+    await expect.element(link).toHaveAttribute('target', '_blank')
+    await expect.element(link).toHaveAttribute('rel', 'noopener')
+
+    // Follow it, but keep the new tab out of the test run.
+    const clicked = vi.fn((e: MouseEvent) => e.preventDefault())
+    document.addEventListener('click', clicked, { once: true })
+    await userEvent.click(link)
+    expect(clicked).toHaveBeenCalled()
+    // The jam is still here, and its audio still running.
+    await expect.element(page.getByRole('group', { name: 'Pads' })).toBeVisible()
+    expect(session.engine['ctx']?.state).toBe('running')
+    expect(session.engine.ready).toBe(true)
   })
 })

@@ -9,7 +9,7 @@ import { barMs, beatSeconds } from '../../shared/looper'
 import { JamClock } from '../../src/audio/clock'
 import { Engine, type RecorderState } from '../../src/audio/engine'
 import { SampleLoader } from '../../src/audio/samples'
-import { mockServer, offlineProvider, SLUG } from './jam'
+import { agree, emit, mockServer, offlineProvider, SLUG } from './jam'
 
 const RATE = 48_000
 const PAD = 'r0c0'
@@ -192,5 +192,63 @@ describe('metronome', () => {
       const at = onset(on, n * beat)
       expect(Math.abs(at! - n * beat), `beat ${n}`).toBeLessThan(0.002)
     }
+  })
+})
+
+describe('mute', () => {
+  // @scenario audio/looper: Mute silences the tail's source
+  it('adds no new echoes once muted, and lets the echoes already sounding fade out', async () => {
+    const bpm = 100
+    const bar = barMs(bpm) / 1000
+    const seconds = 2 * bar
+    const muteAt = 1
+    const echoing = track({ echo: 1 })
+    const playing = await render(await offline({ seconds, bpm, tracks: [echoing], metronome: false }))
+
+    const audio = await offline({ seconds, bpm, tracks: [echoing], metronome: false })
+    void audio.ctx.suspend(muteAt).then(() => {
+      audio.engine.update({
+        bpm,
+        pads: new Map([[PAD, 'kick']]),
+        tracks: new Map([['t0', { ...echoing, mute: true }]]),
+        uploads: new Set(),
+      })
+      void audio.ctx.resume()
+    })
+    const muted = await render(audio)
+
+    for (const ch of [0, 1]) {
+      // Until the mute, the same sound.
+      expect(peak(muted[ch]!, 0, muteAt)).toBeCloseTo(peak(playing[ch]!, 0, muteAt), 3)
+      // The echoes in flight ring on after it...
+      const tail = peak(muted[ch]!, muteAt + 0.05, bar)
+      expect(tail).toBeGreaterThan(0.005)
+      // ...the loop's next hit, and the echoes it would start, never come...
+      expect(peak(muted[ch]!, bar, bar + 0.3)).toBeLessThan(peak(playing[ch]!, bar, bar + 0.3) / 4)
+      // ...and what is left fades.
+      expect(peak(muted[ch]!, seconds - 0.5, seconds)).toBeLessThan(tail)
+    }
+  })
+})
+
+describe('jam clock', () => {
+  // @scenario audio/looper: Offline
+  it('keeps the agreed clock, and so the downbeat, when the connection drops', async () => {
+    const provider = offlineProvider()
+    const clock = new JamClock(provider)
+    const engine = new Engine(clock, new SampleLoader(SLUG))
+    engines.push(engine)
+    agree(provider)
+    expect(engine.synced).toBe(true)
+    const offset = clock.offset
+
+    emit(provider, 'status', { status: 'disconnected' })
+    await new Promise((r) => setTimeout(r, 50))
+    expect(engine.synced).toBe(true)
+    expect(clock.offset).toBe(offset)
+    // Room time still runs on the same offset, so the next bar line lands where it did.
+    const client = performance.timeOrigin + performance.now()
+    expect(clock.now()! - client).toBeCloseTo(offset!, 0)
+    clock.dispose()
   })
 })

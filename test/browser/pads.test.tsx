@@ -1,15 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
-import { apply } from '../../shared/board'
+import { apply, type Sound } from '../../shared/board'
 import { PAUSED_MESSAGES, UPLOADS } from '../../shared/sounds'
 import { encodeWav } from '../../shared/wav'
 import { Deck } from '../../src/board/console/Deck'
 import { Mixer } from '../../src/board/console/Mixer'
+import { padsAtom, soundsAtom, tracksAtom } from '../../src/board/model'
+import { SWATCHES } from '../../src/theme/palette'
 import type { Session } from '../../src/board/session'
 import { refreshBudget } from '../../src/board/Uploads'
 import {
   addTrack,
   addUploads,
+  agreeClock,
   endSession,
   makeSession,
   mockServer,
@@ -199,5 +202,214 @@ describe('Change sounds', () => {
 
     await expect.element(dialog.getByRole('alert')).toHaveTextContent(PAUSED_MESSAGES.writes)
     await expect.element(uploadButton).toBeDisabled()
+  })
+})
+
+/** Half a second of a test sample, as the jam's server serves an upload. */
+const wavFile = () =>
+  encodeWav(new Float32Array(UPLOADS.sampleRate / 2).fill(0.25), UPLOADS.sampleRate)
+
+/** The buffers sources played with, in order, from `audioOn`'s spy. */
+const playedBuffers = (start: Awaited<ReturnType<typeof audioOn>>) =>
+  start.mock.contexts.map((src) => (src as AudioBufferSourceNode).buffer)
+
+describe('playing the pads', () => {
+  // @scenario board/pads: Play a pad
+  it('plays the sound at once and pushes the pad in, by click or by key', async () => {
+    const { screen } = await renderJam(<Deck slug={SLUG} />, session)
+    const start = await audioOn()
+    const ctx = session.engine['ctx']!
+    const kick = screen.container.querySelector<HTMLElement>('[aria-keyshortcuts="1"]')!
+
+    await userEvent.click(pad('1'))
+    expect(start).toHaveBeenCalledTimes(1)
+    // Scheduled for now, not a beat or a bar later.
+    expect(start.mock.calls[0]![0]).toBeLessThanOrEqual(ctx.currentTime + 0.01)
+    expect(playedBuffers(start)[0]).toBe(session.engine['buffers'].get('kick'))
+    expect(kick.classList.contains('pressed')).toBe(true)
+
+    await userEvent.keyboard('w')
+    expect(start).toHaveBeenCalledTimes(2)
+    expect(playedBuffers(start)[1]).toBe(session.engine['buffers'].get('tom-low'))
+    const w = screen.container.querySelector<HTMLElement>('[aria-keyshortcuts="w"]')!
+    expect(w.classList.contains('pressed')).toBe(true)
+  })
+
+  // @scenario board/pads: A loop plays through a pad
+  it("lights the kick in the loop's colour each time the loop's kick is heard", async () => {
+    // 240 BPM: a one-bar loop comes round every second.
+    expect(session.board.tempo(240).ok).toBe(true)
+    addTrack(session, { color: 'coral', hits: [{ padId: 'r0c0', beat: 0 }] })
+    agreeClock(session)
+    const { screen } = await renderJam(<Deck slug={SLUG} />, session)
+    await audioOn()
+    const kick = screen.container.querySelector<HTMLElement>('[aria-keyshortcuts="1"]')!
+    const coral = SWATCHES.coral[document.documentElement.dataset.theme as 'dark' | 'light']
+
+    for (let n = 0; n < 2; n++) {
+      await expect.poll(() => kick.classList.contains('glow'), { timeout: 3000 }).toBe(true)
+      expect(kick.style.getPropertyValue('--glow')).toBe(coral)
+      await expect.poll(() => kick.classList.contains('glow'), { timeout: 3000 }).toBe(false)
+    }
+  })
+})
+
+describe('picking a pad\'s sound', () => {
+  const openChangeSounds = () =>
+    userEvent.click(page.getByRole('button', { name: 'Change sounds' }))
+
+  // @scenario board/pads: Reassign
+  it('puts the clap on Q for the board, and for tracks that hit Q', async () => {
+    addTrack(session, { hits: [{ padId: 'r1c0', beat: 0 }] })
+    await renderJam(<Deck slug={SLUG} />, session)
+    const start = await audioOn()
+    await openChangeSounds()
+    await userEvent.click(pad('Q'))
+    await userEvent.click(page.getByRole('option', { name: 'Clap', exact: true }))
+
+    // On the board, so every client gets it.
+    expect(session.jam.store.get(padsAtom).get('r1c0')?.soundId).toBe('clap')
+    expect(session.jam.store.get(tracksAtom).size).toBe(1)
+    await expect.element(pad('Q')).toHaveAccessibleName(/Clap/)
+    // The engine plays the clap wherever Q is hit, the track's hits included.
+    expect(session.engine['pads'].get('r1c0')).toBe('clap')
+    await userEvent.click(page.getByRole('button', { name: 'Done' }))
+    await userEvent.keyboard('q')
+    expect(playedBuffers(start).at(-1)).toBe(session.engine['buffers'].get('clap'))
+  })
+
+  // @scenario board/pads: Pick an upload
+  it('puts an upload on A, which plays once it has loaded', async () => {
+    const id = uploadId(3)
+    mockServer((url) => (url.endsWith(`/sounds/${id}`) ? new Response(wavFile()) : undefined))
+    addUploads(session, [[id, upload({ name: 'Vox' })]])
+    await renderJam(<Deck slug={SLUG} />, session)
+    const start = await audioOn()
+    await openChangeSounds()
+    await userEvent.click(pad('A'))
+    await userEvent.click(page.getByRole('option', { name: /\bVox\b/ }))
+
+    expect(session.engine['pads'].get('r2c0')).toBe(id)
+    await expect.poll(() => session.engine.samples.get(id)).toBeDefined()
+    await userEvent.click(page.getByRole('button', { name: 'Done' }))
+    await userEvent.keyboard('a')
+    expect(playedBuffers(start).at(-1)).toBe(session.engine.samples.get(id))
+  })
+})
+
+describe('uploading onto pads', () => {
+  const openChangeSounds = () =>
+    userEvent.click(page.getByRole('button', { name: 'Change sounds' }))
+  const uploads = () => page.getByRole('region', { name: 'Uploaded sounds' })
+  const room = { kind: 'system', id: 'room' } as const
+
+  /**
+   * The jam's server for uploads: a POST stores the file and the room lists it on the board as
+   * `next`; a DELETE unlists it; a GET serves the sample. Returns the requests it answered.
+   */
+  function soundServer(next: string) {
+    const requests: string[] = []
+    mockServer((url, init) => {
+      const method = init?.method ?? 'GET'
+      if (!url.includes(`/api/jams/${SLUG}/sounds`)) return undefined
+      requests.push(`${method} ${url.slice(url.indexOf('/api/'))}`)
+      if (method === 'POST') {
+        const sound: Sound = upload({ name: 'Vox 2', author: session.me.id })
+        apply(session.jam.doc, [{ op: 'addSound', id: next, sound }], room)
+        return Response.json({ id: next, sound }, { status: 201 })
+      }
+      if (method === 'DELETE') {
+        const id = url.slice(url.lastIndexOf('/') + 1)
+        apply(session.jam.doc, [{ op: 'removeSound', id }], room)
+        return new Response(null, { status: 204 })
+      }
+      return new Response(wavFile())
+    })
+    return requests
+  }
+
+  /** Picks a sample file in the open file chooser, then sends the upload dialog with `button`. */
+  async function chooseFile(button: 'Upload' | 'Replace') {
+    const input = page.elementLocator(document.querySelector('input[type="file"]')!)
+    await userEvent.upload(input, new File([wavFile()], 'vox 2.wav', { type: 'audio/wav' }))
+    const dialog = page.getByRole('form', { name: 'Upload a sound' })
+    await userEvent.click(dialog.getByRole('button', { name: button, exact: true }))
+    await expect.element(dialog).not.toBeInTheDocument()
+  }
+
+  // @scenario audio/sounds: Upload onto a pad
+  it("lists the upload, puts it on Q, and plays it on Q", async () => {
+    const id = uploadId(10)
+    const requests = soundServer(id)
+    await renderJam(<Deck slug={SLUG} />, session)
+    const start = await audioOn()
+    await openChangeSounds()
+    await userEvent.click(pad('Q'))
+    await userEvent.click(page.getByRole('option', { name: 'Upload a sound…' }))
+    await chooseFile('Upload')
+
+    expect(requests).toContain(`POST /api/jams/${SLUG}/sounds`)
+    await expect.element(uploads().getByText('Vox 2')).toBeInTheDocument()
+    // On the board, so every client puts it on Q.
+    expect(session.jam.store.get(padsAtom).get('r1c0')?.soundId).toBe(id)
+    // The uploader hears it at once: the file they chose is already loaded.
+    await userEvent.click(page.getByRole('button', { name: 'Done' }))
+    await userEvent.keyboard('q')
+    expect(playedBuffers(start).at(-1)).toBe(session.engine.samples.get(id))
+  })
+
+  // @scenario audio/sounds: Replace
+  it('swaps the new sound onto W and E and into the track, and removes the old upload', async () => {
+    const old = uploadId(11)
+    const next = uploadId(12)
+    addUploads(session, [[old, upload({ name: 'Vox' })]])
+    session.board.pad('r0c1').assign(old)
+    session.board.pad('r0c2').assign(old)
+    addTrack(session, { hits: [{ padId: 'r0c1', beat: 0 }] })
+    const requests = soundServer(next)
+    await renderJam(<Deck slug={SLUG} />, session)
+    await audioOn()
+    await openChangeSounds()
+    await userEvent.click(uploads().getByRole('button', { name: 'Replace…' }))
+    await chooseFile('Replace')
+
+    const pads = session.jam.store.get(padsAtom)
+    expect(pads.get('r0c1')?.soundId).toBe(next)
+    expect(pads.get('r0c2')?.soundId).toBe(next)
+    // The track hits W, so it plays the new sound too.
+    expect(session.engine['pads'].get('r0c1')).toBe(next)
+    // The old upload is removed from the jam's storage and its list.
+    await expect.poll(() => requests).toContain(`DELETE /api/jams/${SLUG}/sounds/${old}`)
+    await expect.poll(() => session.jam.store.get(soundsAtom).has(old)).toBe(false)
+    expect([...session.jam.store.get(soundsAtom).keys()]).toEqual([next])
+  })
+
+  // @scenario audio/sounds: Join later
+  it("plays a track's hits on an upload's pad once the upload has loaded", async () => {
+    const id = uploadId(13)
+    let release = () => {}
+    const arrived = new Promise<void>((r) => (release = r))
+    // The file arrives only when the test says so.
+    mockServer((url) =>
+      url.endsWith(`/sounds/${id}`) ? arrived.then(() => new Response(wavFile())) : undefined,
+    )
+    // The jam as someone opening it finds it: an upload on W, and a loop at 240 BPM that hits W.
+    expect(session.board.tempo(240).ok).toBe(true)
+    addUploads(session, [[id, upload({ name: 'Vox' })]])
+    session.board.pad('r0c1').assign(id)
+    addTrack(session, { hits: [{ padId: 'r0c1', beat: 0 }] })
+    agreeClock(session)
+    await renderJam(<Deck slug={SLUG} />, session)
+    const start = await audioOn()
+
+    // Loading: the loop comes round and plays nothing on W.
+    await new Promise((r) => setTimeout(r, 1500))
+    expect(start).not.toHaveBeenCalled()
+
+    release()
+    await expect.poll(() => session.engine.samples.get(id)).toBeDefined()
+    await expect
+      .poll(() => playedBuffers(start).includes(session.engine.samples.get(id)!), { timeout: 3000 })
+      .toBe(true)
   })
 })
