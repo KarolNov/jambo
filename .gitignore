@@ -4,3 +4,5 @@ dist
 .dev.vars*
 *.tsbuildinfo
 .DS_Store
+test/browser/__screenshots__/
+.vitest-attachments/

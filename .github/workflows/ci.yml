@@ -17,6 +17,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
+      # The browser test project runs in headless Chromium.
+      - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test
       - run: pnpm format:check
       - run: pnpm build
