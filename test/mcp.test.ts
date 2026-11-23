@@ -143,6 +143,39 @@ describe('the MCP server', () => {
     person.close()
   })
 
+  // @scenario collab/agent: Track with echo
+  it('adds a track with echo and pan that everyone in the jam gets', async () => {
+    const slug = 'funky-otter-mc0e'
+    const person = await connectBoard(slug)
+    const out = await call('run', {
+      jam: slug,
+      kind: 'claude',
+      summary: 'A wide echoing snare',
+      ops: [
+        {
+          op: 'addTrack',
+          track: {
+            name: 'Echoes',
+            bars: 1,
+            hits: [{ padId: 'r0c1', beat: 1 }],
+            echo: 0.4,
+            pan: 0.5,
+          },
+        },
+      ],
+    })
+    expect(out.isError).toBe(false)
+    expect(out.body.ops[0]).toMatchObject({ op: 'addTrack', ok: true })
+    const id = out.body.ops[0].id
+    await until(() => tracks(person.doc).has(id))
+    expect(tracks(person.doc).get(id)?.get('echo')).toBe(0.4)
+    expect(tracks(person.doc).get(id)?.get('pan')).toBe(0.5)
+
+    const read = await call('join', { jam: slug, agentKey: out.body.agent.agentKey })
+    expect(read.body.board.tracks[0]).toMatchObject({ name: 'Echoes', echo: 0.4, pan: 0.5 })
+    person.close()
+  })
+
   // @scenario collab/agent: Malformed run
   it('applies nothing when an operation is one agents cannot send', async () => {
     const slug = 'funky-otter-mc03'

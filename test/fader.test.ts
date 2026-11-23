@@ -18,6 +18,7 @@ describe('fader detent', () => {
 
 describe('fader keys', () => {
   // @scenario ui: Leave unity by key
+  // @scenario ui: Arrow keys
   it('steps on the key grid, landing exactly on unity', () => {
     expect(stepBy(0.95, 1, 0.05, 0, 1.5)).toBe(1)
     expect(stepBy(1, 1, 0.05, 0, 1.5)).toBe(1.05)

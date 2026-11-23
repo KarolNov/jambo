@@ -79,3 +79,69 @@ describe('room ↔ audio mapping', () => {
     expect(roomToAudio(now - 3 + 20, s) - 12.5).toBeCloseTo(0.02, 6)
   })
 })
+
+describe('two clients on one jam clock', () => {
+  /**
+   * The offset a client settles on from pinging the room: each trip has its own uneven delays
+   * there and back, as on a real network, and the client keeps the best sample of the window.
+   */
+  function measureOffset(trueOffset: number, legs: readonly [number, number][]) {
+    let offset: number | undefined
+    const samples = []
+    let clientNow = 10_000
+    for (const [up, down] of legs) {
+      const serverTime = clientNow + up + trueOffset
+      samples.push(sampleFrom(clientNow, serverTime, clientNow + up + down))
+      offset = nextOffset(offset, bestSample(samples)!.offset)
+      clientNow += 1000
+    }
+    return offset!
+  }
+
+  // @scenario audio/looper: Same downbeat
+  it('hear the same downbeat within 20 ms, whatever their own clocks and networks', () => {
+    const downbeat = 1_795_000_000_000 // a bar start, in room ms
+    const clients = [
+      {
+        timeOrigin: 1_794_999_000_000,
+        trueOffset: 1250,
+        // A fast, steady connection.
+        legs: [
+          [12, 14],
+          [11, 30],
+          [10, 12],
+          [25, 11],
+          [13, 13],
+        ] as [number, number][],
+        ctx: 3.2,
+        latency: 0.012,
+      },
+      {
+        timeOrigin: 1_794_990_000_000,
+        trueOffset: -830,
+        // A phone on a jittery connection, slower one way than the other.
+        legs: [
+          [90, 40],
+          [160, 70],
+          [55, 35],
+          [200, 120],
+          [70, 45],
+        ] as [number, number][],
+        ctx: 91.7,
+        latency: 0.04,
+      },
+    ]
+    const heardInRoom = clients.map((c) => {
+      const measured = measureOffset(c.trueOffset, c.legs)
+      const performanceTime = 600_000 // performance.now() when the clocks were paired
+      // The context time leaving the speakers at that moment, after output latency.
+      const heard = { contextTime: c.ctx - c.latency, performanceTime }
+      const shift = audioShift(heard, measured, c.timeOrigin)
+      const at = heardAt(roomToAudio(downbeat, shift), heard)
+      // When that is on the room's clock, through this client's true offset.
+      return at + c.timeOrigin + c.trueOffset
+    })
+    expect(Math.abs(heardInRoom[0]! - heardInRoom[1]!)).toBeLessThan(20)
+    for (const t of heardInRoom) expect(Math.abs(t - downbeat)).toBeLessThan(20)
+  })
+})

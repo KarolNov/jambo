@@ -38,7 +38,7 @@ A slider SHALL show its value as a strip of lights in its colour, with its tick 
   - **GIVEN** a loop's level at 0.7
   - **WHEN** someone drags it to 0.98
   - **THEN** the level becomes 1.0, the unity mark lines up with the cap, and phones that support it tick
-- **Scenario: Keyboard**
+- **Scenario: Arrow keys**
   - **WHEN** someone focuses a level and presses the right arrow
   - **THEN** it goes up one step and its lights follow
 - **Scenario: Leave unity by key**

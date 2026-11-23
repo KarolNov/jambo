@@ -84,7 +84,7 @@ Moving every pad from one sound to another SHALL be one operation. The new sound
   - **GIVEN** an upload on two pads
   - **WHEN** an operation replaces it with the clap
   - **THEN** both pads change to the clap in one change, and the other pads keep their sounds
-- **Scenario: Unknown sound**
+- **Scenario: Replace with an unknown sound**
   - **WHEN** an operation replaces a sound with one the jam does not list, even one no pad uses
   - **THEN** it is refused
 

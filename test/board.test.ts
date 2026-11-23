@@ -4,6 +4,7 @@ import * as Y from 'yjs'
 import {
   apply,
   board,
+  LIMITS,
   Meta,
   Pad,
   ROOTS,
@@ -16,6 +17,9 @@ import {
   type Op,
 } from '../shared/board'
 import { isUploadId, newUploadId, SOUNDS, UPLOADS } from '../shared/sounds'
+import { docAtom } from 'duratom'
+import { createStore } from 'jotai'
+import { tracksAtom } from '../src/board/model'
 
 const me = { kind: 'user', id: 'me' } as const
 
@@ -67,6 +71,54 @@ describe('apply', () => {
       v(read(Pad, SHAPES.pad, doc.getMap<Y.Map<unknown>>(ROOTS.pads).get('r0c0')))?.soundId,
     ).toBe('snare')
     expect(v(readTrack(doc, 't1'))).toMatchObject({ mute: true, name: 'Beat' })
+  })
+
+  // @scenario board/ops: Mute and rename
+  it('sets mute and name without touching the hits', () => {
+    const doc = seededDoc()
+    const hits = [
+      { padId: 'r0c0', beat: 0 },
+      { padId: 'r0c0', beat: 2.5 },
+    ]
+    apply(doc, [{ op: 'addTrack', id: 't1', track: track({ hits }) }], me)
+    const [r] = apply(doc, [{ op: 'setTrack', id: 't1', patch: { mute: true, name: 'Beat' } }], me)
+    expect(r?.ok).toBe(true)
+    expect(v(readTrack(doc, 't1'))).toMatchObject({ mute: true, name: 'Beat', hits })
+  })
+
+  // @scenario board/ops: Full jam
+  it('refuses a track past the 32-track limit', () => {
+    const doc = seededDoc()
+    const adds: Op[] = Array.from({ length: LIMITS.tracks }, (_, i) => ({
+      op: 'addTrack',
+      id: `t${i}`,
+      track: track(),
+    }))
+    expect(apply(doc, adds, me).every((r) => r.ok)).toBe(true)
+    const [r] = apply(doc, [{ op: 'addTrack', id: 'one-more', track: track() }], me)
+    expect(r?.ok).toBe(false)
+    expect(tracksOf(doc).size).toBe(LIMITS.tracks)
+    expect(tracksOf(doc).has('one-more')).toBe(false)
+  })
+
+  // @scenario audio/looper: Two people record
+  it('keeps takes two people add at the same time', () => {
+    const a = seededDoc()
+    const b = new Y.Doc()
+    Y.applyUpdate(b, Y.encodeStateAsUpdate(a))
+    const misty = { kind: 'user', id: 'misty' } as const
+    apply(a, [{ op: 'addTrack', id: 'ta', track: track({ name: 'Groovy Otter 1' }) }], me)
+    apply(
+      b,
+      [{ op: 'addTrack', id: 'tb', track: track({ name: 'Misty Yak 1', author: 'misty' }) }],
+      misty,
+    )
+    Y.applyUpdate(a, Y.encodeStateAsUpdate(b))
+    Y.applyUpdate(b, Y.encodeStateAsUpdate(a))
+    for (const doc of [a, b]) {
+      expect(v(readTrack(doc, 'ta'))).toMatchObject({ name: 'Groovy Otter 1', author: 'me' })
+      expect(v(readTrack(doc, 'tb'))).toMatchObject({ name: 'Misty Yak 1', author: 'misty' })
+    }
   })
 
   it('stores colours by name, reads legacy hexes as names, and refuses anything else', () => {
@@ -134,6 +186,7 @@ describe('apply', () => {
 
   // @scenario board/ops: Hit outside the loop
   // @scenario board/ops: Remove a missing track
+  // @scenario board/ops: Unknown sound
   it.each([
     ['unknown op', { op: 'explode' }],
     [
@@ -496,6 +549,32 @@ describe('uploaded sounds', () => {
     expect(padSound(doc, 'r0c1')).toBe('snare')
   })
 
+  // @scenario board/ops: Two pads
+  it('moves both pads on an upload to the clap in one change', () => {
+    const doc = twoPadDoc()
+    const hat = new Y.Map<unknown>()
+    for (const [k, val] of Object.entries({ row: 0, col: 2, key: '3', soundId: 'hat' }))
+      hat.set(k, val)
+    doc.getMap(ROOTS.pads).set('r0c2', hat)
+    apply(
+      doc,
+      [
+        { op: 'addSound', id, sound: sound() },
+        { op: 'assignPad', padId: 'r0c0', soundId: id },
+        { op: 'assignPad', padId: 'r0c1', soundId: id },
+      ],
+      room,
+    )
+    let changes = 0
+    doc.on('afterTransaction', () => changes++)
+    expect(board(doc, me).replaceSound(id, 'clap')).toEqual({ ok: true })
+    expect(changes).toBe(1)
+    expect(padSound(doc, 'r0c0')).toBe('clap')
+    expect(padSound(doc, 'r0c1')).toBe('clap')
+    expect(padSound(doc, 'r0c2')).toBe('hat')
+  })
+
+  // @scenario board/ops: Replace with an unknown sound
   it('refuses to replace a sound with one the jam does not list, even with no pad on it', () => {
     const doc = seededDoc()
     expect(board(doc, me).replaceSound('u-unusedunused', id).ok).toBe(false)
@@ -528,5 +607,25 @@ describe('uploaded sounds', () => {
     const [r] = apply(doc, [{ op: 'removeSound', id }], room)
     expect(r?.ok).toBe(false)
     expect(soundsOf(doc).has(id)).toBe(true)
+  })
+})
+
+describe('board model', () => {
+  // @scenario board/session: Malformed track in the doc
+  it('shows only the tracks that pass the schema', () => {
+    const doc = seededDoc()
+    apply(
+      doc,
+      [
+        { op: 'addTrack', id: 'good', track: track() },
+        { op: 'addTrack', id: 'bad', track: track({ name: 'Broken' }) },
+      ],
+      me,
+    )
+    // A peer with an older or buggy client stored a track with no hits.
+    tracksOf(doc).get('bad')!.set('hits', [])
+    const store = createStore()
+    store.set(docAtom, doc)
+    expect([...store.get(tracksAtom).keys()]).toEqual(['good'])
   })
 })
