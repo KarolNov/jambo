@@ -1,0 +1,93 @@
+{
+  "mode": "symbol",
+  "files": {
+    "shared/board/schema.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "7886b4b9587a",
+      "whole": false
+    },
+    "shared/colors.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "c468471135c8",
+      "whole": false
+    },
+    "shared/names.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "812ac5f26e0b",
+      "whole": false
+    },
+    "src/board/identity.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "d1d2eaa5cab9",
+      "whole": false
+    }
+  },
+  "symbols": [
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "Sound",
+      "distance": 1,
+      "via": [],
+      "hash": "62aa4d8899c9"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "COLOR_NAMES",
+      "distance": 2,
+      "via": [],
+      "hash": "4db43ce0b9dd"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "Color",
+      "distance": 2,
+      "via": [],
+      "hash": "02fcf762079b"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "ColorName",
+      "distance": 2,
+      "via": [],
+      "hash": "5352a3786827"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "LEGACY_HEX",
+      "distance": 2,
+      "via": [],
+      "hash": "e8f789117bd7"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "toColorName",
+      "distance": 2,
+      "via": [],
+      "hash": "a5c9ee31de5c"
+    },
+    {
+      "file": "shared/names.ts",
+      "symbol": "NAME_MAX",
+      "distance": 2,
+      "via": [],
+      "hash": "3cd0939e4130"
+    },
+    {
+      "file": "src/board/identity.ts",
+      "symbol": "Identity",
+      "distance": 1,
+      "via": [],
+      "hash": "9bdc262cb7c7"
+    }
+  ],
+  "external": [
+    "zod"
+  ],
+  "locked": {
+    "zod": "4.6.6, 4.6.7"
+  }
+}

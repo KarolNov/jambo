@@ -57,7 +57,7 @@
         "src/about/about.css": "9fa4c0fbea95",
         "worker/index.ts": "7006ed34cbe2"
       },
-      "syncedCommit": "bc6d2092937bc98b26d8d86913ec04b9e148ce4e"
+      "syncedCommit": "214976d973c65ef058023ccfa14b9d3c0535a310"
     },
     "collab/room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
@@ -76,7 +76,7 @@
         "worker/quota.ts": "fa0709c13df2",
         "worker/sounds.ts": "548f085c2ba4"
       },
-      "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
+      "syncedCommit": "214976d973c65ef058023ccfa14b9d3c0535a310"
     },
     "board/session": {
       "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
@@ -115,7 +115,7 @@
         "src/board/seat.ts": "efa33b9e925b",
         "src/board/session.ts": "74ea6cbdbb7f"
       },
-      "syncedCommit": "1d17f38a21a7f452d4ffd532d5ec04f25c934056"
+      "syncedCommit": "214976d973c65ef058023ccfa14b9d3c0535a310"
     },
     "board/ops": {
       "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
@@ -131,7 +131,7 @@
         "shared/board/sdk.ts": "6fafc07c2757",
         "shared/board/seed.ts": "d5eb014f0cd8"
       },
-      "syncedCommit": "dbe0739e1bb7ba5c67b15cdc9baabdca111b358a"
+      "syncedCommit": "214976d973c65ef058023ccfa14b9d3c0535a310"
     },
     "audio/looper": {
       "ref": "https://app.notion.com/p/41c43cce21f2816ba415d28e60bf80d5",
@@ -164,7 +164,7 @@
         "src/board/useEngineState.ts": "f06f1956d95d",
         "src/board/useTransport.ts": "85fff8d0f3b4"
       },
-      "syncedCommit": "c958c72b54dc25a53f4526e1f9699525529151df"
+      "syncedCommit": "214976d973c65ef058023ccfa14b9d3c0535a310"
     },
     "board/pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
@@ -179,7 +179,7 @@
         "src/board/console/Pads.tsx": "8dd994f0a5ad",
         "src/board/typing.ts": "9749aa39cc94"
       },
-      "syncedCommit": "9fd9be7d7fab9aa7d6a66d04666fb1f9dfef0463"
+      "syncedCommit": "214976d973c65ef058023ccfa14b9d3c0535a310"
     },
     "audio/sounds": {
       "ref": "https://app.notion.com/p/41c43cce21f2810f8bb0f1ed9935a67d",
@@ -198,7 +198,7 @@
         "src/audio/synth.ts": "513ccb17f064",
         "src/audio/upload.ts": "9d3467419e28"
       },
-      "syncedCommit": "c958c72b54dc25a53f4526e1f9699525529151df"
+      "syncedCommit": "214976d973c65ef058023ccfa14b9d3c0535a310"
     },
     "collab/agent": {
       "ref": "https://app.notion.com/p/41d43cce21f2814bbbb8ef7ccde6b7e2",
@@ -220,7 +220,7 @@
         "worker/agent/mcp.ts": "d7eb83f64fcc",
         "worker/agent/roster.ts": "1d797b63f037"
       },
-      "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
+      "syncedCommit": "214976d973c65ef058023ccfa14b9d3c0535a310"
     },
     "ui": {
       "ref": "https://app.notion.com/p/41d43cce21f281d291ccec92edb7d20d",
@@ -254,7 +254,7 @@
         "src/ui/tabFit.ts": "9c71b760a6cb",
         "src/ui/ui.css": "075dc08357a3"
       },
-      "syncedCommit": "dbe0739e1bb7ba5c67b15cdc9baabdca111b358a"
+      "syncedCommit": "214976d973c65ef058023ccfa14b9d3c0535a310"
     }
   },
   "changes": {
@@ -435,6 +435,15 @@
         "worker/quota.ts": "fa0709c13df2",
         "worker/sounds.ts": "548f085c2ba4"
       }
+    }
+  },
+  "drift": {
+    "scoring": {
+      "decay": 0.5,
+      "packageWeight": 0.5,
+      "lockfileWeight": 0.3,
+      "threshold": 0.5,
+      "maxDepth": 6
     }
   }
 }

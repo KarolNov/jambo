@@ -1,0 +1,6 @@
+# Written by `python3 .blueprint/drift.py stamp`; GitHub collapses them in PR diffs.
+.blueprint/closure/** linguist-generated=true
+# Vendored from the blueprint skill; refreshed by /blueprint-setup, not edited here.
+.blueprint/drift.py linguist-generated=true
+.blueprint/drift_ts.mjs linguist-generated=true
+.blueprint/notion_normalize.py linguist-generated=true

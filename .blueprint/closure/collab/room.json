@@ -1,0 +1,1234 @@
+{
+  "mode": "symbol",
+  "files": {
+    "shared/agent/identity.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "7255c8e36b80",
+      "whole": false
+    },
+    "shared/agent/limits.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "d4559fe10460",
+      "whole": false
+    },
+    "shared/agent/link.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "c936b9cdd9bf",
+      "whole": false
+    },
+    "shared/agent/record.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "c9aff89071cb",
+      "whole": false
+    },
+    "shared/agent/seat.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "e8d0659161b8",
+      "whole": false
+    },
+    "shared/agent/snapshot.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "31018f0ae58c",
+      "whole": false
+    },
+    "shared/board/apply.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "00a8a7c4073c",
+      "whole": false
+    },
+    "shared/board/ops.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "ac549660a041",
+      "whole": false
+    },
+    "shared/board/schema.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "7886b4b9587a",
+      "whole": false
+    },
+    "shared/board/sdk.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "6fafc07c2757",
+      "whole": false
+    },
+    "shared/board/seed.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "d5eb014f0cd8",
+      "whole": false
+    },
+    "shared/clock.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "1dd908e91d40",
+      "whole": false
+    },
+    "shared/colors.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "c468471135c8",
+      "whole": false
+    },
+    "shared/names.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "812ac5f26e0b",
+      "whole": false
+    },
+    "shared/parties.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "f686acc22693",
+      "whole": false
+    },
+    "shared/seats.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "f05d8ce7a23b",
+      "whole": false
+    },
+    "shared/slug.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "93fbc4b73dd9",
+      "whole": false
+    },
+    "shared/sounds.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "d0aeb2d77590",
+      "whole": false
+    },
+    "shared/wav.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "bd5840f52c3f",
+      "whole": false
+    },
+    "shared/words.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "093dd86b1435",
+      "whole": false
+    },
+    "src/board/connection.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "b7d5a5fc4e00",
+      "whole": false
+    },
+    "worker/agent/mcp.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "d7eb83f64fcc",
+      "whole": false
+    },
+    "worker/agent/roster.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "1d797b63f037",
+      "whole": false
+    }
+  },
+  "symbols": [
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "AGENT_AUTHOR_PREFIX",
+      "distance": 1,
+      "via": [],
+      "hash": "1e023fe3dffe"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "DEFAULT_KIND",
+      "distance": 2,
+      "via": [],
+      "hash": "27963c783488"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "KIND_MAX",
+      "distance": 2,
+      "via": [],
+      "hash": "0cc88bd3ead7"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "adjectives",
+      "distance": 2,
+      "via": [],
+      "hash": "ab697d2f451f"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "agentIdOf",
+      "distance": 2,
+      "via": [],
+      "hash": "721fe8ae694e"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "agentName",
+      "distance": 2,
+      "via": [],
+      "hash": "c0a0cbbc03c2"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "allAgentNames",
+      "distance": 3,
+      "via": [],
+      "hash": "eba6c2dd8a88"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "hex",
+      "distance": 2,
+      "via": [],
+      "hash": "96f6ce6d73cc"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "isAgentKey",
+      "distance": 2,
+      "via": [],
+      "hash": "94265a61c824"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "newAgentKey",
+      "distance": 2,
+      "via": [],
+      "hash": "8000eb6a3b5c"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "randomAgentName",
+      "distance": 3,
+      "via": [],
+      "hash": "8574e3007834"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "toAgentName",
+      "distance": 2,
+      "via": [],
+      "hash": "9e7334f0ffcb"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "toKind",
+      "distance": 2,
+      "via": [],
+      "hash": "f389aa35f355"
+    },
+    {
+      "file": "shared/agent/limits.ts",
+      "symbol": "AGENT_LIMITS",
+      "distance": 1,
+      "via": [],
+      "hash": "718030ab9f7c"
+    },
+    {
+      "file": "shared/agent/limits.ts",
+      "symbol": "checkSummary",
+      "distance": 1,
+      "via": [],
+      "hash": "eb854813eaec"
+    },
+    {
+      "file": "shared/agent/link.ts",
+      "symbol": "jamSlugOf",
+      "distance": 2,
+      "via": [],
+      "hash": "a3839ad9530e"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "AgentCall",
+      "distance": 1,
+      "via": [],
+      "hash": "7b6dad8b9632"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "AgentStamp",
+      "distance": 1,
+      "via": [],
+      "hash": "a1407a88669e"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "KNOB_HELP",
+      "distance": 1,
+      "via": [],
+      "hash": "c5e2c4c7d66e"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "Prepared",
+      "distance": 1,
+      "via": [],
+      "hash": "0c9e6f2f2b08"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "REF_PREFIX",
+      "distance": 1,
+      "via": [],
+      "hash": "54f96c90b200"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "Ref",
+      "distance": 1,
+      "via": [],
+      "hash": "a14695b45e9e"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "TrackDraft",
+      "distance": 1,
+      "via": [],
+      "hash": "4208c297dae2"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "knobDrafts",
+      "distance": 1,
+      "via": [],
+      "hash": "636e257b8729"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "knobHelp",
+      "distance": 1,
+      "via": [],
+      "hash": "751b14cfca22"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "prepare",
+      "distance": 1,
+      "via": [],
+      "hash": "70840b3e84e5"
+    },
+    {
+      "file": "shared/agent/seat.ts",
+      "symbol": "seatAgent",
+      "distance": 2,
+      "via": [],
+      "hash": "0fad93a608a7"
+    },
+    {
+      "file": "shared/agent/snapshot.ts",
+      "symbol": "Snapshot",
+      "distance": 1,
+      "via": [],
+      "hash": "f99bf8312e1f"
+    },
+    {
+      "file": "shared/agent/snapshot.ts",
+      "symbol": "SnapshotPresence",
+      "distance": 1,
+      "via": [],
+      "hash": "e81e2ff814a0"
+    },
+    {
+      "file": "shared/agent/snapshot.ts",
+      "symbol": "SnapshotSound",
+      "distance": 1,
+      "via": [],
+      "hash": "4c9ca54f3703"
+    },
+    {
+      "file": "shared/agent/snapshot.ts",
+      "symbol": "byId",
+      "distance": 1,
+      "via": [],
+      "hash": "5d835146eb9f"
+    },
+    {
+      "file": "shared/agent/snapshot.ts",
+      "symbol": "readAll",
+      "distance": 1,
+      "via": [],
+      "hash": "5655989a1856"
+    },
+    {
+      "file": "shared/agent/snapshot.ts",
+      "symbol": "snapshotOf",
+      "distance": 1,
+      "via": [],
+      "hash": "a34cb052eebe"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "Origin",
+      "distance": 1,
+      "via": [],
+      "hash": "0378dcdeb793"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "ROOM_ONLY",
+      "distance": 1,
+      "via": [],
+      "hash": "1696f68ea8d0"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "SchemaIssue",
+      "distance": 1,
+      "via": [],
+      "hash": "662591efec09"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "apply",
+      "distance": 1,
+      "via": [],
+      "hash": "82157c912b1a"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "applyOne",
+      "distance": 1,
+      "via": [],
+      "hash": "5fa5be124443"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "countUploads",
+      "distance": 1,
+      "via": [],
+      "hash": "63bc5390f690"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "fail",
+      "distance": 1,
+      "via": [],
+      "hash": "71abb6a8c2d3"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "fromResult",
+      "distance": 1,
+      "via": [],
+      "hash": "721d29d6ccee"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "isListedSound",
+      "distance": 1,
+      "via": [],
+      "hash": "86529b74d19b"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "padsUsing",
+      "distance": 1,
+      "via": [],
+      "hash": "699bab1b6024"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "AssignPad",
+      "distance": 2,
+      "via": [],
+      "hash": "970151ab3e83"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "Issue",
+      "distance": 2,
+      "via": [],
+      "hash": "e6e0ba9dbbef"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "Op",
+      "distance": 2,
+      "via": [],
+      "hash": "0f2e35d4b361"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "OpResult",
+      "distance": 2,
+      "via": [],
+      "hash": "dc9720b70499"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "RemoveTrack",
+      "distance": 2,
+      "via": [],
+      "hash": "0058830703e5"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "ReplaceSound",
+      "distance": 2,
+      "via": [],
+      "hash": "ce0cddb26e23"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "SetTempo",
+      "distance": 2,
+      "via": [],
+      "hash": "d7ef1c192811"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "SetTrack",
+      "distance": 2,
+      "via": [],
+      "hash": "4818f1d13819"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "TrackPatch",
+      "distance": 2,
+      "via": [],
+      "hash": "f8b42875752f"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "BEATS_PER_BAR",
+      "distance": 2,
+      "via": [],
+      "hash": "9f26fde00ec7"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "BPM",
+      "distance": 2,
+      "via": [],
+      "hash": "dbf903af9d86"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "Hit",
+      "distance": 2,
+      "via": [],
+      "hash": "2fc556788ce6"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "LIMITS",
+      "distance": 2,
+      "via": [],
+      "hash": "98bcc35c7209"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "Meta",
+      "distance": 2,
+      "via": [],
+      "hash": "ca143f68dc17"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "Pad",
+      "distance": 2,
+      "via": [],
+      "hash": "e56e32fcf4ba"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "QUANTIZE",
+      "distance": 2,
+      "via": [],
+      "hash": "c0d897392396"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "ROOTS",
+      "distance": 1,
+      "via": [],
+      "hash": "8dbb9dfa6837"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "SHAPES",
+      "distance": 2,
+      "via": [],
+      "hash": "caffb415125d"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "SOUND_KNOBS",
+      "distance": 2,
+      "via": [],
+      "hash": "85fcaf923783"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "SOUND_KNOB_NAMES",
+      "distance": 2,
+      "via": [],
+      "hash": "71443e234f36"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "Sound",
+      "distance": 1,
+      "via": [],
+      "hash": "62aa4d8899c9"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "SoundKnob",
+      "distance": 2,
+      "via": [],
+      "hash": "8038d1e95395"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "Track",
+      "distance": 2,
+      "via": [],
+      "hash": "075bfd6b43e0"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "knob",
+      "distance": 2,
+      "via": [],
+      "hash": "01bca25db6c8"
+    },
+    {
+      "file": "shared/board/sdk.ts",
+      "symbol": "newId",
+      "distance": 2,
+      "via": [],
+      "hash": "150f964bf338"
+    },
+    {
+      "file": "shared/board/seed.ts",
+      "symbol": "seedBoard",
+      "distance": 1,
+      "via": [],
+      "hash": "a6ef254d2b92"
+    },
+    {
+      "file": "shared/clock.ts",
+      "symbol": "ClockMessage",
+      "distance": 1,
+      "via": [],
+      "hash": "e36dfd30d220"
+    },
+    {
+      "file": "shared/clock.ts",
+      "symbol": "parseClockMessage",
+      "distance": 1,
+      "via": [],
+      "hash": "ebde597e0d1b"
+    },
+    {
+      "file": "shared/clock.ts",
+      "symbol": "pong",
+      "distance": 1,
+      "via": [],
+      "hash": "a0d2d03ba853"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "COLOR_NAMES",
+      "distance": 1,
+      "via": [],
+      "hash": "4db43ce0b9dd"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "Color",
+      "distance": 2,
+      "via": [],
+      "hash": "02fcf762079b"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "ColorName",
+      "distance": 1,
+      "via": [],
+      "hash": "5352a3786827"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "LEGACY_HEX",
+      "distance": 2,
+      "via": [],
+      "hash": "e8f789117bd7"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "toColorName",
+      "distance": 2,
+      "via": [],
+      "hash": "a5c9ee31de5c"
+    },
+    {
+      "file": "shared/names.ts",
+      "symbol": "ANIMALS",
+      "distance": 2,
+      "via": [],
+      "hash": "bafc45484c5d"
+    },
+    {
+      "file": "shared/names.ts",
+      "symbol": "NAME_MAX",
+      "distance": 1,
+      "via": [],
+      "hash": "3cd0939e4130"
+    },
+    {
+      "file": "shared/names.ts",
+      "symbol": "allNames",
+      "distance": 2,
+      "via": [],
+      "hash": "0363739f50d4"
+    },
+    {
+      "file": "shared/names.ts",
+      "symbol": "randomName",
+      "distance": 2,
+      "via": [],
+      "hash": "bf9890645c1b"
+    },
+    {
+      "file": "shared/names.ts",
+      "symbol": "toName",
+      "distance": 1,
+      "via": [],
+      "hash": "bf9464916e3e"
+    },
+    {
+      "file": "shared/parties.ts",
+      "symbol": "BOARD_CLASS",
+      "distance": 1,
+      "via": [],
+      "hash": "91ee85a411e5"
+    },
+    {
+      "file": "shared/parties.ts",
+      "symbol": "BOARD_PARTY",
+      "distance": 1,
+      "via": [],
+      "hash": "a55e1b544f8a"
+    },
+    {
+      "file": "shared/seats.ts",
+      "symbol": "Seat",
+      "distance": 1,
+      "via": [],
+      "hash": "8e5483a1edbb"
+    },
+    {
+      "file": "shared/seats.ts",
+      "symbol": "SeatMessage",
+      "distance": 1,
+      "via": [],
+      "hash": "ed62d99f0971"
+    },
+    {
+      "file": "shared/seats.ts",
+      "symbol": "assignColor",
+      "distance": 1,
+      "via": [],
+      "hash": "d01951a43d76"
+    },
+    {
+      "file": "shared/seats.ts",
+      "symbol": "assignName",
+      "distance": 1,
+      "via": [],
+      "hash": "442283eac250"
+    },
+    {
+      "file": "shared/seats.ts",
+      "symbol": "assignSeat",
+      "distance": 1,
+      "via": [],
+      "hash": "e9e473ec8e20"
+    },
+    {
+      "file": "shared/seats.ts",
+      "symbol": "parseSeatMessage",
+      "distance": 1,
+      "via": [],
+      "hash": "403b8b5de63f"
+    },
+    {
+      "file": "shared/seats.ts",
+      "symbol": "seated",
+      "distance": 1,
+      "via": [],
+      "hash": "2f70ca5784cc"
+    },
+    {
+      "file": "shared/slug.ts",
+      "symbol": "ALPHABET",
+      "distance": 1,
+      "via": [],
+      "hash": "fe0746e0e61a"
+    },
+    {
+      "file": "shared/slug.ts",
+      "symbol": "SLUG_PATTERN",
+      "distance": 1,
+      "via": [],
+      "hash": "369fd3f7d3ef"
+    },
+    {
+      "file": "shared/slug.ts",
+      "symbol": "SUFFIX_LENGTH",
+      "distance": 1,
+      "via": [],
+      "hash": "1a595fc49706"
+    },
+    {
+      "file": "shared/slug.ts",
+      "symbol": "adjectives",
+      "distance": 1,
+      "via": [],
+      "hash": "ab697d2f451f"
+    },
+    {
+      "file": "shared/slug.ts",
+      "symbol": "isJamSlug",
+      "distance": 1,
+      "via": [],
+      "hash": "37b8c1cd62d2"
+    },
+    {
+      "file": "shared/slug.ts",
+      "symbol": "newJamSlug",
+      "distance": 1,
+      "via": [],
+      "hash": "d12d7fd5cd95"
+    },
+    {
+      "file": "shared/slug.ts",
+      "symbol": "nouns",
+      "distance": 1,
+      "via": [],
+      "hash": "830b1d267071"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "BASE32",
+      "distance": 1,
+      "via": [],
+      "hash": "8644b564046f"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "DEFAULT_LAYOUT",
+      "distance": 2,
+      "via": [],
+      "hash": "f10a2066206c"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "PAD_KEYS",
+      "distance": 2,
+      "via": [],
+      "hash": "db4c89878891"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "PAD_KEY_ORDER",
+      "distance": 2,
+      "via": [],
+      "hash": "0c8213ca9829"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "PAUSED_MESSAGES",
+      "distance": 1,
+      "via": [],
+      "hash": "eb3fa23f09e0"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "SOUNDS",
+      "distance": 2,
+      "via": [],
+      "hash": "af505427631f"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "SOUND_IDS",
+      "distance": 2,
+      "via": [],
+      "hash": "1c260188164a"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "SoundId",
+      "distance": 2,
+      "via": [],
+      "hash": "dd347d264598"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "UPLOADS",
+      "distance": 1,
+      "via": [],
+      "hash": "9543cb662425"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "UPLOAD_HEADERS",
+      "distance": 1,
+      "via": [],
+      "hash": "d981250f215a"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "UPLOAD_ID",
+      "distance": 1,
+      "via": [],
+      "hash": "59d56f7d8530"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "UploadStatus",
+      "distance": 1,
+      "via": [],
+      "hash": "3e347e5e4c19"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "isUploadId",
+      "distance": 1,
+      "via": [],
+      "hash": "f246c083e1c6"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "newUploadId",
+      "distance": 1,
+      "via": [],
+      "hash": "47430852211a"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "padId",
+      "distance": 2,
+      "via": [],
+      "hash": "b2484df5ca51"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "padKeyOrder",
+      "distance": 2,
+      "via": [],
+      "hash": "d307fe71ce61"
+    },
+    {
+      "file": "shared/wav.ts",
+      "symbol": "HEADER_BYTES",
+      "distance": 1,
+      "via": [],
+      "hash": "d515d9d41331"
+    },
+    {
+      "file": "shared/wav.ts",
+      "symbol": "WavInfo",
+      "distance": 1,
+      "via": [],
+      "hash": "74ac3441ed38"
+    },
+    {
+      "file": "shared/wav.ts",
+      "symbol": "parseUploadWav",
+      "distance": 1,
+      "via": [],
+      "hash": "7a6fdf5aa4e5"
+    },
+    {
+      "file": "shared/wav.ts",
+      "symbol": "toUploadLayout",
+      "distance": 2,
+      "via": [],
+      "hash": "be60b4706c34"
+    },
+    {
+      "file": "shared/words.ts",
+      "symbol": "ADJECTIVES",
+      "distance": 2,
+      "via": [],
+      "hash": "bd5b01f19920"
+    },
+    {
+      "file": "shared/words.ts",
+      "symbol": "NOUNS",
+      "distance": 2,
+      "via": [],
+      "hash": "edf9e06440cf"
+    },
+    {
+      "file": "shared/words.ts",
+      "symbol": "capitalize",
+      "distance": 3,
+      "via": [],
+      "hash": "906a4e314597"
+    },
+    {
+      "file": "src/board/connection.ts",
+      "symbol": "ConnectionStatus",
+      "distance": 1,
+      "via": [],
+      "hash": "32b6d02ef63f"
+    },
+    {
+      "file": "src/board/connection.ts",
+      "symbol": "SocketStatus",
+      "distance": 1,
+      "via": [],
+      "hash": "59314ce412fb"
+    },
+    {
+      "file": "src/board/connection.ts",
+      "symbol": "connectionStatus",
+      "distance": 1,
+      "via": [],
+      "hash": "867ce7b582aa"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "AGENT_CALLS_PER_MINUTE",
+      "distance": 1,
+      "via": [],
+      "hash": "0971726c6061"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "INSTRUCTIONS",
+      "distance": 1,
+      "via": [],
+      "hash": "d8baf1dbee47"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "KNOB_FIELDS",
+      "distance": 1,
+      "via": [],
+      "hash": "84000f0a648b"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "KNOB_LINES",
+      "distance": 1,
+      "via": [],
+      "hash": "4fb3159ed0cf"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "MAX_BASE64",
+      "distance": 1,
+      "via": [],
+      "hash": "b877e697e119"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "Refusal",
+      "distance": 1,
+      "via": [],
+      "hash": "9dab5bf7f760"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "ToolResult",
+      "distance": 1,
+      "via": [],
+      "hash": "6958d9e92d52"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "Who",
+      "distance": 1,
+      "via": [],
+      "hash": "f7298696ff22"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "addressTag",
+      "distance": 1,
+      "via": [],
+      "hash": "2429c888c4d7"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "decodeBase64",
+      "distance": 1,
+      "via": [],
+      "hash": "c720bfb4e9b8"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "fromBase64",
+      "distance": 1,
+      "via": [],
+      "hash": "9aae52342a0d"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "handleMcp",
+      "distance": 1,
+      "via": [],
+      "hash": "926ac266dd8f"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "jamboMcpServer",
+      "distance": 1,
+      "via": [],
+      "hash": "0430c0070b69"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "refuse",
+      "distance": 1,
+      "via": [],
+      "hash": "97741d3723bc"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "reply",
+      "distance": 1,
+      "via": [],
+      "hash": "692c981e3fe4"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "resolve",
+      "distance": 1,
+      "via": [],
+      "hash": "246fa1761253"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "who",
+      "distance": 1,
+      "via": [],
+      "hash": "eb814c8e012a"
+    },
+    {
+      "file": "worker/agent/roster.ts",
+      "symbol": "AWAY_KEY",
+      "distance": 1,
+      "via": [],
+      "hash": "2d15c7dbd6c7"
+    },
+    {
+      "file": "worker/agent/roster.ts",
+      "symbol": "AgentHello",
+      "distance": 1,
+      "via": [],
+      "hash": "c86ef18b0c28"
+    },
+    {
+      "file": "worker/agent/roster.ts",
+      "symbol": "AgentView",
+      "distance": 1,
+      "via": [],
+      "hash": "fbf045f7f3aa"
+    },
+    {
+      "file": "worker/agent/roster.ts",
+      "symbol": "AwayAgent",
+      "distance": 1,
+      "via": [],
+      "hash": "c0ae9a27f271"
+    },
+    {
+      "file": "worker/agent/roster.ts",
+      "symbol": "PRESENT_KEY",
+      "distance": 1,
+      "via": [],
+      "hash": "e6a4f99b004e"
+    },
+    {
+      "file": "worker/agent/roster.ts",
+      "symbol": "PresentAgent",
+      "distance": 1,
+      "via": [],
+      "hash": "3b6645b093c1"
+    },
+    {
+      "file": "worker/agent/roster.ts",
+      "symbol": "Roster",
+      "distance": 1,
+      "via": [],
+      "hash": "93ff3c80df30"
+    },
+    {
+      "file": "worker/agent/roster.ts",
+      "symbol": "jamFull",
+      "distance": 1,
+      "via": [],
+      "hash": "76d3bd0131bf"
+    },
+    {
+      "file": "worker/agent/roster.ts",
+      "symbol": "restyle",
+      "distance": 1,
+      "via": [],
+      "hash": "5f2cacdbd4e8"
+    },
+    {
+      "file": "worker/agent/roster.ts",
+      "symbol": "toView",
+      "distance": 1,
+      "via": [],
+      "hash": "30045d30f43d"
+    }
+  ],
+  "external": [
+    "@modelcontextprotocol/server",
+    "@standard-schema/spec",
+    "@types/node",
+    "agents",
+    "duratom",
+    "hono",
+    "hono-party",
+    "jotai",
+    "lib0",
+    "partyserver",
+    "y-partyserver",
+    "y-protocols",
+    "yjs",
+    "zod"
+  ],
+  "locked": {
+    "@modelcontextprotocol/server": "2.4.0",
+    "@standard-schema/spec": "1.1.0",
+    "@types/node": "22.20.5",
+    "agents": "0.33.0",
+    "duratom": "0.1.0",
+    "hono": "4.13.19",
+    "hono-party": "2.1.0",
+    "jotai": "3.0.2",
+    "lib0": "0.2.120",
+    "partyserver": "0.5.10",
+    "y-partyserver": "2.2.0",
+    "y-protocols": "1.0.7",
+    "yjs": "13.6.33",
+    "zod": "4.6.6, 4.6.7"
+  }
+}
