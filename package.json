@@ -5,6 +5,13 @@
   "description": "Collaborative music board: arrange tracks together in real time, on Cloudflare Workers and duratom.",
   "license": "MIT",
   "type": "module",
+  "sideEffects": [
+    "**/*.css",
+    "./src/main.tsx",
+    "./src/theme/theme.ts",
+    "./worker/index.ts",
+    "./worker/sounds.ts"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",

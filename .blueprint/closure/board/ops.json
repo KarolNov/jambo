@@ -5,28 +5,142 @@
       "distance": 1,
       "via": [],
       "hash": "c468471135c8",
-      "whole": true
+      "whole": false
     },
     "shared/names.ts": {
       "distance": 1,
       "via": [],
       "hash": "812ac5f26e0b",
-      "whole": true
+      "whole": false
     },
     "shared/sounds.ts": {
       "distance": 1,
       "via": [],
       "hash": "d0aeb2d77590",
-      "whole": true
-    },
-    "shared/words.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "093dd86b1435",
-      "whole": true
+      "whole": false
     }
   },
-  "symbols": [],
+  "symbols": [
+    {
+      "file": "shared/colors.ts",
+      "symbol": "COLOR_NAMES",
+      "distance": 1,
+      "via": [],
+      "hash": "4db43ce0b9dd"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "Color",
+      "distance": 1,
+      "via": [],
+      "hash": "02fcf762079b"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "ColorName",
+      "distance": 1,
+      "via": [],
+      "hash": "5352a3786827"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "LEGACY_HEX",
+      "distance": 1,
+      "via": [],
+      "hash": "e8f789117bd7"
+    },
+    {
+      "file": "shared/colors.ts",
+      "symbol": "toColorName",
+      "distance": 1,
+      "via": [],
+      "hash": "a5c9ee31de5c"
+    },
+    {
+      "file": "shared/names.ts",
+      "symbol": "NAME_MAX",
+      "distance": 1,
+      "via": [],
+      "hash": "3cd0939e4130"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "DEFAULT_LAYOUT",
+      "distance": 1,
+      "via": [],
+      "hash": "f10a2066206c"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "PAD_KEYS",
+      "distance": 1,
+      "via": [],
+      "hash": "db4c89878891"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "PAD_KEY_ORDER",
+      "distance": 1,
+      "via": [],
+      "hash": "0c8213ca9829"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "SOUNDS",
+      "distance": 1,
+      "via": [],
+      "hash": "af505427631f"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "SOUND_IDS",
+      "distance": 1,
+      "via": [],
+      "hash": "1c260188164a"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "SoundId",
+      "distance": 1,
+      "via": [],
+      "hash": "dd347d264598"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "UPLOADS",
+      "distance": 1,
+      "via": [],
+      "hash": "9543cb662425"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "UPLOAD_ID",
+      "distance": 1,
+      "via": [],
+      "hash": "59d56f7d8530"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "isUploadId",
+      "distance": 1,
+      "via": [],
+      "hash": "f246c083e1c6"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "padId",
+      "distance": 1,
+      "via": [],
+      "hash": "b2484df5ca51"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "padKeyOrder",
+      "distance": 1,
+      "via": [],
+      "hash": "d307fe71ce61"
+    }
+  ],
   "external": [
     "duratom",
     "yjs",
