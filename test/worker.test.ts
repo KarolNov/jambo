@@ -5,6 +5,7 @@ import * as Y from 'yjs'
 import { apply, ROOTS, type Track } from '../shared/board'
 import { BOARD_CLASS, BOARD_PARTY, boardPath } from '../shared/parties'
 import { isJamSlug } from '../shared/slug'
+import { SOUNDS } from '../shared/sounds'
 import { parseClockMessage, ping } from '../shared/clock'
 import { hello, parseSeatMessage } from '../shared/seats'
 import { connectBoard, until } from './client'
@@ -89,6 +90,7 @@ describe('board party name', () => {
 
 describe('room', () => {
   // @scenario collab/room: Two people edit
+  // @scenario collab/jams: Share the link
   it('syncs edits between two clients of the same jam, keeping concurrent edits', async () => {
     const a = await connectBoard('funky-otter-aaaa')
     const b = await connectBoard('funky-otter-aaaa')
@@ -176,6 +178,19 @@ describe('looper board', () => {
     a.close()
   })
 
+  // @scenario board/pads: New jam
+  it('gives every pad of a new jam a kit sound, the kick on 1 and tonal sounds on ZXCV', async () => {
+    const a = await connectBoard('sunny-bongo-ffff')
+    const pads = [...a.doc.getMap<Y.Map<unknown>>(ROOTS.pads).values()]
+    const soundOn = new Map(pads.map((p) => [String(p.get('key')), String(p.get('soundId'))]))
+    const categoryOf = (key: string) => SOUNDS.find((s) => s.id === soundOn.get(key))?.category
+    expect(soundOn.size).toBe(16)
+    for (const id of soundOn.values()) expect(SOUNDS.map((s) => s.id)).toContain(id)
+    expect(soundOn.get('1')).toBe('kick')
+    expect([...'zxcv'].map(categoryOf)).toEqual(['tonal', 'tonal', 'tonal', 'tonal'])
+    a.close()
+  })
+
   // @scenario collab/room: Existing jam
   it('leaves a set tempo and reassigned pads alone when the jam is opened again', async () => {
     const slug = 'sunny-bongo-ex01'
@@ -258,6 +273,7 @@ describe('seats', () => {
   }
 
   // @scenario collab/room: Shared usual name and colour
+  // @scenario board/session: Same usual name and colour
   it('seats people who share a usual name and colour with different ones', async () => {
     const a = await join('groovy-otter-mmmm', 'a')
     const b = await join('groovy-otter-mmmm', 'b')
@@ -278,6 +294,19 @@ describe('seats', () => {
     for (const x of [a, b, b2]) x.close()
   })
 
+  // @scenario collab/room: Someone else's id
+  it("seats by the private key, so asking with someone's public id gets a seat of your own", async () => {
+    const a = await join('groovy-otter-qqqq', 'a-key')
+    // Everyone in the jam sees Groovy Otter's public id, never their key.
+    a.awareness.setLocalState({ person: { id: 'a-id', name: 'Groovy Otter', color: 'sky' } })
+    const b = await join('groovy-otter-qqqq', 'a-id')
+    expect(seatOf(a)).toEqual({ name: 'Groovy Otter', color: 'sky' })
+    expect(seatOf(b)?.name).not.toBe('Groovy Otter')
+    expect(seatOf(b)?.color).not.toBe('sky')
+    a.close()
+    b.close()
+  })
+
   // @scenario collab/room: Someone leaves
   it('frees a name and colour when their person leaves', async () => {
     const a = await join('groovy-otter-pppp', 'a')
@@ -294,6 +323,8 @@ describe('presence', () => {
     [...awareness.getStates().values()].map((s) => (s.person as { id?: string } | undefined)?.id)
 
   // @scenario collab/room: Leave
+  // @scenario board/session: Someone joins
+  // @scenario board/session: Someone leaves
   it('passes presence to everyone in the jam, and drops it when a client disconnects', async () => {
     const a = await connectBoard('groovy-panda-hhhh')
     const b = await connectBoard('groovy-panda-hhhh')

@@ -2,15 +2,21 @@ import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { commands, page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
+import { Awareness, applyAwarenessUpdate, encodeAwarenessUpdate } from 'y-protocols/awareness'
+import * as Y from 'yjs'
+import { board } from '../../shared/board'
 import About from '../../src/about/About'
 import { Console } from '../../src/board/console/Console'
 import { Deck } from '../../src/board/console/Deck'
+import { Mixer } from '../../src/board/console/Mixer'
+import { controlKey } from '../../src/board/presence'
 import type { Session } from '../../src/board/session'
 import Showcase from '../../src/ds/Showcase'
 import { SWATCHES } from '../../src/theme/palette'
 import { ThemeToggle } from '../../src/theme/ThemeToggle'
 import { Knob, ScrubField } from '../../src/ui'
 import {
+  addTrack,
   addUploads,
   endSession,
   makeSession,
@@ -176,6 +182,27 @@ describe('metronome switch', () => {
     await expect.poll(() => tilt().m13).toBeGreaterThan(0)
     expect(getComputedStyle(i).textShadow).not.toBe('none')
   })
+
+  // @scenario ui: Desktop
+  it('flips on a laptop with no error and no tick', async () => {
+    // Headless Chromium has a mouse and no touchscreen, like a laptop.
+    expect(window.matchMedia('(any-pointer: coarse)').matches).toBe(false)
+    const vibrate = vi.spyOn(Navigator.prototype, 'vibrate')
+    const errors: unknown[] = []
+    const onError = (e: ErrorEvent) => errors.push(e.error)
+    window.addEventListener('error', onError)
+    localStorage.setItem('jambo.metronome', '0')
+    session = makeSession()
+    await renderJam(<Deck slug={SLUG} />, session)
+    const metronome = page.getByRole('switch', { name: 'Metronome' })
+
+    await userEvent.click(metronome)
+    await expect.element(metronome).toBeChecked()
+    expect(session.engine.metronome).toBe(true)
+    expect(vibrate).not.toHaveBeenCalled()
+    window.removeEventListener('error', onError)
+    expect(errors).toEqual([])
+  })
 })
 
 describe('tabs', () => {
@@ -289,5 +316,130 @@ describe('pad', () => {
     // Under the pad, clear of its key.
     expect(t.top).toBeGreaterThanOrEqual(b.bottom)
     expect(t.right).toBeLessThanOrEqual(slot.getBoundingClientRect().right + 0.5)
+  })
+})
+
+describe('your colour', () => {
+  let session: Session
+  afterEach(() => endSession(session))
+
+  /** A swatch for the page's theme, as getComputedStyle writes colours. */
+  const rgb = (color: keyof typeof SWATCHES) => {
+    const hex = SWATCHES[color][theme() as 'dark' | 'light']
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
+    return `rgb(${r}, ${g}, ${b})`
+  }
+  const tempoField = () => page.getByRole('textbox', { name: 'Tempo in BPM' })
+
+  // @scenario board/session: Tab through controls
+  it('rings the focused tempo field in your colour', async () => {
+    session = makeSession('Misty Yak', 'sky')
+    await renderJam(<Console slug={SLUG} status="connected" />, session)
+    await userEvent.click(tempoField())
+    await expect.element(tempoField()).toHaveFocus()
+    expect(getComputedStyle(tempoField().element()).boxShadow).toContain(rgb('sky'))
+  })
+
+  // @scenario board/session: Hover and switches
+  it('lights hovers and a switch that is on in your colour', async () => {
+    localStorage.setItem('jambo.metronome', '1')
+    session = makeSession('Misty Yak', 'amber')
+    const { screen } = await renderJam(<Console slug={SLUG} status="connected" />, session)
+    await expect.element(page.getByRole('switch', { name: 'Metronome' })).toBeChecked()
+    const i = screen.container.querySelector('.ui-rocker-i')!
+    expect(getComputedStyle(i).color).toBe(rgb('amber'))
+
+    const changeSounds = page.getByRole('button', { name: 'Change sounds' })
+    await userEvent.hover(changeSounds)
+    await expect.poll(() => getComputedStyle(changeSounds.element()).color).toBe(rgb('amber'))
+  })
+
+  // @scenario board/session: Leave the jam
+  it("goes back to the theme's accent when you leave the jam", async () => {
+    const accent = () => ({
+      focus: getComputedStyle(document.documentElement).getPropertyValue('--focus'),
+      accent2: getComputedStyle(document.body).getPropertyValue('--accent-2'),
+    })
+    session = makeSession('Misty Yak', 'violet')
+    // The themed page without a jam: the theme's own accent.
+    const themed = await render(<Themed>{null}</Themed>)
+    const before = accent()
+    await themed.unmount()
+
+    const { screen } = await renderJam(<Console slug={SLUG} status="connected" />, session)
+    expect(accent().accent2.toLowerCase()).toBe(SWATCHES.violet[theme() as 'dark' | 'light'])
+    await screen.unmount()
+    await render(<Themed>{null}</Themed>)
+    expect(accent()).toEqual(before)
+  })
+})
+
+describe('someone else moving a control', () => {
+  let session: Session
+  let pressed = false
+  afterEach(async () => {
+    if (pressed) await commands.mouseUp()
+    pressed = false
+    endSession(session)
+  })
+
+  const misty = { id: 'misty-id', name: 'Misty Yak', color: 'coral' } as const
+  /** Misty Yak, in another browser, holding `control` of track `id`: their presence reaches this one. */
+  function mistyHolds(id: string, control: string) {
+    const theirs = new Awareness(new Y.Doc())
+    theirs.setLocalState({ person: misty, control: controlKey(id, control) })
+    applyAwarenessUpdate(
+      session.jam.awareness,
+      encodeAwarenessUpdate(theirs, [theirs.clientID]),
+      'remote',
+    )
+  }
+  const coral = () => SWATCHES.coral[theme() as 'dark' | 'light']
+
+  // @scenario ui: Watch someone turn a knob
+  it('rings a knob in their colour, names them in its bubble, and follows their value', async () => {
+    session = makeSession('Groovy Otter')
+    const id = addTrack(session, { name: 'Bassline', reverb: 0.2 })
+    await renderJam(<Mixer />, session)
+    await userEvent.click(page.getByRole('button', { name: 'Effects' }))
+    const knob = page.getByRole('slider', { name: 'Reverb of Bassline' })
+    await expect.element(knob).toHaveAttribute('aria-valuenow', '0.2')
+
+    mistyHolds(id, 'reverb')
+    expect(
+      board(session.jam.doc, { kind: 'user', id: misty.id }).track(id).set({ reverb: 0.6 }).ok,
+    ).toBe(true)
+
+    await expect.element(knob).toHaveAttribute('aria-valuenow', '0.6')
+    const wrap = knob.element().closest<HTMLElement>('.ui-knob')!
+    await expect.poll(() => wrap.classList.contains('is-held')).toBe(true)
+    expect(wrap.style.getPropertyValue('--ui-held')).toBe(coral())
+    expect(wrap.querySelector('.ui-knob-bubble')!.textContent).toBe('Misty Yak')
+    expect(Number(wrap.style.getPropertyValue('--f'))).toBeCloseTo(0.6)
+  })
+
+  // @scenario ui: Drag it too
+  it('shows your own value in the bubble while you drag a slider they hold, keeping their ring', async () => {
+    session = makeSession('Groovy Otter')
+    const id = addTrack(session, { name: 'Bassline', gain: 0.5 })
+    const { screen } = await renderJam(<Mixer />, session)
+    mistyHolds(id, 'gain')
+    const fader = () => screen.container.querySelector<HTMLElement>('.ui-fader')!
+    const bubble = () => fader().querySelector('.ui-fader-bubble')!.textContent
+    await expect.poll(bubble).toBe('Misty Yak')
+
+    const at = await commands.mouseDown('input[aria-label="Level of Bassline"]')
+    pressed = true
+    await commands.mouseMove(at.x + 20, at.y)
+    await expect.poll(() => fader().classList.contains('is-dragging')).toBe(true)
+    expect(bubble()).not.toBe('Misty Yak')
+    expect(bubble()).toBe(
+      page
+        .getByRole('slider', { name: 'Level of Bassline' })
+        .element()
+        .getAttribute('aria-valuetext'),
+    )
+    expect(fader().classList.contains('is-held')).toBe(true)
+    expect(fader().style.getPropertyValue('--ui-held')).toBe(coral())
   })
 })

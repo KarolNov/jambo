@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { apply } from '../../shared/board'
 import { PAUSED_MESSAGES, UPLOADS } from '../../shared/sounds'
+import { encodeWav } from '../../shared/wav'
 import { Deck } from '../../src/board/console/Deck'
 import { Mixer } from '../../src/board/console/Mixer'
 import type { Session } from '../../src/board/session'
@@ -171,5 +172,32 @@ describe('Change sounds', () => {
     await expect
       .element(page.getByRole('option', { name: 'Upload a sound…' }))
       .not.toBeInTheDocument()
+  })
+
+  // @scenario audio/sounds: Paused mid-upload
+  it('says why an upload was refused when the budget just ran out, and disables uploading', async () => {
+    let spent = false
+    mockServer((url, init) => {
+      if (url.endsWith('/api/sounds/status'))
+        return Response.json({ uploads: spent ? 'writes' : 'open', reads: 'open' })
+      if (url.endsWith(`/api/jams/${SLUG}/sounds`) && init?.method === 'POST') {
+        spent = true
+        return Response.json({ error: PAUSED_MESSAGES.writes }, { status: 503 })
+      }
+    })
+    await refreshBudget()
+    await renderJam(<Deck slug={SLUG} />, session)
+    await openChangeSounds()
+    const uploadButton = uploads().getByRole('button', { name: 'Upload a sound…' })
+    await expect.element(uploadButton).toBeEnabled()
+
+    const wav = encodeWav(new Float32Array(UPLOADS.sampleRate / 2).fill(0.25), UPLOADS.sampleRate)
+    const input = page.elementLocator(document.querySelector('input[type="file"]')!)
+    await userEvent.upload(input, new File([wav], 'vox.wav', { type: 'audio/wav' }))
+    const dialog = page.getByRole('form', { name: 'Upload a sound' })
+    await userEvent.click(dialog.getByRole('button', { name: 'Upload', exact: true }))
+
+    await expect.element(dialog.getByRole('alert')).toHaveTextContent(PAUSED_MESSAGES.writes)
+    await expect.element(uploadButton).toBeDisabled()
   })
 })
