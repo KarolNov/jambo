@@ -37,6 +37,7 @@ describe('api', () => {
 })
 
 describe('pages', () => {
+  // @scenario collab/jams: Old docs link
   it.each(['/docs', '/docs/'])('redirects %s to /about', async (path) => {
     const res = await fetchApp(path, { redirect: 'manual' })
     expect(res.status).toBe(301)
@@ -45,10 +46,12 @@ describe('pages', () => {
 })
 
 describe('malformed jam links', () => {
+  // @scenario collab/jams: Bad slug
   it('serves not found for a malformed jam page', async () => {
     expect((await fetchApp('/jam/not-a-slug')).status).toBe(404)
   })
 
+  // @scenario collab/jams: Bad slug
   it('refuses a board connection for a malformed slug, creating no board', async () => {
     const res = await fetchApp(boardPath('not-a-slug'), { headers: { Upgrade: 'websocket' } })
     expect(res.status).toBe(404)
@@ -57,6 +60,7 @@ describe('malformed jam links', () => {
     expect(ids.find((id) => id.equals(env.Board.idFromName('not-a-slug')))).toBeUndefined()
   })
 
+  // @scenario collab/room: Plain request
   it('refuses parties other than board', async () => {
     const res = await fetchApp('/parties/other/funky-otter-k7q2', {
       headers: { Upgrade: 'websocket' },
@@ -64,6 +68,7 @@ describe('malformed jam links', () => {
     expect(res.status).toBe(404)
   })
 
+  // @scenario collab/room: Plain request
   it('refuses plain HTTP requests to a board', async () => {
     expect((await fetchApp(boardPath('funky-otter-k7q2'))).status).toBe(404)
   })
@@ -77,6 +82,7 @@ describe('board party name', () => {
 })
 
 describe('room', () => {
+  // @scenario collab/room: Two people edit
   it('syncs edits between two clients of the same jam, keeping concurrent edits', async () => {
     const a = await connectBoard('funky-otter-aaaa')
     const b = await connectBoard('funky-otter-aaaa')
@@ -91,6 +97,7 @@ describe('room', () => {
     b.close()
   })
 
+  // @scenario collab/room: Two jams
   it('keeps jams isolated', async () => {
     const a = await connectBoard('jazzy-panda-bbbb')
     const b = await connectBoard('jazzy-tuba-cccc')
@@ -103,6 +110,8 @@ describe('room', () => {
     probe.close()
   })
 
+  // @scenario collab/room: Come back later
+  // @scenario collab/room: Server restart
   it('keeps the board after everyone leaves and the Durable Object restarts', async () => {
     const slug = 'mellow-whale-dddd'
     const a = await connectBoard(slug)
@@ -152,6 +161,7 @@ describe('looper board', () => {
   const loops = (doc: Y.Doc) =>
     [...doc.getMap<Y.Map<unknown>>(ROOTS.tracks).values()].map((t) => t.get('name')).sort()
 
+  // @scenario collab/room: First open
   it('starts a new jam with the default tempo and 16 pads', async () => {
     const a = await connectBoard('sunny-bongo-eeee')
     expect(a.doc.getMap(ROOTS.meta).get('bpm')).toBe(100)
@@ -159,6 +169,7 @@ describe('looper board', () => {
     a.close()
   })
 
+  // @scenario audio/looper: Mute someone's loop
   it('keeps loops two people record at the same time, and syncs controls', async () => {
     const a = await connectBoard('sunny-bongo-ffff')
     const b = await connectBoard('sunny-bongo-ffff')
@@ -175,6 +186,7 @@ describe('looper board', () => {
 })
 
 describe('jam clock', () => {
+  // @scenario collab/room: Clock request
   it('answers a ping, to the pinging client alone, with its timestamp and the room time', async () => {
     const a = await connectBoard('groovy-otter-gggg')
     const b = await connectBoard('groovy-otter-gggg')
@@ -208,6 +220,7 @@ describe('seats', () => {
     return c
   }
 
+  // @scenario collab/room: Shared usual name and colour
   it('seats people who share a usual name and colour with different ones', async () => {
     const a = await join('groovy-otter-mmmm', 'a')
     const b = await join('groovy-otter-mmmm', 'b')
@@ -219,6 +232,7 @@ describe('seats', () => {
     for (const x of [a, b, c]) x.close()
   })
 
+  // @scenario collab/room: Second tab
   it('gives a second tab the name and colour the person already has', async () => {
     const a = await join('groovy-otter-nnnn', 'a')
     const b = await join('groovy-otter-nnnn', 'b')
@@ -227,6 +241,7 @@ describe('seats', () => {
     for (const x of [a, b, b2]) x.close()
   })
 
+  // @scenario collab/room: Someone leaves
   it('frees a name and colour when their person leaves', async () => {
     const a = await join('groovy-otter-pppp', 'a')
     a.close()
@@ -241,6 +256,7 @@ describe('presence', () => {
   const people = (awareness: { getStates: () => Map<number, Record<string, unknown>> }) =>
     [...awareness.getStates().values()].map((s) => (s.person as { id?: string } | undefined)?.id)
 
+  // @scenario collab/room: Leave
   it('passes presence to everyone in the jam, and drops it when a client disconnects', async () => {
     const a = await connectBoard('groovy-panda-hhhh')
     const b = await connectBoard('groovy-panda-hhhh')

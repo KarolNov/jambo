@@ -95,6 +95,7 @@ describe('run limits', () => {
 })
 
 describe('snapshot', () => {
+  // @scenario collab/agent: Read tracks
   it('holds tempo, pads, kit and uploads, readable tracks and who is here', () => {
     const doc = new Y.Doc()
     seedBoard(doc)
@@ -148,6 +149,7 @@ describe('prepare', () => {
   let n = 0
   const mint = () => `minted-${n++}`
 
+  // @scenario collab/agent: Posing as someone
   it('stamps the agent on an added track, whatever the agent sent', () => {
     n = 0
     const [p] = prepare(

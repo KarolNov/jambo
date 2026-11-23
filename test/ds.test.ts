@@ -37,6 +37,7 @@ describe('the design system', () => {
     expect(types).toContain('ButtonProps')
   })
 
+  // @scenario ui: Browse the controls
   it('has a /ds catalogue entry for every src/ui component, and none for anything else', () => {
     expect(entries.toSorted()).toEqual(values.toSorted())
   })

@@ -3,6 +3,7 @@ import { fraction, LEDS, litFraction, notch, notchCount, snap, stepBy } from '..
 import { tickGate } from '../src/ui/hapticGate'
 
 describe('fader detent', () => {
+  // @scenario ui: Find unity
   it('snaps a drag that lands within 0.04 of the detent', () => {
     expect(snap(0.98, 1)).toBe(1)
     expect(snap(1.03, 1)).toBe(1)
@@ -16,6 +17,7 @@ describe('fader detent', () => {
 })
 
 describe('fader keys', () => {
+  // @scenario ui: Leave unity by key
   it('steps on the key grid, landing exactly on unity', () => {
     expect(stepBy(0.95, 1, 0.05, 0, 1.5)).toBe(1)
     expect(stepBy(1, 1, 0.05, 0, 1.5)).toBe(1.05)
@@ -46,6 +48,7 @@ describe('fader lights', () => {
     expect(fraction(-1, 0, 1.5)).toBe(0)
   })
 
+  // @scenario ui: Segmented knob
   it('lights whole LEDs, each from its middle', () => {
     expect(litFraction(0)).toBe(0)
     expect(litFraction(1)).toBe(1)
@@ -74,6 +77,7 @@ describe('fader notches', () => {
 })
 
 describe('haptic throttle', () => {
+  // @scenario ui: Fast drag
   it('drops steps closer together than the gap, without moving the clock', () => {
     const gate = tickGate({ step: 45 })
     expect(gate('step', 0)).toBe(true)

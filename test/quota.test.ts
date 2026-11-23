@@ -65,6 +65,7 @@ describe('the sound budget', () => {
     expect(await usage()).toMatchObject({ bytes: 0, classA: 1 })
   })
 
+  // @scenario collab/room: Storage full
   it('pauses uploads when storage is nearly full, and says why', async () => {
     await setUsage({ bytes: budget.bytes - UPLOADS.maxBytes + 1, classA: 0 })
     expect(await status()).toEqual({ uploads: 'storage', reads: 'open' })
@@ -84,6 +85,7 @@ describe('the sound budget', () => {
     })
   })
 
+  // @scenario collab/room: New month
   it('starts each month with fresh operations but keeps stored bytes', async () => {
     await setUsage({ month: '2000-01', bytes: 1234, classA: budget.classA, classB: budget.classB })
     expect(await status()).toEqual({ uploads: 'open', reads: 'open' })

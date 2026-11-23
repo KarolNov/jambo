@@ -12,10 +12,12 @@ import {
 const h = (beat: number, padId = 'r0c0') => ({ padId, beat })
 
 describe('finishTake', () => {
+  // @scenario audio/looper: Stop mid-bar
   it('rounds a take stopped mid-bar up to whole bars', () => {
     expect(finishTake([h(0)], 2.3 * 4)?.bars).toBe(3)
   })
 
+  // @scenario audio/looper: Slightly late stop
   it('treats a stop just after a bar line as on it', () => {
     expect(finishTake([h(0)], 2.05 * 4)?.bars).toBe(2)
   })
@@ -24,16 +26,19 @@ describe('finishTake', () => {
     expect(finishTake([h(0.5)], 0.4)?.bars).toBe(1)
   })
 
+  // @scenario audio/looper: Nothing played
   it('discards an empty take', () => {
     expect(finishTake([], 8)).toBeNull()
   })
 
+  // @scenario audio/looper: Slightly early first hit
   it('keeps hits a hair early as the first beat and drops ones outside the loop', () => {
     expect(finishTake([h(-0.1), h(-1), h(3.9), h(4.2)], 4.1)?.hits).toEqual([h(0), h(3.9)])
   })
 })
 
 describe('playBeat', () => {
+  // @scenario audio/looper: Slightly late hit
   it('snaps a slightly late hit to the sixteenth grid', () => {
     expect(playBeat(1.06, 0.25, 4)).toBe(1)
   })
@@ -79,6 +84,7 @@ describe('jam grid', () => {
     expect(barStart(5, 120)).toBe(10_000)
   })
 
+  // @scenario audio/looper: Nothing looping
   it('finds the next bar, or the time itself on a bar line', () => {
     expect(nextJamBar(3000, 120)).toBe(2)
     expect(nextJamBar(4000, 120)).toBe(2)
@@ -107,6 +113,7 @@ describe('jam grid', () => {
     expect(trackStart({}, 120)).toBe(0)
   })
 
+  // @scenario audio/looper: Join a playing jam
   it('puts two clients on the same downbeat for a track from any time they join', () => {
     const track = { bars: 2, hits: [h(0)], quantize: 0.25, startBar: 3 }
     const start = trackStart(track, 120) / 1000

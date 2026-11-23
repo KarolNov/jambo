@@ -57,6 +57,7 @@ const KNOBS = ['reverb', 'echo', 'tone', 'pitch', 'pan']
 const OPS = ['setTempo', 'assignPad', 'replaceSound', 'addTrack', 'setTrack', 'removeTrack']
 
 describe('the MCP server', () => {
+  // @scenario collab/agent: Client without the skill
   it('offers join, run and leave, and describes the jam and every operation', async () => {
     const ip = newAddress()
     const init = await rpc(
@@ -80,11 +81,16 @@ describe('the MCP server', () => {
     for (const knob of KNOBS) expect(runSchema).toContain(`"${knob}"`)
   })
 
+  // @scenario collab/agent: Bad jam
   it('refuses a jam that is not one', async () => {
     const out = await call('join', { jam: 'not a jam' })
     expect(out).toEqual({ isError: true, body: { error: '"not a jam" is not a jam link' } })
   })
 
+  // @scenario collab/agent: Link as key
+  // @scenario collab/agent: First action
+  // @scenario collab/agent: Auto join
+  // @scenario collab/agent: Leave
   it('runs operations on the jam a full URL names; everyone sees the change and the agent', async () => {
     const slug = 'funky-otter-mc02'
     const person = await connectBoard(slug)
@@ -137,6 +143,7 @@ describe('the MCP server', () => {
     person.close()
   })
 
+  // @scenario collab/agent: Malformed run
   it('applies nothing when an operation is one agents cannot send', async () => {
     const slug = 'funky-otter-mc03'
     expect(
@@ -151,6 +158,7 @@ describe('the MCP server', () => {
     person.close()
   })
 
+  // @scenario collab/agent: Too many operations
   it('refuses a run of more than 64 operations', async () => {
     const slug = 'funky-otter-mc09'
     const ops = Array.from({ length: 65 }, () => ({ op: 'setTempo', bpm: 120 }))
@@ -160,6 +168,7 @@ describe('the MCP server', () => {
     person.close()
   })
 
+  // @scenario collab/agent: No summary
   it('refuses a run without a summary', async () => {
     const slug = 'funky-otter-mc04'
     const out = await call('run', { jam: slug, summary: '', ops: [{ op: 'setTempo', bpm: 120 }] })
@@ -169,6 +178,7 @@ describe('the MCP server', () => {
     person.close()
   })
 
+  // @scenario collab/agent: Fourth from one address
   it('seats at most 3 agents from one address; a key gets back in', async () => {
     const ip = newAddress()
     const jam = 'funky-otter-mc07'
@@ -181,6 +191,7 @@ describe('the MCP server', () => {
     expect((await call('join', { jam })).isError).toBe(false)
   })
 
+  // @scenario collab/agent: 21st call
   it('refuses the 21st call from one address within a minute', async () => {
     const ip = newAddress()
     let agentKey: string | undefined
@@ -236,6 +247,7 @@ function stereoWav() {
 }
 
 describe('agent uploads', () => {
+  // @scenario collab/agent: Upload
   it('uploads a WAV the agent is author of, which a run can put on a pad', async () => {
     const slug = 'funky-otter-mc06'
     const person = await connectBoard(slug)
@@ -264,6 +276,7 @@ describe('agent uploads', () => {
     person.close()
   })
 
+  // @scenario collab/agent: WAV from ffmpeg
   it('takes a WAV with extra chunks, as base64url wrapped in CRLF lines', async () => {
     // What ffmpeg writes: a LIST chunk between fmt and data.
     const plain = monoWav(1)
@@ -306,6 +319,7 @@ describe('agent uploads', () => {
     )
   })
 
+  // @scenario collab/agent: Wrong format
   it('refuses a stereo WAV and stores nothing', async () => {
     const slug = 'funky-otter-mc10'
     const out = await call('upload_sound', {

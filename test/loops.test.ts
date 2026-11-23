@@ -45,6 +45,7 @@ describe('the mixer', () => {
     expect(read('pan', 0.3)).toBe('R 30')
   })
 
+  // @scenario audio/looper: Changed loop at a glance
   it('marks a loop whose sound is away from the defaults', () => {
     expect(soundChanged({})).toBe(false)
     expect(soundChanged({ reverb: 0, pitch: 0 })).toBe(false)

@@ -50,6 +50,7 @@ const ageAgents = (slug: string) =>
   })
 
 describe('agents in the room', () => {
+  // @scenario collab/agent: First action
   it('seats an agent with a key, an adjective-and-kind name and a public id', async () => {
     const r = await room('funky-otter-ag01')
     const a = await seated(r, { kind: 'Claude' })
@@ -61,6 +62,7 @@ describe('agents in the room', () => {
     expect(again).toMatchObject({ id: a.id, name: a.name, color: a.color })
   })
 
+  // @scenario collab/agent: Two Claudes
   it('gives two Claudes asking for one name different names', async () => {
     const r = await room('funky-otter-ag02')
     const a = await seated(r, { kind: 'Claude', name: 'Groovy Claude', color: 'sky' })
@@ -88,12 +90,15 @@ describe('agents in the room', () => {
     expect(b.kind).toBe('Agent')
   })
 
+  // @scenario collab/agent: Person-style name
   it('keeps an agent from taking a person-style name', async () => {
     const r = await room('funky-otter-ag03')
     const a = await seated(r, { kind: 'Claude', name: 'Groovy Otter' })
     expect(a.name).toMatch(/^[A-Z][a-z]+ Claude$/)
   })
 
+  // @scenario collab/agent: Key stays private
+  // @scenario collab/room: Late joiner
   it('shows the agent to everyone, late joiners too, without its key', async () => {
     const slug = 'funky-otter-ag04'
     const early = await connectBoard(slug)
@@ -113,6 +118,7 @@ describe('agents in the room', () => {
     late.close()
   })
 
+  // @scenario collab/agent: Leave
   it('takes an agent out when it leaves', async () => {
     const slug = 'funky-otter-ag05'
     const client = await connectBoard(slug)
@@ -124,6 +130,7 @@ describe('agents in the room', () => {
     client.close()
   })
 
+  // @scenario collab/agent: Idle
   it('removes an idle agent on the alarm, even with nobody connected', async () => {
     const slug = 'funky-otter-ag06'
     const r = await room(slug)
@@ -153,6 +160,8 @@ describe('agents in the room', () => {
 })
 
 describe('agent seats and people', () => {
+  // @scenario collab/room: Agent holds a colour
+  // @scenario collab/room: Agent idles out
   it('gives a person another colour while an agent holds theirs, and theirs once it idles out', async () => {
     const slug = 'funky-otter-ag08'
     const r = await room(slug)
@@ -192,6 +201,7 @@ async function idleOut(slug: string) {
 }
 
 describe('agents coming back', () => {
+  // @scenario collab/agent: Back after idling out
   it('comes back after idling out with its kind, name and colour, asking for none', async () => {
     const slug = 'funky-otter-ag22'
     const r = await room(slug)
@@ -214,6 +224,7 @@ describe('agents coming back', () => {
     })
   })
 
+  // @scenario collab/agent: Name taken meanwhile
   it("is the agent's key, not its name, that brings an identity back", async () => {
     const slug = 'funky-otter-ag24'
     const r = await room(slug)
@@ -229,6 +240,7 @@ describe('agents coming back', () => {
     expect(back.color).not.toBe('amber')
   })
 
+  // @scenario collab/agent: Gone too long
   it('keeps no key in storage, and forgets an agent gone too long', async () => {
     const slug = 'funky-otter-ag25'
     const r = await room(slug)
@@ -258,6 +270,7 @@ describe('agents coming back', () => {
 })
 
 describe('agents changing how they look', () => {
+  // @scenario collab/agent: Rename while here
   it('takes a free name and colour it asks for while here, but not one in use', async () => {
     const r = await room('funky-otter-ag27')
     const a = await seated(r, { kind: 'Claude', name: 'Twangy Claude', color: 'coral' })
@@ -286,6 +299,7 @@ describe('agents changing how they look', () => {
 })
 
 describe('agent caps', () => {
+  // @scenario collab/agent: Fourth from one address
   it('seats at most perAddress agents from one address, and any number of returns', async () => {
     const r = await room('funky-otter-ag15')
     const first = await seated(r, { kind: 'Claude', from: 'a' })
@@ -325,6 +339,7 @@ describe('agent runs', () => {
     effects: [],
   })
 
+  // @scenario collab/agent: Beat with one bad op
   it('applies a run as one change, with one result per operation', async () => {
     const slug = 'funky-otter-ag10'
     const client = await connectBoard(slug)
@@ -352,6 +367,8 @@ describe('agent runs', () => {
     client.close()
   })
 
+  // @scenario collab/agent: Posing as someone
+  // @scenario collab/agent: Key stays private
   it('stamps the agent on what it adds, whatever the agent sends', async () => {
     const slug = 'funky-otter-ag11'
     const r = await room(slug)
@@ -370,6 +387,7 @@ describe('agent runs', () => {
     client.close()
   })
 
+  // @scenario collab/agent: Remove someone's track
   it('can remove a track a person recorded, but not touch uploads', async () => {
     const slug = 'funky-otter-ag12'
     const client = await connectBoard(slug)
@@ -390,6 +408,7 @@ describe('agent runs', () => {
     client.close()
   })
 
+  // @scenario collab/agent: Too many operations
   it('refuses a run with no operations or more than 64', async () => {
     const r = await room('funky-otter-ag14')
     const error = { error: 'A run holds 1 to 64 operations' }
@@ -398,6 +417,7 @@ describe('agent runs', () => {
     expect((await r.snapshot()).tracks).toEqual([])
   })
 
+  // @scenario collab/agent: No summary
   it('refuses a run without a summary', async () => {
     const r = await room('funky-otter-ag13')
     expect(await r.runAgentOps({ kind: 'Claude' }, [beat], ' ')).toEqual({

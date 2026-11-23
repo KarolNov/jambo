@@ -3,6 +3,8 @@ import { COLOR_NAMES } from '../shared/colors'
 import { contrast, cssVar, resolveTheme, SWATCHES, THEMES, TOKENS } from '../src/theme/palette'
 
 describe('theme choice', () => {
+  // @scenario ui: First visit
+  // @scenario ui: Pick a theme
   it("shows the theme this browser picked, else the system's", () => {
     expect(resolveTheme('dark', false)).toBe('dark')
     expect(resolveTheme('light', true)).toBe('light')

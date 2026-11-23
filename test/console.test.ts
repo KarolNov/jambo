@@ -4,6 +4,7 @@ import { byAgent, namesPeople, personName, uploadedBy } from '../src/board/conso
 import { TEMPO_RANGE, takeMarks, takeName, takeView, tempoFor } from '../src/board/transport'
 
 describe('naming a take', () => {
+  // @scenario audio/looper: A name passed on
   it("is the recorder's name and the next number after the jam's takes with it", () => {
     const tracks = [{ name: 'Groovy Otter 1' }, { name: 'Misty Yak 1' }, { name: 'Groovy Otter 2' }]
     expect(takeName('Groovy Otter', tracks)).toBe('Groovy Otter 3')
@@ -19,6 +20,7 @@ describe('naming a take', () => {
 })
 
 describe('the take lane', () => {
+  // @scenario audio/looper: Count along
   it('waits, then counts the count-in bar 1 to 4', () => {
     expect(takeView(-6)).toEqual({ stage: 'waiting' })
     expect(takeView(-4)).toEqual({ stage: 'count-in', count: 1 })
@@ -26,6 +28,7 @@ describe('the take lane', () => {
     expect(takeView(-0.01)).toEqual({ stage: 'count-in', count: 4 })
   })
 
+  // @scenario audio/looper: Count along
   it('shows the bar and beat recorded, on a lane that grows a bar at a time', () => {
     expect(takeView(0)).toEqual({ stage: 'recording', bar: 1, beat: 1, bars: 1 })
     expect(takeView(3.9)).toEqual({ stage: 'recording', bar: 1, beat: 4, bars: 1 })
@@ -37,6 +40,7 @@ describe('the take lane', () => {
     expect(view).toMatchObject({ bar: LIMITS.bars + 1, bars: LIMITS.bars })
   })
 
+  // @scenario audio/looper: See where a hit lands
   it('puts hits where they will play: snapped to 1/16, an early one on the first beat', () => {
     const hits = [
       { padId: 'a', beat: -0.2 },
@@ -65,6 +69,7 @@ describe('typing a tempo', () => {
     expect(tempoFor(120, 100)).toEqual({ bpm: 120, clamped: false })
   })
 
+  // @scenario audio/looper: Out of range
   it('holds the tempo to its range and says so', () => {
     expect(tempoFor(300, 100)).toEqual({ bpm: BPM.max, clamped: true })
     expect(tempoFor(5, 100)).toEqual({ bpm: BPM.min, clamped: true })
@@ -78,6 +83,7 @@ describe('typing a tempo', () => {
 })
 
 describe("who's here", () => {
+  // @scenario board/session: Crowded jam
   it('names people while there are three or fewer, then shows only dots', () => {
     expect(namesPeople(1)).toBe(true)
     expect(namesPeople(3)).toBe(true)
@@ -97,6 +103,7 @@ describe("who's here", () => {
 })
 
 describe('uploaded sounds', () => {
+  // @scenario board/pads: Who uploaded it
   it('say who uploaded them', () => {
     expect(uploadedBy({ author: 'them', authorName: 'Misty Yak', color: 'coral' }, 'me')).toBe(
       'Uploaded by Misty Yak',
@@ -106,18 +113,21 @@ describe('uploaded sounds', () => {
     )
   })
 
+  // @scenario board/session: Agent upload
   it('uploaded by an agent name the agent', () => {
     const sound = { author: 'agent:a1', authorName: 'Groovy Claude', color: 'sky' } as const
     expect(uploadedBy(sound, 'me')).toBe('Uploaded by Groovy Claude')
     expect(byAgent(sound)).toBe(true)
   })
 
+  // @scenario board/pads: Who uploaded it
   it('uploaded before names say the colour', () => {
     expect(uploadedBy({ author: 'them', color: 'coral' }, 'me')).toBe('Uploaded by Coral')
   })
 })
 
 describe('agent loops', () => {
+  // @scenario board/session: Agent beat
   it('are marked; loops people recorded are not', () => {
     expect(byAgent({ author: 'agent:a1' })).toBe(true)
     expect(byAgent({ author: 'p1' })).toBe(false)

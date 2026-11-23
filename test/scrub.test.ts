@@ -6,6 +6,7 @@ const tempo: ScrubRange = { min: 40, max: 240, step: 1, pixelsPerStep: 4 }
 const level: ScrubRange = { min: 0, max: 1, step: 0.01, pixelsPerStep: 2 }
 
 describe('scrub steps', () => {
+  // @scenario ui: Scrub up
   it('raises the value one step per few pixels to the right', () => {
     expect(scrubMove({ base: 100, at: 0 }, 40, false, tempo).value).toBe(110)
     expect(scrubMove({ base: 100, at: 0 }, -40, false, tempo).value).toBe(90)
@@ -114,6 +115,7 @@ describe('a live drag', () => {
     return { drag, applied, tick, peer, board: () => board }
   }
 
+  // @scenario ui: Live knob
   it('applies at most one value a frame, the latest', () => {
     const { drag, applied, tick } = setup(0)
     drag.move(0.1)
@@ -127,6 +129,7 @@ describe('a live drag', () => {
     expect(applied).toEqual([0.3, 0.4])
   })
 
+  // @scenario ui: Live knob
   it('applies the last value on release if its frame had not come yet', () => {
     const { drag, applied, tick } = setup(0)
     drag.move(0.2)
@@ -145,6 +148,7 @@ describe('a live drag', () => {
     expect(applied).toEqual([0.6])
   })
 
+  // @scenario ui: Turn and cancel
   it('puts the start value back when cancelled after applying', () => {
     const { drag, applied, tick } = setup(0.5)
     drag.move(0.7)
