@@ -24,6 +24,7 @@ describe('assigning a colour', () => {
     expect(assignColor([seat('a', 'sky'), seat('b', 'teal')], 'me', 'sky')).toBe('coral')
   })
 
+  // @scenario collab/room: Second tab
   it('gives the colour you already have in another tab', () => {
     expect(assignColor([seat('a', 'sky'), seat('me', 'teal')], 'me', 'sky')).toBe('teal')
   })
@@ -34,6 +35,7 @@ describe('assigning a colour', () => {
     expect(assignColor([...others, seat('p0', 'coral')], 'me', 'sky')).toBe('teal')
   })
 
+  // @scenario collab/room: Nine people
   it('past eight people, gives the least used colour, yours on a tie', () => {
     const full = COLOR_NAMES.map((c, i) => seat(`p${i}`, c))
     expect(assignColor(full, 'me', 'sky')).toBe('sky')
@@ -66,10 +68,12 @@ describe('assigning a name', () => {
     expect(assignName(others, 'me', 'Groovy Otter', () => 'Groovy Otter')).not.toBe('Groovy Otter')
   })
 
+  // @scenario collab/room: Second tab
   it('gives the name you already have in another tab', () => {
     expect(assignName([{ id: 'me', name: 'Misty Yak' }], 'me', 'Groovy Otter')).toBe('Misty Yak')
   })
 
+  // @scenario collab/room: Nine people
   it('never repeats a name, even when colours have to', () => {
     const others = COLOR_NAMES.map((c, i) => ({ id: `p${i}`, name: `Name ${i}`, color: c }))
     const mine = assignSeat(

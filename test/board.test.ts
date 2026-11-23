@@ -114,6 +114,7 @@ describe('apply', () => {
     expect(result?.ok).toBe(false)
   })
 
+  // @scenario board/session: One bad operation in a batch
   it('rejects a bad operation and still applies the rest of the batch', () => {
     const doc = seededDoc()
     apply(doc, [{ op: 'addTrack', id: 't1', track: track() }], me)
@@ -131,6 +132,8 @@ describe('apply', () => {
     expect(v(readTrack(doc, 't1'))?.gain).toBe(1)
   })
 
+  // @scenario board/ops: Hit outside the loop
+  // @scenario board/ops: Remove a missing track
   it.each([
     ['unknown op', { op: 'explode' }],
     [
@@ -153,6 +156,7 @@ describe('apply', () => {
     expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
   })
 
+  // @scenario board/ops: Locked
   it('locks the tempo while the jam has tracks', () => {
     const doc = seededDoc()
     apply(doc, [{ op: 'addTrack', id: 't1', track: track() }], me)
@@ -163,6 +167,7 @@ describe('apply', () => {
     })
   })
 
+  // @scenario board/ops: Unreadable track
   it('does not let unreadable tracks lock the tempo', () => {
     const doc = seededDoc()
     const legacy = new Y.Map<unknown>()
@@ -171,6 +176,7 @@ describe('apply', () => {
     expect(apply(doc, [{ op: 'setTempo', bpm: 90 }], me)).toEqual([{ ok: true }])
   })
 
+  // @scenario board/ops: Batch with origin
   it('writes a batch as one transaction tagged with its origin', () => {
     const doc = seededDoc()
     const origins: unknown[] = []
@@ -187,6 +193,7 @@ describe('apply', () => {
     expect(origins).toEqual([me])
   })
 
+  // @scenario board/ops: Replay
   it('replays the same operations to the same board', () => {
     const ops: Op[] = [
       { op: 'setTempo', bpm: 90 },
@@ -205,6 +212,7 @@ describe('apply', () => {
 })
 
 describe('sound knobs', () => {
+  // @scenario audio/looper: Older jam
   it('reads a track without knobs at the defaults, so older jams sound the same', () => {
     const doc = seededDoc()
     apply(doc, [{ op: 'addTrack', id: 't1', track: track() }], me)
@@ -227,6 +235,7 @@ describe('sound knobs', () => {
     expect(soundOf(t)).toEqual({ reverb: 0, echo: 0.4, tone: 0, pitch: 0, pan: 0.5 })
   })
 
+  // @scenario board/ops: Set sound knobs
   it('sets knobs and leaves the other settings as they were', () => {
     const doc = seededDoc()
     apply(doc, [{ op: 'addTrack', id: 't1', track: track({ gain: 0.8, tone: -0.4 }) }], me)
@@ -254,6 +263,7 @@ describe('sound knobs', () => {
     }
   })
 
+  // @scenario board/ops: Pitch out of range
   it.each([
     ['reverb', -0.1],
     ['reverb', 1.1],
@@ -332,6 +342,7 @@ describe('upload ids', () => {
 describe('uploaded sounds', () => {
   const id = 'u-abcdefgh2345'
 
+  // @scenario board/ops: Upload
   it('lists an upload, which a pad can then play', () => {
     const doc = seededDoc()
     const results = apply(
@@ -373,6 +384,7 @@ describe('uploaded sounds', () => {
     expect(padSound(doc, 'r0c0')).toBe('kick')
   })
 
+  // @scenario board/ops: Kit id
   it.each(['kick', 'u-short', 'U-ABCDEFGH2345'])(
     'refuses to list an upload with the id %s',
     (bad) => {
@@ -409,6 +421,8 @@ describe('uploaded sounds', () => {
     expect(results.at(-1)?.ok).toBe(false)
   })
 
+  // @scenario audio/sounds: In use
+  // @scenario board/ops: Remove in use
   it('refuses to remove an upload a pad uses, naming the pads', () => {
     const doc = twoPadDoc()
     apply(
@@ -487,6 +501,7 @@ describe('uploaded sounds', () => {
     expect(board(doc, me).replaceSound('u-unusedunused', id).ok).toBe(false)
   })
 
+  // @scenario board/ops: Not the room
   it('lets only the room change the uploads list', () => {
     const doc = seededDoc()
     apply(doc, [{ op: 'addSound', id, sound: sound() }], room)

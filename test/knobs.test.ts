@@ -39,6 +39,7 @@ describe('pitchRate', () => {
     expect(pitchRate(0)).toBe(1)
   })
 
+  // @scenario audio/looper: An octave up
   it('doubles an octave up and halves an octave down', () => {
     expect(pitchRate(12)).toBe(2)
     expect(pitchRate(-12)).toBe(0.5)
@@ -50,6 +51,7 @@ describe('pitchRate', () => {
 })
 
 describe('echoSeconds', () => {
+  // @scenario audio/looper: Echo in time
   it('repeats on a dotted eighth: 375 ms at 120 BPM', () => {
     expect(echoSeconds(120)).toBeCloseTo(0.375)
   })

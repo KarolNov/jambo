@@ -12,6 +12,7 @@ describe('sharing a jam', () => {
     )
   })
 
+  // @scenario board/session: Share sheet
   it('uses the share sheet when there is one', async () => {
     const seen: unknown[] = []
     const share = async (d: unknown) => void seen.push(d)
@@ -26,11 +27,13 @@ describe('sharing a jam', () => {
     expect(copied).toBe(false)
   })
 
+  // @scenario board/session: Copy link
   it('copies the link when there is no share sheet, or it fails', async () => {
     expect(await shareLink('u', 't', { copy: ok })).toBe('copied')
     expect(await shareLink('u', 't', { share: boom, copy: ok })).toBe('copied')
   })
 
+  // @scenario board/session: Copy fails
   it('reports a failed copy', async () => {
     expect(await shareLink('u', 't', { copy: boom })).toBe('failed')
     expect(await shareLink('u', 't', {})).toBe('failed')

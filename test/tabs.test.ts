@@ -9,11 +9,13 @@ describe('folder tabs fitting their strip', () => {
     expect(visibleTabs(W, 0, 420 + 5 * TAB_GAP, MORE)).toEqual([0, 1, 2, 3, 4, 5])
   })
 
+  // @scenario ui: Phone
   it('shows as many of the first tabs as fit beside "+N"', () => {
     // 60 + 100 + 80 + 2 gaps = 252, + gap + 40 = 298
     expect(visibleTabs(W, 0, 300, MORE)).toEqual([0, 1, 2])
   })
 
+  // @scenario ui: Pick from +N
   it('keeps the selected tab in view, in place of the last one that fits', () => {
     expect(visibleTabs(W, 4, 300, MORE)).toEqual([0, 1, 4])
   })

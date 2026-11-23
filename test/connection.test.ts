@@ -11,11 +11,13 @@ describe('connectionStatus', () => {
     expect(connectionStatus('disconnected', false, true)).toBe('connecting')
   })
 
+  // @scenario board/session: Connection drops
   it('is reconnecting after a drop, between tries too, not offline', () => {
     expect(connectionStatus('disconnected', true, true)).toBe('reconnecting')
     expect(connectionStatus('connecting', true, true)).toBe('reconnecting')
   })
 
+  // @scenario board/session: No network
   it('is offline while the browser has no network, whatever the socket says', () => {
     expect(connectionStatus('connecting', true, false)).toBe('offline')
     expect(connectionStatus('connected', true, false)).toBe('offline')

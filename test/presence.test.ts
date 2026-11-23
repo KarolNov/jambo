@@ -14,6 +14,7 @@ const me = { id: 'me', color: 'teal' } as const
 const coral = { id: 'c', color: 'coral' } as const
 
 describe('listPeople', () => {
+  // @scenario board/session: Two tabs
   it('lists you first, then everyone else once per identity', () => {
     const states = [{ person: coral }, { person: me }, { person: coral }, { person: me }]
     expect(listPeople(states, me)).toEqual([me, coral])
@@ -55,6 +56,7 @@ describe('agents', () => {
     ],
   }
 
+  // @scenario board/session: An agent joins
   it('lists the agents the room publishes after people, marked as agents', () => {
     expect(listPeople([room, { person: coral }], me)).toEqual([
       me,
@@ -68,6 +70,7 @@ describe('agents', () => {
     expect(listPeople([room, room], me).map((p) => p.id)).toEqual([me.id, 'agent:a1', 'agent:a2'])
   })
 
+  // @scenario board/session: Browser posing as an agent
   it('takes agents only from the room, and no person as an agent', () => {
     const spoof = { person: coral, agents: [{ id: 'x', name: 'Evil Claude', color: 'sky' }] }
     const fake = { person: { id: 'agent:a1', name: 'Evil Claude', color: 'sky' } }
@@ -107,6 +110,7 @@ describe('joinPresence', () => {
 describe('listHolders', () => {
   const knob = controlKey('t1', 'reverb')
 
+  // @scenario board/session: Someone turns the reverb
   it('names who else is turning each control', () => {
     const states = [{ person: coral, control: knob }, { person: { id: 'x', color: 'sky' } }]
     expect(listHolders(states, me.id)).toEqual(new Map([[knob, coral]]))
@@ -140,6 +144,7 @@ describe('holdControl', () => {
     return { awareness, me, leave }
   }
 
+  // @scenario board/session: Let go
   it('publishes the control while held and clears it when let go, keeping the person', () => {
     const { awareness } = seated()
     holdControl(awareness, 't1.gain', true)

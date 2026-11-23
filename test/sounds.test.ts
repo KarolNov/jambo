@@ -54,6 +54,7 @@ const soundsOf = (doc: Y.Doc) => doc.getMap<Y.Map<unknown>>(ROOTS.sounds)
 const pads = (doc: Y.Doc) => doc.getMap<Y.Map<unknown>>(ROOTS.pads)
 
 describe('uploading a sound', () => {
+  // @scenario collab/room: Serve
   it('stores the file, lists it for everyone, and serves it cacheable forever', async () => {
     const slug = 'funky-otter-sp01'
     const other = await connectBoard(slug)
@@ -87,6 +88,7 @@ describe('uploading a sound', () => {
     expect(((await older.json()) as { sound: object }).sound).not.toHaveProperty('authorName')
   })
 
+  // @scenario collab/room: Bad file
   it('refuses a file that is not a WAV of the upload format, storing nothing', async () => {
     const slug = 'funky-otter-sp02'
     const res = await upload(slug, { body: encodeWav(new Float32Array(100), 48_000) })
@@ -105,6 +107,7 @@ describe('uploading a sound', () => {
     expect(res.status).toBe(400)
   })
 
+  // @scenario audio/sounds: Full jam
   it(`refuses the ${UPLOADS.perJam + 1}th sound in a jam`, async () => {
     const slug = 'funky-otter-sp05'
     // A real upload first and last, the rest listed in the room directly: 32 uploads in a row
@@ -128,6 +131,7 @@ describe('uploading a sound', () => {
     expect(await res.json()).toEqual({ error: `This jam already has ${UPLOADS.perJam} sounds` })
   })
 
+  // @scenario collab/room: Too many writes
   it('allows 10 writes a minute from one address', async () => {
     // The limiter counts per clock minute, so a burst that crosses one is retried from a new address.
     const minute = () => Math.floor(Date.now() / 60_000)
@@ -170,6 +174,7 @@ describe('removing a sound', () => {
 })
 
 describe('retention', () => {
+  // @scenario audio/sounds: Abandoned jam
   it('deletes an unvisited jam’s audio and unlists its sounds, keeping the board', async () => {
     const slug = 'funky-otter-rex1'
     const client = await connectBoard(slug)

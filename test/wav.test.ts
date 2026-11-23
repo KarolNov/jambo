@@ -37,6 +37,7 @@ describe('encodeWav and parseUploadWav', () => {
     expect(parseUploadWav(wav)).toMatchObject({ durationMs: UPLOADS.maxSeconds * 1000 })
   })
 
+  // @scenario audio/sounds: Too long
   it('refuses anything longer', () => {
     const wav = encodeWav(new Float32Array(UPLOADS.maxSeconds * RATE + 1), RATE)
     expect(parseUploadWav(wav)).toEqual({ error: 'Samples must be 10 seconds or less' })
