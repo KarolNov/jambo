@@ -24,7 +24,7 @@ import { useThemedPage } from '../../src/theme/theme'
 export const SLUG = 'funky-otter-k7q2'
 
 /** A y-partyserver provider that never connects: the board stays local to the test. */
-function offlineProvider(): YProvider {
+export function offlineProvider(): YProvider {
   return {
     wsconnected: false,
     wsconnecting: false,
