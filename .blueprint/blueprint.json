@@ -53,11 +53,11 @@
         "shared/slug.ts": "93fbc4b73dd9",
         "shared/words.ts": "093dd86b1435",
         "src/App.tsx": "2ea3aba66dd9",
-        "src/about/About.tsx": "14a050c462d8",
-        "src/about/about.css": "daa982f514e2",
+        "src/about/About.tsx": "f55514fbec86",
+        "src/about/about.css": "9fa4c0fbea95",
         "worker/index.ts": "7006ed34cbe2"
       },
-      "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
+      "syncedCommit": "bc6d2092937bc98b26d8d86913ec04b9e148ce4e"
     },
     "collab/room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
