@@ -16,13 +16,21 @@
   },
   "project": "https://app.notion.com/p/41b43cce21f281bc9d12e875f6557087",
   "domains": {
+    "audio": {
+      "ref": "https://app.notion.com/p/42143cce21f28162b067f342d1ddddd0",
+      "purpose": "The sound side of a jam: the sounds pads can hold, and the engine that records loops and plays them together in time."
+    },
     "board": {
       "ref": "https://app.notion.com/p/42143cce21f28103aa5dd12148f6b814",
-      "purpose": "The live jam board: the page people play on, the pads and loops on it, and the validated operations that are the only way to change it."
+      "purpose": "The live jam board: the page people play on, the pads on it, and the validated operations that are the only way to change it."
+    },
+    "collab": {
+      "ref": "https://app.notion.com/p/42143cce21f2817999f5e2019ad3a642",
+      "purpose": "How people and agents share a jam: the link that opens it, the room that keeps everyone's copy in sync, and agents joining over MCP."
     }
   },
   "specs": {
-    "jams": {
+    "collab/jams": {
       "ref": "https://app.notion.com/p/41c43cce21f281fdb0c0e24fec1ec10e",
       "anchors": [
         "shared/**",
@@ -51,7 +59,7 @@
       },
       "syncedCommit": "71ac46644c21400ce3af5cc5cd1aee10b2c125e1"
     },
-    "room": {
+    "collab/room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
       "anchors": [
         "worker/board.ts",
@@ -125,7 +133,7 @@
       },
       "syncedCommit": "00d1392965d46f159ac9d1e6fb1590839fcdb191"
     },
-    "board/looper": {
+    "audio/looper": {
       "ref": "https://app.notion.com/p/41c43cce21f2816ba415d28e60bf80d5",
       "anchors": [
         "src/audio/**",
@@ -173,7 +181,7 @@
       },
       "syncedCommit": "9fd9be7d7fab9aa7d6a66d04666fb1f9dfef0463"
     },
-    "sounds": {
+    "audio/sounds": {
       "ref": "https://app.notion.com/p/41c43cce21f2810f8bb0f1ed9935a67d",
       "anchors": [
         "shared/sounds.ts",
@@ -192,7 +200,7 @@
       },
       "syncedCommit": "e5fb82ae0d9bb5fee63bec6760b97fa0bc967cff"
     },
-    "agent": {
+    "collab/agent": {
       "ref": "https://app.notion.com/p/41d43cce21f2814bbbb8ef7ccde6b7e2",
       "anchors": [
         "shared/agent/**",
