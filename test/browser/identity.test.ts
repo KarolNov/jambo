@@ -1,27 +1,20 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type YProvider from 'y-partyserver/provider'
 import { hello, seated } from '../../shared/seats'
 import { identity } from '../../src/board/identity'
 import { Me, takeSeat } from '../../src/board/seat'
 
-/** A browser's localStorage, kept in memory. */
-function memoryStorage() {
-  const items = new Map<string, string>()
-  return {
-    getItem: (k: string) => items.get(k) ?? null,
-    setItem: (k: string, v: string) => void items.set(k, v),
-    removeItem: (k: string) => void items.delete(k),
-  }
-}
+beforeEach(() => {
+  localStorage.clear()
+})
 
 afterEach(() => {
-  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 describe('identity', () => {
   // @scenario board/session: Come back
   it('is the same on every visit from one browser', () => {
-    vi.stubGlobal('localStorage', memoryStorage())
     const first = identity()
     // Another tab, another jam, another day: the same browser storage.
     const again = identity()
@@ -34,7 +27,9 @@ describe('identity', () => {
     const blocked = () => {
       throw new DOMException('The operation is insecure.', 'SecurityError')
     }
-    vi.stubGlobal('localStorage', { getItem: blocked, setItem: blocked, removeItem: blocked })
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(blocked)
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(blocked)
+    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(blocked)
     const a = identity()
     expect(a.id).toBeTruthy()
     expect(a.key).toBeTruthy()

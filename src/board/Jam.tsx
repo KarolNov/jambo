@@ -46,8 +46,8 @@ export function Jam({ slug }: { slug: string }) {
   )
 }
 
-/** Keeps the audio engine in step with the board doc. */
-function EngineFeed({ engine }: { engine: Engine }) {
+/** Keeps the audio engine in step with the board doc. Exported for tests. */
+export function EngineFeed({ engine }: { engine: Engine }) {
   const bpm = useAtomValue(bpmAtom)
   const pads = useAtomValue(padsAtom)
   const tracks = useAtomValue(tracksAtom)
