@@ -6,3 +6,5 @@ dist
 .DS_Store
 test/browser/__screenshots__/
 .vitest-attachments/
+test-results/
+playwright-report/

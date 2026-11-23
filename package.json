@@ -19,6 +19,8 @@
     "deploy": "pnpm build && wrangler deploy",
     "typecheck": "wrangler types && tsc -b",
     "test": "vitest run",
+    "e2e": "playwright test",
+    "check": "pnpm format:check && pnpm typecheck && pnpm test && pnpm e2e",
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
     "cf-typegen": "wrangler types",
@@ -45,6 +47,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.70.0",
     "@cloudflare/vitest-plugin": "^1.8.4",
+    "@playwright/test": "1.65.1",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",

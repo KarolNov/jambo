@@ -116,12 +116,16 @@ Needs Node 22+ and pnpm.
 ```bash
 pnpm install
 pnpm dev          # Vite + the Worker in workerd, at http://localhost:5173
-pnpm test         # Vitest inside the Workers runtime: routes, sync, persistence
+pnpm test         # Vitest: the Workers runtime (routes, sync, persistence) and headless Chromium (the UI)
+pnpm e2e          # Playwright: real browsers against the local Worker (starts its own on :5199)
 pnpm typecheck
 pnpm format
+pnpm check        # all of the checks: format, types, test and e2e (CI runs all but e2e)
 ```
 
 `pnpm dev` runs the real Worker and Durable Object locally, so two browser tabs on the same jam link sync with each other.
+
+`pnpm e2e` (`e2e/`) is for what needs the whole stack at once: two people in one jam, the jam clock across browsers, a dropped connection merging back, an agent acting over `/mcp`. It runs only against the local Worker: the deployed dev and preview environments sit behind Cloudflare Access, so there are no e2e runs against them for now. It reuses a server already on port 5199 (`E2E_PORT` changes it); a failed run keeps a trace in `test-results/`.
 
 ## Deploy
 
