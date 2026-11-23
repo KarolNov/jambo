@@ -163,6 +163,6 @@ export async function renderKit(sampleRate: number): Promise<Map<string, AudioBu
 }
 
 /** The metronome click: a short sine blip, higher on the first beat of a bar. */
-export function click(ctx: AudioContext, out: AudioNode, at: number, accent: boolean) {
+export function click(ctx: BaseAudioContext, out: AudioNode, at: number, accent: boolean) {
   tone(ctx, out, 'sine', accent ? 1800 : 1200, accent ? 0.35 : 0.2, 0.04, { at })
 }

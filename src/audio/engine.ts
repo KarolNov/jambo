@@ -67,6 +67,18 @@ interface Chain {
   echo: GainNode
 }
 
+/**
+ * Makes the context the engine plays into. A live `AudioContext` gets the real-time lookahead,
+ * is kept awake and announces hits as they are heard; an `OfflineAudioContext` gets none of that,
+ * so a test can fill it with `scheduleWindow` and `hitPad` and render it.
+ */
+export type ContextFactory = () => AudioContext | OfflineAudioContext
+
+const liveContext: ContextFactory = () => new AudioContext({ latencyHint: 'interactive' })
+
+const isLive = (ctx: AudioContext | OfflineAudioContext): ctx is AudioContext =>
+  !(ctx instanceof OfflineAudioContext)
+
 interface Playing {
   track: Track
   /** Undefined until audio starts. */
@@ -85,7 +97,7 @@ interface Playing {
  * `update`; it never writes to the board. The recorder lives here because it needs the audio clock.
  */
 export class Engine {
-  private ctx?: AudioContext
+  private ctx?: AudioContext | OfflineAudioContext
   private master?: GainNode
   /** The shared room every loop's reverb send feeds. */
   private reverb?: ConvolverNode
@@ -127,6 +139,8 @@ export class Engine {
     readonly clock: JamClock,
     /** The jam's uploaded sounds, played by id beside the kit. */
     readonly samples: SampleLoader,
+    /** The context audio plays into; a live one unless a test renders offline. */
+    private readonly createContext: ContextFactory = liveContext,
   ) {
     this.unsubscribeClock = clock.subscribe(() => this.emit())
   }
@@ -154,8 +168,8 @@ export class Engine {
   /** Creates the context (still inside the gesture), renders the kit, then goes live all at once. */
   private async start() {
     preferPlayback()
-    const ctx = new AudioContext({ latencyHint: 'interactive' })
-    this.sleep = keepAwake(ctx)
+    const ctx = this.createContext()
+    if (isLive(ctx)) this.sleep = keepAwake(ctx)
     const master = ctx.createGain()
     master.gain.value = 0.8
     master.connect(ctx.destination)
@@ -181,7 +195,8 @@ export class Engine {
     // The tempo may have changed while the kit rendered.
     this.syncEcho()
     for (const p of this.playing.values()) this.attach(p)
-    this.timer = setInterval(() => this.tick(), TICK_MS)
+    // Only a live context runs in real time; an offline one is scheduled up front and rendered.
+    if (isLive(ctx)) this.timer = setInterval(() => this.tick(), TICK_MS)
     this.emit()
   }
 
@@ -193,7 +208,7 @@ export class Engine {
     this.hitListeners.clear()
     this.unsubscribeClock()
     this.samples.dispose()
-    void this.ctx?.close()
+    if (this.ctx && isLive(this.ctx)) void this.ctx.close()
   }
 
   /** Subscribes to recorder state, readiness and clock changes. */
@@ -223,8 +238,10 @@ export class Engine {
 
   /** Announces a loop hit scheduled for `at` (audio seconds) when it is heard. */
   private announceAt(hit: PadHit, at: number) {
-    if (this.hitListeners.size === 0) return
-    const delay = Math.max(0, heardAt(at, this.heard(this.ctx!)) - performance.now())
+    const ctx = this.ctx
+    // An offline render has no speakers to hear it from.
+    if (this.hitListeners.size === 0 || !ctx || !isLive(ctx)) return
+    const delay = Math.max(0, heardAt(at, this.heard(ctx)) - performance.now())
     const t = setTimeout(() => {
       this.hitTimers.delete(t)
       this.announce(hit)
@@ -459,7 +476,7 @@ export class Engine {
   /** The room time of what is leaving the speakers now, on the current shift; undefined without one. */
   private heardNow(): number | undefined {
     const ctx = this.ctx
-    if (!ctx || this.shift === undefined) return undefined
+    if (!ctx || !isLive(ctx) || this.shift === undefined) return undefined
     const h = this.heard(ctx)
     return audioToRoom(h.contextTime + (performance.now() - h.performanceTime) / 1000, this.shift)
   }
@@ -468,7 +485,7 @@ export class Engine {
   private ensureShift(): boolean {
     if (this.shift !== undefined) return true
     const ctx = this.ctx
-    if (!ctx || this.clock.offset === undefined) return false
+    if (!ctx || !isLive(ctx) || this.clock.offset === undefined) return false
     this.shift = audioShift(this.heard(ctx), this.clock.offset, performance.timeOrigin)
     this.scheduledUntil = audioToRoom(ctx.currentTime, this.shift)
     return true
@@ -487,7 +504,8 @@ export class Engine {
   }
 
   private tick() {
-    const ctx = this.ctx!
+    // Ticks only run on a live context.
+    const ctx = this.ctx as AudioContext
     this.advanceRecorder()
     // Loops wait for the clock; once it is agreed they start on the jam's grid.
     if (!this.ensureShift()) return
@@ -502,7 +520,7 @@ export class Engine {
     if (this.pendingShift !== undefined) {
       const line = barStart(nextJamBar(from, this.bpm), this.bpm)
       if (line < to) {
-        this.schedule(from, line)
+        this.scheduleWindow(from, line, this.shift!, this.recorder)
         this.shift = this.pendingShift
         this.pendingShift = undefined
         // Everything before the line is scheduled. A forward jump (audio suspended, a big offset
@@ -512,15 +530,19 @@ export class Engine {
         to = audioToRoom(ctx.currentTime + LOOKAHEAD, this.shift)
       }
     }
-    this.schedule(from, to)
+    this.scheduleWindow(from, to, this.shift!, this.recorder)
     this.scheduledUntil = Math.max(this.scheduledUntil, to)
   }
 
-  /** Schedules everything in room window [from, to). */
-  private schedule(from: number, to: number) {
-    if (to <= from) return
-    const ctx = this.ctx!
-    const shift = this.shift!
+  /**
+   * Schedules everything in room window [from, to) (room ms) onto the context, at audio time
+   * `room / 1000 + shift`: every unmuted loop's hits through its chain, and the clicks `recorder`
+   * calls for (the count-in, and the metronome while recording). The lookahead calls it each tick;
+   * an offline render calls it once before rendering. Does nothing before audio starts.
+   */
+  scheduleWindow(from: number, to: number, shift: number, recorder: RecorderState) {
+    const ctx = this.ctx
+    if (!ctx || to <= from) return
     for (const [trackId, p] of this.playing) {
       // A just-recorded track's next loop may have begun before it was added: play what it missed now.
       const start = Math.min(from, p.catchUpFrom ?? from)
@@ -536,7 +558,7 @@ export class Engine {
       }
     }
     // Clicks only around a take: always during the count-in, and while recording if the metronome is on.
-    const rec = this.recorder
+    const rec = recorder
     if (rec.phase === 'idle') return
     const beat = beatSeconds(this.bpm) * 1000
     // Beat indices, not times, bound the window, so a beat on the edge falls in exactly one.
