@@ -1,11 +1,13 @@
 /**
  * Happy paths worth walking end to end: each crosses the browser, the Worker and the jam's Durable
- * Object (and storage), which the browser tests mock and the Workers tests drive without a page.
+ * Object, which the browser tests mock and the Workers tests drive without a page. The Durable
+ * Object stays in memory here; reloading a jam from storage is covered in test/worker.test.ts.
  */
 import { expect, test } from '@playwright/test'
 import {
   agentAddsLoop,
   agentCall,
+  closePeople,
   loopNames,
   loops,
   openJam,
@@ -16,6 +18,8 @@ import {
   startAudio,
   startJam,
 } from './jam'
+
+test.afterEach(closePeople)
 
 // @scenario collab/jams: Visit the root
 test('opening / starts a new jam, and its link opens the same jam again', async ({ browser }) => {

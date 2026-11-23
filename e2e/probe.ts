@@ -39,6 +39,15 @@ export function installAudioProbe() {
     if (this instanceof GainNode && args[0] instanceof ConvolverNode) sends.add(this.gain)
     return connect.apply(this, args)
   } as typeof AudioNode.prototype.connect
+  // A removed loop's chain is disconnected: its send is gone.
+  const disconnect = AudioNode.prototype.disconnect as (...args: unknown[]) => unknown
+  AudioNode.prototype.disconnect = function (this: AudioNode, ...args: unknown[]) {
+    if (this instanceof GainNode && (args.length === 0 || args[0] instanceof ConvolverNode)) {
+      sends.delete(this.gain)
+      targets.delete(this.gain)
+    }
+    return disconnect.apply(this, args)
+  } as typeof AudioNode.prototype.disconnect
 
   const setTarget = AudioParam.prototype.setTargetAtTime
   AudioParam.prototype.setTargetAtTime = function (value, startTime, timeConstant) {

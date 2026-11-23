@@ -17,9 +17,20 @@ export interface Person {
   page: Page
 }
 
+// Contexts from browser.newContext() outlive the test (the browser is per worker); closePeople
+// closes them, from each spec's afterEach.
+const opened = new Set<BrowserContext>()
+
+/** Closes every person still open, so their pages stop playing and leave their jams. */
+export async function closePeople() {
+  await Promise.all([...opened].map((c) => c.close()))
+  opened.clear()
+}
+
 /** A new person: their own browser context (storage, identity), with the audio probe installed. */
 export async function person(browser: Browser, setup?: (context: BrowserContext) => Promise<void>) {
   const context = await browser.newContext()
+  opened.add(context)
   await context.addInitScript(installAudioProbe)
   await setup?.(context)
   const page = await context.newPage()
@@ -28,7 +39,8 @@ export async function person(browser: Browser, setup?: (context: BrowserContext)
 
 /** Opens `/` and waits for the new jam's board, live. Returns the jam's link. */
 export async function startJam(page: Page): Promise<string> {
-  await page.goto('/')
+  // `/` replaces itself with the jam's link from an effect, possibly before `load`.
+  await page.goto('/', { waitUntil: 'commit' })
   await page.waitForURL(/\/jam\/[a-z0-9-]+$/)
   await expectLive(page)
   return page.url()
@@ -101,9 +113,12 @@ export const reverbSends = (page: Page) =>
 
 let rpcId = 0
 
+/** A fresh client address per call, so back-to-back runs don't share the per-address rate limit. */
+const newAddress = () => `10.${[0, 0, 0].map(() => Math.floor(Math.random() * 256)).join('.')}`
+
 /**
  * Calls a jambo MCP tool the way an agent's client does, against the local Worker. Returns the
- * tool's parsed JSON answer.
+ * tool's parsed JSON answer; a run with a refused operation throws its issues.
  */
 export async function agentCall(
   request: APIRequestContext,
@@ -114,6 +129,7 @@ export async function agentCall(
     headers: {
       Accept: 'application/json, text/event-stream',
       'MCP-Protocol-Version': '2025-06-18',
+      'CF-Connecting-IP': newAddress(),
     },
     data: { jsonrpc: '2.0', id: ++rpcId, method: 'tools/call', params: { name, arguments: args } },
   })
@@ -130,7 +146,10 @@ export async function agentCall(
   }
   if (error) throw new Error(error.message)
   if (result!.isError) throw new Error(result!.content[0]!.text)
-  return JSON.parse(result!.content[0]!.text) as Record<string, any>
+  const answer = JSON.parse(result!.content[0]!.text) as Record<string, any>
+  const refused = (answer.ops as { ok: boolean }[] | undefined)?.filter((o) => !o.ok)
+  if (refused?.length) throw new Error(`Refused ops: ${JSON.stringify(refused)}`)
+  return answer
 }
 
 /** Has an agent add a one-bar loop of four hits on the first pad. Returns the agent's answer. */

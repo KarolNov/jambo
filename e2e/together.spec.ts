@@ -7,11 +7,13 @@ import { expect, type Page, test, type WebSocketRoute } from '@playwright/test'
 import {
   agentAddsLoop,
   clicksHeard,
+  closePeople,
   expectLive,
   expectSynced,
   loopNames,
   loops,
   openJam,
+  people,
   person,
   recordButton,
   reverbSends,
@@ -21,6 +23,8 @@ import {
 } from './jam'
 
 const readout = (page: Page) => page.locator('.console-readout')
+
+test.afterEach(closePeople)
 
 test.describe('two people in a jam', () => {
   // @scenario audio/looper: Others keep the tempo
@@ -97,9 +101,10 @@ test.describe('two people in a jam', () => {
     const knobB = b.page.getByRole('slider', { name: 'Reverb of Kicks' })
     await expect(knobB).toHaveAttribute('aria-valuenow', '0')
     expect(await reverbSends(b.page)).toEqual([0])
-    const nameA = await a.page.evaluate(
-      () => (JSON.parse(localStorage.getItem('jambo.identity')!) as { name: string }).name,
-    )
+    // A's name as the room seated it (it renames on a clash), from A's own entry in Who's here.
+    const nameA = (await people(a.page)
+      .and(a.page.locator('[aria-label$=" (you)"]'))
+      .getAttribute('aria-label'))!.replace(/ \(you\)$/, '')
 
     // Drag A's knob up in two moves, holding the button down throughout.
     const box = (await knobA.boundingBox())!
