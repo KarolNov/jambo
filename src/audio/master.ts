@@ -31,6 +31,8 @@ export class MasterChain {
   /** Where loops, their sends and live pads play into. */
   readonly input: GainNode
   private readonly filter: BiquadFilterNode
+  /** The filter's output trim, so its resonance doesn't clip a loud mix. */
+  private readonly filterTrim: GainNode
   private readonly tone: BiquadFilterNode
   private readonly dry: GainNode
   private readonly wet: GainNode
@@ -54,6 +56,7 @@ export class MasterChain {
     this.input.channelCountMode = 'explicit'
     this.input.channelInterpretation = 'speakers'
     this.filter = ctx.createBiquadFilter()
+    this.filterTrim = ctx.createGain()
     this.tone = ctx.createBiquadFilter()
     this.dry = ctx.createGain()
     this.wet = ctx.createGain()
@@ -78,7 +81,7 @@ export class MasterChain {
       split.connect(this.cross[ear], 1 - ear).connect(merge, 0, ear)
     }
 
-    this.input.connect(this.filter).connect(this.tone)
+    this.input.connect(this.filter).connect(this.filterTrim).connect(this.tone)
     this.tone.connect(this.dry).connect(split)
     this.tone
       .connect(headroom)
@@ -114,6 +117,7 @@ export class MasterChain {
     const filter = filterSweep(sound.filter.x, sound.filter.y, nyquist)
     sweep('filter', this.filter, filter)
     set('filterQ', this.filter.Q, filter.q)
+    set('filterTrim', this.filterTrim.gain, filter.gain)
     sweep('tone', this.tone, toneFilter(sound.tone, nyquist))
 
     if (applied.drive !== sound.drive) {

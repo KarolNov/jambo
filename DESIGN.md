@@ -160,7 +160,8 @@ A square that sets two values at once (`XYPadProps`, each axis an `XYAxis`: its 
 with a line through it on each axis in `color`. A drag previews locally and applies once on
 release; with `live` it applies as it moves, at most once a frame, as a live `Knob` does. It
 stays where it is let go. Escape mid-drag puts it back where the drag started (and applies that
-again when live). ← → move X a step and ↑ ↓ move Y, whichever axis has focus, Shift for ten;
+again when live). ← → move X a step and ↑ ↓ move Y, whichever axis has focus (held together, one of each moves it
+diagonally; a move of the other axis is announced), Shift for ten;
 Page Up/Down, Home and End move the focused axis. `home` marks a position (where it is off).
 While someone else holds it, its puck and lines turn their colour, with no outline. Screen readers hear a group named `label` with two sliders. Size it with `--xy` (default 200px,
 never wider than its container); leave room above for the bubble.

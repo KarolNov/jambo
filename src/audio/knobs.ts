@@ -132,20 +132,33 @@ export function widthGains(width: number): { direct: number; cross: number } {
 
 /** The filter mode's resonance as a linear Q: none (a Butterworth's 0.7) at Y 0, strong at Y 1. */
 export const FILTER_Q_MIN = Math.SQRT1_2
-export const FILTER_Q_MAX = 12
+export const FILTER_Q_MAX = 6
+/** The most the filter's resonant peak may rise above the sound going in: +6 dB. */
+export const FILTER_PEAK_MAX = 2
+
+/** How far X moves off 0 before the filter's resonance trim is in full. */
+export const FILTER_TRIM_FADE = 0.1
 
 /**
  * The filter mode at `x`, `y`: X sweeps the whole mix as `toneFilter` does (a low-pass closing
  * toward -1, a high-pass rising toward +1, open at 0), and Y raises the resonance, exponentially
  * from `FILTER_Q_MIN` to `FILTER_Q_MAX`. `q` is in decibels, as a low- or high-pass
  * `BiquadFilterNode` reads its Q. At x 0 the low-pass sits at `open` (pass the Nyquist), where it
- * passes the sound through whatever the resonance.
+ * passes the sound through whatever the resonance. `gain` trims the filter's output as the
+ * resonance rises, so its peak (Q times the input, at the cutoff) stays within `FILTER_PEAK_MAX`
+ * and doesn't clip a loud mix; it fades in over the first `FILTER_TRIM_FADE` of X, so it is 1
+ * where the filter is open.
  */
 export function filterSweep(
   x: number,
   y: number,
   open?: number,
-): { type: 'lowpass' | 'highpass'; frequency: number; q: number } {
+): { type: 'lowpass' | 'highpass'; frequency: number; q: number; gain: number } {
   const q = FILTER_Q_MIN * (FILTER_Q_MAX / FILTER_Q_MIN) ** y
-  return { ...toneFilter(x, open), q: 20 * Math.log10(q) }
+  const fade = Math.min(1, Math.abs(x) / FILTER_TRIM_FADE)
+  return {
+    ...toneFilter(x, open),
+    q: 20 * Math.log10(q),
+    gain: Math.min(1, FILTER_PEAK_MAX / q) ** fade,
+  }
 }

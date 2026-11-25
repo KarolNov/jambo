@@ -101,7 +101,8 @@ export const TOUCHPAD_READOUTS: Record<
     label: 'Filter',
     x: {
       label: 'Cutoff',
-      format: (v) => (pct(v) === 0 ? 'Open' : `${v < 0 ? 'Low-pass' : 'High-pass'} ${pct(v)}%`),
+      format: (v) =>
+        v === 0 ? 'Open' : `${v < 0 ? 'Low-pass' : 'High-pass'} ${Math.max(1, pct(v))}%`,
     },
     y: { label: 'Resonance', format: (v) => `${pct(v)}%` },
   },

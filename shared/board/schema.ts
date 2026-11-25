@@ -241,11 +241,11 @@ export function masterFromRead(read: {
 }
 
 /**
- * Whether a touchpad mode sounds, so its tab shows a dot: away from 0/0, and for repeat, Y above
- * 0 (its Y 0 is off).
+ * Whether a touchpad mode sounds, so its tab shows a dot: away from 0/0; for repeat, Y above 0
+ * (its Y 0 is off); for filter, X away from 0 (open at X 0, whatever the resonance).
  */
 export const fxOn = (mode: FxMode, p: { x: number; y: number }) =>
-  mode === 'repeat' ? p.y !== 0 : p.x !== 0 || p.y !== 0
+  mode === 'repeat' ? p.y !== 0 : mode === 'filter' ? p.x !== 0 : p.x !== 0 || p.y !== 0
 
 /**
  * Live controls as presence names them while someone holds one (the `control` awareness key).

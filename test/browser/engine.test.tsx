@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Track } from '../../shared/board'
 import { barMs, beatSeconds } from '../../shared/looper'
 import { JamClock } from '../../src/audio/clock'
+import { FILTER_PEAK_MAX, filterSweep } from '../../src/audio/knobs'
 import { Engine, type RecorderState } from '../../src/audio/engine'
 import { MASTER_SOUND_DEFAULTS, MasterChain, type MasterSound } from '../../src/audio/master'
 import { SampleLoader } from '../../src/audio/samples'
@@ -309,6 +310,12 @@ describe('master', () => {
     }
     return out
   }
+  /** A quarter second of a sine at `hz`. */
+  const sine = (hz: number, level = 0.5) =>
+    new Float32Array(RATE / 4).map((_, i) => level * Math.sin((2 * Math.PI * hz * i) / RATE))
+  /** The loudest sample after the first tenth, once a filter has settled. */
+  const steadyPeak = (data: Float32Array) =>
+    data.subarray(data.length / 10).reduce((m, v) => Math.max(m, Math.abs(v)), 0)
 
   it('passes the mix through unchanged at its defaults', async () => {
     const left = noise(3)
@@ -448,10 +455,31 @@ describe('master', () => {
     const tilt = (data: Float32Array) => brightness(data) / (rms(data) ** 2 * data.length)
     expect(rms(thin)).toBeLessThan(rms(open))
     expect(tilt(thin)).toBeGreaterThan(tilt(open))
-    // Strong resonance stacks energy at the cutoff: louder than the plain sweep there.
-    const [flat] = await throughChain(left, right, { ...DEFAULTS, filter: { x: -0.5, y: 0 } })
-    const [ringing] = await throughChain(left, right, { ...DEFAULTS, filter: { x: -0.5, y: 1 } })
-    expect(rms(ringing)).toBeGreaterThan(rms(flat) * 1.5)
+    // Strong resonance stacks energy at the cutoff: a tone there stands out over one below it.
+    const cutoff = filterSweep(-0.5, 1, RATE / 2).frequency
+    const stands = async (y: number) => {
+      const filter = { x: -0.5, y }
+      const [at] = await throughChain(sine(cutoff), sine(cutoff), { ...DEFAULTS, filter })
+      const [below] = await throughChain(sine(cutoff / 4), sine(cutoff / 4), {
+        ...DEFAULTS,
+        filter,
+      })
+      return steadyPeak(at) / steadyPeak(below)
+    }
+    expect(await stands(1)).toBeGreaterThan((await stands(0)) * 3)
+  })
+
+  it("keeps a loud mix's peaks within 6 dB at full resonance", async () => {
+    // A loud tone right at the cutoff, where resonance lifts it most.
+    for (const x of [-0.9, -0.5, 0.5]) {
+      const cutoff = filterSweep(x, 1, RATE / 2).frequency
+      const [l, r] = await throughChain(sine(cutoff, 0.45), sine(cutoff, 0.45), {
+        ...DEFAULTS,
+        filter: { x, y: 1 },
+      })
+      expect(steadyPeak(l), `x ${x}`).toBeLessThan(0.45 * FILTER_PEAK_MAX * 1.05)
+      expect(steadyPeak(r), `x ${x}`).toBeLessThan(1)
+    }
   })
 
   it('saturates and evens the mix with drive', async () => {

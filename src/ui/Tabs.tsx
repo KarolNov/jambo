@@ -89,6 +89,10 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
     ? visibleTabs(widths.tabs, index, widths.available, widths.more)
     : tabs.map((_, i) => i)
   const hidden = tabs.filter((_, i) => !shown.includes(i))
+  // A tab's name with what its dot says ("Filter, on"), and whether any tab has a dot: "+N" shows
+  // one, lit when a hidden tab's is, so a tab that is on still shows behind it.
+  const named = (t: Tab) => (t.dot ? `${t.label}, ${t.dot}` : t.label)
+  const dotted = tabs.some((t) => t.dot !== undefined)
 
   // A key moved to a tab: focus it once it's on screen (it may just have come out of "+N").
   useEffect(() => {
@@ -142,7 +146,7 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
                 aria-selected={i === index}
                 tabIndex={i === index ? 0 : -1}
                 disabled={t.disabled}
-                aria-label={t.dot ? `${t.label}, ${t.dot}` : undefined}
+                aria-label={t.dot ? named(t) : undefined}
                 className="ui-tab"
                 onClick={() => select(i)}
               >
@@ -163,11 +167,17 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
             className="ui-tab ui-tab-more"
             aria-haspopup="listbox"
             aria-expanded={menu}
-            aria-label={`${hidden.length} more: ${hidden.map((t) => t.label).join(', ')}`}
-            title={hidden.map((t) => t.label).join(', ')}
+            aria-label={`${hidden.length} more: ${hidden.map(named).join('; ')}`}
+            title={hidden.map(named).join('; ')}
             onClick={() => setMenu((m) => !m)}
           >
             +{hidden.length}
+            {dotted && (
+              <span
+                className={`ui-tab-dot ${hidden.some((t) => t.dot) ? 'is-on' : ''}`}
+                aria-hidden
+              />
+            )}
           </button>
         )}
         {/* A hidden copy of every tab and the widest "+N", to measure what fits. */}
@@ -178,7 +188,10 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
               {t.dot !== undefined && <span className="ui-tab-dot" />}
             </span>
           ))}
-          <span className="ui-tab ui-tab-more">+{tabs.length}</span>
+          <span className="ui-tab ui-tab-more">
+            +{tabs.length}
+            {dotted && <span className="ui-tab-dot" />}
+          </span>
         </div>
       </div>
       {menu && moreButton.current && (
@@ -188,7 +201,12 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
             value={selected ?? ''}
             groups={[
               {
-                options: hidden.map((t) => ({ value: t.id, label: t.label, disabled: t.disabled })),
+                options: hidden.map((t) => ({
+                  value: t.id,
+                  label: t.label,
+                  note: t.dot || undefined,
+                  disabled: t.disabled,
+                })),
               },
             ]}
             onSelect={(id) => {

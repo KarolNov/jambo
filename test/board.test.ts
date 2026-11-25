@@ -6,6 +6,7 @@ import {
   board,
   CONTROL_KEYS,
   FX_MODES,
+  fxOn,
   LIMITS,
   MASTER_DEFAULTS,
   MASTER_KNOBS,
@@ -670,6 +671,13 @@ describe('master settings', () => {
     expect(apply(doc, [{ op: 'setMaster', set: { volume: 1 } }], me)[0]!.ok).toBe(false)
     expect(apply(doc, [{ op: 'setMaster', set: { filter: 0 } }], me)[0]!.ok).toBe(false)
     expect(masterOfDoc(doc).width).toBe(0.5)
+  })
+
+  it('counts a touchpad mode on only where it sounds', () => {
+    expect(fxOn('filter', { x: 0, y: 0.5 })).toBe(false)
+    expect(fxOn('filter', { x: -0.01, y: 0 })).toBe(true)
+    expect(fxOn('lofi', { x: 0, y: 0.5 })).toBe(true)
+    expect(fxOn('repeat', { x: 0.5, y: 0 })).toBe(false)
   })
 
   it('sets and resets a touchpad mode', () => {

@@ -43,7 +43,7 @@ export type XYPadProps = {
   live?: boolean
   /** A position to mark on the pad, such as where it is off. */
   home?: { x: number; y: number }
-  /** The puck and its lines (default: the focus accent). */
+  /** The puck and its lines (default: `--accent-2`). */
   color?: string
   disabled?: boolean
   className?: string
@@ -55,7 +55,10 @@ const INSET = 14
 type Point = readonly [x: number, y: number]
 const samePoint = (a: Point, b: Point) => a[0] === b[0] && a[1] === b[1]
 
-/** Which axis each arrow key moves: ← → across, ↑ ↓ up and down, whichever slider has focus. */
+/**
+ * Which axis each arrow key moves: ← → across, ↑ ↓ up and down, whichever slider has focus.
+ * Held together, one of each moves it diagonally.
+ */
 const ARROW_AXIS: Partial<Record<string, 0 | 1>> = {
   ArrowLeft: 0,
   ArrowRight: 0,
@@ -68,7 +71,8 @@ const ARROW_AXIS: Partial<Record<string, 0 | 1>> = {
  * puck follows, with a line through it on each axis in `color`. A drag previews locally and
  * applies once on release; a `live` pad applies as it moves, at most once a frame, and leaves the
  * puck where it is released. Escape mid-drag puts it back where the drag started (and applies
- * that again when live). Arrow keys move it a step on their axis (← → across, ↑ ↓ up and down),
+ * that again when live). Arrow keys move it a step on their axis (← → across, ↑ ↓ up and down;
+ * held together, one of each moves it diagonally, and a move of the unfocused axis is announced),
  * Shift for ten; Page Up/Down, Home and End move the focused axis. Screen readers hear a group of
  * two sliders, one per axis. While someone else holds it (`heldBy`), its puck and lines turn
  * their colour, the bubble names them, and it ignores drags and keys; if that arrives mid-drag, the drag
@@ -109,6 +113,10 @@ export function XYPad({
   // Focused by a press (so its keys work after a drag): no focus rim until a key is used, as a
   // pressed button shows none. The browser counts this focus as visible, so it is tracked here.
   const [pressFocused, setPressFocused] = useState(false)
+  // The arrow keys held down, so two held together move it diagonally (only the last one repeats).
+  const arrows = useRef(new Set<string>())
+  // What screen readers hear when a key moves the axis whose slider doesn't have focus.
+  const [announce, setAnnounce] = useState('')
   const latest = useRef({ x, y, onChange })
   useEffect(() => {
     latest.current = { x, y, onChange }
@@ -224,14 +232,29 @@ export function XYPad({
 
   const onKeyDown = (axis: 0 | 1) => (e: KeyboardEvent) => {
     setPressFocused(false)
-    const moves = ARROW_AXIS[e.key] ?? axis
-    const a = axes[moves]!
-    const v = keyValue(e, moves === 0 ? x : y, a)
-    if (v === undefined) return
+    const isArrow = ARROW_AXIS[e.key] !== undefined
+    if (isArrow) arrows.current.add(e.key)
+    // Each held arrow moves its own axis; any other key moves the focused one.
+    const keys = isArrow ? [...arrows.current] : [e.key]
+    const next: [number, number] = [x, y]
+    let handled = false
+    for (const key of keys) {
+      const moves = ARROW_AXIS[key] ?? axis
+      const v = keyValue({ key, shiftKey: e.shiftKey }, next[moves], axes[moves]!)
+      if (v === undefined) continue
+      handled = true
+      next[moves] = v
+    }
+    if (!handled) return
     e.preventDefault()
     if (locked || dragging) return
-    if (moves === 0 ? v !== x : v !== y) onChange(moves === 0 ? v : x, moves === 0 ? y : v)
+    if (samePoint(next, [x, y])) return
+    const other = axis === 0 ? 1 : 0
+    const o = axes[other]!
+    if (next[other] !== [x, y][other]) setAnnounce(`${o.label} ${o.format(next[other])}`)
+    onChange(next[0], next[1])
   }
+  const onKeyUp = (e: KeyboardEvent) => arrows.current.delete(e.key)
 
   const vars = {
     '--fx': fraction(sx, ax.min, ax.max),
@@ -260,7 +283,11 @@ export function XYPad({
         aria-description={heldBy && `${heldBy.name} is moving it`}
         className="ui-xy-axis"
         onKeyDown={onKeyDown(axis)}
-        onBlur={() => setPressFocused(false)}
+        onKeyUp={onKeyUp}
+        onBlur={() => {
+          setPressFocused(false)
+          arrows.current.clear()
+        }}
       />
     )
   }
@@ -294,6 +321,9 @@ export function XYPad({
       </span>
       {slider(0)}
       {slider(1)}
+      <span className="ui-xy-announce" aria-live="polite">
+        {announce}
+      </span>
     </span>
   )
 }

@@ -6,6 +6,7 @@ import {
   driveCurve,
   driveGlue,
   echoSeconds,
+  FILTER_PEAK_MAX,
   FILTER_Q_MAX,
   FILTER_Q_MIN,
   filterSweep,
@@ -145,5 +146,18 @@ describe('filterSweep', () => {
     expect(filterSweep(-0.5, 0).q).toBeCloseTo(db(FILTER_Q_MIN))
     expect(filterSweep(-0.5, 1).q).toBeCloseTo(db(FILTER_Q_MAX))
     expect(filterSweep(-0.5, 0.5).q).toBeGreaterThan(filterSweep(-0.5, 0.2).q)
+  })
+
+  it('trims its output so the resonant peak stays within FILTER_PEAK_MAX, and not where it is open', () => {
+    const peak = (x: number, y: number) => {
+      const { q, gain } = filterSweep(x, y)
+      return 10 ** (q / 20) * gain
+    }
+    for (const x of [-1, -0.5, -0.1, 0.1, 0.5, 1])
+      for (const y of [0, 0.5, 1]) expect(peak(x, y)).toBeLessThanOrEqual(FILTER_PEAK_MAX + 1e-9)
+    expect(filterSweep(0, 1).gain).toBe(1)
+    expect(filterSweep(-0.5, 0).gain).toBe(1)
+    // Fades in off 0, so a small move doesn't jump the level.
+    expect(filterSweep(-0.05, 1).gain).toBeGreaterThan(filterSweep(-0.5, 1).gain)
   })
 })

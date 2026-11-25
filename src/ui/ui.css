@@ -1258,6 +1258,10 @@
   background: var(--ui-c, var(--accent-2));
   opacity: 0.55;
   pointer-events: none;
+  /* Eased as the puck is, so they move together. */
+  transition:
+    left 0.08s,
+    bottom 0.08s;
 }
 :root[data-theme] .ui-xy-lines::before {
   top: 6px;
@@ -1333,13 +1337,22 @@
   pointer-events: none;
   z-index: 1;
 }
+/* Outside a drag it eases with the puck, so they move together. */
+:root[data-theme] .ui-xy:not(.is-dragging) .ui-xy-bubble {
+  transition:
+    opacity 0.12s,
+    transform 0.12s,
+    left 0.08s,
+    bottom 0.08s;
+}
 :root[data-theme] .ui-xy.is-dragging .ui-xy-bubble,
 :root[data-theme] .ui-xy.is-held .ui-xy-bubble {
   opacity: 1;
   transform: translate(-50%, 0) scale(1);
 }
-/* The sliders: no box of their own, so focus shows on the square. */
-:root[data-theme] .ui-xy-axis {
+/* The sliders: no box of their own, so focus shows on the square. The announcer is unseen too. */
+:root[data-theme] .ui-xy-axis,
+:root[data-theme] .ui-xy-announce {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1367,7 +1380,10 @@
 @media (prefers-reduced-motion: reduce) {
   /* The puck jumps without easing; the bubble just appears. */
   :root[data-theme] .ui-xy-puck,
-  :root[data-theme] .ui-xy-bubble {
+  :root[data-theme] .ui-xy-lines::before,
+  :root[data-theme] .ui-xy-lines::after,
+  :root[data-theme] .ui-xy-bubble,
+  :root[data-theme] .ui-xy:not(.is-dragging) .ui-xy-bubble {
     transition: none;
   }
 }

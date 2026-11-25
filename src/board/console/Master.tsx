@@ -94,7 +94,8 @@ export function Master() {
 }
 
 /**
- * One touchpad mode: its pad, latched where it is left, how it reads, and its reset to 0/0 (off).
+ * One touchpad mode: its pad, latched where it is left, how it reads, and its reset to 0/0 (off),
+ * there whenever it is away from 0/0.
  * While someone else holds it, neither the pad nor the reset moves it for you.
  */
 function ModePad({
@@ -137,7 +138,7 @@ function ModePad({
           size="sm"
           tone="quiet"
           aria-label={`Reset ${label}`}
-          disabled={!!heldBy || !fxOn(mode, at)}
+          disabled={!!heldBy || (at.x === 0 && at.y === 0)}
           onClick={onReset}
         >
           Reset

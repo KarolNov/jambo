@@ -16,7 +16,7 @@ import type { Session } from '../../src/board/session'
 import Showcase from '../../src/ds/Showcase'
 import { SWATCHES } from '../../src/theme/palette'
 import { ThemeToggle } from '../../src/theme/ThemeToggle'
-import { Knob, ScrubField, XYPad } from '../../src/ui'
+import { Knob, ScrubField, Tabs, XYPad } from '../../src/ui'
 import {
   addTrack,
   addUploads,
@@ -241,6 +241,29 @@ describe('tabs', () => {
     await expect.element(tab('Claude')).toHaveAttribute('aria-selected', 'true')
     await expect.element(tab('Claude')).toHaveFocus()
     await expect.element(page.getByRole('tabpanel')).toHaveTextContent('Add custom connector')
+  })
+
+  it('shows that a tab behind "+N" is on, on "+N" and in its menu', async () => {
+    const { container } = await render(
+      <Themed>
+        <div style={{ width: 150 }}>
+          <Tabs
+            label="Modes"
+            tabs={[
+              { id: 'filter', label: 'Filter', content: null, dot: '' },
+              { id: 'throw', label: 'Throw', content: null, dot: '' },
+              { id: 'lofi', label: 'Lo-fi', content: null, dot: '' },
+              { id: 'repeat', label: 'Repeat', content: null, dot: 'on' },
+            ]}
+          />
+        </div>
+      </Themed>,
+    )
+    const more = page.getByRole('button', { name: /more:/ })
+    await expect.element(more).toHaveAccessibleName(/Repeat, on/)
+    expect(container.querySelector('.ui-tab-more .ui-tab-dot.is-on')).not.toBeNull()
+    await userEvent.click(more)
+    await expect.element(page.getByRole('option', { name: /Repeat/ })).toHaveTextContent(/on/)
   })
 })
 
@@ -641,6 +664,24 @@ describe('xy pad', () => {
     expect(onChange).toHaveBeenLastCalledWith(0.01, 0.51)
     await userEvent.keyboard('{Shift>}{ArrowDown}{/Shift}')
     expect(onChange).toHaveBeenLastCalledWith(0.01, 0.41)
+  })
+
+  it('moves diagonally with two arrows held, and announces the axis that has no focus', async () => {
+    const onChange = vi.fn()
+    const { container } = await render(
+      <Themed>
+        <Owned start={[0, 0.5]} onChange={onChange} />
+      </Themed>,
+    )
+    cutoff().element().focus()
+    await userEvent.keyboard('{ArrowRight>}{ArrowUp>}')
+    expect(onChange).toHaveBeenLastCalledWith(0.02, 0.51)
+    await userEvent.keyboard('{ArrowUp}')
+    expect(onChange).toHaveBeenLastCalledWith(0.03, 0.52)
+    await userEvent.keyboard('{/ArrowUp}{/ArrowRight}')
+    await userEvent.keyboard('{ArrowUp}')
+    expect(onChange).toHaveBeenLastCalledWith(0.03, 0.53)
+    expect(container.querySelector('.ui-xy-announce')!.textContent).toBe('Resonance 0.53')
   })
 
   it('applies a live drag as it moves, and puts it back on Escape', async () => {
