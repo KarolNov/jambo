@@ -6,6 +6,8 @@ export {
   type OpResult,
   RemoveTrack,
   ReplaceSound,
+  SetFx,
+  SetMaster,
   SetTempo,
   SetTrack,
   TrackPatch,

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Sound, Track } from './schema'
+import { FX_MODE_NAMES, MASTER_KNOB_NAMES, Sound, Track } from './schema'
 
 /** The fields of a track anyone can change after it is recorded. */
 export const TrackPatch = z
@@ -36,6 +36,23 @@ export const ReplaceSound = z.object({
   to: z.string(),
 })
 
+/** Sets any of the master knobs; knobs left out keep their value. Ranges are checked by `apply`. */
+export const SetMaster = z.object({
+  op: z.literal('setMaster'),
+  set: z.partialRecord(z.enum(MASTER_KNOB_NAMES), z.number()),
+})
+/**
+ * Puts one touchpad mode at `x`, `y`; 0/0 is off, so it is also the reset. Repeat takes the jam
+ * beat its slice starts on; without one it keeps the beat it had.
+ */
+export const SetFx = z.object({
+  op: z.literal('setFx'),
+  mode: z.enum(FX_MODE_NAMES),
+  x: z.number(),
+  y: z.number(),
+  startBeat: z.number().optional(),
+})
+
 export const Op = z.discriminatedUnion('op', [
   SetTempo,
   AssignPad,
@@ -49,6 +66,8 @@ export const Op = z.discriminatedUnion('op', [
   /** Unlists every upload, whatever uses it: the room's retention, after it deleted the audio. */
   z.object({ op: z.literal('expireSounds') }),
   ReplaceSound,
+  SetMaster,
+  SetFx,
 ])
 export type Op = z.infer<typeof Op>
 

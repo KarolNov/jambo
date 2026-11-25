@@ -1,3 +1,5 @@
+import { readKey } from 'duratom/core'
+import type * as Y from 'yjs'
 import { z } from 'zod'
 import { NAME_MAX } from '../names'
 import { Color } from '../colors'
@@ -133,5 +135,136 @@ export const SHAPES = {
   sound: {},
 } as const
 
-/** Root maps of a board doc. */
-export const ROOTS = { meta: 'meta', pads: 'pads', tracks: 'tracks', sounds: 'sounds' } as const
+/**
+ * The jam's master knobs: each one's range, step and default. Every default leaves the mix
+ * unchanged. Shared by the schema, the engine, the console and the agent docs.
+ */
+export const MASTER_KNOBS = {
+  /** Below 0 darkens (low-pass), above 0 thins (high-pass), as a track's tone does. */
+  tone: { min: -1, max: 1, step: 0.01, default: 0 },
+  /** Saturates the mix and evens its loudness. */
+  drive: { min: 0, max: 1, step: 0.01, default: 0 },
+  /** -1 is mono, 0 as recorded, +1 extra wide. */
+  width: { min: -1, max: 1, step: 0.01, default: 0 },
+  /** Delays every off-beat 16th, by up to half a 16th at 1. Applied at playback only. */
+  swing: { min: 0, max: 1, step: 0.01, default: 0 },
+} as const
+export type MasterKnob = keyof typeof MASTER_KNOBS
+export const MASTER_KNOB_NAMES = Object.keys(MASTER_KNOBS) as MasterKnob[]
+
+/**
+ * The touchpad's modes: each one's X and Y range. Every mode is off at 0/0, its default.
+ * Repeat also stores the jam beat its slice starts on.
+ */
+export const FX_MODES = {
+  /** X below 0 low-pass, above 0 high-pass; Y is resonance. */
+  filter: { x: { min: -1, max: 1 }, y: { min: 0, max: 1 } },
+  /** X picks the echo time, Y the send and feedback. */
+  throw: { x: { min: 0, max: 1 }, y: { min: 0, max: 1 } },
+  /** X lowers the sample rate, Y the bit depth. */
+  lofi: { x: { min: 0, max: 1 }, y: { min: 0, max: 1 } },
+  /** X picks the slice, Y the repeats' level; Y 0 is off. */
+  repeat: { x: { min: 0, max: 1 }, y: { min: 0, max: 1 } },
+} as const
+export type FxMode = keyof typeof FX_MODES
+export const FX_MODE_NAMES = Object.keys(FX_MODES) as FxMode[]
+
+const masterKnob = (k: MasterKnob) => z.number().min(MASTER_KNOBS[k].min).max(MASTER_KNOBS[k].max)
+
+const fxAxes = (m: FxMode) =>
+  z.object({
+    x: z.number().min(FX_MODES[m].x.min).max(FX_MODES[m].x.max),
+    y: z.number().min(FX_MODES[m].y.min).max(FX_MODES[m].y.max),
+  })
+
+/** The latest jam beat repeat's slice may start on. */
+export const REPEAT_START_BEAT_MAX = 10_000_000
+
+/**
+ * One stored value per master control, in the root array `master`, kept in y-utility's
+ * `YKeyValue` layout through duratom's key-value kind (`readKey`, `writeKey`, `keyValueAtom`).
+ * Knobs hold a number; filter, throw and lofi hold `{x, y}`; repeat also holds `startBeat`.
+ */
+export const MasterValues = {
+  tone: masterKnob('tone'),
+  drive: masterKnob('drive'),
+  width: masterKnob('width'),
+  swing: masterKnob('swing'),
+  filter: fxAxes('filter'),
+  throw: fxAxes('throw'),
+  lofi: fxAxes('lofi'),
+  /** startBeat sits on the 16th grid, below a cap (weeks of play at any tempo). */
+  repeat: fxAxes('repeat').extend({
+    startBeat: z.number().min(0).max(REPEAT_START_BEAT_MAX).multipleOf(0.25),
+  }),
+} as const
+export type MasterKey = keyof typeof MasterValues
+export const MASTER_KEYS = Object.keys(MasterValues) as MasterKey[]
+
+/** Every master setting, with missing or unreadable ones at their defaults. */
+export type Master = { [K in MasterKey]: z.infer<(typeof MasterValues)[K]> }
+
+export const MASTER_DEFAULTS: Master = {
+  tone: MASTER_KNOBS.tone.default,
+  drive: MASTER_KNOBS.drive.default,
+  width: MASTER_KNOBS.width.default,
+  swing: MASTER_KNOBS.swing.default,
+  filter: { x: 0, y: 0 },
+  throw: { x: 0, y: 0 },
+  lofi: { x: 0, y: 0 },
+  repeat: { x: 0, y: 0, startBeat: 0 },
+}
+
+/**
+ * Every master setting stored in the `master` array, with missing or unreadable ones at their
+ * defaults. Each key reads its current entry (the rightmost, as in `YKeyValue`) through its schema.
+ */
+export function masterOf(master: Y.Array<unknown> | undefined): Master {
+  const out: Record<string, unknown> = {}
+  for (const key of MASTER_KEYS) {
+    const r = readKey(MasterValues[key], master, key)
+    out[key] = r && !r.issues ? r.value : MASTER_DEFAULTS[key]
+  }
+  return out as Master
+}
+
+/** Master settings from a `keyValueAtom` read: each valid value, or its default. */
+export function masterFromRead(read: {
+  [K in MasterKey]?: { value: Master[K] } | { issues: unknown } | undefined
+}): Master {
+  const out: Record<string, unknown> = {}
+  for (const key of MASTER_KEYS) {
+    const r = read[key]
+    out[key] = r && 'value' in r ? r.value : MASTER_DEFAULTS[key]
+  }
+  return out as Master
+}
+
+/**
+ * Whether a touchpad mode sounds, so its tab shows a dot: away from 0/0, and for repeat, Y above
+ * 0 (its Y 0 is off).
+ */
+export const fxOn = (mode: FxMode, p: { x: number; y: number }) =>
+  mode === 'repeat' ? p.y !== 0 : p.x !== 0 || p.y !== 0
+
+/**
+ * Live controls as presence names them while someone holds one (the `control` awareness key).
+ * Each kind has its own prefix, so a track id can never name a master knob or touchpad mode.
+ */
+export const CONTROL_KEYS = {
+  /** A loop's level or sound knob: `track.<trackId>.<field>`, the field as `setTrack` names it. */
+  track: (trackId: string, field: string) => `track.${trackId}.${field}`,
+  /** A master knob: `master.<knob>`. */
+  master: (knob: MasterKnob) => `master.${knob}`,
+  /** A touchpad mode: `fx.<mode>`. */
+  fx: (mode: FxMode) => `fx.${mode}`,
+} as const
+
+/** Root types of a board doc: maps, except `master`, a key-value array (`select.keyValue`). */
+export const ROOTS = {
+  meta: 'meta',
+  pads: 'pads',
+  tracks: 'tracks',
+  sounds: 'sounds',
+  master: 'master',
+} as const

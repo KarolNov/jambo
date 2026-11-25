@@ -1,9 +1,19 @@
 import { isMap } from 'duratom'
-import { create, read, write } from 'duratom/core'
+import { create, read, readKey, write, writeKey } from 'duratom/core'
 import * as Y from 'yjs'
 import { isUploadId, padKeyOrder, SOUND_IDS, UPLOADS } from '../sounds'
 import { type Issue, Op, type OpResult } from './ops'
-import { LIMITS, Meta, Pad, ROOTS, SHAPES, Sound, Track } from './schema'
+import {
+  LIMITS,
+  type MasterKey,
+  MasterValues,
+  Meta,
+  Pad,
+  ROOTS,
+  SHAPES,
+  Sound,
+  Track,
+} from './schema'
 
 /** Who made a change: tagged on the transaction, so undo and presence can tell people apart. */
 export type Origin = { kind: 'user' | 'ai' | 'system'; id: string }
@@ -51,6 +61,20 @@ export function countUploads(doc: Y.Doc): number {
   let n = 0
   sounds.forEach((_, id) => isListedSound(sounds, id) && n++)
   return n
+}
+
+/** The beat repeat's slice starts on, or 0 while repeat is unset or unreadable. */
+const readStartBeat = (master: Y.Array<unknown>) => {
+  const r = readKey(MasterValues.repeat, master, 'repeat')
+  return r && !r.issues ? r.value.startBeat : 0
+}
+
+/** Checks `val` against the schema of master control `key`, keyed under the field name. */
+const checkMaster = (key: MasterKey, val: unknown, path: PropertyKey[] = [key]) => {
+  const r = MasterValues[key].safeParse(val)
+  return r.success
+    ? undefined
+    : r.error.issues.map((i): Issue => ({ message: i.message, path: [...path, ...i.path] }))
 }
 
 /** Operations only the room may apply: it stores and deletes the audio they list. */
@@ -164,6 +188,33 @@ function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
         if (written.issues) return fromResult(written)
       }
       return { ok: true }
+    }
+    case 'setMaster': {
+      const entries = Object.entries(op.set) as [MasterKey, number][]
+      const issues = entries.flatMap(([k, val]) => checkMaster(k, val, ['set', k]) ?? [])
+      if (issues.length > 0) return { ok: false, issues }
+      const master = doc.getArray(ROOTS.master)
+      for (const [k, val] of entries) {
+        const written = fromResult(writeKey(MasterValues[k], master, k, val))
+        if (!written.ok) return written
+      }
+      return { ok: true }
+    }
+    case 'setFx': {
+      if (op.mode !== 'repeat' && op.startBeat !== undefined)
+        return fail(`Only repeat takes a start beat`, ['startBeat'])
+      const master = doc.getArray(ROOTS.master)
+      const val =
+        op.mode === 'repeat'
+          ? {
+              x: op.x,
+              y: op.y,
+              startBeat: op.startBeat ?? readStartBeat(master),
+            }
+          : { x: op.x, y: op.y }
+      const issues = checkMaster(op.mode, val, [])
+      if (issues) return { ok: false, issues }
+      return fromResult(writeKey(MasterValues[op.mode], master, op.mode, val as never))
     }
   }
 }

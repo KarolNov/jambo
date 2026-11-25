@@ -4,7 +4,12 @@ import * as Y from 'yjs'
 import {
   apply,
   board,
+  CONTROL_KEYS,
+  FX_MODES,
   LIMITS,
+  MASTER_DEFAULTS,
+  MASTER_KNOBS,
+  masterOf,
   Meta,
   Pad,
   ROOTS,
@@ -19,7 +24,7 @@ import {
 import { isUploadId, newUploadId, SOUNDS, UPLOADS } from '../shared/sounds'
 import { docAtom } from 'duratom'
 import { createStore } from 'jotai'
-import { tracksAtom } from '../src/board/model'
+import { masterAtom, tracksAtom } from '../src/board/model'
 
 const me = { kind: 'user', id: 'me' } as const
 
@@ -627,5 +632,158 @@ describe('board model', () => {
     const store = createStore()
     store.set(docAtom, doc)
     expect([...store.get(tracksAtom).keys()]).toEqual(['good'])
+  })
+})
+
+describe('master settings', () => {
+  const masterOfDoc = (doc: Y.Doc) => masterOf(doc.getArray(ROOTS.master))
+  const entries = (doc: Y.Doc) =>
+    doc
+      .getArray<{ key: string }>(ROOTS.master)
+      .toArray()
+      .map((e) => e.key)
+
+  it('reads every default from a jam with no master entries', () => {
+    expect(masterOfDoc(new Y.Doc())).toEqual(MASTER_DEFAULTS)
+    for (const [k, { default: d }] of Object.entries(MASTER_KNOBS))
+      expect(MASTER_DEFAULTS[k as keyof typeof MASTER_KNOBS]).toBe(d)
+    for (const m of Object.keys(FX_MODES))
+      expect(MASTER_DEFAULTS[m as keyof typeof FX_MODES]).toMatchObject({ x: 0, y: 0 })
+  })
+
+  // @scenario board/ops: Set the drive
+  it('sets one master knob and leaves the others', () => {
+    const doc = new Y.Doc()
+    const b = board(doc, me)
+    expect(b.master({ tone: -0.6, swing: 0.5 }).ok).toBe(true)
+    expect(b.master({ drive: 0.4 }).ok).toBe(true)
+    expect(masterOfDoc(doc)).toEqual({ ...MASTER_DEFAULTS, tone: -0.6, swing: 0.5, drive: 0.4 })
+  })
+
+  it('refuses a knob out of range or unknown, changing nothing', () => {
+    const doc = new Y.Doc()
+    const b = board(doc, me)
+    b.master({ width: 0.5 })
+    const out = apply(doc, [{ op: 'setMaster', set: { width: -1, drive: 1.5 } }], me)[0]!
+    expect(out.ok).toBe(false)
+    expect(!out.ok && out.issues[0]!.path).toEqual(['set', 'drive'])
+    expect(apply(doc, [{ op: 'setMaster', set: { volume: 1 } }], me)[0]!.ok).toBe(false)
+    expect(apply(doc, [{ op: 'setMaster', set: { filter: 0 } }], me)[0]!.ok).toBe(false)
+    expect(masterOfDoc(doc).width).toBe(0.5)
+  })
+
+  it('sets and resets a touchpad mode', () => {
+    const doc = new Y.Doc()
+    const b = board(doc, me)
+    expect(b.fx('filter').set(-0.4, 0.3).ok).toBe(true)
+    expect(b.fx('lofi').set(0.7, 0.8).ok).toBe(true)
+    expect(masterOfDoc(doc).filter).toEqual({ x: -0.4, y: 0.3 })
+    expect(b.fx('lofi').reset().ok).toBe(true)
+    expect(masterOfDoc(doc).lofi).toEqual({ x: 0, y: 0 })
+    expect(masterOfDoc(doc).filter).toEqual({ x: -0.4, y: 0.3 })
+  })
+
+  // @scenario board/ops: Out of range
+  it('refuses a mode position out of range or an unknown mode', () => {
+    const doc = new Y.Doc()
+    const b = board(doc, me)
+    b.fx('filter').set(0.2, 0)
+    expect(b.fx('filter').set(-1.5, 0).ok).toBe(false)
+    expect(b.fx('throw').set(-0.1, 0).ok).toBe(false)
+    expect(apply(doc, [{ op: 'setFx', mode: 'chorus', x: 0, y: 0 }], me)[0]!.ok).toBe(false)
+    expect(masterOfDoc(doc).filter).toEqual({ x: 0.2, y: 0 })
+    expect(masterOfDoc(doc).throw).toEqual({ x: 0, y: 0 })
+  })
+
+  it('stores the start beat for repeat only, keeping it when left out', () => {
+    const doc = new Y.Doc()
+    const b = board(doc, me)
+    expect(b.fx('repeat').set(0.1, 1, 12).ok).toBe(true)
+    expect(b.fx('repeat').set(0.6, 1).ok).toBe(true)
+    expect(masterOfDoc(doc).repeat).toEqual({ x: 0.6, y: 1, startBeat: 12 })
+    expect(b.fx('repeat').set(0, 0, -1).ok).toBe(false)
+    expect(b.fx('filter').set(0, 0, 4).ok).toBe(false)
+  })
+
+  // @scenario board/ops: Two controls at once
+  it('keeps concurrent changes to different controls, last write wins on the same one', () => {
+    const a = new Y.Doc()
+    const c = new Y.Doc()
+    board(a, me).fx('filter').set(-0.5, 0)
+    Y.applyUpdate(c, Y.encodeStateAsUpdate(a))
+    // Offline: each changes a different control, and both change drive.
+    board(a, me).fx('filter').set(-0.8, 0.2)
+    board(a, me).master({ drive: 0.2 })
+    board(c, me).fx('throw').set(0.9, 0.8)
+    board(c, me).master({ drive: 0.7 })
+    Y.applyUpdate(a, Y.encodeStateAsUpdate(c))
+    Y.applyUpdate(c, Y.encodeStateAsUpdate(a))
+    const ma = masterOfDoc(a)
+    expect(ma).toEqual(masterOfDoc(c))
+    expect(ma.filter).toEqual({ x: -0.8, y: 0.2 })
+    expect(ma.throw).toEqual({ x: 0.9, y: 0.8 })
+    expect([0.2, 0.7]).toContain(ma.drive)
+    // Both drives stay until the next write to drive, which drops the older one.
+    board(a, me).master({ drive: 0.5 })
+    Y.applyUpdate(c, Y.encodeStateAsUpdate(a))
+    expect(masterOfDoc(c).drive).toBe(0.5)
+    expect(entries(a).sort()).toEqual(['drive', 'filter', 'throw'])
+    expect(entries(c).sort()).toEqual(['drive', 'filter', 'throw'])
+  })
+
+  // @scenario board/ops: Lots of moves
+  it('stores one entry per control after many moves', () => {
+    const doc = new Y.Doc()
+    const b = board(doc, me)
+    for (let i = 0; i <= 200; i++) {
+      b.fx('filter').set(i % 2 ? -0.5 : 0.5, i / 200)
+      b.fx('throw').set(i / 200, 0.5)
+      b.master({ tone: i % 2 ? -1 : 1 })
+    }
+    expect(entries(doc).sort()).toEqual(['filter', 'throw', 'tone'])
+    expect(masterOfDoc(doc)).toMatchObject({
+      tone: 1,
+      filter: { x: 0.5, y: 1 },
+      throw: { x: 1, y: 0.5 },
+    })
+  })
+
+  it('reads the current entry per key, and an unreadable one as its default', () => {
+    const doc = new Y.Doc()
+    doc.getArray(ROOTS.master).push([
+      { key: 'tone', val: -0.5 },
+      { key: 'swing', val: 0.3 },
+      { key: 'swing', val: 7 },
+      { key: 'filter', val: { x: 'left' } },
+      { key: 'volume', val: 1 },
+    ])
+    expect(masterOfDoc(doc)).toEqual({ ...MASTER_DEFAULTS, tone: -0.5 })
+    // Writing a valid value repairs it.
+    board(doc, me).master({ swing: 0.4 })
+    expect(masterOfDoc(doc).swing).toBe(0.4)
+    expect(masterOf(undefined)).toEqual(MASTER_DEFAULTS)
+  })
+
+  // @scenario audio/master: Older jam
+  it('masterAtom reads defaults, then follows changes', () => {
+    const doc = seededDoc()
+    const store = createStore()
+    store.set(docAtom, doc)
+    expect(store.get(masterAtom)).toEqual(MASTER_DEFAULTS)
+    store.sub(masterAtom, () => {})
+    board(doc, me).master({ swing: 0.5 })
+    board(doc, me).fx('filter').set(-0.4, 0)
+    expect(store.get(masterAtom)).toEqual({
+      ...MASTER_DEFAULTS,
+      swing: 0.5,
+      filter: { x: -0.4, y: 0 },
+    })
+  })
+
+  it('names master knobs and modes for presence apart from loops', () => {
+    expect(CONTROL_KEYS.master('tone')).toBe('master.tone')
+    expect(CONTROL_KEYS.fx('filter')).toBe('fx.filter')
+    expect(CONTROL_KEYS.track('0abc-12', 'reverb')).toBe('track.0abc-12.reverb')
+    expect(CONTROL_KEYS.track('master', 'tone')).not.toBe(CONTROL_KEYS.master('tone'))
   })
 })

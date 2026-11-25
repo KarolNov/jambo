@@ -1,7 +1,7 @@
 import type * as Y from 'yjs'
 import { apply, type Origin } from './apply'
 import type { Op, OpResult, TrackPatch } from './ops'
-import type { Track } from './schema'
+import type { FxMode, MasterKnob, Track } from './schema'
 
 /**
  * The board SDK: a thin, fluent way to write operations. Every method emits exactly one
@@ -13,6 +13,8 @@ import type { Track } from './schema'
  * b.pad('r0c0').assign('kick')
  * b.track(id).set({ mute: true })
  * b.track(id).set({ reverb: 0.4, pitch: -5 })
+ * b.master({ tone: -0.6, swing: 0.5 })
+ * b.fx('filter').set(-0.5, 0.2)
  * ```
  */
 export function board(doc: Y.Doc, origin: Origin) {
@@ -27,6 +29,15 @@ export function board(doc: Y.Doc, origin: Origin) {
     /** Moves every pad on sound `from` to sound `to`. Tracks follow, since they hit pads. */
     replaceSound: (from: string, to: string) => one({ op: 'replaceSound', from, to }),
     addTrack: (id: string, track: Track) => one({ op: 'addTrack', id, track }),
+    /** Sets any of the master knobs; the rest keep their value. */
+    master: (set: Partial<Record<MasterKnob, number>>) => one({ op: 'setMaster', set }),
+    fx: (mode: FxMode) => ({
+      /** Puts the mode at `x`, `y`. Repeat takes the jam beat its slice starts on. */
+      set: (x: number, y: number, startBeat?: number) =>
+        one({ op: 'setFx', mode, x, y, ...(startBeat === undefined ? {} : { startBeat }) }),
+      /** Puts the mode back to 0/0, which is off. */
+      reset: () => one({ op: 'setFx', mode, x: 0, y: 0 }),
+    }),
     track: (id: string) => ({
       set: (patch: TrackPatch) => one({ op: 'setTrack', id, patch }),
       remove: () => one({ op: 'removeTrack', id }),
