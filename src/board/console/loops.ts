@@ -1,6 +1,7 @@
 /** The mixer's wording and geometry, kept apart from React so it can be tested. */
 import {
   BEATS_PER_BAR,
+  type FxMode,
   type MasterKnob,
   QUANTIZE,
   SOUND_KNOB_NAMES,
@@ -82,5 +83,26 @@ export const MASTER_READOUTS: Record<
         : pct(v) === 100 && v < 0
           ? 'Mono'
           : `${v < 0 ? 'Narrow' : 'Wide'} ${pct(v)}%`,
+  },
+}
+
+/** The touchpad's modes, in the picker's order. Throw, Lo-fi and Repeat join as they sound. */
+export const TOUCHPAD_MODES = ['filter'] as const satisfies readonly FxMode[]
+
+/** An axis of a touchpad mode as it reads: its name, and its value in the bubble and to screen readers. */
+type AxisReadout = { label: string; format: (v: number) => string }
+
+/** Each touchpad mode's name on its tab, and how its X and Y read. */
+export const TOUCHPAD_READOUTS: Record<
+  (typeof TOUCHPAD_MODES)[number],
+  { label: string; x: AxisReadout; y: AxisReadout }
+> = {
+  filter: {
+    label: 'Filter',
+    x: {
+      label: 'Cutoff',
+      format: (v) => (pct(v) === 0 ? 'Open' : `${v < 0 ? 'Low-pass' : 'High-pass'} ${pct(v)}%`),
+    },
+    y: { label: 'Resonance', format: (v) => `${pct(v)}%` },
   },
 }

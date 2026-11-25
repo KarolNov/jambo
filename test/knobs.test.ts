@@ -6,6 +6,9 @@ import {
   driveCurve,
   driveGlue,
   echoSeconds,
+  FILTER_Q_MAX,
+  FILTER_Q_MIN,
+  filterSweep,
   pitchRate,
   reverbImpulse,
   toneFilter,
@@ -122,5 +125,25 @@ describe('widthGains', () => {
     expect(widthGains(0)).toEqual({ direct: 1, cross: -0 })
     expect(widthGains(-1)).toEqual({ direct: 0.5, cross: 0.5 })
     expect(widthGains(1)).toEqual({ direct: 1.5, cross: -0.5 })
+  })
+})
+
+describe('filterSweep', () => {
+  const db = (q: number) => 20 * Math.log10(q)
+
+  it('is open at x 0, a low-pass at Nyquist, whatever the resonance', () => {
+    expect(filterSweep(0, 0, 24000)).toMatchObject({ type: 'lowpass', frequency: 24000 })
+    expect(filterSweep(0, 1, 24000)).toMatchObject({ type: 'lowpass', frequency: 24000 })
+  })
+
+  it('sweeps as tone does: a low-pass closing to the left, a high-pass rising to the right', () => {
+    for (const x of [-1, -0.5, 0.3, 1])
+      expect(filterSweep(x, 0, 24000)).toMatchObject(toneFilter(x, 24000))
+  })
+
+  it('raises the resonance from none at y 0 to strong at y 1, in decibels', () => {
+    expect(filterSweep(-0.5, 0).q).toBeCloseTo(db(FILTER_Q_MIN))
+    expect(filterSweep(-0.5, 1).q).toBeCloseTo(db(FILTER_Q_MAX))
+    expect(filterSweep(-0.5, 0.5).q).toBeGreaterThan(filterSweep(-0.5, 0.2).q)
   })
 })

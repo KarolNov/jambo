@@ -52,15 +52,17 @@ export function EngineFeed({ engine }: { engine: Engine }) {
   const pads = useAtomValue(padsAtom)
   const tracks = useAtomValue(tracksAtom)
   const sounds = useAtomValue(soundsAtom)
-  const { tone, drive, width } = useAtomValue(masterAtom)
+  const { tone, drive, width, filter } = useAtomValue(masterAtom)
+  // By value: the atom gives a new object on every read.
+  const { x: filterX, y: filterY } = filter
   useEffect(() => {
     engine.update({
       bpm,
       pads: new Map([...pads].map(([id, p]) => [id, p.soundId])),
       tracks,
       uploads: new Set(sounds.keys()),
-      master: { tone, drive, width },
+      master: { tone, drive, width, filter: { x: filterX, y: filterY } },
     })
-  }, [engine, bpm, pads, tracks, sounds, tone, drive, width])
+  }, [engine, bpm, pads, tracks, sounds, tone, drive, width, filterX, filterY])
   return null
 }

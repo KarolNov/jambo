@@ -19,6 +19,7 @@ import {
   Select,
   Switch,
   Tabs,
+  XYPad,
 } from '../ui'
 import { SWATCHES } from '../theme/palette'
 import { useTheme } from '../theme/theme'
@@ -91,6 +92,52 @@ function usePeer(held?: boolean) {
   const theme = useTheme()
   const theirs = useContext(PickedColor) === 'violet' ? 'amber' : 'violet'
   return held ? { name: 'Misty Yak', color: SWATCHES[theirs][theme] } : undefined
+}
+
+const signed = (v: number) => `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`
+
+function XYPadDemo({
+  start,
+  disabled,
+  live,
+  held,
+}: {
+  start: [number, number]
+  disabled?: boolean
+  live?: boolean
+  held?: boolean
+}) {
+  const [[x, y], setXY] = useState(start)
+  const peer = usePeer(held)
+  // A live pad's owner sees each change as it moves: count them, to show it applies once a frame.
+  const [changes, setChanges] = useState(0)
+  const pad = (
+    <XYPad
+      label="Filter"
+      x={x}
+      y={y}
+      onChange={(nx, ny) => {
+        setXY([nx, ny])
+        setChanges((n) => n + 1)
+      }}
+      xAxis={{ label: 'Cutoff', min: -1, max: 1, format: signed }}
+      yAxis={{ label: 'Resonance', format: percent }}
+      home={{ x: 0, y: 0 }}
+      live={live}
+      disabled={disabled}
+      heldBy={peer}
+      className="ds-xy"
+    />
+  )
+  if (!live) return pad
+  return (
+    <span className="ds-knob-live">
+      {pad}
+      <span>
+        {signed(x)} · {percent(y)} · {changes} applied
+      </span>
+    </span>
+  )
 }
 
 function RangeDemo({
@@ -385,6 +432,23 @@ export const CATALOGUE: Entry[] = [
     ],
   },
   {
+    name: 'XYPad',
+    summary:
+      'A square that sets two values at once: press anywhere and drag, and the puck follows with a line through it on each axis. Applies on release, or once a frame as it moves when live, and stays where it is let go; Escape puts it back. Arrows move it a step (Shift for ten). Screen readers hear two sliders.',
+    states: [
+      { label: 'At home', demo: <XYPadDemo start={[0, 0]} /> },
+      { label: 'Live: applies as it moves', demo: <XYPadDemo start={[-0.5, 0.4]} live /> },
+      { label: 'Disabled', demo: <XYPadDemo start={[0.3, 0.6]} disabled /> },
+      { label: 'Moved by someone else', demo: <XYPadDemo start={[-0.4, 0.7]} live held /> },
+    ],
+    use: [
+      'Two parameters played together by feel, such as a touchpad effect’s cutoff and resonance.',
+      'Make it live when everyone hears it as it moves, and mark home where it is off.',
+      'Name each axis for screen readers (xAxis.label, yAxis.label), and give each a format.',
+    ],
+    avoid: ['One value: use Knob or Range.', 'Values people need exactly: use ScrubField.'],
+  },
+  {
     name: 'ScrubField',
     summary:
       'A number field whose label scrubs it: drag the label sideways to change the value, applied once on release. It can also be typed in and stepped with the arrow keys.',
@@ -503,10 +567,23 @@ export const CATALOGUE: Entry[] = [
           />
         ),
       },
+      {
+        label: 'With a dot: its content is on',
+        demo: (
+          <Tabs
+            label="Touchpad modes"
+            tabs={[
+              { id: 'filter', label: 'Filter', content: null, dot: 'on' },
+              { id: 'throw', label: 'Throw', content: null, dot: '' },
+            ]}
+          />
+        ),
+      },
     ],
     use: [
       'A few parallel versions of the same content where people want one at a time, such as setup steps per app on /about.',
       'Short labels, so more of them fit before "+N" (as in these narrow demos).',
+      'A dot on a tab whose content is on (a touchpad mode away from 0/0); give the others an empty dot so tabs keep their width.',
     ],
     avoid: [
       'Picking a value that changes the music or the jam: use Select or Switch.',

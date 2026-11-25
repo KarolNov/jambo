@@ -8,7 +8,7 @@ import type { Track } from '../../shared/board'
 import { barMs, beatSeconds } from '../../shared/looper'
 import { JamClock } from '../../src/audio/clock'
 import { Engine, type RecorderState } from '../../src/audio/engine'
-import { MasterChain, type MasterSound } from '../../src/audio/master'
+import { MASTER_SOUND_DEFAULTS, MasterChain, type MasterSound } from '../../src/audio/master'
 import { SampleLoader } from '../../src/audio/samples'
 import { agree, emit, mockServer, offlineProvider, SLUG } from './jam'
 
@@ -71,7 +71,7 @@ async function offline({
     pads: new Map([[PAD, sound]]),
     tracks: new Map(tracks.map((t, i) => [`t${i}`, t])),
     uploads: new Set(),
-    master: master && { tone: 0, drive: 0, width: 0, ...master },
+    master: master && { ...MASTER_SOUND_DEFAULTS, ...master },
   })
   await engine.unlock()
   expect(engine.ready).toBe(true)
@@ -297,7 +297,7 @@ async function throughChain(left: Float32Array, right: Float32Array, sound: Mast
   return [out.getChannelData(0), out.getChannelData(1)] as const
 }
 
-const DEFAULTS: MasterSound = { tone: 0, drive: 0, width: 0 }
+const DEFAULTS = MASTER_SOUND_DEFAULTS
 
 describe('master', () => {
   /** A quarter second of noise, different in each ear: loud, bright and wide. */
@@ -379,7 +379,10 @@ describe('master', () => {
     const seconds = (2 * bar) / 1000
     const dry = await render(await offline({ seconds }), take)
     const wet = await render(
-      await offline({ seconds, master: { tone: -1, drive: 1, width: -1 } }),
+      await offline({
+        seconds,
+        master: { tone: -1, drive: 1, width: -1, filter: { x: -1, y: 1 } },
+      }),
       take,
     )
     for (const ch of [0, 1]) expect(wet[ch]).toEqual(dry[ch])
@@ -404,6 +407,51 @@ describe('master', () => {
     const [wideLeft, wideRight] = await throughChain(left, right, { ...DEFAULTS, width: 1 })
     expect(side(wideLeft, wideRight)).toBeCloseTo(2 * side(left, right), 2)
     expect(mid(wideLeft, wideRight)).toBeCloseTo(mid(left, right), 2)
+  })
+
+  it('passes the mix through unchanged with the filter open, whatever its resonance', async () => {
+    const left = noise(3)
+    const right = noise(11)
+    const [outLeft, outRight] = await throughChain(left, right, {
+      ...DEFAULTS,
+      filter: { x: 0, y: 1 },
+    })
+    for (let i = 0; i < left.length; i++) {
+      expect(Math.abs(outLeft[i]! - left[i]!), `left ${i}`).toBeLessThan(1e-5)
+      expect(Math.abs(outRight[i]! - right[i]!), `right ${i}`).toBeLessThan(1e-5)
+    }
+  })
+
+  // @scenario audio/master: Sweep down
+  it('darkens the whole mix steadily as the filter goes from x 0 to x -1', async () => {
+    const seconds = barMs(100) / 1000
+    const tracks = [track(), track({ hits: [{ padId: PAD, beat: 2 }] })]
+    const at = async (x: number) =>
+      brightness(
+        (
+          await render(
+            await offline({ seconds, tracks, sound: 'hat', master: { filter: { x, y: 0 } } }),
+          )
+        )[0],
+      )
+    const sweep = [await at(0), await at(-0.33), await at(-0.66), await at(-1)]
+    for (let i = 1; i < sweep.length; i++) expect(sweep[i]).toBeLessThan(sweep[i - 1]!)
+    expect(sweep[3]).toBeLessThan(sweep[0]! / 4)
+  })
+
+  it('thins the mix with the filter above x 0, and rings with resonance', async () => {
+    const left = noise(3)
+    const right = noise(11)
+    const [open] = await throughChain(left, right, DEFAULTS)
+    const [thin] = await throughChain(left, right, { ...DEFAULTS, filter: { x: 0.6, y: 0 } })
+    // Brightness for its loudness: a high-pass leaves less, and what it leaves is higher.
+    const tilt = (data: Float32Array) => brightness(data) / (rms(data) ** 2 * data.length)
+    expect(rms(thin)).toBeLessThan(rms(open))
+    expect(tilt(thin)).toBeGreaterThan(tilt(open))
+    // Strong resonance stacks energy at the cutoff: louder than the plain sweep there.
+    const [flat] = await throughChain(left, right, { ...DEFAULTS, filter: { x: -0.5, y: 0 } })
+    const [ringing] = await throughChain(left, right, { ...DEFAULTS, filter: { x: -0.5, y: 1 } })
+    expect(rms(ringing)).toBeGreaterThan(rms(flat) * 1.5)
   })
 
   it('saturates and evens the mix with drive', async () => {

@@ -138,7 +138,7 @@ export function Switch({
 export type Holder = { name: string; color: string }
 
 /** What a live control shared with others takes, to show who else is turning it. */
-type SharedProps = {
+export type SharedProps = {
   /**
    * Someone else holding it now: it lights in their colour in place of its own, their name is in
    * the bubble, and it doesn't move for you until they let go. Set while you drag it (you lost a
@@ -151,7 +151,7 @@ type SharedProps = {
 }
 
 /** Reports `dragging` to `onDragChange` as it starts and stops, and stops it on unmount. */
-function useDragReport(dragging: boolean, onDragChange?: (dragging: boolean) => void) {
+export function useDragReport(dragging: boolean, onDragChange?: (dragging: boolean) => void) {
   const report = useRef(onDragChange)
   useEffect(() => {
     report.current = onDragChange
@@ -167,7 +167,7 @@ function useDragReport(dragging: boolean, onDragChange?: (dragging: boolean) => 
  * A bubble's text: the value while you drag, or the name of whoever else is turning it (the
  * control itself shows their value).
  */
-function bubbleText(value: string, dragging: boolean, heldBy?: Holder) {
+export function bubbleText(value: string, dragging: boolean, heldBy?: Holder) {
   if (dragging || !heldBy) return value
   return (
     <span className="ui-held-name" style={{ color: heldBy.color }}>
@@ -180,7 +180,7 @@ function bubbleText(value: string, dragging: boolean, heldBy?: Holder) {
  * A held control's colour: the holder's, in place of its own (`--ui-c`), so what moves on it shows
  * as theirs. `--ui-held` keeps it for anything that needs the holder's colour by name.
  */
-const heldVars = (heldBy?: Holder) =>
+export const heldVars = (heldBy?: Holder) =>
   heldBy ? ({ '--ui-held': heldBy.color, '--ui-c': heldBy.color } as CSSProperties) : undefined
 
 export type RangeProps = Omit<

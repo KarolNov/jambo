@@ -26,7 +26,7 @@ import {
   reverbImpulse,
   toneFilter,
 } from './knobs'
-import { MasterChain, type MasterSound } from './master'
+import { MASTER_SOUND_DEFAULTS, MasterChain, type MasterSound } from './master'
 import type { SampleLoader } from './samples'
 import { click, renderKit } from './synth'
 import { keepAwake, preferPlayback } from './session'
@@ -105,7 +105,7 @@ export class Engine {
   /** The master stage everything but the clicks plays through. */
   private chain?: MasterChain
   /** The board's master knobs, kept for when audio starts. */
-  private masterSound: MasterSound = { tone: 0, drive: 0, width: 0 }
+  private masterSound: MasterSound = MASTER_SOUND_DEFAULTS
   /** The shared room every loop's reverb send feeds. */
   private reverb?: ConvolverNode
   /** The shared echo every loop's echo send feeds; its time follows the tempo. */
@@ -261,7 +261,7 @@ export class Engine {
 
   /**
    * Feeds the board's current state: tempo, pad sounds, uploads, every readable track by id, and
-   * the master knobs (left as they are when not given).
+   * the master settings (left as they are when not given).
    */
   update(state: {
     bpm: number
@@ -271,8 +271,8 @@ export class Engine {
     master?: MasterSound
   }) {
     if (state.master) {
-      const { tone, drive, width } = state.master
-      this.masterSound = { tone, drive, width }
+      const { tone, drive, width, filter } = state.master
+      this.masterSound = { tone, drive, width, filter }
       this.chain?.set(this.masterSound)
     }
     this.samples.sync(state.uploads)

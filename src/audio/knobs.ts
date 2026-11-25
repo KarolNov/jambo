@@ -125,3 +125,27 @@ export function driveGlue(drive: number): { threshold: number; ratio: number; ma
 export function widthGains(width: number): { direct: number; cross: number } {
   return { direct: (2 + width) / 2, cross: -width / 2 }
 }
+
+/*
+ * The touchpad's modes (see `FX_MODES`).
+ */
+
+/** The filter mode's resonance as a linear Q: none (a Butterworth's 0.7) at Y 0, strong at Y 1. */
+export const FILTER_Q_MIN = Math.SQRT1_2
+export const FILTER_Q_MAX = 12
+
+/**
+ * The filter mode at `x`, `y`: X sweeps the whole mix as `toneFilter` does (a low-pass closing
+ * toward -1, a high-pass rising toward +1, open at 0), and Y raises the resonance, exponentially
+ * from `FILTER_Q_MIN` to `FILTER_Q_MAX`. `q` is in decibels, as a low- or high-pass
+ * `BiquadFilterNode` reads its Q. At x 0 the low-pass sits at `open` (pass the Nyquist), where it
+ * passes the sound through whatever the resonance.
+ */
+export function filterSweep(
+  x: number,
+  y: number,
+  open?: number,
+): { type: 'lowpass' | 'highpass'; frequency: number; q: number } {
+  const q = FILTER_Q_MIN * (FILTER_Q_MAX / FILTER_Q_MIN) ** y
+  return { ...toneFilter(x, open), q: 20 * Math.log10(q) }
+}

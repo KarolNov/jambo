@@ -20,6 +20,12 @@ export interface Tab {
   /** What the panel shows while this tab is selected. */
   content: ReactNode
   disabled?: boolean
+  /**
+   * A dot after the label that says the tab's content is on, such as a touchpad mode that sounds.
+   * Give it the words a screen reader hears for the dot ("on"), or '' to keep the dot's room
+   * without showing it (so the tab keeps its width as the dot comes and goes); leave it out for none.
+   */
+  dot?: string
 }
 
 export type TabsProps = {
@@ -136,10 +142,16 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
                 aria-selected={i === index}
                 tabIndex={i === index ? 0 : -1}
                 disabled={t.disabled}
+                aria-label={t.dot ? `${t.label}, ${t.dot}` : undefined}
                 className="ui-tab"
                 onClick={() => select(i)}
               >
-                <span className="ui-tab-label">{t.label}</span>
+                <span className="ui-tab-label">
+                  {t.label}
+                  {t.dot !== undefined && (
+                    <span className={`ui-tab-dot ${t.dot ? 'is-on' : ''}`} aria-hidden />
+                  )}
+                </span>
               </button>
             )
           })}
@@ -163,6 +175,7 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
           {tabs.map((t) => (
             <span key={t.id} className="ui-tab">
               {t.label}
+              {t.dot !== undefined && <span className="ui-tab-dot" />}
             </span>
           ))}
           <span className="ui-tab ui-tab-more">+{tabs.length}</span>

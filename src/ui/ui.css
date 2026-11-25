@@ -1196,3 +1196,200 @@
     transition: none;
   }
 }
+
+/* ── XY pad: two values from one square ─────────────────────────────────── */
+/* An inset square with a faint grid; the puck (the knob's cap, flat on its back) sits at --fx
+   across and --fy up of the area --xy-inset in from the edges (so it never hangs over them), with a line through it on each axis in the control's colour. Its two
+   sliders are invisible and only take focus and keys; the square shows their focus. Size it with
+   --xy (default 200px): it never grows wider than its container. */
+:root[data-theme] .ui-xy {
+  --xy: 200px;
+  --puck: 26px;
+  /* Where a fraction across (--px) or up (--py) of the puck's travel lands. */
+  --travel: calc(100% - 2 * var(--xy-inset));
+  position: relative;
+  display: inline-block;
+  width: min(var(--xy), 100%);
+  aspect-ratio: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+:root[data-theme] .ui-xy-surface {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  background: var(--bg);
+  box-shadow: var(--inset);
+  cursor: crosshair;
+  /* Every direction moves it, so the page doesn't scroll from a drag that starts here. */
+  touch-action: none;
+}
+/* Quarters in --line, kept off the rounded corners. */
+:root[data-theme] .ui-xy-grid {
+  position: absolute;
+  inset: 12px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent calc(25% - 0.5px),
+      var(--line) 0 calc(25% + 0.5px),
+      transparent 0 calc(50% - 0.5px),
+      var(--line) 0 calc(50% + 0.5px),
+      transparent 0 calc(75% - 0.5px),
+      var(--line) 0 calc(75% + 0.5px),
+      transparent 0
+    ),
+    linear-gradient(
+      transparent calc(25% - 0.5px),
+      var(--line) 0 calc(25% + 0.5px),
+      transparent 0 calc(50% - 0.5px),
+      var(--line) 0 calc(50% + 0.5px),
+      transparent 0 calc(75% - 0.5px),
+      var(--line) 0 calc(75% + 0.5px),
+      transparent 0
+    );
+  opacity: 0.5;
+  pointer-events: none;
+}
+/* The puck's lines: one down through it, one across. */
+:root[data-theme] .ui-xy-lines::before,
+:root[data-theme] .ui-xy-lines::after {
+  content: '';
+  position: absolute;
+  background: var(--ui-c, var(--accent-2));
+  opacity: 0.55;
+  pointer-events: none;
+}
+:root[data-theme] .ui-xy-lines::before {
+  top: 6px;
+  bottom: 6px;
+  left: calc(var(--xy-inset) + var(--fx) * var(--travel));
+  width: 2px;
+  translate: -1px 0;
+}
+:root[data-theme] .ui-xy-lines::after {
+  left: 6px;
+  right: 6px;
+  bottom: calc(var(--xy-inset) + var(--fy) * var(--travel));
+  height: 2px;
+  translate: 0 1px;
+}
+/* A small ring where the pad is home (off). */
+:root[data-theme] .ui-xy-home {
+  position: absolute;
+  left: calc(var(--xy-inset) + var(--hx) * var(--travel));
+  bottom: calc(var(--xy-inset) + var(--hy) * var(--travel));
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--line);
+  translate: -50% 50%;
+  pointer-events: none;
+}
+:root[data-theme] .ui-xy-puck {
+  position: absolute;
+  left: calc(var(--xy-inset) + var(--fx) * var(--travel));
+  bottom: calc(var(--xy-inset) + var(--fy) * var(--travel));
+  width: var(--puck);
+  height: var(--puck);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--ui-c, var(--accent-2)) 0 4px, transparent 4.5px),
+    radial-gradient(circle at 50% 30%, var(--cap-top), var(--cap-bot));
+  box-shadow:
+    inset 0 1px 0 var(--cap-edge),
+    0 1px 1px var(--cap-drop),
+    0 4px 7px -2px var(--cap-drop),
+    0 0 10px -2px color-mix(in srgb, var(--ui-c, var(--accent-2)) 60%, transparent);
+  translate: -50% 50%;
+  transition:
+    left 0.08s,
+    bottom 0.08s;
+  pointer-events: none;
+}
+:root[data-theme] .ui-xy.is-dragging .ui-xy-puck,
+:root[data-theme] .ui-xy.is-dragging .ui-xy-lines::before,
+:root[data-theme] .ui-xy.is-dragging .ui-xy-lines::after {
+  transition: none;
+}
+/* The values (or whoever else holds it), above the puck. */
+:root[data-theme] .ui-xy-bubble {
+  position: absolute;
+  left: calc(var(--xy-inset) + var(--fx) * var(--travel));
+  bottom: calc(var(--xy-inset) + var(--fy) * var(--travel) + var(--puck) / 2 + 6px);
+  padding: 3px 7px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ui-c, var(--accent-2));
+  background: var(--bg);
+  box-shadow: var(--raise-sm);
+  opacity: 0;
+  transform: translate(-50%, 4px) scale(0.85);
+  transition:
+    opacity 0.12s,
+    transform 0.12s;
+  pointer-events: none;
+  z-index: 1;
+}
+:root[data-theme] .ui-xy.is-dragging .ui-xy-bubble,
+:root[data-theme] .ui-xy.is-held .ui-xy-bubble {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+/* The sliders: no box of their own, so focus shows on the square. */
+:root[data-theme] .ui-xy-axis {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  outline: none;
+}
+:root[data-theme] .ui-xy:has(.ui-xy-axis:focus-visible) .ui-xy-surface {
+  box-shadow:
+    var(--inset),
+    inset 0 0 0 2px var(--focus);
+}
+:root[data-theme] .ui-xy.is-disabled .ui-xy-surface {
+  opacity: 0.45;
+  cursor: default;
+}
+/* Someone else is moving it: their colour rings the square and the puck, and the bubble names
+   them. It stays at full strength, showing their position. */
+:root[data-theme] .ui-xy.is-held .ui-xy-surface {
+  box-shadow:
+    var(--inset),
+    0 0 0 2px var(--ui-held);
+  cursor: not-allowed;
+}
+:root[data-theme] .ui-xy.is-held .ui-xy-puck {
+  box-shadow:
+    inset 0 1px 0 var(--cap-edge),
+    0 1px 1px var(--cap-drop),
+    0 0 0 2px var(--ui-held);
+}
+@media (prefers-reduced-motion: reduce) {
+  /* The puck jumps without easing; the bubble just appears. */
+  :root[data-theme] .ui-xy-puck,
+  :root[data-theme] .ui-xy-bubble {
+    transition: none;
+  }
+}
+
+/* A dot after a tab's label: its content is on (a touchpad mode away from 0/0). It always takes its
+   room, so the tab doesn't change width when it shows. */
+:root[data-theme] .ui-tab-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 7px;
+  vertical-align: 1px;
+  border-radius: 50%;
+  background: var(--ui-c, var(--accent-2));
+  box-shadow: 0 0 4px color-mix(in srgb, var(--ui-c, var(--accent-2)) 60%, transparent);
+}
+:root[data-theme] .ui-tab-dot:not(.is-on) {
+  visibility: hidden;
+}

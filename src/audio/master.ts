@@ -1,12 +1,28 @@
 import type { Master } from '../../shared/board'
-import { DRIVE_HEADROOM, driveCurve, driveGlue, KNOB_RAMP, toneFilter, widthGains } from './knobs'
+import {
+  DRIVE_HEADROOM,
+  driveCurve,
+  driveGlue,
+  filterSweep,
+  KNOB_RAMP,
+  toneFilter,
+  widthGains,
+} from './knobs'
 
-/** The master knobs the chain plays. Swing is the scheduler's, not the chain's. */
-export type MasterSound = Pick<Master, 'tone' | 'drive' | 'width'>
+/** The master settings the chain plays. Swing is the scheduler's, not the chain's. */
+export type MasterSound = Pick<Master, 'tone' | 'drive' | 'width' | 'filter'>
+
+/** Every setting the chain plays at its default: the mix passes through unchanged. */
+export const MASTER_SOUND_DEFAULTS: MasterSound = {
+  tone: 0,
+  drive: 0,
+  width: 0,
+  filter: { x: 0, y: 0 },
+}
 
 /**
  * The jam's master stage, between everything the loops and live pads send and the master gain:
- * input → tone → drive → width → `out`. Drive is a shaper, then a compressor and its makeup gain;
+ * input → filter → tone → drive → width → `out`. The filter is the touchpad's Filter mode. Drive is a shaper, then a compressor and its makeup gain;
  * it is switched out of the path at 0, since the compressor's lookahead would delay the whole mix
  * behind the dry clicks. Width is a mid/side mix built from per-ear gains. At the knobs' defaults
  * every stage passes the sound through unchanged.
@@ -14,6 +30,7 @@ export type MasterSound = Pick<Master, 'tone' | 'drive' | 'width'>
 export class MasterChain {
   /** Where loops, their sends and live pads play into. */
   readonly input: GainNode
+  private readonly filter: BiquadFilterNode
   private readonly tone: BiquadFilterNode
   private readonly dry: GainNode
   private readonly wet: GainNode
@@ -36,6 +53,7 @@ export class MasterChain {
     this.input.channelCount = 2
     this.input.channelCountMode = 'explicit'
     this.input.channelInterpretation = 'speakers'
+    this.filter = ctx.createBiquadFilter()
     this.tone = ctx.createBiquadFilter()
     this.dry = ctx.createGain()
     this.wet = ctx.createGain()
@@ -60,7 +78,7 @@ export class MasterChain {
       split.connect(this.cross[ear], 1 - ear).connect(merge, 0, ear)
     }
 
-    this.input.connect(this.tone)
+    this.input.connect(this.filter).connect(this.tone)
     this.tone.connect(this.dry).connect(split)
     this.tone
       .connect(headroom)
@@ -70,7 +88,7 @@ export class MasterChain {
       .connect(this.wet)
       .connect(split)
     merge.connect(out)
-    this.set({ tone: 0, drive: 0, width: 0 }, true)
+    this.set(MASTER_SOUND_DEFAULTS, true)
   }
 
   /** Moves the chain to `sound`; `now` jumps there instead of ramping. */
@@ -84,13 +102,19 @@ export class MasterChain {
       else param.setTargetAtTime(value, ctx.currentTime, KNOB_RAMP)
     }
 
-    const tone = toneFilter(sound.tone, ctx.sampleRate / 2)
     // As a track's tone: a new type starts at its own cutoff rather than sweeping across.
-    if (applied.type !== tone.type) {
-      applied.type = this.tone.type = tone.type
-      this.tone.frequency.cancelScheduledValues(0)
-      this.tone.frequency.value = applied.frequency = tone.frequency
-    } else set('frequency', this.tone.frequency, tone.frequency)
+    const sweep = (name: string, node: BiquadFilterNode, to: ReturnType<typeof toneFilter>) => {
+      if (applied[`${name}Type`] !== to.type) {
+        applied[`${name}Type`] = node.type = to.type
+        node.frequency.cancelScheduledValues(0)
+        node.frequency.value = applied[`${name}Frequency`] = to.frequency
+      } else set(`${name}Frequency`, node.frequency, to.frequency)
+    }
+    const nyquist = ctx.sampleRate / 2
+    const filter = filterSweep(sound.filter.x, sound.filter.y, nyquist)
+    sweep('filter', this.filter, filter)
+    set('filterQ', this.filter.Q, filter.q)
+    sweep('tone', this.tone, toneFilter(sound.tone, nyquist))
 
     if (applied.drive !== sound.drive) {
       applied.drive = sound.drive

@@ -72,8 +72,8 @@ export type Frames = { request: (run: () => void) => number; cancel: (id: number
  * A live drag in progress: `move` as the value previews, then once when it stops either `end`
  * (released, or cancelled) or `drop` (the control went away: nothing more is applied).
  */
-export type LiveDrag = {
-  move: (value: number) => void
+export type LiveDrag<T = number> = {
+  move: (value: T) => void
   end: (commit: boolean) => void
   drop: () => void
 }
@@ -81,21 +81,23 @@ export type LiveDrag = {
 /**
  * Hands a drag's values to `apply` as it moves, at most once a frame, for a live control. `now`
  * reads the value as it stands (a peer may change it mid-drag), and nothing is applied that is
- * already there. Releasing applies the last value moved to, if it moved at all. Cancelling applies `start` again,
- * but only while the value is still the last one this drag applied: a cancelled drag that sent
- * nothing changes nothing, and one a peer has since changed leaves the peer's value.
+ * already there (`same` compares two values; by default they must be identical). Releasing
+ * applies the last value moved to, if it moved at all. Cancelling applies `start` again, but only
+ * while the value is still the last one this drag applied: a cancelled drag that sent nothing
+ * changes nothing, and one a peer has since changed leaves the peer's value.
  */
-export function liveDrag(
-  start: number,
-  apply: (value: number) => void,
-  now: () => number,
+export function liveDrag<T = number>(
+  start: T,
+  apply: (value: T) => void,
+  now: () => T,
   frames: Frames,
-): LiveDrag {
-  let sent: number | undefined
-  let last: number | undefined
+  same: (a: T, b: T) => boolean = Object.is,
+): LiveDrag<T> {
+  let sent: T | undefined
+  let last: T | undefined
   let frame = 0
-  const send = (v: number) => {
-    if (v === now()) return
+  const send = (v: T) => {
+    if (same(v, now())) return
     sent = v
     apply(v)
   }
@@ -115,7 +117,7 @@ export function liveDrag(
       stop()
       if (commit) {
         if (last !== undefined) send(last)
-      } else if (sent !== undefined && now() === sent) send(start)
+      } else if (sent !== undefined && same(now(), sent)) send(start)
     },
     drop: stop,
   }

@@ -15,3 +15,4 @@ export {
 export { type Group, type Option, OptionList, Popover, Select } from './Menu'
 export { Pad, type PadProps } from './Pad'
 export { type Tab, Tabs, type TabsProps } from './Tabs'
+export { type XYAxis, XYPad, type XYPadProps } from './XYPad'

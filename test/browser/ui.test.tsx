@@ -4,18 +4,19 @@ import { commands, page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { Awareness, applyAwarenessUpdate, encodeAwarenessUpdate } from 'y-protocols/awareness'
 import * as Y from 'yjs'
-import { board } from '../../shared/board'
+import { board, CONTROL_KEYS } from '../../shared/board'
 import About from '../../src/about/About'
 import { Console } from '../../src/board/console/Console'
 import { Deck } from '../../src/board/console/Deck'
+import { Master } from '../../src/board/console/Master'
 import { Mixer } from '../../src/board/console/Mixer'
-import { tracksAtom } from '../../src/board/model'
+import { masterAtom, tracksAtom } from '../../src/board/model'
 import { controlKey } from '../../src/board/presence'
 import type { Session } from '../../src/board/session'
 import Showcase from '../../src/ds/Showcase'
 import { SWATCHES } from '../../src/theme/palette'
 import { ThemeToggle } from '../../src/theme/ThemeToggle'
-import { Knob, ScrubField } from '../../src/ui'
+import { Knob, ScrubField, XYPad } from '../../src/ui'
 import {
   addTrack,
   addUploads,
@@ -408,10 +409,14 @@ describe('someone else moving a control', () => {
   const misty = { id: 'misty-id', name: 'Misty Yak', color: 'coral' } as const
   /** Misty Yak, in another browser, holding `control` of track `id`: their presence reaches this one. */
   function mistyHolds(id: string, control: string, clientID?: number) {
+    mistyHoldsKey(controlKey(id, control), clientID)
+  }
+  /** Misty Yak, in another browser, holding the control presence names `key`. */
+  function mistyHoldsKey(key: string, clientID?: number) {
     const doc = new Y.Doc()
     if (clientID !== undefined) doc.clientID = clientID
     const theirs = new Awareness(doc)
-    theirs.setLocalState({ person: misty, control: controlKey(id, control) })
+    theirs.setLocalState({ person: misty, control: key })
     applyAwarenessUpdate(
       session.jam.awareness,
       encodeAwarenessUpdate(theirs, [theirs.clientID]),
@@ -518,6 +523,191 @@ describe('someone else moving a control', () => {
     pressed = false
     expect(session.jam.store.get(tracksAtom).get(id)?.gain).toBe(1.2)
     await expect.element(page.getByRole('slider', { name: 'Level of Bassline' })).toHaveValue('1.2')
+  })
+
+  // @scenario board/session: Held by someone else
+  it("doesn't move the touchpad's Filter while Misty Yak holds it, by pointer, key or reset", async () => {
+    session = makeSession('Groovy Otter')
+    const misty_ = board(session.jam.doc, { kind: 'user', id: misty.id })
+    expect(misty_.fx('filter').set(-0.4, 0.3).ok).toBe(true)
+    const { screen } = await renderJam(<Master />, session)
+    mistyHoldsKey(CONTROL_KEYS.fx('filter'))
+    const pad = () => screen.container.querySelector<HTMLElement>('.ui-xy')!
+    const cutoff = page.getByRole('slider', { name: 'Filter cutoff' })
+    await expect.poll(() => pad().classList.contains('is-held')).toBe(true)
+    expect(pad().style.getPropertyValue('--ui-held')).toBe(coral())
+    expect(pad().querySelector('.ui-xy-bubble')!.textContent).toBe('Misty Yak')
+    await expect.element(cutoff).toHaveAttribute('aria-disabled', 'true')
+    await expect.element(page.getByRole('button', { name: 'Reset Filter' })).toBeDisabled()
+
+    const at = await commands.mouseDown('.ui-xy-surface')
+    pressed = true
+    await commands.mouseMove(at.x + 60, at.y - 60, 4)
+    await commands.mouseUp()
+    pressed = false
+    cutoff.element().focus()
+    await userEvent.keyboard('{ArrowRight}{ArrowUp}')
+    expect(session.jam.store.get(masterAtom).filter).toEqual({ x: -0.4, y: 0.3 })
+    expect(session.jam.awareness.getLocalState()?.control).toBeUndefined()
+
+    // Misty moves it: you see it move, still locked.
+    expect(misty_.fx('filter').set(-0.8, 0.5).ok).toBe(true)
+    await expect.element(cutoff).toHaveAttribute('aria-valuenow', '-0.8')
+    expect(pad().classList.contains('is-held')).toBe(true)
+  })
+})
+
+describe('xy pad', () => {
+  /** A pad that keeps what it is given, as a board would. */
+  function Owned({
+    start,
+    onChange,
+    live,
+  }: {
+    start: [number, number]
+    onChange: (x: number, y: number) => void
+    live?: boolean
+  }) {
+    const [[x, y], setXY] = useState(start)
+    return (
+      <XYPad
+        label="Filter"
+        x={x}
+        y={y}
+        live={live}
+        xAxis={{ label: 'Cutoff', min: -1, max: 1 }}
+        yAxis={{ label: 'Resonance' }}
+        onChange={(nx, ny) => {
+          onChange(nx, ny)
+          setXY([nx, ny])
+        }}
+      />
+    )
+  }
+  let pressed = false
+  afterEach(async () => {
+    if (pressed) await commands.mouseUp()
+    pressed = false
+  })
+  const cutoff = () => page.getByRole('slider', { name: 'Cutoff' })
+  const resonance = () => page.getByRole('slider', { name: 'Resonance' })
+
+  // @scenario ui: Drag the puck
+  it('follows a drag from the middle to the top-left corner, and stays there when released', async () => {
+    const onChange = vi.fn()
+    const { container } = await render(
+      <Themed>
+        <Owned start={[0.5, 0.2]} onChange={onChange} />
+      </Themed>,
+    )
+    await expect.element(page.getByRole('group', { name: 'Filter' })).toBeVisible()
+    const at = await commands.mouseDown('.ui-xy-surface')
+    pressed = true
+    // Pressing the middle puts the puck there.
+    await expect.element(cutoff()).toHaveAttribute('aria-valuenow', '0')
+    await expect.element(resonance()).toHaveAttribute('aria-valuenow', '0.5')
+    await commands.mouseMove(at.x - 150, at.y - 150, 6)
+    await expect.element(cutoff()).toHaveAttribute('aria-valuenow', '-1')
+    await expect.element(resonance()).toHaveAttribute('aria-valuenow', '1')
+    // Not live: nothing applied until it is let go, then once.
+    expect(onChange).not.toHaveBeenCalled()
+    await commands.mouseUp()
+    pressed = false
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith(-1, 1)
+    const pad = container.querySelector<HTMLElement>('.ui-xy')!
+    expect(pad.classList.contains('is-dragging')).toBe(false)
+    expect(Number(pad.style.getPropertyValue('--fx'))).toBe(0)
+    expect(Number(pad.style.getPropertyValue('--fy'))).toBe(1)
+  })
+
+  // @scenario ui: Keys
+  it('moves Y up a step on ↑ and X on →, ten with Shift', async () => {
+    const onChange = vi.fn()
+    await render(
+      <Themed>
+        <Owned start={[0, 0.5]} onChange={onChange} />
+      </Themed>,
+    )
+    cutoff().element().focus()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(onChange).toHaveBeenLastCalledWith(0, 0.51)
+    await expect.element(resonance()).toHaveAttribute('aria-valuenow', '0.51')
+    await userEvent.keyboard('{ArrowRight}')
+    expect(onChange).toHaveBeenLastCalledWith(0.01, 0.51)
+    await userEvent.keyboard('{Shift>}{ArrowDown}{/Shift}')
+    expect(onChange).toHaveBeenLastCalledWith(0.01, 0.41)
+  })
+
+  it('applies a live drag as it moves, and puts it back on Escape', async () => {
+    const onChange = vi.fn()
+    await render(
+      <Themed>
+        <Owned start={[0.5, 0.2]} onChange={onChange} live />
+      </Themed>,
+    )
+    const at = await commands.mouseDown('.ui-xy-surface')
+    pressed = true
+    await commands.mouseMove(at.x - 150, at.y - 150, 6)
+    await expect.poll(() => onChange.mock.lastCall).toEqual([-1, 1])
+    await userEvent.keyboard('{Escape}')
+    expect(onChange).toHaveBeenLastCalledWith(0.5, 0.2)
+    await expect.element(cutoff()).toHaveAttribute('aria-valuenow', '0.5')
+    // The rest of the press moves nothing.
+    await commands.mouseMove(at.x + 40, at.y, 4)
+    await commands.mouseUp()
+    pressed = false
+    expect(onChange).toHaveBeenLastCalledWith(0.5, 0.2)
+  })
+})
+
+describe('touchpad', () => {
+  let session: Session
+  afterEach(() => endSession(session))
+
+  // @scenario audio/master: Reset
+  it('shows a dot on Filter while it is latched away from 0/0, and its reset puts it back for everyone', async () => {
+    session = makeSession('Groovy Otter')
+    const { screen } = await renderJam(<Master />, session)
+    const tab = page.getByRole('tab', { name: /^Filter/ })
+    await expect.element(tab).toHaveAttribute('aria-selected', 'true')
+    const dot = () => screen.container.querySelector('.ui-tab-dot')!
+    expect(dot().classList.contains('is-on')).toBe(false)
+    const reset = page.getByRole('button', { name: 'Reset Filter' })
+    await expect.element(reset).toBeDisabled()
+
+    // Someone latches Filter at x 0.6.
+    const other = board(session.jam.doc, { kind: 'user', id: 'misty-id' })
+    expect(other.fx('filter').set(0.6, 0).ok).toBe(true)
+    await expect.element(tab).toHaveAccessibleName('Filter, on')
+    expect(dot().classList.contains('is-on')).toBe(true)
+    await expect
+      .element(page.getByRole('slider', { name: 'Filter cutoff' }))
+      .toHaveAttribute('aria-valuetext', 'High-pass 60%')
+
+    await userEvent.click(reset)
+    expect(session.jam.store.get(masterAtom).filter).toEqual({ x: 0, y: 0 })
+    await expect.element(tab).toHaveAccessibleName('Filter')
+    expect(dot().classList.contains('is-on')).toBe(false)
+  })
+
+  // @scenario audio/master: Latched
+  it('latches Filter where a drag lets go, holding it only while dragging', async () => {
+    session = makeSession('Groovy Otter')
+    await renderJam(<Master />, session)
+    const at = await commands.mouseDown('.console-touchpad .ui-xy-surface')
+    await expect
+      .poll(() => session.jam.awareness.getLocalState()?.control)
+      .toBe(CONTROL_KEYS.fx('filter'))
+    await commands.mouseMove(at.x - 55, at.y + 20, 4)
+    await commands.mouseUp()
+    await expect.poll(() => session.jam.awareness.getLocalState()?.control).toBeUndefined()
+    const { x, y } = session.jam.store.get(masterAtom).filter
+    expect(x).toBeLessThan(-0.3)
+    expect(y).toBeLessThan(0.5)
+    await expect
+      .element(page.getByRole('slider', { name: 'Filter cutoff' }))
+      .toHaveAttribute('aria-valuenow', String(x))
   })
 })
 

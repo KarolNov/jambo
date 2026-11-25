@@ -289,4 +289,62 @@ test.describe('locked while held', () => {
     await b.page.keyboard.press('Home')
     await expect(levelA).toHaveValue('0')
   })
+
+  // @scenario audio/master: Latched
+  // @scenario audio/master: Kept on reload
+  // @scenario board/session: Held by someone else
+  test("the touchpad's Filter latches for both, and only its holder can move it", async ({
+    browser,
+  }) => {
+    const a = await person(browser)
+    const b = await person(browser)
+    const link = await startJam(a.page)
+    await openJam(b.page, link)
+    const cutoffA = a.page.getByRole('slider', { name: 'Filter cutoff' })
+    const cutoffB = b.page.getByRole('slider', { name: 'Filter cutoff' })
+    const tabB = b.page.getByRole('tab', { name: /^Filter/ })
+    await expect(tabB).toHaveAccessibleName('Filter')
+    const nameA = await ownName(a.page)
+
+    // A presses the pad left of the middle and holds it.
+    const padA = a.page.locator('.console-touchpad .ui-xy-surface')
+    await padA.scrollIntoViewIfNeeded()
+    const box = (await padA.boundingBox())!
+    const x = box.x + box.width * 0.5
+    const y = box.y + box.height * 0.9
+    await a.page.mouse.move(x, y)
+    await a.page.mouse.down()
+    await a.page.mouse.move(box.x + box.width * 0.25, y, { steps: 6 })
+    await expect(cutoffB).toHaveAttribute('aria-description', `${nameA} is moving it`)
+    await expect(cutoffB).toHaveAttribute('aria-disabled', 'true')
+    await expect(b.page.getByRole('button', { name: 'Reset Filter' })).toBeDisabled()
+    const held = await cutoffA.getAttribute('aria-valuenow')
+    expect(Number(held)).toBeLessThan(-0.3)
+    await expect(cutoffB).toHaveAttribute('aria-valuenow', held!)
+
+    // B can't move it while A holds it.
+    await cutoffB.focus()
+    await b.page.keyboard.press('ArrowRight')
+    await b.page.keyboard.press('Home')
+    await expect(cutoffA).toHaveAttribute('aria-valuenow', held!)
+
+    // A lets go: it stays there for both, with a dot on Filter, and B is free again.
+    await a.page.mouse.up()
+    await expect(cutoffB).not.toHaveAttribute('aria-disabled', 'true')
+    await expect(cutoffB).toHaveAttribute('aria-valuenow', held!)
+    await expect(tabB).toHaveAccessibleName('Filter, on')
+
+    // Kept for someone who reloads.
+    await b.page.reload()
+    await expect(b.page.getByRole('slider', { name: 'Filter cutoff' })).toHaveAttribute(
+      'aria-valuenow',
+      held!,
+    )
+    await expect(b.page.getByRole('tab', { name: /^Filter/ })).toHaveAccessibleName('Filter, on')
+
+    // B resets it: off for both.
+    await b.page.getByRole('button', { name: 'Reset Filter' }).click()
+    await expect(cutoffA).toHaveAttribute('aria-valuenow', '0')
+    await expect(a.page.getByRole('tab', { name: /^Filter/ })).toHaveAccessibleName('Filter')
+  })
 })

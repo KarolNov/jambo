@@ -188,3 +188,11 @@
   border-radius: 18px;
   background: var(--bg);
 }
+/* The XY pad demos: small enough for a card, with room above for the bubble at the top edge. */
+:root[data-theme] .ds-xy {
+  --xy: 160px;
+  margin-top: 28px;
+}
+:root[data-theme] .ds-knob-live:has(.ds-xy) {
+  flex-wrap: wrap;
+}
