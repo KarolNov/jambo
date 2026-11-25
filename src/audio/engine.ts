@@ -17,7 +17,6 @@ import {
   jamBeatMs,
   nextGridLine,
   nextJamBar,
-  repeatLine,
   repeatSlice,
   swingDelay,
   trackStart,
@@ -441,31 +440,25 @@ export class Engine {
   }
 
   /**
-   * Follows the board's beat repeat. A move stamped with a new start beat takes effect on that
-   * beat, the same one for every client; a move without one (an agent's, or a reset) takes effect
-   * at this client's next grid line. A change of level alone applies at once. Loop hits already
+   * Follows the board's beat repeat. Engaging, letting go and a new slice zone take effect on the
+   * start beat the move was stamped with, the same one for every client. A change of level alone
+   * applies at once. Loop hits already
    * scheduled past the change are taken back and scheduled again, so the change lands on its line
    * even when it arrives inside the lookahead.
    */
   private setRepeat(next: Master['repeat']) {
     const prev = this.repeat
     this.repeat = next
-    const slice = next.y > 0 ? repeatSlice(next.x) : undefined
+    const sliceOf = (r: Master['repeat']) => (r.y > 0 ? repeatSlice(r.x) : undefined)
+    const slice = sliceOf(next)
     const last = this.repeats.at(-1)
-    const stamped = !prev || next.startBeat !== prev.startBeat
-    if (!stamped && last?.slice === slice) {
+    // Only a change of level keeps the span; engaging, letting go and a new slice zone are always
+    // stamped, even when their line is the same as the move before's.
+    if (prev && next.startBeat === prev.startBeat && sliceOf(prev) === slice) {
       if (last) last.level = next.y
       return
     }
-    let at = next.startBeat
-    if (!stamped) {
-      const ctx = this.ctx
-      const now =
-        ctx && this.shift !== undefined
-          ? audioToRoom(ctx.currentTime, this.shift)
-          : (this.clock.now() ?? 0)
-      at = repeatLine(now, this.bpm, slice)
-    }
+    const at = next.startBeat
     // A span that never started gives way to one starting at or before it.
     while (this.repeats.length > 0 && this.repeats.at(-1)!.at >= at) this.repeats.pop()
     this.repeats.push({ at, start: at, slice, level: next.y })

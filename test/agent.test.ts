@@ -501,6 +501,12 @@ describe('repeat stamps', () => {
     ])
   })
 
+  it('stamps against where repeat really is when an earlier move is refused', () => {
+    const ops = stampRepeats([repeat(0.1, 1.5), repeat(0.1, 0.8)], doc(), NOW)
+    // The first is out of range, so the second still engages repeat from off.
+    expect(ops.map((o) => (o.op === 'setFx' ? o.startBeat : 'other'))).toEqual([3, 3])
+  })
+
   it('leaves other ops alone, and reads where repeat is from the board', () => {
     const d = doc()
     apply(d, [{ op: 'setFx', mode: 'repeat', x: 0.1, y: 1, startBeat: 2 }], SYSTEM)

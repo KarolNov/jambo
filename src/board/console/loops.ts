@@ -90,7 +90,7 @@ export const MASTER_READOUTS: Record<
   // As drum machines count it: 50% is straight, 75% (swing 1) plays each off-beat 16th half a 16th late.
   swing: {
     label: 'Swing',
-    format: (v) => (pct(v) === 0 ? 'Straight' : `${Math.round(50 + v * 25)}%`),
+    format: (v) => (v === 0 ? 'Straight' : `${Math.max(51, Math.round(50 + v * 25))}%`),
   },
 }
 

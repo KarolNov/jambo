@@ -1,6 +1,6 @@
 import { read } from 'duratom/core'
 import type * as Y from 'yjs'
-import { BPM, masterOf, Meta, type Op, ROOTS, SHAPES } from '../board'
+import { BPM, masterOf, MasterValues, Meta, type Op, ROOTS, SHAPES } from '../board'
 import { repeatStamp } from '../looper'
 
 /**
@@ -16,7 +16,9 @@ export function stampRepeats(ops: readonly Op[], doc: Y.Doc, roomMs: number): Op
   return ops.map((op) => {
     if (op.op !== 'setFx' || op.mode !== 'repeat') return op
     const startBeat = repeatStamp(repeat, op, roomMs, bpm)
-    repeat = op
+    // A move apply will refuse leaves repeat where it was for the moves after it.
+    if (MasterValues.repeat.safeParse({ x: op.x, y: op.y, startBeat: startBeat ?? 0 }).success)
+      repeat = op
     return startBeat === undefined ? op : { ...op, startBeat }
   })
 }

@@ -675,8 +675,15 @@ describe('swing and repeat', () => {
    * its jam beat (room time over a beat, so engines on different shifts compare), pad and level.
    * Hits taken back by a repeat change are dropped. `shift` maps room ms onto its timeline.
    */
-  async function recorded(tracks: Track[], shift: number, swing = 0, sound = 'kick') {
-    const { engine } = await offline({ seconds: 1, bpm: BPM_120, metronome: false })
+  async function recorded(
+    tracks: Track[],
+    shift: number,
+    swing = 0,
+    sound = 'kick',
+    bpm = BPM_120,
+  ) {
+    const beatMs = beatSeconds(bpm) * 1000
+    const { engine } = await offline({ seconds: 1, bpm, metronome: false })
     const hits: { beat: number; padId: string; level: number; stopped: boolean }[] = []
     const play = engine['play'].bind(engine)
     const padOf = new Map<string, string>(BEAT_PADS.map((p) => [p, p]))
@@ -684,7 +691,7 @@ describe('swing and repeat', () => {
       const source = play(sound, at, out, rate, level, gate)
       // Tails picked up mid-sound are counted apart from hits.
       if (!source || !soundId || (gate.offset ?? 0) > 0) return source
-      const hit = { beat: ((at - shift) * 1000) / BEAT_MS, padId: soundId, level, stopped: false }
+      const hit = { beat: ((at - shift) * 1000) / beatMs, padId: soundId, level, stopped: false }
       hits.push(hit)
       const stop = source.stop.bind(source)
       source.stop = (when?: number) => {
@@ -695,7 +702,7 @@ describe('swing and repeat', () => {
     }
     const feed = (repeat: Master['repeat']) =>
       engine.update({
-        bpm: BPM_120,
+        bpm,
         pads: padOf,
         tracks: new Map(tracks.map((t, i) => [`t${i}`, t])),
         uploads: new Set(),
@@ -822,6 +829,51 @@ describe('swing and repeat', () => {
     const level = peak(tail, 1.5, 4.8)
     expect(level).toBeGreaterThan(0.01)
     expect(level).toBeLessThan(kick / 4)
+  })
+
+  it('switches slice on the stamped line even when it is the same as the move before', async () => {
+    const bar = 1000
+    const origin = bar * barMs(BPM_120)
+    const { feed, schedule, heard } = await recorded([perBeat(bar)], -origin / 1000)
+    const beat = (n: number) => origin + n * BEAT_MS
+    // Engages 1/4 at 2.6 and moves to the 1/8 zone at 2.7: both land on beat 3.
+    const on = repeatStamp(OFF, { x: 0.1, y: 1 }, beat(2.6), BPM_120)!
+    const eighth = repeatStamp({ x: 0.1, y: 1 }, { x: 0.3, y: 1 }, beat(2.7), BPM_120)!
+    expect(eighth).toBe(on)
+    schedule(beat(0), beat(2.6))
+    feed({ x: 0.1, y: 1, startBeat: on })
+    // This client hears the second move late, after it has scheduled past the line.
+    schedule(beat(2.6), beat(3.3))
+    feed({ x: 0.3, y: 1, startBeat: eighth })
+    schedule(beat(3.3), beat(8))
+    expect(heard().map((h) => [h.beat - bar * 4, h.padId])).toEqual([
+      [0, 'b0'],
+      [1, 'b1'],
+      [2, 'b2'],
+      ...Array.from({ length: 10 }, (_, k) => [3 + k / 2, 'b3']),
+    ])
+  })
+
+  it('lands a repeat on its line at room times since the epoch and an awkward tempo', async () => {
+    const bpm = 97
+    const beatMs = beatSeconds(bpm) * 1000
+    // A bar around now: room times near 1.8e12 ms, where ms rounding is coarsest.
+    const bar = Math.floor(Date.UTC(2026, 10, 25) / barMs(bpm))
+    const origin = bar * barMs(bpm)
+    const { feed, schedule, heard } = await recorded([perBeat(bar)], -origin / 1000, 0, 'kick', bpm)
+    const beat = (n: number) => origin + n * beatMs
+    schedule(beat(0), beat(1.5), 25)
+    const startBeat = repeatStamp(OFF, { x: 0.1, y: 1 }, beat(1.5), bpm)!
+    expect(startBeat).toBe(bar * 4 + 2)
+    feed({ x: 0.1, y: 1, startBeat })
+    schedule(beat(1.5), beat(8), 25)
+    // The hit on the line is the slice's first repeat, heard once at full level, not a tail.
+    const pads = heard().map((h) => [Math.round(h.beat - bar * 4), h.padId, h.level])
+    expect(pads).toEqual([
+      [0, 'b0', 1],
+      [1, 'b1', 1],
+      ...[2, 3, 4, 5, 6, 7].map((n) => [n, 'b2', 1]),
+    ])
   })
 
   // @scenario audio/master: Same stutter

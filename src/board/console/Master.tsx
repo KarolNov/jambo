@@ -32,10 +32,17 @@ export function Master() {
   const [mode, setMode] = useState<TouchpadMode>(TOUCHPAD_MODES[0])
   // Repeat engages, changes slice and lets go on the jam's grid: the move carries the beat it
   // takes effect on, so every client switches on the same line.
+  // It reads where repeat is now, not at the last render, which a fast drag can be ahead of.
   const move = (m: TouchpadMode, x: number, y: number) => {
     if (m !== 'repeat') return board.fx(m).set(x, y)
-    const now = engine.clock.now() ?? Date.now()
-    board.fx(m).set(x, y, repeatStamp(master.repeat, { x, y }, now, bpm))
+    const from = jam.store.get(masterAtom).repeat
+    const now = engine.clock.now()
+    if (now === undefined) {
+      // Without the jam's clock there is no line to stamp, so only a change of level goes through.
+      if (repeatStamp(from, { x, y }, 0, bpm) === undefined) board.fx(m).set(x, y)
+      return
+    }
+    board.fx(m).set(x, y, repeatStamp(from, { x, y }, now, bpm))
   }
   return (
     <section className="console-master" aria-labelledby="console-master-title">

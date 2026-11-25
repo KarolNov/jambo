@@ -793,7 +793,9 @@ describe('touchpad', () => {
     await expect
       .element(page.getByRole('slider', { name: 'Repeat slice' }))
       .toHaveAttribute('aria-valuetext', '1/4 slice')
-    const beat = () => (session.engine.clock.now() ?? Date.now()) / beatSeconds(BPM.default) / 1000
+    // Repeat stamps from the jam's clock, so this one has agreed with the room.
+    session.engine.clock.offset = 0
+    const beat = () => session.engine.clock.now()! / beatSeconds(BPM.default) / 1000
     level.element().focus()
     let before = beat()
     await userEvent.keyboard('{ArrowUp}')
