@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
-import { apply, type Op, seedBoard, type Track } from '../shared/board'
+import { apply, MASTER_DEFAULTS, type Op, seedBoard, type Track } from '../shared/board'
 import {
   isAgentAuthor,
   isAgentKey,
@@ -13,6 +13,8 @@ import {
   toAgentName,
   toKind,
   checkSummary,
+  holdsOf,
+  withoutHeld,
 } from '../shared/agent'
 
 const agent = { id: 'pub1', color: 'sky' } as const
@@ -140,8 +142,28 @@ describe('snapshot', () => {
     expect(snap.tracks.map((t) => t.name)).toEqual(['One', 'Two'])
     expect(snap.tracks[0]).toMatchObject({ id: 't1', author: 'p1', bars: 1 })
     expect(snap.here).toEqual(here)
+    expect(snap.master).toEqual(MASTER_DEFAULTS)
     // Plain data: survives a JSON round trip unchanged.
     expect(JSON.parse(JSON.stringify(snap))).toEqual(snap)
+  })
+})
+
+describe('snapshot of the master', () => {
+  // @scenario collab/agent: Read the master
+  it('holds the master knobs and touchpad modes, unset ones at their defaults', () => {
+    const doc = new Y.Doc()
+    seedBoard(doc)
+    apply(
+      doc,
+      [
+        { op: 'setFx', mode: 'filter', x: -0.4, y: 0 },
+        { op: 'setMaster', set: { swing: 0.5 } },
+      ],
+      SYSTEM,
+    )
+    const { master } = snapshotOf(doc, [])
+    expect(master).toEqual({ ...MASTER_DEFAULTS, filter: { x: -0.4, y: 0 }, swing: 0.5 })
+    expect(JSON.parse(JSON.stringify(master))).toEqual(master)
   })
 })
 
@@ -362,5 +384,93 @@ describe('prepare', () => {
       { op: { op: 'assignPad', padId: 'r0c0', soundId: 'kick' } },
       { op: { op: 'replaceSound', from: 'kick', to: 'snare' } },
     ])
+  })
+
+  // @scenario collab/agent: Agent drops the filter
+  it('passes master knobs and touchpad modes through', () => {
+    expect(
+      prepare(
+        [
+          { op: 'setMaster', set: { tone: -0.3, swing: 0.2 } },
+          { op: 'setFx', mode: 'filter', x: -0.8, y: 0.3 },
+        ],
+        agent,
+        mint,
+      ),
+    ).toEqual([
+      { op: { op: 'setMaster', set: { tone: -0.3, swing: 0.2 } } },
+      { op: { op: 'setFx', mode: 'filter', x: -0.8, y: 0.3 } },
+    ])
+  })
+
+  it("refuses an unknown master knob or mode, and leaves repeat's start beat to the room", () => {
+    const [knob, mode, start] = prepare(
+      [
+        { op: 'setMaster', set: { loudness: 1 } },
+        { op: 'setFx', mode: 'flanger', x: 0, y: 0 },
+        { op: 'setFx', mode: 'repeat', x: 0.5, y: 1, startBeat: 4 },
+      ],
+      agent,
+      mint,
+    )
+    expect(knob).toHaveProperty('issues')
+    expect(mode).toHaveProperty('issues')
+    expect(start).toEqual({ op: { op: 'setFx', mode: 'repeat', x: 0.5, y: 1 } })
+  })
+})
+
+describe('held controls', () => {
+  const person = (id: string, name: string, control?: string) => ({
+    person: { id, name, color: 'teal' },
+    ...(control ? { control } : {}),
+  })
+
+  it('reads who holds which control from presence, ignoring the room and agents', () => {
+    const holds = holdsOf([
+      person('p1', 'Misty Yak', 'master.tone'),
+      person('p2', 'Groovy Otter', 'master.tone'),
+      person('p3', 'Groovy Otter', 'fx.filter'),
+      person('p4', 'Calm Heron'),
+      { person: { id: 'agent:x', name: 'Groovy Claude', color: 'sky' }, control: 'fx.throw' },
+      { agents: [], control: 'fx.lofi' },
+      null,
+    ])
+    expect([...holds]).toEqual([
+      ['master.tone', 'Misty Yak'],
+      ['fx.filter', 'Groovy Otter'],
+    ])
+  })
+
+  // @scenario collab/agent: Held control
+  it('drops only the held knobs of a setMaster, naming who holds them', () => {
+    const holds = new Map([['master.tone', 'Misty Yak']])
+    expect(withoutHeld({ op: 'setMaster', set: { tone: 0.2, swing: 0.5 } }, holds)).toEqual({
+      op: { op: 'setMaster', set: { swing: 0.5 } },
+      issues: [{ message: 'Held by Misty Yak', path: ['set', 'tone'] }],
+    })
+    expect(withoutHeld({ op: 'setMaster', set: { tone: 0.2 } }, holds)).toEqual({
+      issues: [{ message: 'Held by Misty Yak', path: ['set', 'tone'] }],
+    })
+  })
+
+  it('refuses a held touchpad mode, and leaves the other modes free', () => {
+    const holds = new Map([['fx.filter', 'Misty Yak']])
+    expect(withoutHeld({ op: 'setFx', mode: 'filter', x: 0, y: 0 }, holds)).toEqual({
+      issues: [{ message: 'Held by Misty Yak', path: ['mode'] }],
+    })
+    const free: Op = { op: 'setFx', mode: 'throw', x: 0.5, y: 0.5 }
+    expect(withoutHeld(free, holds)).toEqual({ op: free, issues: [] })
+  })
+
+  it("drops a track's held fields, on that track only", () => {
+    const holds = new Map([['track.t1.gain', 'Misty Yak']])
+    expect(
+      withoutHeld({ op: 'setTrack', id: 't1', patch: { gain: 0.5, mute: true } }, holds),
+    ).toEqual({
+      op: { op: 'setTrack', id: 't1', patch: { mute: true } },
+      issues: [{ message: 'Held by Misty Yak', path: ['patch', 'gain'] }],
+    })
+    const other: Op = { op: 'setTrack', id: 't2', patch: { gain: 0.5 } }
+    expect(withoutHeld(other, holds)).toEqual({ op: other, issues: [] })
   })
 })

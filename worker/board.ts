@@ -7,10 +7,12 @@ import {
   AGENT_AUTHOR_PREFIX,
   AGENT_LIMITS,
   checkSummary,
+  holdsOf,
   prepare,
   type Snapshot,
   type SnapshotPresence,
   snapshotOf,
+  withoutHeld,
 } from '../shared/agent'
 import { apply, countUploads, ROOTS, Sound, type Origin } from '../shared/board'
 import { seedBoard } from '../shared/board/seed'
@@ -233,17 +235,30 @@ export class Board extends YServer<Env> {
       return { error: `A run holds 1 to ${AGENT_LIMITS.ops} operations` }
     const agent = await this.roster.join(hello, this.peopleSeats(), checked.summary)
     if ('error' in agent) return agent
-    const prepared = prepare(calls, { id: agent.id, color: agent.color })
-    const ops = prepared.flatMap((p) => ('op' in p ? [p.op] : []))
+    // Controls people hold right now are theirs: those parts of a run are refused.
+    const holds = holdsOf(this.document.awareness.getStates().values())
+    const prepared = prepare(calls, { id: agent.id, color: agent.color }).map((p) => {
+      if (!('op' in p)) return { issues: p.issues }
+      const { op, issues } = withoutHeld(p.op, holds)
+      return { op, id: p.id, issues }
+    })
+    const ops = prepared.flatMap((p) => (p.op ? [p.op] : []))
     const applied = apply(this.document, ops, { kind: 'ai', id: AGENT_AUTHOR_PREFIX + agent.id })
     let next = 0
     const results = prepared.map((p, i): AgentOpResult => {
       const raw = (calls[i] as { op?: unknown } | null)?.op
       const name = typeof raw === 'string' ? raw : 'unknown'
-      if (!('op' in p)) return { op: name, ok: false, issues: p.issues.map(plainIssue) }
+      const held = p.issues.map(plainIssue)
+      if (!p.op) return { op: name, ok: false, issues: held }
       const r = applied[next++]!
-      if (!r.ok) return { op: name, ok: false, issues: r.issues.map(plainIssue) }
-      return { op: name, ok: true, ...(p.id ? { id: p.id } : {}) }
+      if (!r.ok) return { op: name, ok: false, issues: [...held, ...r.issues.map(plainIssue)] }
+      // Applied without the held parts, which come back as issues.
+      return {
+        op: name,
+        ok: true,
+        ...(held.length > 0 ? { issues: held } : {}),
+        ...('id' in p && p.id ? { id: p.id } : {}),
+      }
     })
     await this.agentActed()
     return { agent: { key: agent.key, ...toView(agent) }, summary: checked.summary, ops: results }

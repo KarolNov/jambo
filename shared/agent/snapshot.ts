@@ -1,7 +1,7 @@
 import { isMap } from 'duratom'
 import { read } from 'duratom/core'
 import type * as Y from 'yjs'
-import { BPM, Meta, Pad, ROOTS, SHAPES, Sound, Track } from '../board'
+import { BPM, type Master, masterOf, Meta, Pad, ROOTS, SHAPES, Sound, Track } from '../board'
 import type { ColorName } from '../colors'
 import { padKeyOrder, SOUNDS } from '../sounds'
 
@@ -32,6 +32,8 @@ export interface Snapshot {
   pads: { id: string; key: string; row: number; col: number; soundId: string }[]
   sounds: SnapshotSound[]
   tracks: ({ id: string } & Track)[]
+  /** The master knobs and touchpad modes, each at its default until someone sets it. */
+  master: Master
   here: SnapshotPresence[]
 }
 
@@ -76,6 +78,7 @@ export function snapshotOf(doc: Y.Doc, here: readonly SnapshotPresence[]): Snaps
     pads,
     sounds: [...kit, ...uploads],
     tracks,
+    master: masterOf(doc.getArray(ROOTS.master)),
     here: here.map((p) => ({ ...p })),
   }
 }
