@@ -189,6 +189,11 @@ describe('lofiCrush', () => {
     expect(lofiCrush(1, 1).bits).toBe(4)
   })
 
+  it("starts at the context's own rate, so x 0 passes through on any device", () => {
+    expect(lofiCrush(0, 0, 96000).rate).toBe(96000)
+    expect(lofiCrush(1, 0, 96000).rate).toBeCloseTo(8000)
+  })
+
   it('lowers the rate exponentially', () => {
     expect(lofiCrush(0.5, 0).rate).toBeCloseTo(Math.sqrt(48000 * 4000))
   })

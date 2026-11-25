@@ -19,7 +19,8 @@ class Crusher extends AudioWorkletProcessor {
     return [
       {
         name: 'rate',
-        defaultValue: 48000,
+        // Above any context's own, so a fresh crusher passes the sound through.
+        defaultValue: 192000,
         minValue: 1,
         maxValue: 192000,
         automationRate: 'k-rate',
@@ -45,6 +46,10 @@ class Crusher extends AudioWorkletProcessor {
     const bits = parameters.bits![0]!
     // Levels on each side of 0; 0 leaves samples as they are.
     const levels = bits < 16 - NEAR ? 2 ** (bits - 1) : 0
+    // Every channel steps together from the same phase, whether or not it has input this block.
+    const start = this.phase
+    const frames = output[0]?.length ?? 0
+    this.phase = hold ? (start + step * frames) % 1 : 0
     for (let ch = 0; ch < output.length; ch++) {
       const from = input[ch] ?? input[0]
       const to = output[ch]!
@@ -56,7 +61,7 @@ class Crusher extends AudioWorkletProcessor {
         to.set(from)
         continue
       }
-      let phase = this.phase
+      let phase = start
       let held = this.held[ch] ?? 0
       for (let i = 0; i < to.length; i++) {
         phase += step
@@ -67,8 +72,6 @@ class Crusher extends AudioWorkletProcessor {
         to[i] = held
       }
       this.held[ch] = held
-      // Every channel steps together; the last one leaves the shared phase where they all are.
-      if (ch === output.length - 1) this.phase = phase
     }
     return true
   }

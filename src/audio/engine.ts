@@ -377,12 +377,14 @@ export class Engine {
   /**
    * Keeps the master throw's echo on its zone's note at the current tempo. A change waits for the
    * jam's next 1/16, so everyone hears it on the same grid line; before the clock is agreed (and
-   * the first time) it applies at once.
+   * the first time) it applies at once. While the send is closed (Y 0, as after a reset) the time
+   * stays, so echoes still sounding ring out at their own spacing; it moves once the send opens.
    */
   private syncThrow() {
     const ctx = this.ctx
     const chain = this.chain
     if (!ctx || !chain) return
+    if (this.throwSeconds !== undefined && this.masterSound.throw.y === 0) return
     const seconds = throwEcho(this.masterSound.throw.x, 0).beats * beatSeconds(this.bpm)
     if (seconds === this.throwSeconds) return
     const first = this.throwSeconds === undefined

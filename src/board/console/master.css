@@ -28,7 +28,8 @@
   gap: 18px 32px;
 }
 /* The touchpad: mode tabs over a card holding the pad, how it reads and its reset. Wide enough
-   for all four modes' tabs, so none goes behind "+N" beside the knobs. */
+   for every mode's tab (Filter, Throw and Lo-fi now, Repeat once it joins), so none goes behind
+   "+N" beside the knobs. */
 :root[data-theme] .console-touchpad {
   flex: 0 1 400px;
   min-width: 0;

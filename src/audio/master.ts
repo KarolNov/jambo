@@ -35,6 +35,15 @@ const loopLatencies = new Map<number, Promise<number>>()
 function loopLatency(sampleRate: number): Promise<number> {
   let latency = loopLatencies.get(sampleRate)
   if (!latency) {
+    latency = measureLoopLatency(sampleRate)
+    loopLatencies.set(sampleRate, latency)
+  }
+  return latency
+}
+
+/** `loopLatency`'s render; 0 where the browser can't build or render it, so audio still starts. */
+async function measureLoopLatency(sampleRate: number): Promise<number> {
+  try {
     const frames = 256
     const ctx = new OfflineAudioContext(1, frames * 4, sampleRate)
     const impulse = ctx.createBuffer(1, 1, sampleRate)
@@ -47,18 +56,14 @@ function loopLatency(sampleRate: number): Promise<number> {
     src.connect(delay).connect(loop).connect(delay)
     delay.connect(ctx.destination)
     src.start()
-    latency = ctx.startRendering().then(
-      (out) => {
-        // The first repeat is at `frames`; the second shows what the loop added.
-        const data = out.getChannelData(0)
-        const second = data.findIndex((x, i) => i > frames && Math.abs(x) > 0.5)
-        return second < 0 ? 0 : Math.max(0, second - 2 * frames) / sampleRate
-      },
-      () => 0,
-    )
-    loopLatencies.set(sampleRate, latency)
+    const out = await ctx.startRendering()
+    // The first repeat is at `frames`; the second shows what the loop added.
+    const data = out.getChannelData(0)
+    const second = data.findIndex((x, i) => i > frames && Math.abs(x) > 0.5)
+    return second < 0 ? 0 : Math.max(0, second - 2 * frames) / sampleRate
+  } catch {
+    return 0
   }
-  return latency
 }
 
 /**
@@ -238,7 +243,7 @@ export class MasterChain {
       set('throwFeedback', this.throwFeedback.gain, echo.feedback)
 
     if (this.crusher) {
-      const crush = lofiCrush(sound.lofi.x, sound.lofi.y)
+      const crush = lofiCrush(sound.lofi.x, sound.lofi.y, ctx.sampleRate)
       set('lofiRate', this.crusher.parameters.get('rate')!, crush.rate)
       set('lofiBits', this.crusher.parameters.get('bits')!, crush.bits)
     }

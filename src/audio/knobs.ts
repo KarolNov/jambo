@@ -186,22 +186,30 @@ export function throwEcho(x: number, y: number): { beats: number; send: number; 
   }
 }
 
-/** The lo-fi's sample rate at X 0, above any context's own, so the crusher passes every sample. */
+/**
+ * The lo-fi's sample rate at X 0 and at X 1, at a 48 kHz context. The crusher scales them to the
+ * context's own rate (`lofiCrush`'s `fullRate`), so X 0 passes every sample on any device and
+ * every X above it is heard; readouts show the 48 kHz figures.
+ */
 export const LOFI_RATE_FULL_HZ = 48000
-/** The lo-fi's sample rate at X 1. */
 export const LOFI_RATE_MIN_HZ = 4000
 /** The lo-fi's bit depth at Y 0 (where the crusher leaves samples as they are) and at Y 1. */
 export const LOFI_BITS_MAX = 16
 export const LOFI_BITS_MIN = 4
 
 /**
- * The lo-fi mode at `x`, `y`: X lowers the sample rate exponentially from `LOFI_RATE_FULL_HZ` to
- * `LOFI_RATE_MIN_HZ`, Y the bit depth from `LOFI_BITS_MAX` to `LOFI_BITS_MIN`. The crusher holds
+ * The lo-fi mode at `x`, `y`: X lowers the sample rate exponentially from `fullRate` (the
+ * context's own; `LOFI_RATE_FULL_HZ` by default) by the ratio `LOFI_RATE_MIN_HZ` /
+ * `LOFI_RATE_FULL_HZ`, Y the bit depth from `LOFI_BITS_MAX` to `LOFI_BITS_MIN`. The crusher holds
  * each sample for `rate` (Hz) and rounds to `bits`; at 0/0 it passes the sound through.
  */
-export function lofiCrush(x: number, y: number): { rate: number; bits: number } {
+export function lofiCrush(
+  x: number,
+  y: number,
+  fullRate = LOFI_RATE_FULL_HZ,
+): { rate: number; bits: number } {
   return {
-    rate: LOFI_RATE_FULL_HZ * (LOFI_RATE_MIN_HZ / LOFI_RATE_FULL_HZ) ** x,
+    rate: fullRate * (LOFI_RATE_MIN_HZ / LOFI_RATE_FULL_HZ) ** x,
     bits: LOFI_BITS_MAX - (LOFI_BITS_MAX - LOFI_BITS_MIN) * y,
   }
 }
