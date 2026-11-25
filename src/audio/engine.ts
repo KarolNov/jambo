@@ -1,4 +1,4 @@
-import type { Hit, Track } from '../../shared/board'
+import type { Hit, Master, Track } from '../../shared/board'
 import { BEATS_PER_BAR, BPM, soundOf } from '../../shared/board'
 import {
   SHIFT_THRESHOLD_MS,
@@ -14,8 +14,11 @@ import {
   ceilNear,
   finishTake,
   hitsInWindow,
+  jamBeatMs,
   nextGridLine,
   nextJamBar,
+  repeatSlice,
+  swingDelay,
   trackStart,
 } from '../../shared/looper'
 import type { JamClock } from './clock'
@@ -37,6 +40,34 @@ const LOOKAHEAD = 0.12 // seconds of audio scheduled ahead
 const TICK_MS = 25
 /** How long a removed loop fades before its chain is disconnected. */
 const RELEASE_MS = 100
+/**
+ * Room ms every window edge is moved back by, so a hit right on an edge (a grid line where repeat
+ * changes, or where one tick's window ends) falls in exactly one window despite rounding.
+ */
+const EDGE_MS = 1e-3
+/** How long a repeat fades out at its slice's end, in seconds, so the cut doesn't click. */
+const REPEAT_FADE = 0.004
+
+/**
+ * A stretch of beat repeat, from jam beat `at` until the next one's: off, or repeating the loops'
+ * hits from the `slice` beats starting at jam beat `start`, at `level` against the loops.
+ */
+interface RepeatSpan {
+  at: number
+  start: number
+  slice?: number
+  level: number
+}
+
+/** A loop hit scheduled but maybe not yet started: what a repeat change cancels and plays again. */
+interface Scheduled {
+  /** Where the hit sits on the grid, in room ms, before swing. */
+  grid: number
+  /** When it starts, in audio seconds. */
+  at: number
+  source: AudioBufferSourceNode
+  timer?: ReturnType<typeof setTimeout>
+}
 
 /**
  * The recorder's phases. Times are room ms on the jam's clock: `countStart` is the count-in's first
@@ -84,6 +115,7 @@ const isLive = (ctx: AudioContext | OfflineAudioContext): ctx is AudioContext =>
   !(ctx instanceof OfflineAudioContext)
 
 interface Playing {
+  id: string
   track: Track
   /** Undefined until audio starts. */
   chain?: Chain
@@ -116,6 +148,14 @@ export class Engine {
   private echoBpm?: number
   /** The master throw's echo time last set, in seconds. */
   private throwSeconds?: number
+  /** The board's master swing. */
+  private swing = 0
+  /** The board's repeat setting last fed. */
+  private repeat?: Master['repeat']
+  /** Beat repeat over time, by `at`; before the first span (or with none) it is off. */
+  private repeats: RepeatSpan[] = []
+  /** Loop hits scheduled and not yet started, so a repeat change can take them back. */
+  private scheduled: Scheduled[] = []
   private buffers = new Map<string, AudioBuffer>()
   /** Room ms → audio seconds: `audio = room / 1000 + shift`. Undefined until the clock is agreed. */
   private shift?: number
@@ -218,6 +258,7 @@ export class Engine {
   dispose() {
     this.sleep?.()
     clearInterval(this.timer)
+    this.scheduled = []
     for (const t of this.hitTimers) clearTimeout(t)
     this.hitTimers.clear()
     this.hitListeners.clear()
@@ -251,38 +292,41 @@ export class Engine {
     for (const l of this.hitListeners) l(hit)
   }
 
-  /** Announces a loop hit scheduled for `at` (audio seconds) when it is heard. */
+  /** Announces a loop hit scheduled for `at` (audio seconds) when it is heard. Returns its timer. */
   private announceAt(hit: PadHit, at: number) {
     const ctx = this.ctx
     // An offline render has no speakers to hear it from.
-    if (this.hitListeners.size === 0 || !ctx || !isLive(ctx)) return
+    if (this.hitListeners.size === 0 || !ctx || !isLive(ctx)) return undefined
     const delay = Math.max(0, heardAt(at, this.heard(ctx)) - performance.now())
     const t = setTimeout(() => {
       this.hitTimers.delete(t)
       this.announce(hit)
     }, delay)
     this.hitTimers.add(t)
+    return t
   }
 
   /**
    * Feeds the board's current state: tempo, pad sounds, uploads, every readable track by id, and
-   * the master settings (left as they are when not given).
+   * the master settings (left as they are when not given; swing and repeat too).
    */
   update(state: {
     bpm: number
     pads: Map<string, string>
     tracks: Map<string, Track>
     uploads: ReadonlySet<string>
-    master?: MasterSound
+    master?: MasterSound & Partial<Pick<Master, 'swing' | 'repeat'>>
   }) {
-    if (state.master) {
-      const { tone, drive, width, filter, throw: echo, lofi } = state.master
-      this.masterSound = { tone, drive, width, filter, throw: echo, lofi }
-      this.chain?.set(this.masterSound)
-    }
     this.samples.sync(state.uploads)
     this.boardBpm = state.bpm
     if (this.recorder.phase === 'idle') this.bpm = this.boardBpm
+    if (state.master) {
+      const { tone, drive, width, filter, throw: echo, lofi, swing, repeat } = state.master
+      this.masterSound = { tone, drive, width, filter, throw: echo, lofi }
+      this.chain?.set(this.masterSound)
+      if (swing !== undefined) this.swing = swing
+      if (repeat) this.setRepeat(repeat)
+    }
     this.syncEcho()
     this.syncThrow()
     this.pads = state.pads
@@ -302,7 +346,7 @@ export class Engine {
       }
       // Someone else's track plays from its current point in its loop; one this client just
       // recorded also plays what its second cycle has already passed.
-      const p: Playing = { track }
+      const p: Playing = { id, track }
       const takeBpm = this.claimed.get(id)
       this.claimed.delete(id)
       // A take whose tempo changed under it has no second cycle on this grid to catch up with.
@@ -395,6 +439,55 @@ export class Engine {
     chain.throwTime(seconds, roomToAudio(line, shift))
   }
 
+  /**
+   * Follows the board's beat repeat. Engaging, letting go and a new slice zone take effect on the
+   * start beat the move was stamped with, the same one for every client. A change of level alone
+   * applies at once. Loop hits already
+   * scheduled past the change are taken back and scheduled again, so the change lands on its line
+   * even when it arrives inside the lookahead.
+   */
+  private setRepeat(next: Master['repeat']) {
+    const prev = this.repeat
+    this.repeat = next
+    const sliceOf = (r: Master['repeat']) => (r.y > 0 ? repeatSlice(r.x) : undefined)
+    const slice = sliceOf(next)
+    const last = this.repeats.at(-1)
+    // Only a change of level keeps the span; engaging, letting go and a new slice zone are always
+    // stamped, even when their line is the same as the move before's.
+    if (prev && next.startBeat === prev.startBeat && sliceOf(prev) === slice) {
+      if (last) last.level = next.y
+      return
+    }
+    const at = next.startBeat
+    // A span that never started gives way to one starting at or before it.
+    while (this.repeats.length > 0 && this.repeats.at(-1)!.at >= at) this.repeats.pop()
+    this.repeats.push({ at, start: at, slice, level: next.y })
+    this.redo(jamBeatMs(at, this.bpm))
+  }
+
+  /** Takes back the loop hits scheduled on the grid at or after room time `from`, and schedules them again. */
+  private redo(from: number) {
+    const ctx = this.ctx
+    const shift = this.shift
+    if (!ctx || shift === undefined || from >= this.scheduledUntil) return
+    // What has started stays; the change can only apply from now on.
+    const start = Math.max(from, audioToRoom(ctx.currentTime, shift))
+    this.scheduled = this.scheduled.filter((s) => {
+      if (s.grid < start - EDGE_MS || s.at <= ctx.currentTime) return true
+      try {
+        s.source.stop()
+      } catch {
+        // Already stopped.
+      }
+      if (s.timer !== undefined) {
+        clearTimeout(s.timer)
+        this.hitTimers.delete(s.timer)
+      }
+      return false
+    })
+    this.scheduleLoops(start, this.scheduledUntil, shift)
+  }
+
   /** Plays a pad now, and records the hit if a take is running. */
   hitPad(padId: string) {
     const ctx = this.ctx
@@ -411,15 +504,49 @@ export class Engine {
     }
   }
 
-  private play(soundId: string | undefined, at: number, out: AudioNode, rate = 1) {
+  /** The buffer a sound plays, once it has loaded. */
+  private bufferOf(soundId: string | undefined) {
+    return soundId ? (this.buffers.get(soundId) ?? this.samples.get(soundId)) : undefined
+  }
+
+  /**
+   * Plays a sound at audio time `at`, at `rate` and `level`. A repeat starts `offset` seconds into
+   * the buffer (a sound that was still ringing when its slice began) and is cut at `until`.
+   */
+  private play(
+    soundId: string | undefined,
+    at: number,
+    out: AudioNode,
+    rate = 1,
+    level = 1,
+    gate: { offset?: number; until?: number } = {},
+  ) {
     // An upload that hasn't loaded yet plays nothing; its hits sound once it has.
-    const buffer = soundId ? (this.buffers.get(soundId) ?? this.samples.get(soundId)) : undefined
-    if (!buffer || !this.ctx) return
-    const src = this.ctx.createBufferSource()
+    const buffer = this.bufferOf(soundId)
+    const ctx = this.ctx
+    if (!buffer || !ctx) return undefined
+    const src = ctx.createBufferSource()
     src.buffer = buffer
     src.playbackRate.value = rate
-    src.connect(out)
-    src.start(at)
+    const { offset = 0, until } = gate
+    if (level === 1 && until === undefined) src.connect(out)
+    else {
+      const gain = ctx.createGain()
+      gain.gain.value = level
+      // Picked up mid-sound, it fades in, so the jump into the waveform doesn't click.
+      if (offset > 0) {
+        gain.gain.setValueAtTime(0, at)
+        gain.gain.linearRampToValueAtTime(level, at + REPEAT_FADE)
+      }
+      if (until !== undefined) {
+        gain.gain.setValueAtTime(level, Math.max(at, until - REPEAT_FADE))
+        gain.gain.linearRampToValueAtTime(0, until)
+      }
+      src.connect(gain).connect(out)
+    }
+    src.start(at, offset)
+    if (until !== undefined) src.stop(until)
+    return src
   }
 
   /**
@@ -580,31 +707,129 @@ export class Engine {
     }
     this.scheduleWindow(from, to, this.shift!, this.recorder)
     this.scheduledUntil = Math.max(this.scheduledUntil, to)
+    this.scheduled = this.scheduled.filter((s) => s.at > ctx.currentTime)
+    // Repeat spans that ended a while ago are done with.
+    const past = audioToRoom(ctx.currentTime, this.shift!) - 1000
+    while (this.repeats.length > 1 && jamBeatMs(this.repeats[1]!.at, this.bpm) <= past)
+      this.repeats.shift()
+  }
+
+  /** Schedules every unmuted loop's hits on the grid in room window [from, to). */
+  private scheduleLoops(from: number, to: number, shift: number) {
+    for (const p of this.playing.values()) this.scheduleLoop(p, from, to, shift)
+  }
+
+  /**
+   * Schedules one loop's hits on the grid in room window [from, to): each sounds swung, and while
+   * repeat is on the loop plays its repeated slice at the repeat's level and itself at the rest.
+   */
+  private scheduleLoop(p: Playing, from: number, to: number, shift: number) {
+    const ctx = this.ctx
+    const chain = p.chain
+    if (!ctx || !chain || p.track.mute || to <= from) return
+    // Pitch is read per hit, so a change applies from the next one.
+    const rate = pitchRate(soundOf(p.track).pitch)
+    const bpm = this.bpm
+    const beatMs = beatSeconds(bpm) * 1000
+    const origin = trackStart(p.track, bpm) / 1000
+    // Edges move back a hair, so a hit on one lands in exactly one window (see `EDGE_MS`).
+    const grid = (a: number, b: number) =>
+      hitsInWindow(p.track, origin, bpm, (a - EDGE_MS) / 1000, (b - EDGE_MS) / 1000)
+    const swung = (h: { time: number; beat: number }) =>
+      h.time * 1000 + swingDelay(h.beat, this.swing) * beatMs
+    /** Plays a hit on the grid at `gridMs`, sounding at `atMs`; a repeat is gated (room ms). */
+    const sound = (
+      padId: string,
+      gridMs: number,
+      atMs: number,
+      level: number,
+      gate?: { skipMs: number; untilMs: number },
+    ) => {
+      if (level <= 0) return
+      const at = Math.max(ctx.currentTime, roomToAudio(atMs, shift))
+      const source = this.play(
+        this.pads.get(padId),
+        at,
+        chain.filter,
+        rate,
+        level,
+        gate && { offset: (gate.skipMs / 1000) * rate, until: roomToAudio(gate.untilMs, shift) },
+      )
+      if (!source) return
+      // A tail picked up mid-sound isn't a new hit, so it doesn't light its pad.
+      const timer = gate?.skipMs ? undefined : this.announceAt({ padId, trackId: p.id }, at)
+      this.scheduled.push({ grid: gridMs, at, source, timer })
+    }
+    // How far back a sound may have started and still be ringing: the longest of this loop's.
+    const ringMs = () => {
+      let longest = 0
+      for (const h of p.track.hits) {
+        const buffer = this.bufferOf(this.pads.get(h.padId))
+        if (buffer) longest = Math.max(longest, buffer.duration)
+      }
+      return (longest / rate) * 1000
+    }
+    // The window in parts, one per repeat span it crosses.
+    const spans = this.repeats
+    let a = from
+    for (let i = -1; i < spans.length && a < to; i++) {
+      const span = spans[i]
+      const next = spans[i + 1]
+      const b = next ? Math.min(to, jamBeatMs(next.at, bpm)) : to
+      if (b <= a) continue
+      const level = span?.slice === undefined ? 0 : span.level
+      for (const h of grid(a, b)) sound(h.padId, h.time * 1000, swung(h), 1 - level)
+      if (span?.slice !== undefined && level > 0) {
+        const start = jamBeatMs(span.start, bpm)
+        const length = span.slice * beatMs
+        // The slice is what sounds from `start` for `length`, as if recorded: the hits in it, at
+        // their offsets and swung as they were, and what was still ringing when it began, from
+        // where it had got to. Each repeat plays it again and is cut where the slice ends, so
+        // repeats never pile up, and a slice between hits still holds the tails ringing there.
+        const ring = ringMs()
+        const slice: { padId: string; offset: number; skipMs: number }[] = []
+        for (const h of grid(start - ring, start + length)) {
+          const at = swung(h)
+          const buffer = this.bufferOf(this.pads.get(h.padId))
+          const ends = at + (buffer ? (buffer.duration / rate) * 1000 : 0)
+          if (at >= start + length || (at < start && ends <= start)) continue
+          slice.push({
+            padId: h.padId,
+            offset: Math.max(0, at - start),
+            skipMs: Math.max(0, start - at),
+          })
+        }
+        for (let k = Math.max(0, Math.floor((a - start) / length)); start + k * length < b; k++)
+          for (const h of slice) {
+            // The first pass of a tail is the sound itself, still ringing.
+            if (k === 0 && h.skipMs > 0) continue
+            const at = start + k * length + h.offset
+            if (at < a - EDGE_MS || at >= b - EDGE_MS) continue
+            const untilMs = start + (k + 1) * length
+            sound(h.padId, at, at, level, { skipMs: h.skipMs, untilMs })
+          }
+      }
+      a = b
+    }
   }
 
   /**
    * Schedules everything in room window [from, to) (room ms) onto the context, at audio time
-   * `room / 1000 + shift`: every unmuted loop's hits through its chain, and the clicks `recorder`
-   * calls for (the count-in, and the metronome while recording). The lookahead calls it each tick;
-   * an offline render calls it once before rendering. Does nothing before audio starts.
+   * `room / 1000 + shift`: every unmuted loop's hits through its chain (swung and repeated as the
+   * master says), and the clicks `recorder` calls for (the count-in, and the metronome while
+   * recording). The lookahead calls it each tick; an offline render calls it once before rendering.
+   * Does nothing before audio starts.
    */
   scheduleWindow(from: number, to: number, shift: number, recorder: RecorderState) {
     const ctx = this.ctx
     if (!ctx || to <= from) return
-    for (const [trackId, p] of this.playing) {
+    for (const p of this.playing.values()) {
       // A just-recorded track's next loop may have begun before it was added: play what it missed now.
-      const start = Math.min(from, p.catchUpFrom ?? from)
+      if (p.catchUpFrom !== undefined && p.catchUpFrom < from)
+        this.scheduleLoop(p, p.catchUpFrom, from, shift)
       p.catchUpFrom = undefined
-      if (!p.chain || p.track.mute) continue
-      // Pitch is read per hit, so a change applies from the next one.
-      const rate = pitchRate(soundOf(p.track).pitch)
-      const origin = trackStart(p.track, this.bpm) / 1000
-      for (const hit of hitsInWindow(p.track, origin, this.bpm, start / 1000, to / 1000)) {
-        const at = Math.max(ctx.currentTime, roomToAudio(hit.time * 1000, shift))
-        this.play(this.pads.get(hit.padId), at, p.chain.filter, rate)
-        this.announceAt({ padId: hit.padId, trackId }, at)
-      }
     }
+    this.scheduleLoops(from, to, shift)
     // Clicks only around a take: always during the count-in, and while recording if the metronome is on.
     const rec = recorder
     if (rec.phase === 'idle') return

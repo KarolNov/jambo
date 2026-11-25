@@ -9,6 +9,7 @@ import {
   type SoundKnob,
   soundOf,
 } from '../../../shared/board'
+import { type REPEAT_SLICES, repeatZone } from '../../../shared/looper'
 import { lofiCrush, type THROW_BEATS, throwZone } from '../../audio/knobs'
 
 const SNAP_LABEL: Record<(typeof QUANTIZE)[number], string> = {
@@ -62,11 +63,12 @@ export const soundChanged = (track: Partial<Record<SoundKnob, number>>) => {
   return SOUND_KNOB_NAMES.some((k) => sound[k] !== SOUND_KNOBS[k].default)
 }
 
-/** The master knobs the console shows, in order. Swing joins them once the scheduler swings. */
+/** The master knobs the console shows, in order. */
 export const MASTER_CONSOLE_KNOBS = [
   'tone',
   'drive',
   'width',
+  'swing',
 ] as const satisfies readonly MasterKnob[]
 
 /** Each master knob's name and how its value reads, for its label and bubble. */
@@ -85,14 +87,29 @@ export const MASTER_READOUTS: Record<
           ? 'Mono'
           : `${v < 0 ? 'Narrow' : 'Wide'} ${pct(v)}%`,
   },
+  // As drum machines count it: 50% is straight, 75% (swing 1) plays each off-beat 16th half a 16th late.
+  swing: {
+    label: 'Swing',
+    format: (v) => (v === 0 ? 'Straight' : `${Math.max(51, Math.round(50 + v * 25))}%`),
+  },
 }
 
-/** The touchpad's modes, in the picker's order. Repeat joins once the scheduler repeats. */
-export const TOUCHPAD_MODES = ['filter', 'throw', 'lofi'] as const satisfies readonly FxMode[]
+/** The touchpad's modes, in the picker's order. */
+export const TOUCHPAD_MODES = [
+  'filter',
+  'throw',
+  'lofi',
+  'repeat',
+] as const satisfies readonly FxMode[]
 
 /** Throw's echo time in each of its X zones, as `THROW_BEATS` lists them. */
 const THROW_NOTES = ['1/8', 'Dotted 1/8', '1/4'] as const satisfies {
   length: typeof THROW_BEATS.length
+}
+
+/** Repeat's slice in each of its X zones, as `REPEAT_SLICES` lists them. */
+const REPEAT_NOTES = ['1/4', '1/8', '1/16', '1/32'] as const satisfies {
+  length: typeof REPEAT_SLICES.length
 }
 
 /** An axis of a touchpad mode as it reads: its name, and its value in the bubble and to screen readers. */
@@ -128,5 +145,10 @@ export const TOUCHPAD_READOUTS: Record<
         pct(v) === 0 ? 'Full rate' : `${(lofiCrush(v, 0).rate / 1000).toFixed(1)} kHz`,
     },
     y: { label: 'Bits', format: (v) => `${Math.round(lofiCrush(0, v).bits)}-bit` },
+  },
+  repeat: {
+    label: 'Repeat',
+    x: { label: 'Slice', format: (v) => `${REPEAT_NOTES[repeatZone(v)]} slice` },
+    y: { label: 'Level', format: (v) => (pct(v) === 0 ? 'Off' : `${pct(v)}%`) },
   },
 }
