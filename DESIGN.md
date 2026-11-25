@@ -55,9 +55,9 @@ control's own shadow. No outer outlines. Every control must show it on `:focus-v
 - A control that belongs to something coloured takes the colour as a prop (`color` on `Range` and
   `Knob`), which sets `--ui-c`. Without one it uses `--accent-2`. `Pad` lights in `--glow`.
 - Someone else moving a shared control shows in their colour and locks it: pass `heldBy` (a
-  `Holder`: their name and swatch) to `Range`, `Knob` or `XYPad`,
-  which lights it in that colour in place of
-  its own (the fader's LEDs and cap line, the knob's arc and index line; no outline), keeps the
+  `Holder`: their name and swatch) to `Range`, `Knob` or `XYPad`, which lights it in that colour
+  in place of its own (the fader's LEDs and cap line, the knob's arc and index line, the pad's puck
+  and lines; no outline), keeps the
   bubble up with their name, and ignores your drags and keys until they let go (it keeps focus).
   If it arrives mid-drag (you lost a simultaneous grab), your drag ends where it is. Report your
   own drags with `onDragChange` so others see yours; `useHolders` decides who holds what.
@@ -162,7 +162,7 @@ release; with `live` it applies as it moves, at most once a frame, as a live `Kn
 stays where it is let go. Escape mid-drag puts it back where the drag started (and applies that
 again when live). ← → move X a step and ↑ ↓ move Y, whichever axis has focus, Shift for ten;
 Page Up/Down, Home and End move the focused axis. `home` marks a position (where it is off).
-Screen readers hear a group named `label` with two sliders. Size it with `--xy` (default 200px,
+While someone else holds it, its puck and lines turn their colour, with no outline. Screen readers hear a group named `label` with two sliders. Size it with `--xy` (default 200px,
 never wider than its container); leave room above for the bubble.
 
 - Use for two parameters played together by feel, such as a touchpad mode's X and Y. Make it

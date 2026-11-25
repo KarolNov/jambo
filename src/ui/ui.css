@@ -1359,19 +1359,10 @@
   opacity: 0.45;
   cursor: default;
 }
-/* Someone else is moving it: their colour rings the square and the puck, and the bubble names
-   them. It stays at full strength, showing their position. */
+/* Someone else is moving it: its puck and lines are in their colour (`--ui-c`, set by the
+   component), and the bubble names them. */
 :root[data-theme] .ui-xy.is-held .ui-xy-surface {
-  box-shadow:
-    var(--inset),
-    0 0 0 2px var(--ui-held);
   cursor: not-allowed;
-}
-:root[data-theme] .ui-xy.is-held .ui-xy-puck {
-  box-shadow:
-    inset 0 1px 0 var(--cap-edge),
-    0 1px 1px var(--cap-drop),
-    0 0 0 2px var(--ui-held);
 }
 @media (prefers-reduced-motion: reduce) {
   /* The puck jumps without easing; the bubble just appears. */

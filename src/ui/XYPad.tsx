@@ -70,8 +70,8 @@ const ARROW_AXIS: Partial<Record<string, 0 | 1>> = {
  * puck where it is released. Escape mid-drag puts it back where the drag started (and applies
  * that again when live). Arrow keys move it a step on their axis (← → across, ↑ ↓ up and down),
  * Shift for ten; Page Up/Down, Home and End move the focused axis. Screen readers hear a group of
- * two sliders, one per axis. While someone else holds it (`heldBy`), it is ringed in their
- * colour, the bubble names them, and it ignores drags and keys; if that arrives mid-drag, the drag
+ * two sliders, one per axis. While someone else holds it (`heldBy`), its puck and lines turn
+ * their colour, the bubble names them, and it ignores drags and keys; if that arrives mid-drag, the drag
  * ends where it is.
  */
 export function XYPad({
@@ -240,6 +240,8 @@ export function XYPad({
     ...heldVars(heldBy),
   } as CSSProperties
   if (color) Object.assign(vars, { '--ui-c': color })
+  // Someone else moving it: the puck and its lines are theirs, in their colour, over the pad's own.
+  if (heldBy) Object.assign(vars, { '--ui-c': heldBy.color })
   const slider = (axis: 0 | 1) => {
     const a = axes[axis]!
     const v = axis === 0 ? sx : sy

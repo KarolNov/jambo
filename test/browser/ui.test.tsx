@@ -246,7 +246,7 @@ describe('tabs', () => {
 
 describe('design showcase', () => {
   // @scenario ui: Try another colour
-  it("paints the slider's lights, the knob's arc, the switches and the focus rings in the picked colour", async () => {
+  it("paints the slider's lights, the knob's arc, the XY pad's puck, the switches and the focus rings in the picked colour", async () => {
     const { container } = await render(
       <Themed>
         <Showcase />
@@ -263,6 +263,8 @@ describe('design showcase', () => {
     expect(prop(leds, '--led', '::after')).toBe(coral)
     const dial = container.querySelector('.ui-knob .ui-knob-dial')!
     expect(prop(dial, '--ui-c', '::before')).toBe(coral)
+    const puck = container.querySelector('.ui-xy .ui-xy-puck')!
+    expect(prop(puck, '--ui-c')).toBe(coral)
     // The switches, the primary button and the other accent tints, as in a jam.
     for (const el of [
       container.querySelector('.ui-switch')!,
@@ -537,6 +539,8 @@ describe('someone else moving a control', () => {
     await expect.poll(() => pad().classList.contains('is-held')).toBe(true)
     expect(pad().style.getPropertyValue('--ui-held')).toBe(coral())
     expect(pad().querySelector('.ui-xy-bubble')!.textContent).toBe('Misty Yak')
+    // The puck and its lines are Misty's.
+    expect(pad().style.getPropertyValue('--ui-c')).toBe(coral())
     await expect.element(cutoff).toHaveAttribute('aria-disabled', 'true')
     await expect.element(page.getByRole('button', { name: 'Reset Filter' })).toBeDisabled()
 
