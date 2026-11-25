@@ -14,6 +14,7 @@ import {
   toKind,
   checkSummary,
   holdsOf,
+  stampRepeats,
   withoutHeld,
 } from '../shared/agent'
 
@@ -472,5 +473,38 @@ describe('held controls', () => {
     })
     const other: Op = { op: 'setTrack', id: 't2', patch: { gain: 0.5 } }
     expect(withoutHeld(other, holds)).toEqual({ op: other, issues: [] })
+  })
+})
+
+describe('repeat stamps', () => {
+  const doc = () => {
+    const d = new Y.Doc()
+    seedBoard(d)
+    apply(d, [{ op: 'setTempo', bpm: 120 }], SYSTEM)
+    return d
+  }
+  const repeat = (x: number, y: number): Op => ({ op: 'setFx', mode: 'repeat', x, y })
+  // 120 BPM: room time 1300 ms is jam beat 2.6.
+  const NOW = 1300
+
+  it("stamps an agent's repeat moves with the jam beat they take effect on, as a person's are", () => {
+    const ops = stampRepeats(
+      [repeat(0.1, 1), repeat(0.1, 0.5), repeat(0.9, 0.5), repeat(0.9, 0)],
+      doc(),
+      NOW,
+    )
+    expect(ops.map((o) => (o.op === 'setFx' ? o.startBeat : 'other'))).toEqual([
+      3, // engages the 1/4 slice at the next beat
+      undefined, // only its level
+      2.75, // the 1/32 slice, at the next 1/16
+      2.75, // lets go at the next 1/16
+    ])
+  })
+
+  it('leaves other ops alone, and reads where repeat is from the board', () => {
+    const d = doc()
+    apply(d, [{ op: 'setFx', mode: 'repeat', x: 0.1, y: 1, startBeat: 2 }], SYSTEM)
+    const other: Op = { op: 'setFx', mode: 'filter', x: -0.5, y: 0 }
+    expect(stampRepeats([other, repeat(0.2, 0.4)], d, NOW)).toEqual([other, repeat(0.2, 0.4)])
   })
 })

@@ -1,9 +1,10 @@
 import { useAtomValue } from 'jotai'
 import { useState } from 'react'
 import { CONTROL_KEYS, FX_MODES, fxOn, MASTER_KNOBS, type Master } from '../../../shared/board'
+import { repeatStamp } from '../../../shared/looper'
 import { Button, type Holder, Knob, Tabs, XYPad } from '../../ui'
 import { useSwatch } from '../colors'
-import { masterAtom } from '../model'
+import { bpmAtom, masterAtom } from '../model'
 import { holdControl, type Person, useHolders } from '../presence'
 import { useSession } from '../session'
 import { MASTER_CONSOLE_KNOBS, MASTER_READOUTS, TOUCHPAD_MODES, TOUCHPAD_READOUTS } from './loops'
@@ -19,7 +20,8 @@ type TouchpadMode = (typeof TOUCHPAD_MODES)[number]
  */
 export function Master() {
   const master = useAtomValue(masterAtom)
-  const { board, jam, me } = useSession()
+  const bpm = useAtomValue(bpmAtom)
+  const { board, jam, me, engine } = useSession()
   const holders = useHolders(jam.awareness, me.id)
   const swatch = useSwatch()
   const heldBy = (key: string): Holder | undefined => {
@@ -28,6 +30,13 @@ export function Master() {
   }
   // Which mode your touchpad shows is yours alone; each mode's position is the jam's.
   const [mode, setMode] = useState<TouchpadMode>(TOUCHPAD_MODES[0])
+  // Repeat engages, changes slice and lets go on the jam's grid: the move carries the beat it
+  // takes effect on, so every client switches on the same line.
+  const move = (m: TouchpadMode, x: number, y: number) => {
+    if (m !== 'repeat') return board.fx(m).set(x, y)
+    const now = engine.clock.now() ?? Date.now()
+    board.fx(m).set(x, y, repeatStamp(master.repeat, { x, y }, now, bpm))
+  }
   return (
     <section className="console-master" aria-labelledby="console-master-title">
       <h2 id="console-master-title" className="console-master-title">
@@ -48,8 +57,8 @@ export function Master() {
                 mode={m}
                 at={master[m]}
                 heldBy={heldBy(CONTROL_KEYS.fx(m))}
-                onChange={(x, y) => board.fx(m).set(x, y)}
-                onReset={() => board.fx(m).reset()}
+                onChange={(x, y) => move(m, x, y)}
+                onReset={() => move(m, 0, 0)}
                 onDragChange={(dragging) =>
                   holdControl(jam.awareness, CONTROL_KEYS.fx(m), dragging)
                 }

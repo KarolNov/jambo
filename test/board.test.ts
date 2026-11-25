@@ -713,6 +713,13 @@ describe('master settings', () => {
     expect(b.fx('filter').set(0, 0, 4).ok).toBe(false)
   })
 
+  it('takes a start beat counted from the epoch, on the 16th grid', () => {
+    const b = board(new Y.Doc(), me)
+    // Jam beats now at the fastest tempo run to about 7e9.
+    expect(b.fx('repeat').set(0.1, 1, 7_041_234_567.75).ok).toBe(true)
+    expect(b.fx('repeat').set(0.1, 1, 7_041_234_567.7).ok).toBe(false)
+  })
+
   // @scenario board/ops: Two controls at once
   it('keeps concurrent changes to different controls, last write wins on the same one', () => {
     const a = new Y.Doc()

@@ -177,8 +177,8 @@ const fxAxes = (m: FxMode) =>
     y: z.number().min(FX_MODES[m].y.min).max(FX_MODES[m].y.max),
   })
 
-/** The latest jam beat repeat's slice may start on. */
-export const REPEAT_START_BEAT_MAX = 10_000_000
+/** The latest jam beat a repeat change may start on: jam beats count from the epoch, so this covers centuries at any tempo. */
+export const REPEAT_START_BEAT_MAX = 1e11
 
 /**
  * One stored value per master control, in the root array `master`, kept in y-utility's
@@ -193,7 +193,7 @@ export const MasterValues = {
   filter: fxAxes('filter'),
   throw: fxAxes('throw'),
   lofi: fxAxes('lofi'),
-  /** startBeat sits on the 16th grid, below a cap (weeks of play at any tempo). */
+  /** startBeat is the jam beat (from the epoch, on the 16th grid) the latest change takes effect on. */
   repeat: fxAxes('repeat').extend({
     startBeat: z.number().min(0).max(REPEAT_START_BEAT_MAX).multipleOf(0.25),
   }),

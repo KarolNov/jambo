@@ -4,7 +4,8 @@ import { commands, page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { Awareness, applyAwarenessUpdate, encodeAwarenessUpdate } from 'y-protocols/awareness'
 import * as Y from 'yjs'
-import { board, CONTROL_KEYS } from '../../shared/board'
+import { board, BPM, CONTROL_KEYS } from '../../shared/board'
+import { beatSeconds } from '../../shared/looper'
 import About from '../../src/about/About'
 import { Console } from '../../src/board/console/Console'
 import { Deck } from '../../src/board/console/Deck'
@@ -780,6 +781,37 @@ describe('touchpad', () => {
     await expect.element(page.getByRole('tab', { name: 'Lo-fi' })).toBeVisible()
     // Throw stays where it was.
     expect(session.jam.store.get(masterAtom).throw).toEqual({ x: 0.9, y: 0.8 })
+  })
+
+  // @scenario audio/master: Heard together
+  it("engages Repeat at the slice's next grid line and lets go at the next 1/16, storing that beat", async () => {
+    session = makeSession('Groovy Otter')
+    await renderJam(<Master />, session)
+    await userEvent.click(page.getByRole('tab', { name: /^Repeat/ }))
+    const level = page.getByRole('slider', { name: 'Repeat level' })
+    await expect.element(level).toHaveAttribute('aria-valuetext', 'Off')
+    await expect
+      .element(page.getByRole('slider', { name: 'Repeat slice' }))
+      .toHaveAttribute('aria-valuetext', '1/4 slice')
+    const beat = () => (session.engine.clock.now() ?? Date.now()) / beatSeconds(BPM.default) / 1000
+    level.element().focus()
+    let before = beat()
+    await userEvent.keyboard('{ArrowUp}')
+    const on = session.jam.store.get(masterAtom).repeat
+    expect(on.y).toBeGreaterThan(0)
+    // The 1/4 slice starts on the next whole jam beat.
+    expect(Number.isInteger(on.startBeat)).toBe(true)
+    expect(on.startBeat).toBeGreaterThanOrEqual(before)
+    expect(on.startBeat).toBeLessThanOrEqual(beat() + 1)
+    await expect.element(page.getByRole('tab', { name: 'Repeat, on' })).toBeVisible()
+
+    before = beat()
+    await userEvent.click(page.getByRole('button', { name: 'Reset Repeat' }))
+    const off = session.jam.store.get(masterAtom).repeat
+    expect(off).toMatchObject({ x: 0, y: 0 })
+    expect(Number.isInteger(off.startBeat * 4)).toBe(true)
+    expect(off.startBeat).toBeGreaterThanOrEqual(before)
+    expect(off.startBeat).toBeLessThanOrEqual(beat() + 0.25)
   })
 
   // @scenario audio/master: Latched

@@ -53,11 +53,12 @@ export function EngineFeed({ engine }: { engine: Engine }) {
   const tracks = useAtomValue(tracksAtom)
   const sounds = useAtomValue(soundsAtom)
   const master = useAtomValue(masterAtom)
-  const { tone, drive, width } = master
+  const { tone, drive, width, swing } = master
   // By value: the atom gives a new object on every read.
   const { x: filterX, y: filterY } = master.filter
   const { x: throwX, y: throwY } = master.throw
   const { x: lofiX, y: lofiY } = master.lofi
+  const { x: repeatX, y: repeatY, startBeat } = master.repeat
   useEffect(() => {
     engine.update({
       bpm,
@@ -71,6 +72,8 @@ export function EngineFeed({ engine }: { engine: Engine }) {
         filter: { x: filterX, y: filterY },
         throw: { x: throwX, y: throwY },
         lofi: { x: lofiX, y: lofiY },
+        swing,
+        repeat: { x: repeatX, y: repeatY, startBeat },
       },
     })
   }, [
@@ -88,6 +91,10 @@ export function EngineFeed({ engine }: { engine: Engine }) {
     throwY,
     lofiX,
     lofiY,
+    swing,
+    repeatX,
+    repeatY,
+    startBeat,
   ])
   return null
 }

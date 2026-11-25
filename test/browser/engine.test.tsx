@@ -4,8 +4,8 @@
  * and reads the channels.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Track } from '../../shared/board'
-import { barMs, beatSeconds } from '../../shared/looper'
+import type { Master, Track } from '../../shared/board'
+import { barMs, beatSeconds, repeatStamp } from '../../shared/looper'
 import { JamClock } from '../../src/audio/clock'
 import { FILTER_PEAK_MAX, filterSweep } from '../../src/audio/knobs'
 import { Engine, type RecorderState } from '../../src/audio/engine'
@@ -658,5 +658,208 @@ describe('lofi', () => {
     // 4 bits: 8 levels each side of 0, and the sine reaches half of them.
     expect(levels(crushed)).toBeLessThanOrEqual(10)
     expect(levels(clean)).toBeGreaterThan(100)
+  })
+})
+
+describe('swing and repeat', () => {
+  const BPM_120 = 120
+  const BEAT_MS = beatSeconds(BPM_120) * 1000
+  /** Pads `b0`..`b3`, one per beat of a one-bar loop, so a hit's pad says which beat it came from. */
+  const BEAT_PADS = ['b0', 'b1', 'b2', 'b3']
+  const perBeat = (startBar: number) =>
+    track({ startBar, hits: BEAT_PADS.map((padId, beat) => ({ padId, beat })) })
+  const OFF = { x: 0, y: 0, startBeat: 0 }
+
+  /**
+   * A started engine at 120 BPM whose loop hits are recorded rather than judged by ear: each as
+   * its jam beat (room time over a beat, so engines on different shifts compare), pad and level.
+   * Hits taken back by a repeat change are dropped. `shift` maps room ms onto its timeline.
+   */
+  async function recorded(tracks: Track[], shift: number, swing = 0) {
+    const { engine } = await offline({ seconds: 1, bpm: BPM_120, metronome: false })
+    const hits: { beat: number; padId: string; level: number; stopped: boolean }[] = []
+    const play = engine['play'].bind(engine)
+    const padOf = new Map<string, string>(BEAT_PADS.map((p) => [p, p]))
+    engine['play'] = (soundId, at, out, rate, level = 1) => {
+      const source = play('kick', at, out, rate, level)
+      if (!source || !soundId) return source
+      const hit = { beat: ((at - shift) * 1000) / BEAT_MS, padId: soundId, level, stopped: false }
+      hits.push(hit)
+      const stop = source.stop.bind(source)
+      source.stop = (when?: number) => {
+        hit.stopped = true
+        stop(when)
+      }
+      return source
+    }
+    const feed = (repeat: Master['repeat']) =>
+      engine.update({
+        bpm: BPM_120,
+        pads: padOf,
+        tracks: new Map(tracks.map((t, i) => [`t${i}`, t])),
+        uploads: new Set(),
+        master: { ...MASTER_SOUND_DEFAULTS, swing, repeat },
+      })
+    feed(OFF)
+    engine['shift'] = shift
+    /** Schedules room window [from, to) in steps of `step` ms, as the lookahead would. */
+    const schedule = (from: number, to: number, step = to - from) => {
+      for (let a = from; a < to; a += step) {
+        const b = Math.min(to, a + step)
+        engine.scheduleWindow(a, b, shift, IDLE)
+        engine['scheduledUntil'] = b
+      }
+    }
+    const heard = () =>
+      hits
+        .filter((h) => !h.stopped)
+        .map(({ beat, padId, level }) => ({ beat: Math.round(beat * 1e6) / 1e6, padId, level }))
+        .sort((a, b) => a.beat - b.beat || a.padId.localeCompare(b.padId) || a.level - b.level)
+    return { engine, feed, schedule, heard }
+  }
+
+  // @scenario audio/master: Swung hats
+  it('plays every second 16th 62.5 ms late at swing 1 and 120 BPM, storing the same beats', async () => {
+    const sixteenths = Array.from({ length: 16 }, (_, i) => ({ padId: 'b0', beat: i / 4 }))
+    const t = track({ hits: sixteenths })
+    const { schedule, heard } = await recorded([t], SHIFT, 1)
+    schedule(0, barMs(BPM_120))
+    const late = heard().map((h, i) => (h.beat - i / 4) * BEAT_MS)
+    expect(late).toHaveLength(16)
+    late.forEach((ms, i) => expect(ms, `16th ${i}`).toBeCloseTo(i % 2 ? 62.5 : 0, 6))
+    expect(t.hits).toEqual(sixteenths)
+  })
+
+  // @scenario audio/master: Stutter a beat
+  it("repeats beat 3's hits every beat from beat 3 when the 1/4 zone engages during beat 2", async () => {
+    const bar = 1000
+    const origin = bar * barMs(BPM_120)
+    const { feed, schedule, heard } = await recorded([perBeat(bar)], -origin / 1000)
+    const beat = (n: number) => origin + n * BEAT_MS
+    schedule(beat(0), beat(1.5))
+    // During beat 2 (1.5 beats in), someone drags Repeat to the 1/4 zone at y 1.
+    const startBeat = repeatStamp(OFF, { x: 0.1, y: 1 }, beat(1.5), BPM_120)!
+    expect(startBeat).toBe(bar * 4 + 2)
+    feed({ x: 0.1, y: 1, startBeat })
+    schedule(beat(1.5), beat(8))
+    const pads = heard().map((h) => [h.beat - bar * 4, h.padId])
+    expect(pads).toEqual([[0, 'b0'], [1, 'b1'], ...[2, 3, 4, 5, 6, 7].map((n) => [n, 'b2'])])
+    expect(heard().every((h) => h.level === 1)).toBe(true)
+  })
+
+  // @scenario audio/master: Back to the loop
+  it('returns to the loop where it would have been at the next 1/16 after y goes to 0', async () => {
+    const { feed, schedule, heard } = await recorded([perBeat(0)], SHIFT)
+    feed({ x: 0.1, y: 1, startBeat: 1 })
+    schedule(0, 5.1 * BEAT_MS)
+    const stop = repeatStamp({ x: 0.1, y: 1 }, { x: 0.1, y: 0 }, 5.1 * BEAT_MS, BPM_120)!
+    expect(stop).toBe(5.25)
+    feed({ x: 0.1, y: 0, startBeat: stop })
+    schedule(5.1 * BEAT_MS, 8 * BEAT_MS)
+    expect(heard().map((h) => [h.beat, h.padId])).toEqual([
+      [0, 'b0'],
+      ...[1, 2, 3, 4, 5].map((n) => [n, 'b1']),
+      // On the bar grid: beat 6 of the jam is the loop's third beat.
+      [6, 'b2'],
+      [7, 'b3'],
+    ])
+  })
+
+  it("plays the repeats at y and the loops at the rest, and repeats a 1/16 slice's hit", async () => {
+    const sixteenths = [0, 0.25, 0.5, 0.75].map((beat, i) => ({ padId: BEAT_PADS[i]!, beat }))
+    const { feed, schedule, heard } = await recorded([track({ hits: sixteenths })], SHIFT)
+    // The 1/16 zone, from the loop's second 16th.
+    feed({ x: 0.6, y: 0.25, startBeat: 0.25 })
+    schedule(0, BEAT_MS)
+    expect(heard()).toEqual([
+      { beat: 0, padId: 'b0', level: 1 },
+      { beat: 0.25, padId: 'b1', level: 0.25 },
+      { beat: 0.25, padId: 'b1', level: 0.75 },
+      { beat: 0.5, padId: 'b1', level: 0.25 },
+      { beat: 0.5, padId: 'b2', level: 0.75 },
+      { beat: 0.75, padId: 'b1', level: 0.25 },
+      { beat: 0.75, padId: 'b3', level: 0.75 },
+    ])
+  })
+
+  // @scenario audio/master: Same stutter
+  it('schedules the same hits on two engines, whenever the change reaches each', async () => {
+    const bar = 2000
+    const origin = bar * barMs(BPM_120)
+    const tracks = [
+      perBeat(bar),
+      track({
+        startBar: bar,
+        bars: 2,
+        quantize: 0.25,
+        hits: [0.27, 0.74, 2.5, 3.26, 5.1, 7.76].map((beat, i) => ({
+          padId: BEAT_PADS[i % 4]!,
+          beat,
+        })),
+      }),
+    ]
+    // Different clocks: one maps the room straight on, the other is 7.3 s into its own timeline.
+    const a = await recorded(tracks, -origin / 1000, 0.6)
+    const b = await recorded(tracks, -origin / 1000 + 7.3, 0.6)
+    const beat = (n: number) => origin + n * BEAT_MS
+    // One person moves Repeat three times: the 1/8 zone at y 1, the 1/32 zone at y 0.7, then off.
+    const moves = [
+      { at: 2.3, to: { x: 0.3, y: 1 } },
+      { at: 2.9, to: { x: 0.9, y: 0.7 } },
+      { at: 6.05, to: { x: 0.9, y: 0 } },
+    ]
+    let from = { x: 0, y: 0, startBeat: 0 }
+    const stamped = moves.map(({ at, to }) => {
+      const startBeat = repeatStamp(from, to, beat(at), BPM_120) ?? from.startBeat
+      from = { ...to, startBeat }
+      return { at, setting: from }
+    })
+    expect(stamped.map((m) => m.setting.startBeat - bar * 4)).toEqual([2.5, 3, 6.25])
+    // A hears each move before scheduling past it, in one window per stretch.
+    let until = beat(0)
+    for (const { at, setting } of stamped) {
+      a.schedule(until, beat(at))
+      a.feed(setting)
+      until = beat(at)
+    }
+    a.schedule(until, beat(12))
+    // B schedules in 25 ms ticks with 120 ms of lookahead, and hears each move 40 ms late: before
+    // its line, but after it has scheduled past it.
+    let next = 0
+    for (let now = beat(0); now < beat(12); now += 25) {
+      const due = stamped[next]
+      if (due && now >= beat(due.at) + 40) {
+        expect(b.engine['scheduledUntil']).toBeGreaterThan(beat(due.setting.startBeat - bar * 4))
+        b.feed(due.setting)
+        next++
+      }
+      b.schedule(b.engine['scheduledUntil'] || now, now + 120, 25)
+    }
+    expect(next).toBe(3)
+    // B's lookahead ran past where A stopped.
+    expect(b.heard().filter((h) => h.beat < bar * 4 + 12)).toEqual(a.heard())
+
+    // And what they both play: the 1/8 slice from 2.5 holds the second loop's beat-2.5 hit...
+    const heard = a.heard().map((h) => ({ ...h, beat: Math.round((h.beat - bar * 4) * 1e6) / 1e6 }))
+    const within = (from: number, to: number) => heard.filter((h) => h.beat >= from && h.beat < to)
+    expect(within(2.5, 3)).toEqual([{ beat: 2.5, padId: 'b2', level: 1 }])
+    // ...the 1/32 slice from 3 repeats the first loop's beat-3 hit at 0.7, with the loops at 0.3...
+    const repeats = within(3, 6.25).filter((h) => h.level === 0.7)
+    expect(repeats.map((h) => h.beat)).toEqual(Array.from({ length: 26 }, (_, k) => 3 + k / 8))
+    expect(repeats.every((h) => h.padId === 'b3')).toBe(true)
+    for (const h of within(3, 6.25).filter((h) => h.level !== 0.7)) expect(h.level).toBeCloseTo(0.3)
+    // ...and from 6.25 the loops play as they were, swung where they land on an off-beat 16th.
+    expect(within(6.25, 12)).toEqual([
+      { beat: 7, padId: 'b3', level: 1 },
+      { beat: 7.75 + 0.6 * 0.125, padId: 'b1', level: 1 },
+      { beat: 8, padId: 'b0', level: 1 },
+      { beat: 8.25 + 0.6 * 0.125, padId: 'b0', level: 1 },
+      { beat: 8.75 + 0.6 * 0.125, padId: 'b1', level: 1 },
+      { beat: 9, padId: 'b1', level: 1 },
+      { beat: 10, padId: 'b2', level: 1 },
+      { beat: 10.5, padId: 'b2', level: 1 },
+      { beat: 11, padId: 'b3', level: 1 },
+      { beat: 11.25 + 0.6 * 0.125, padId: 'b3', level: 1 },
+    ])
   })
 })
