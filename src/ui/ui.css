@@ -1347,10 +1347,13 @@
   clip-path: inset(50%);
   outline: none;
 }
-:root[data-theme] .ui-xy:has(.ui-xy-axis:focus-visible) .ui-xy-surface {
+/* Keyboard focus only: a press focuses the pad too (`is-press-focused`), with no rim.
+   The rim goes over the inset shadow, not under it: the pad's deep shadow would otherwise shade
+   the rim's top-left and wash out its bottom-right, dimming its corners. */
+:root[data-theme] .ui-xy:not(.is-press-focused):has(.ui-xy-axis:focus-visible) .ui-xy-surface {
   box-shadow:
-    var(--inset),
-    inset 0 0 0 2px var(--focus);
+    inset 0 0 0 2px var(--focus),
+    var(--inset);
 }
 :root[data-theme] .ui-xy.is-disabled .ui-xy-surface {
   opacity: 0.45;

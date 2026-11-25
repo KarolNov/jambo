@@ -106,6 +106,9 @@ export function XYPad({
   const drag = useRef<{ id: number; el: Element; start: Point; moved: boolean }>(undefined)
   const sender = useRef<LiveDrag<Point>>(undefined)
   const xSlider = useRef<HTMLSpanElement>(null)
+  // Focused by a press (so its keys work after a drag): no focus rim until a key is used, as a
+  // pressed button shows none. The browser counts this focus as visible, so it is tracked here.
+  const [pressFocused, setPressFocused] = useState(false)
   const latest = useRef({ x, y, onChange })
   useEffect(() => {
     latest.current = { x, y, onChange }
@@ -180,7 +183,9 @@ export function XYPad({
       if (locked || e.button !== 0 || drag.current) return
       // No text selection or scrolling from the drag; focus the pad so its keys work after.
       e.preventDefault()
+      // After the focus moves: leaving the other axis's slider clears it on blur.
       xSlider.current?.focus({ preventScroll: true })
+      setPressFocused(true)
       const el = e.currentTarget
       el.setPointerCapture(e.pointerId)
       const start: Point = [x, y]
@@ -218,6 +223,7 @@ export function XYPad({
   }
 
   const onKeyDown = (axis: 0 | 1) => (e: KeyboardEvent) => {
+    setPressFocused(false)
     const moves = ARROW_AXIS[e.key] ?? axis
     const a = axes[moves]!
     const v = keyValue(e, moves === 0 ? x : y, a)
@@ -252,6 +258,7 @@ export function XYPad({
         aria-description={heldBy && `${heldBy.name} is moving it`}
         className="ui-xy-axis"
         onKeyDown={onKeyDown(axis)}
+        onBlur={() => setPressFocused(false)}
       />
     )
   }
@@ -260,7 +267,7 @@ export function XYPad({
     <span
       role="group"
       aria-label={label}
-      className={`ui-xy ${dragging ? 'is-dragging' : ''} ${heldBy ? 'is-held' : ''} ${disabled ? 'is-disabled' : ''} ${className}`}
+      className={`ui-xy ${dragging ? 'is-dragging' : ''} ${heldBy ? 'is-held' : ''} ${disabled ? 'is-disabled' : ''} ${pressFocused ? 'is-press-focused' : ''} ${className}`}
       style={vars}
     >
       <span className="ui-xy-surface" {...surface}>
