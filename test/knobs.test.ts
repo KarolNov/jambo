@@ -10,8 +10,13 @@ import {
   FILTER_Q_MAX,
   FILTER_Q_MIN,
   filterSweep,
+  LOFI_RATE_FULL_HZ,
+  lofiCrush,
   pitchRate,
   reverbImpulse,
+  THROW_FEEDBACK_MAX,
+  THROW_FEEDBACK_MIN,
+  throwEcho,
   toneFilter,
   widthGains,
 } from '../src/audio/knobs'
@@ -159,5 +164,32 @@ describe('filterSweep', () => {
     expect(filterSweep(-0.5, 0).gain).toBe(1)
     // Fades in off 0, so a small move doesn't jump the level.
     expect(filterSweep(-0.05, 1).gain).toBeGreaterThan(filterSweep(-0.5, 1).gain)
+  })
+})
+
+describe('throwEcho', () => {
+  it('picks an eighth, a dotted eighth or a quarter note in thirds of x', () => {
+    expect([0, 0.2, 0.34, 0.6, 0.67, 1].map((x) => throwEcho(x, 0.5).beats)).toEqual([
+      0.5, 0.5, 0.75, 0.75, 1, 1,
+    ])
+  })
+
+  it('sends nothing at y 0 and all of the mix at y 1, with feedback capped below runaway', () => {
+    expect(throwEcho(0, 0)).toMatchObject({ send: 0, feedback: THROW_FEEDBACK_MIN })
+    expect(throwEcho(0, 1).send).toBe(1)
+    expect(throwEcho(0, 1).feedback).toBeCloseTo(THROW_FEEDBACK_MAX)
+    expect(THROW_FEEDBACK_MAX).toBeLessThan(1)
+  })
+})
+
+describe('lofiCrush', () => {
+  it('is untouched at 0/0 and coarse at 1/1', () => {
+    expect(lofiCrush(0, 0)).toEqual({ rate: LOFI_RATE_FULL_HZ, bits: 16 })
+    expect(lofiCrush(1, 1).rate).toBeCloseTo(4000)
+    expect(lofiCrush(1, 1).bits).toBe(4)
+  })
+
+  it('lowers the rate exponentially', () => {
+    expect(lofiCrush(0.5, 0).rate).toBeCloseTo(Math.sqrt(48000 * 4000))
   })
 })

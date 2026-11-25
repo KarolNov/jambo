@@ -9,6 +9,7 @@ import {
   type SoundKnob,
   soundOf,
 } from '../../../shared/board'
+import { lofiCrush, type THROW_BEATS, throwZone } from '../../audio/knobs'
 
 const SNAP_LABEL: Record<(typeof QUANTIZE)[number], string> = {
   0: 'Off',
@@ -86,8 +87,13 @@ export const MASTER_READOUTS: Record<
   },
 }
 
-/** The touchpad's modes, in the picker's order. Throw, Lo-fi and Repeat join as they sound. */
-export const TOUCHPAD_MODES = ['filter'] as const satisfies readonly FxMode[]
+/** The touchpad's modes, in the picker's order. Repeat joins once the scheduler repeats. */
+export const TOUCHPAD_MODES = ['filter', 'throw', 'lofi'] as const satisfies readonly FxMode[]
+
+/** Throw's echo time in each of its X zones, as `THROW_BEATS` lists them. */
+const THROW_NOTES = ['1/8', 'Dotted 1/8', '1/4'] as const satisfies {
+  length: typeof THROW_BEATS.length
+}
 
 /** An axis of a touchpad mode as it reads: its name, and its value in the bubble and to screen readers. */
 type AxisReadout = { label: string; format: (v: number) => string }
@@ -105,5 +111,22 @@ export const TOUCHPAD_READOUTS: Record<
         v === 0 ? 'Open' : `${v < 0 ? 'Low-pass' : 'High-pass'} ${Math.max(1, pct(v))}%`,
     },
     y: { label: 'Resonance', format: (v) => `${pct(v)}%` },
+  },
+  throw: {
+    label: 'Throw',
+    x: {
+      label: 'Time',
+      format: (v) => `${THROW_NOTES[throwZone(v)]} echo`,
+    },
+    y: { label: 'Send', format: (v) => (pct(v) === 0 ? 'Off' : `${pct(v)}%`) },
+  },
+  lofi: {
+    label: 'Lo-fi',
+    x: {
+      label: 'Rate',
+      format: (v) =>
+        pct(v) === 0 ? 'Full rate' : `${(lofiCrush(v, 0).rate / 1000).toFixed(1)} kHz`,
+    },
+    y: { label: 'Bits', format: (v) => `${Math.round(lofiCrush(0, v).bits)}-bit` },
   },
 }

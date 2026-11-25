@@ -4,6 +4,7 @@ import {
   finishTake,
   hitsInWindow,
   ceilNear,
+  nextGridLine,
   nextJamBar,
   playBeat,
   trackStart,
@@ -137,5 +138,20 @@ describe('jam grid', () => {
     const b = hitsInWindow(track, start, 120, 17.9, 23).map((x) => x.time)
     expect(a).toEqual([14, 18, 22])
     expect(b).toEqual([18, 22])
+  })
+})
+
+describe('nextGridLine', () => {
+  it("finds the jam's next 1/16, or the time itself on one", () => {
+    // At 120 BPM a sixteenth is 125 ms.
+    expect(nextGridLine(1000, 120)).toBe(1000)
+    expect(nextGridLine(1001, 120)).toBe(1125)
+    expect(nextGridLine(1124, 120)).toBe(1125)
+  })
+
+  it('takes other grids, and agrees at present-day room times', () => {
+    expect(nextGridLine(1, 120, 1)).toBe(500)
+    const line = 1_750_000_000_000
+    expect(nextGridLine(line, 120)).toBe(line)
   })
 })

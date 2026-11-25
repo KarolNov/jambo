@@ -27,9 +27,10 @@
   align-items: flex-start;
   gap: 18px 32px;
 }
-/* The touchpad: mode tabs over a card holding the pad, how it reads and its reset. */
+/* The touchpad: mode tabs over a card holding the pad, how it reads and its reset. Wide enough
+   for all four modes' tabs, so none goes behind "+N" beside the knobs. */
 :root[data-theme] .console-touchpad {
-  flex: 0 1 290px;
+  flex: 0 1 400px;
   min-width: 0;
 }
 :root[data-theme] .console-touchpad-mode {

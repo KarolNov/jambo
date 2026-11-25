@@ -162,3 +162,46 @@ export function filterSweep(
     gain: Math.min(1, FILTER_PEAK_MAX / q) ** fade,
   }
 }
+
+/** The throw's echo times, in beats, one per third of X: an eighth, a dotted eighth, a quarter. */
+export const THROW_BEATS = [0.5, 0.75, 1] as const
+/** The throw's feedback at the lightest throw and at Y 1: kept below runaway. */
+export const THROW_FEEDBACK_MIN = 0.3
+export const THROW_FEEDBACK_MAX = 0.85
+
+/** Which of `THROW_BEATS` the throw's `x` picks: three equal zones, the last including 1. */
+export const throwZone = (x: number) =>
+  Math.max(0, Math.min(THROW_BEATS.length - 1, Math.floor(x * THROW_BEATS.length)))
+
+/**
+ * The throw mode at `x`, `y`: X picks the echo time in beats from `THROW_BEATS` in three equal
+ * zones; Y is the send of the whole mix into the echo (none at 0, all of it at 1) and raises its
+ * feedback from `THROW_FEEDBACK_MIN` to `THROW_FEEDBACK_MAX`.
+ */
+export function throwEcho(x: number, y: number): { beats: number; send: number; feedback: number } {
+  return {
+    beats: THROW_BEATS[throwZone(x)]!,
+    send: y,
+    feedback: THROW_FEEDBACK_MIN + (THROW_FEEDBACK_MAX - THROW_FEEDBACK_MIN) * y,
+  }
+}
+
+/** The lo-fi's sample rate at X 0, above any context's own, so the crusher passes every sample. */
+export const LOFI_RATE_FULL_HZ = 48000
+/** The lo-fi's sample rate at X 1. */
+export const LOFI_RATE_MIN_HZ = 4000
+/** The lo-fi's bit depth at Y 0 (where the crusher leaves samples as they are) and at Y 1. */
+export const LOFI_BITS_MAX = 16
+export const LOFI_BITS_MIN = 4
+
+/**
+ * The lo-fi mode at `x`, `y`: X lowers the sample rate exponentially from `LOFI_RATE_FULL_HZ` to
+ * `LOFI_RATE_MIN_HZ`, Y the bit depth from `LOFI_BITS_MAX` to `LOFI_BITS_MIN`. The crusher holds
+ * each sample for `rate` (Hz) and rounds to `bits`; at 0/0 it passes the sound through.
+ */
+export function lofiCrush(x: number, y: number): { rate: number; bits: number } {
+  return {
+    rate: LOFI_RATE_FULL_HZ * (LOFI_RATE_MIN_HZ / LOFI_RATE_FULL_HZ) ** x,
+    bits: LOFI_BITS_MAX - (LOFI_BITS_MAX - LOFI_BITS_MIN) * y,
+  }
+}

@@ -582,6 +582,22 @@ describe('someone else moving a control', () => {
     await expect.element(cutoff).toHaveAttribute('aria-valuenow', '-0.8')
     expect(pad().classList.contains('is-held')).toBe(true)
   })
+
+  // @scenario board/session: Different controls
+  it('leaves Throw free while Misty Yak holds Filter', async () => {
+    session = makeSession('Groovy Otter')
+    await renderJam(<Master />, session)
+    mistyHoldsKey(CONTROL_KEYS.fx('filter'))
+    await expect
+      .element(page.getByRole('slider', { name: 'Filter cutoff' }))
+      .toHaveAttribute('aria-disabled', 'true')
+    await userEvent.click(page.getByRole('tab', { name: /^Throw/ }))
+    const send = page.getByRole('slider', { name: 'Throw send' })
+    await expect.element(send).not.toHaveAttribute('aria-disabled', 'true')
+    send.element().focus()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(session.jam.store.get(masterAtom).throw.y).toBeGreaterThan(0)
+  })
 })
 
 describe('xy pad', () => {
@@ -734,6 +750,36 @@ describe('touchpad', () => {
     expect(session.jam.store.get(masterAtom).filter).toEqual({ x: 0, y: 0 })
     await expect.element(tab).toHaveAccessibleName('Filter')
     expect(dot().classList.contains('is-on')).toBe(false)
+  })
+
+  // @scenario audio/master: Reset
+  it("shows Throw's and Lo-fi's positions as they read, and resets Lo-fi for everyone", async () => {
+    session = makeSession('Groovy Otter')
+    await renderJam(<Master />, session)
+    const other = board(session.jam.doc, { kind: 'user', id: 'misty-id' })
+    expect(other.fx('throw').set(0.9, 0.8).ok).toBe(true)
+    expect(other.fx('lofi').set(0.7, 0.8).ok).toBe(true)
+    await expect.element(page.getByRole('tab', { name: 'Throw, on' })).toBeVisible()
+    const lofi = page.getByRole('tab', { name: 'Lo-fi, on' })
+    await expect.element(lofi).toBeVisible()
+
+    await userEvent.click(page.getByRole('tab', { name: /^Throw/ }))
+    await expect
+      .element(page.getByRole('slider', { name: 'Throw time' }))
+      .toHaveAttribute('aria-valuetext', '1/4 echo')
+    await expect
+      .element(page.getByRole('slider', { name: 'Throw send' }))
+      .toHaveAttribute('aria-valuetext', '80%')
+
+    await userEvent.click(lofi)
+    await expect
+      .element(page.getByRole('slider', { name: 'Lo-fi bits' }))
+      .toHaveAttribute('aria-valuetext', '6-bit')
+    await userEvent.click(page.getByRole('button', { name: 'Reset Lo-fi' }))
+    expect(session.jam.store.get(masterAtom).lofi).toEqual({ x: 0, y: 0 })
+    await expect.element(page.getByRole('tab', { name: 'Lo-fi' })).toBeVisible()
+    // Throw stays where it was.
+    expect(session.jam.store.get(masterAtom).throw).toEqual({ x: 0.9, y: 0.8 })
   })
 
   // @scenario audio/master: Latched

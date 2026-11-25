@@ -14,6 +14,7 @@ import {
   ceilNear,
   finishTake,
   hitsInWindow,
+  nextGridLine,
   nextJamBar,
   trackStart,
 } from '../../shared/looper'
@@ -24,6 +25,7 @@ import {
   echoSeconds,
   pitchRate,
   reverbImpulse,
+  throwEcho,
   toneFilter,
 } from './knobs'
 import { MASTER_SOUND_DEFAULTS, MasterChain, type MasterSound } from './master'
@@ -112,6 +114,8 @@ export class Engine {
   private echo?: DelayNode
   /** The tempo the echo's time was last set for. */
   private echoBpm?: number
+  /** The master throw's echo time last set, in seconds. */
+  private throwSeconds?: number
   private buffers = new Map<string, AudioBuffer>()
   /** Room ms → audio seconds: `audio = room / 1000 + shift`. Undefined until the clock is agreed. */
   private shift?: number
@@ -180,8 +184,7 @@ export class Engine {
     const master = ctx.createGain()
     master.gain.value = 0.8
     master.connect(ctx.destination)
-    const chain = new MasterChain(ctx, master)
-    chain.set(this.masterSound, true)
+    const chain = await MasterChain.create(ctx, master)
     const [left, right] = reverbImpulse(ctx.sampleRate)
     const impulse = ctx.createBuffer(2, left.length, ctx.sampleRate)
     impulse.copyToChannel(left, 0)
@@ -202,8 +205,10 @@ export class Engine {
     this.chain = chain
     this.reverb = reverb
     this.echo = echo
-    // The tempo may have changed while the kit rendered.
+    // The tempo and the master settings may have changed while the kit rendered.
+    chain.set(this.masterSound, true)
     this.syncEcho()
+    this.syncThrow()
     for (const p of this.playing.values()) this.attach(p)
     // Only a live context runs in real time; an offline one is scheduled up front and rendered.
     if (isLive(ctx)) this.timer = setInterval(() => this.tick(), TICK_MS)
@@ -271,14 +276,15 @@ export class Engine {
     master?: MasterSound
   }) {
     if (state.master) {
-      const { tone, drive, width, filter } = state.master
-      this.masterSound = { tone, drive, width, filter }
+      const { tone, drive, width, filter, throw: echo, lofi } = state.master
+      this.masterSound = { tone, drive, width, filter, throw: echo, lofi }
       this.chain?.set(this.masterSound)
     }
     this.samples.sync(state.uploads)
     this.boardBpm = state.bpm
     if (this.recorder.phase === 'idle') this.bpm = this.boardBpm
     this.syncEcho()
+    this.syncThrow()
     this.pads = state.pads
     for (const [id, p] of this.playing) {
       if (!state.tracks.has(id)) {
@@ -368,6 +374,25 @@ export class Engine {
     echo.delayTime.setTargetAtTime(seconds, this.ctx.currentTime, KNOB_RAMP)
   }
 
+  /**
+   * Keeps the master throw's echo on its zone's note at the current tempo. A change waits for the
+   * jam's next 1/16, so everyone hears it on the same grid line; before the clock is agreed (and
+   * the first time) it applies at once.
+   */
+  private syncThrow() {
+    const ctx = this.ctx
+    const chain = this.chain
+    if (!ctx || !chain) return
+    const seconds = throwEcho(this.masterSound.throw.x, 0).beats * beatSeconds(this.bpm)
+    if (seconds === this.throwSeconds) return
+    const first = this.throwSeconds === undefined
+    this.throwSeconds = seconds
+    const shift = this.shift
+    if (first || shift === undefined) return chain.throwTime(seconds)
+    const line = nextGridLine(audioToRoom(ctx.currentTime, shift), this.bpm)
+    chain.throwTime(seconds, roomToAudio(line, shift))
+  }
+
   /** Plays a pad now, and records the hit if a take is running. */
   hitPad(padId: string) {
     const ctx = this.ctx
@@ -432,6 +457,7 @@ export class Engine {
     // A tempo change that arrived during the take applies now.
     this.bpm = this.boardBpm
     this.syncEcho()
+    this.syncThrow()
     return take && { ...take, startBar: rec.recordBar }
   }
 
