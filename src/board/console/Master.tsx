@@ -33,6 +33,7 @@ export function Master() {
             <div key={k} className="console-master-knob">
               <Knob
                 live
+                segments={16}
                 label={`Master ${label.toLowerCase()}`}
                 min={min}
                 max={max}

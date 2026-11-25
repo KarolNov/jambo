@@ -1,14 +1,20 @@
 /* The master stage: an inset tray between the deck and the mixer, its knobs in one row. */
+/* The tray's corner radius and side padding, so the title can be placed against the corner. */
 :root[data-theme] .console-master {
+  --tray-r: 28px;
+  --tray-pad: 22px;
   display: grid;
   gap: 10px;
   margin: 40px 24px 0;
-  padding: 18px 22px 16px;
-  border-radius: 28px;
+  padding: 18px var(--tray-pad) 16px;
+  border-radius: var(--tray-r);
   box-shadow: var(--inset);
 }
+/* A square-cornered thing inside a rounded tray sits right when its inset equals the tray's
+   radius (the concentric rule: inner radius = outer radius - inset, and the title's is 0). So the
+   title starts --tray-r from the edge, not --tray-pad, clear of the corner's curve. */
 :root[data-theme] .console-master-title {
-  margin: 0;
+  margin: 0 0 0 calc(var(--tray-r) - var(--tray-pad));
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -49,6 +55,7 @@
 
 @media (max-width: 760px) {
   :root[data-theme] .console-master {
+    --tray-pad: 14px;
     margin: 28px 16px 0;
     padding: 14px;
   }
