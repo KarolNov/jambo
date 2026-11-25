@@ -194,7 +194,10 @@ function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
       const issues = entries.flatMap(([k, val]) => checkMaster(k, val, ['set', k]) ?? [])
       if (issues.length > 0) return { ok: false, issues }
       const master = doc.getArray(ROOTS.master)
-      for (const [k, val] of entries) writeKey(MasterValues[k], master, k, val)
+      for (const [k, val] of entries) {
+        const written = fromResult(writeKey(MasterValues[k], master, k, val))
+        if (!written.ok) return written
+      }
       return { ok: true }
     }
     case 'setFx': {

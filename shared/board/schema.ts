@@ -177,6 +177,9 @@ const fxAxes = (m: FxMode) =>
     y: z.number().min(FX_MODES[m].y.min).max(FX_MODES[m].y.max),
   })
 
+/** The latest jam beat repeat's slice may start on. */
+export const REPEAT_START_BEAT_MAX = 10_000_000
+
 /**
  * One stored value per master control, in the root array `master`, kept in y-utility's
  * `YKeyValue` layout through duratom's key-value kind (`readKey`, `writeKey`, `keyValueAtom`).
@@ -190,7 +193,10 @@ export const MasterValues = {
   filter: fxAxes('filter'),
   throw: fxAxes('throw'),
   lofi: fxAxes('lofi'),
-  repeat: fxAxes('repeat').extend({ startBeat: z.number().min(0) }),
+  /** startBeat sits on the 16th grid, below a cap (weeks of play at any tempo). */
+  repeat: fxAxes('repeat').extend({
+    startBeat: z.number().min(0).max(REPEAT_START_BEAT_MAX).multipleOf(0.25),
+  }),
 } as const
 export type MasterKey = keyof typeof MasterValues
 export const MASTER_KEYS = Object.keys(MasterValues) as MasterKey[]
@@ -234,16 +240,20 @@ export function masterFromRead(read: {
   return out as Master
 }
 
-/** Whether a touchpad mode is away from 0/0, so it sounds and its tab shows a dot. */
-export const fxOn = (p: { x: number; y: number }) => p.x !== 0 || p.y !== 0
+/**
+ * Whether a touchpad mode sounds, so its tab shows a dot: away from 0/0, and for repeat, Y above
+ * 0 (its Y 0 is off).
+ */
+export const fxOn = (mode: FxMode, p: { x: number; y: number }) =>
+  mode === 'repeat' ? p.y !== 0 : p.x !== 0 || p.y !== 0
 
 /**
  * Live controls as presence names them while someone holds one (the `control` awareness key).
- * Shared by the client, which holds them, and the room, which refuses agents' ops on them.
+ * Each kind has its own prefix, so a track id can never name a master knob or touchpad mode.
  */
 export const CONTROL_KEYS = {
-  /** A loop's level or sound knob: `<trackId>.<field>`, the field as `setTrack` names it. */
-  track: (trackId: string, field: string) => `${trackId}.${field}`,
+  /** A loop's level or sound knob: `track.<trackId>.<field>`, the field as `setTrack` names it. */
+  track: (trackId: string, field: string) => `track.${trackId}.${field}`,
   /** A master knob: `master.<knob>`. */
   master: (knob: MasterKnob) => `master.${knob}`,
   /** A touchpad mode: `fx.<mode>`. */

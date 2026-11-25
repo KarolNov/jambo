@@ -87,7 +87,7 @@ export function usePeople(awareness: Awareness, me: Person): Person[] {
   return people
 }
 
-/** A loop's knob or fader as presence names it: `<trackId>.<control>`. See `CONTROL_KEYS`. */
+/** A loop's knob or fader as presence names it: `track.<trackId>.<control>`. See `CONTROL_KEYS`. */
 export const controlKey = CONTROL_KEYS.track
 
 /**

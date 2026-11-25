@@ -783,6 +783,7 @@ describe('master settings', () => {
   it('names master knobs and modes for presence apart from loops', () => {
     expect(CONTROL_KEYS.master('tone')).toBe('master.tone')
     expect(CONTROL_KEYS.fx('filter')).toBe('fx.filter')
-    expect(CONTROL_KEYS.track('0abc-12', 'reverb')).toBe('0abc-12.reverb')
+    expect(CONTROL_KEYS.track('0abc-12', 'reverb')).toBe('track.0abc-12.reverb')
+    expect(CONTROL_KEYS.track('master', 'tone')).not.toBe(CONTROL_KEYS.master('tone'))
   })
 })
