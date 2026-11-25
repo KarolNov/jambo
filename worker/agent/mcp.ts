@@ -7,12 +7,21 @@ import {
   AGENT_LIMITS,
   AgentCall,
   DEFAULT_KIND,
+  fxHelp,
   isAgentKey,
   jamSlugOf,
   knobHelp,
+  masterHelp,
   toKind,
 } from '../../shared/agent'
-import { BPM, LIMITS, QUANTIZE, SOUND_KNOB_NAMES } from '../../shared/board'
+import {
+  BPM,
+  FX_MODE_NAMES,
+  LIMITS,
+  MASTER_KNOB_NAMES,
+  QUANTIZE,
+  SOUND_KNOB_NAMES,
+} from '../../shared/board'
 import { COLOR_NAMES, toColorName } from '../../shared/colors'
 import { UPLOADS } from '../../shared/sounds'
 import { toUploadLayout } from '../../shared/wav'
@@ -24,6 +33,9 @@ const AGENT_CALLS_PER_MINUTE = 20
 /** The sound knobs, one line each, for the instructions. */
 const KNOB_LINES = SOUND_KNOB_NAMES.map((k) => `    ${k}: ${knobHelp(k)}`).join('\n')
 const KNOB_FIELDS = SOUND_KNOB_NAMES.map((k) => `${k}?`).join(', ')
+/** The master knobs and touchpad modes, one line each. */
+const MASTER_LINES = MASTER_KNOB_NAMES.map((k) => `    ${k}: ${masterHelp(k)}`).join('\n')
+const FX_LINES = FX_MODE_NAMES.map((m) => `    ${m}: ${fxHelp(m)}`).join('\n')
 
 /**
  * What the server tells every client, so one without the `/jam` skill still knows how to play:
@@ -38,6 +50,7 @@ join returns board, the jam as it is now:
   pads: [{ id, key, row, col, soundId }]: the 16 pads; tracks hit pads by id
   sounds: [{ id, name, kind: 'kit' | 'upload', category?, by?, durationMs? }]
   tracks: [{ id, name, author, color, bars, hits: [{ padId, beat }], gain, mute, quantize, startBar?, effects, ${KNOB_FIELDS} }]: a missing knob is at its default
+  master: { ${MASTER_KNOB_NAMES.join(', ')}, ${FX_MODE_NAMES.map((m) => (m === 'repeat' ? `${m}: { x, y, startBeat }` : `${m}: { x, y }`)).join(', ')} }: the master stage everyone hears, each at its default (0, and 0/0 for a mode) until someone sets it
   here: [{ name, kind, color }]: people (kind 'person') and agents
 Others change the jam too: call join again to read it fresh.
 
@@ -50,6 +63,11 @@ run takes ops, a JSON array of 1-${AGENT_LIMITS.ops} operations, and summary (1-
   The sound knobs, on addTrack and setTrack; each changes how the whole track sounds:
 ${KNOB_LINES}
   { op: 'removeTrack', id }
+  { op: 'setMaster', set: { ${MASTER_KNOB_NAMES.map((k) => `${k}?`).join(', ')} } }: the master knobs, on the whole mix; knobs left out keep their value:
+${MASTER_LINES}
+  { op: 'setFx', mode, x, y }: puts one touchpad mode (${FX_MODE_NAMES.join(', ')}) at x, y on the whole mix; each stays where it is left, all can be on at once, and 0/0 is off, so it is also the reset:
+${FX_LINES}
+While a person is turning a control (a track's gain or sound knob, a master knob, a touchpad mode), it is theirs: an operation on it is refused with the issue "Held by <name>". A setMaster or setTrack drops only the held knobs or fields, applies the rest (ok true) and lists the dropped ones in issues. Try again once they let go.
 Tracks hit pads, so to use a sound, assign it to a pad and hit that pad. The operations apply in order as one change; each gets a result { op, ok, issues?, id? } (id: the new track's), and refused ones change nothing. If any operation doesn't fit the schema, nothing applies. run answers { summary, ops, agent }.
 
 upload_sound takes soundName and wav (base64 of a mono 16-bit PCM ${UPLOADS.sampleRate} Hz WAV, up to ${UPLOADS.maxSeconds} s; other chunks such as LIST are dropped) and answers { id, sound, agent }; a run can then assign id to a pad. leave takes you out of the jam.

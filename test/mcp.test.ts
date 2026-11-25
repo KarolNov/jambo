@@ -54,7 +54,17 @@ async function refused(name: string, args: object) {
 }
 
 const KNOBS = ['reverb', 'echo', 'tone', 'pitch', 'pan']
-const OPS = ['setTempo', 'assignPad', 'replaceSound', 'addTrack', 'setTrack', 'removeTrack']
+const MASTER = ['drive', 'width', 'swing', 'filter', 'throw', 'lofi', 'repeat']
+const OPS = [
+  'setTempo',
+  'assignPad',
+  'replaceSound',
+  'addTrack',
+  'setTrack',
+  'removeTrack',
+  'setMaster',
+  'setFx',
+]
 
 describe('the MCP server', () => {
   // @scenario collab/agent: Client without the skill
@@ -71,7 +81,18 @@ describe('the MCP server', () => {
     )
     expect(init.result.serverInfo.name).toBe('jambo')
     const instructions: string = init.result.instructions
-    for (const word of [...OPS, 'bpm', 'pads', 'sounds', 'tracks', 'here', ...KNOBS])
+    for (const word of [
+      ...OPS,
+      'bpm',
+      'pads',
+      'sounds',
+      'tracks',
+      'master',
+      'here',
+      ...KNOBS,
+      ...MASTER,
+      'Held by',
+    ])
       expect(instructions).toContain(word)
     const list = await rpc('tools/list', {}, ip)
     const tools: { name: string; inputSchema: unknown }[] = list.result.tools
@@ -79,6 +100,7 @@ describe('the MCP server', () => {
     const runSchema = JSON.stringify(tools.find((t) => t.name === 'run')!.inputSchema)
     for (const op of OPS) expect(runSchema).toContain(`"${op}"`)
     for (const knob of KNOBS) expect(runSchema).toContain(`"${knob}"`)
+    for (const control of MASTER) expect(runSchema).toContain(`"${control}"`)
   })
 
   // @scenario collab/agent: Bad jam

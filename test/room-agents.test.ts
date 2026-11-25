@@ -408,6 +408,65 @@ describe('agent runs', () => {
     client.close()
   })
 
+  // @scenario collab/agent: Held control
+  it('refuses what a person holds right now, naming them, and applies the rest', async () => {
+    const slug = 'funky-otter-mf01'
+    const client = await connectBoard(slug)
+    client.awareness.setLocalState({
+      person: { id: 'p1', name: 'Misty Yak', color: 'teal' },
+      control: 'master.tone',
+    })
+    await until(() =>
+      runInDurableObject(env.Board.getByName(slug), (instance) =>
+        [...(instance as Board).document.awareness.getStates().values()].some(
+          (s) => s.control === 'master.tone',
+        ),
+      ),
+    )
+    const r = await room(slug)
+    const out = await r.runAgentOps(
+      { kind: 'Claude' },
+      [
+        { op: 'setMaster', set: { tone: -0.6, swing: 0.5 } },
+        { op: 'setMaster', set: { tone: 0.3 } },
+        { op: 'setFx', mode: 'filter', x: -0.8, y: 0.3 },
+      ],
+      'Swing and a filter drop',
+    )
+    if ('error' in out) throw new Error(out.error)
+    expect(out.ops).toEqual([
+      {
+        op: 'setMaster',
+        ok: true,
+        issues: [{ message: 'Held by Misty Yak', path: ['set', 'tone'] }],
+      },
+      {
+        op: 'setMaster',
+        ok: false,
+        issues: [{ message: 'Held by Misty Yak', path: ['set', 'tone'] }],
+      },
+      { op: 'setFx', ok: true },
+    ])
+    const { master } = await r.snapshot()
+    expect(master).toMatchObject({ tone: 0, swing: 0.5, filter: { x: -0.8, y: 0.3 } })
+    // Let go: the knob is free for agents again.
+    client.awareness.setLocalState({ person: { id: 'p1', name: 'Misty Yak', color: 'teal' } })
+    await until(() =>
+      runInDurableObject(env.Board.getByName(slug), (instance) =>
+        [...(instance as Board).document.awareness.getStates().values()].every((s) => !s.control),
+      ),
+    )
+    const again = await r.runAgentOps(
+      { kind: 'Claude' },
+      [{ op: 'setMaster', set: { tone: 0.3 } }],
+      'Brighter',
+    )
+    if ('error' in again) throw new Error(again.error)
+    expect(again.ops).toEqual([{ op: 'setMaster', ok: true }])
+    expect((await r.snapshot()).master.tone).toBe(0.3)
+    client.close()
+  })
+
   // @scenario collab/agent: Too many operations
   it('refuses a run with no operations or more than 64', async () => {
     const r = await room('funky-otter-ag14')

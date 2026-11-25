@@ -1,11 +1,19 @@
 import { z } from 'zod'
 import {
   AssignPad,
+  FX_MODE_NAMES,
+  FX_MODES,
+  type FxMode,
+  MASTER_KNOB_NAMES,
+  MASTER_KNOBS,
+  type MasterKnob,
   newId,
   type Issue,
   type Op,
   RemoveTrack,
   ReplaceSound,
+  SetFx,
+  SetMaster,
   SetTempo,
   SetTrack,
   SOUND_KNOB_NAMES,
@@ -29,6 +37,36 @@ const KNOB_HELP: Record<SoundKnob, string> = {
 export function knobHelp(k: SoundKnob): string {
   const { min, max, default: d } = SOUND_KNOBS[k]
   return `${KNOB_HELP[k]}; ${min} to ${max}, default ${d}`
+}
+
+/** What each master knob does, for agents: its range and default come from `MASTER_KNOBS`. */
+const MASTER_HELP: Record<MasterKnob, string> = {
+  tone: 'Tone of the whole mix: below 0 darker, above 0 thinner',
+  drive: 'Drive: saturates the mix and evens its loudness',
+  width: 'Width: -1 mono, above 0 wider',
+  swing: 'Swing: delays every off-beat 16th, by up to half a 16th at 1',
+}
+
+/** One sentence per master knob: what it does, its range and its default. */
+export function masterHelp(k: MasterKnob): string {
+  const { min, max, default: d } = MASTER_KNOBS[k]
+  return `${MASTER_HELP[k]}; ${min} to ${max}, default ${d}`
+}
+
+/** What each touchpad mode's X and Y do, for agents: ranges come from `FX_MODES`. */
+const FX_HELP: Record<FxMode, string> = {
+  filter: 'Filter: x below 0 low-pass closing, above 0 high-pass rising; y resonance',
+  throw:
+    'Throw (echo of the whole mix): x picks the time (first third 1/8, middle dotted 1/8, last third 1/4); y the send and feedback',
+  lofi: 'Lo-fi: x lowers the sample rate, y the bit depth',
+  repeat:
+    'Repeat (stutters the loops): x picks the slice (four zones: 1/4, 1/8, 1/16, 1/32); y the repeats’ level, 0 off',
+}
+
+/** One sentence per touchpad mode: what X and Y do, and their ranges. */
+export function fxHelp(m: FxMode): string {
+  const { x, y } = FX_MODES[m]
+  return `${FX_HELP[m]}; x ${x.min} to ${x.max}, y ${y.min} to ${y.max}`
 }
 
 const knobDrafts = Object.fromEntries(
@@ -76,6 +114,23 @@ export const AgentCall = z.discriminatedUnion('op', [
     `Change a track: name, gain, mute, quantize or a sound knob (${SOUND_KNOB_NAMES.join(', ')})`,
   ),
   RemoveTrack.describe('Remove any track'),
+  SetMaster.extend({
+    set: z
+      .object(
+        Object.fromEntries(
+          MASTER_KNOB_NAMES.map((k) => [k, z.number().optional().describe(masterHelp(k))]),
+        ) as Record<MasterKnob, z.ZodOptional<z.ZodNumber>>,
+      )
+      .strict()
+      .describe('The master knobs to set; the rest keep their value'),
+  }).describe('Turn master knobs, heard on the whole mix'),
+  SetFx.omit({ startBeat: true })
+    .extend({
+      mode: z.enum(FX_MODE_NAMES).describe(FX_MODE_NAMES.map(fxHelp).join('. ')),
+      x: z.number().describe('X position'),
+      y: z.number().describe('Y position'),
+    })
+    .describe('Put one touchpad mode at x, y; 0/0 is off, so it is also the reset'),
 ])
 export type AgentCall = z.infer<typeof AgentCall>
 

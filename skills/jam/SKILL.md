@@ -27,7 +27,7 @@ Every tool takes `jam` (the link or its slug) and optional `agentKey`, `kind`, `
 
 ## Play
 
-1. `join` to appear and read the jam: its answer's `board` holds `bpm`, `pads` (`id`, `key`, `soundId`), `sounds`, `tracks` and `here`. Others change the jam too, so `join` again before acting on what you read a while ago.
+1. `join` to appear and read the jam: its answer's `board` holds `bpm`, `pads` (`id`, `key`, `soundId`), `sounds`, `tracks`, `master` (the master knobs and touchpad modes) and `here`. Others change the jam too, so `join` again before acting on what you read a while ago.
 2. `run` with `ops`, a list of operations, and a `summary` of 1 to 140 characters saying what it does ("Four-on-the-floor kick under the bass"). The server's instructions and the tool's schema list every operation; the essentials:
 
 ```json
@@ -58,6 +58,8 @@ Every tool takes `jam` (the link or its slug) and optional `agentKey`, `kind`, `
 - Hits are in beats, 4 a bar: `0 <= beat < bars * 4`. Tracks hit **pads**, so point a pad at the sound you want (`assignPad`) and hit that pad.
 - Every track has five optional sound knobs, set in `addTrack`'s `track` or `setTrack`'s `patch`: `reverb` and `echo` (0 to 1), `tone` (-1 to 1: below 0 darker, above 0 thinner), `pitch` (whole semitones, -12 to 12; also changes speed) and `pan` (-1 left to 1 right). A track without one plays at its default, which leaves the sound as it is: 0 for all five.
 - Tempo changes only while the jam has no tracks.
+- The **master stage** shapes the whole mix, for everyone. `{ "op": "setMaster", "set": { "swing": 0.3 } }` turns any of four knobs; ones left out keep their value: `tone` (-1 to 1: darker below 0, thinner above), `drive` (0 to 1: saturation and glue), `width` (-1 mono to 1 extra wide) and `swing` (0 to 1: delays every off-beat 16th, up to half a 16th). `{ "op": "setFx", "mode": "filter", "x": -0.6, "y": 0.2 }` puts one touchpad mode at x, y: `filter` (x -1 to 1: low-pass below 0, high-pass above; y resonance), `throw` (an echo of the whole mix: x picks 1/8, dotted 1/8 or 1/4 by thirds; y the send and feedback), `lofi` (x lowers the sample rate, y the bit depth) and `repeat` (stutters the loops: x picks a 1/4, 1/8, 1/16 or 1/32 slice by quarters; y the repeats' level, 0 off). Modes stay where they are left and all can be on at once; 0/0 is off, so `setFx` at 0/0 is the reset. Every default is 0, which leaves the sound as it is.
+- While a person is turning a control (a track's gain or sound knob, a master knob or a touchpad mode), it is theirs: an operation on it comes back with the issue `Held by <name>`. A `setMaster` or `setTrack` drops only the held knobs or fields and applies the rest. Try again in a moment rather than fighting them.
 - At most 64 operations a run. If any operation doesn't fit the schema, nothing applies.
 
 3. `upload_sound` with `soundName` and `wav` (base64 of a mono 16-bit 44.1 kHz WAV, up to 10 seconds) to bring your own sound; then `assignPad` its id in a run. Where to get one is under **Bring a sound**.
@@ -110,6 +112,8 @@ Keep one-shots short (under 2 s): a pad hit plays the whole sound, so long tails
 - **Tone.** Turn `tone` down (-0.2 to -0.5) to tuck a busy part behind the others or soften harsh hats; turn it up (0.2 to 0.4) to take the boom out of a part that crowds the bass.
 - **Pitch.** Shift a sound to get a note the kit lacks: `bass-c` up 2 is D, up 5 is F; from C, 4 is E and 7 is G. It also speeds the sound up (shorter) or slows it down (longer), so a kick or tom pitched down a few semitones sounds bigger. Stay in key with what is playing: C major's notes are 0, 2, 4, 5, 7, 9 and 11 semitones above C.
 - When someone else's track is too loud or wet, ask before you change it.
+
+**The master stage is everyone's.** It changes how the whole jam sounds for everyone in it, so touch it only when the user asks, or for a moment that needs it: a filter sweep down into a drop and back to 0/0, a short throw on the last bar of a phrase, a bar of repeat as a fill. Reset what you turned on when the moment passes, unless the user wants it to stay. A little goes a long way: swing 0.2 to 0.4 loosens straight 16ths, and `drive` above 0.5 turns gritty.
 
 **Build in steps.** One idea per run, with a summary that says what it adds and why ("Offbeat hats to lift the groove"). Then `join` again, look at what changed, and offer the next step, so the user and others in the jam can steer.
 
