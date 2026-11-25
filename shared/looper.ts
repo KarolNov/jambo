@@ -43,8 +43,9 @@ export function playBeat(beat: number, quantize: number, lengthBeats: number): n
 }
 
 /**
- * The hits of a looping track that sound in the time window [from, to), as audio times.
- * The track's first cycle starts at `startAt`; nothing sounds before it.
+ * The hits of a looping track that sound in the time window [from, to), as audio times, each with
+ * the beat it sounds on within its loop. The track's first cycle starts at `startAt`; nothing
+ * sounds before it.
  */
 export function hitsInWindow(
   track: Pick<Track, 'bars' | 'hits' | 'quantize'>,
@@ -52,10 +53,10 @@ export function hitsInWindow(
   bpm: number,
   from: number,
   to: number,
-): { padId: string; time: number }[] {
+): { padId: string; time: number; beat: number }[] {
   const beat = beatSeconds(bpm)
   const loop = track.bars * BEATS_PER_BAR * beat
-  const out: { padId: string; time: number }[] = []
+  const out: { padId: string; time: number; beat: number }[] = []
   const start = Math.max(from, startAt)
   if (to <= start) return out
   const firstCycle = Math.floor((start - startAt) / loop)
@@ -63,9 +64,9 @@ export function hitsInWindow(
   for (let k = firstCycle; k <= lastCycle; k++) {
     const cycleStart = startAt + k * loop
     for (const hit of track.hits) {
-      const time =
-        cycleStart + playBeat(hit.beat, track.quantize, track.bars * BEATS_PER_BAR) * beat
-      if (time >= start && time < to) out.push({ padId: hit.padId, time })
+      const at = playBeat(hit.beat, track.quantize, track.bars * BEATS_PER_BAR)
+      const time = cycleStart + at * beat
+      if (time >= start && time < to) out.push({ padId: hit.padId, time, beat: at })
     }
   }
   return out.sort((a, b) => a.time - b.time)
@@ -111,3 +112,63 @@ export function ceilNear(x: number): number {
  */
 export const trackStart = (track: Pick<Track, 'startBar'>, bpm: number) =>
   barStart(track.startBar ?? 0, bpm)
+
+/**
+ * How late swing plays a hit at `beat` (beats from a bar line), in beats: off-beat 16ths (the
+ * second and fourth of each beat) move by up to half a 16th at swing 1; every other hit stays.
+ * Applied at playback only, after a track's snap, so stored hits never change.
+ */
+export function swingDelay(beat: number, swing: number): number {
+  if (swing <= 0) return 0
+  const n = beat / SIXTEENTH
+  const r = Math.round(n)
+  // Only hits on the grid swing: an unsnapped hit between 16ths is not an off-beat 16th.
+  if (Math.abs(n - r) > 1e-6 || r % 2 === 0) return 0
+  return (swing * SIXTEENTH) / 2
+}
+
+/** Beat repeat's slice in each of its four X zones, in beats: 1/4, 1/8, 1/16, 1/32. */
+export const REPEAT_SLICES = [1, 0.5, 0.25, 0.125] as const
+
+/** Which of repeat's four X zones `x` (0..1) is in. */
+export const repeatZone = (x: number) =>
+  Math.min(REPEAT_SLICES.length - 1, Math.floor(x * REPEAT_SLICES.length))
+
+/** Repeat's slice at `x`, in beats. */
+export const repeatSlice = (x: number): number => REPEAT_SLICES[repeatZone(x)]!
+
+/** Room ms → beats on the jam's grid, counted from the epoch as bars are. */
+export const jamBeat = (roomMs: number, bpm: number) => roomMs / (beatSeconds(bpm) * 1000)
+
+/** When jam beat `beat` starts, in room ms. */
+export const jamBeatMs = (beat: number, bpm: number) => beat * beatSeconds(bpm) * 1000
+
+/**
+ * The jam beat a repeat change takes effect on: the first line at or after room time `roomMs` of
+ * a grid of `slice` beats, but never finer than a 16th, so it is always on the 16th grid that
+ * `startBeat` is stored on. Every client finds the same line.
+ */
+export function repeatLine(roomMs: number, bpm: number, slice: number = SIXTEENTH): number {
+  const step = Math.max(slice, SIXTEENTH)
+  return ceilNear(jamBeat(roomMs, bpm) / step) * step
+}
+
+/**
+ * The start beat to store with a move of repeat from `from` to `to` at room time `roomMs`, or
+ * undefined when the move only changes the repeats' level, which applies at once. Engaging (Y
+ * leaving 0) and moving to another slice zone capture a new slice at its next grid line; letting go
+ * (Y back to 0) stops at the next 1/16. The stored beat says when the move takes effect.
+ */
+export function repeatStamp(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  roomMs: number,
+  bpm: number,
+): number | undefined {
+  const was = from.y > 0
+  const is = to.y > 0
+  if (is && (!was || repeatZone(from.x) !== repeatZone(to.x)))
+    return repeatLine(roomMs, bpm, repeatSlice(to.x))
+  if (was && !is) return repeatLine(roomMs, bpm)
+  return undefined
+}

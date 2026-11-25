@@ -17,6 +17,7 @@ import {
   type Snapshot,
   type SnapshotPresence,
   snapshotOf,
+  stampRepeats,
   withoutHeld,
 } from '../shared/agent'
 import { apply, countUploads, ROOTS, Sound, type Origin } from '../shared/board'
@@ -358,7 +359,12 @@ export class Board extends YServer<Env> {
       const { op, issues } = withoutHeld(p.op, holds)
       return { op, id: p.id, issues }
     })
-    const ops = prepared.flatMap((p) => (p.op ? [p.op] : []))
+    // The room's clock is the jam's, so repeat moves land on the same grid line for everyone.
+    const ops = stampRepeats(
+      prepared.flatMap((p) => (p.op ? [p.op] : [])),
+      this.document,
+      Date.now(),
+    )
     // What others changed since this agent last looked stays news; its own run doesn't.
     const seen = this.seen.get(agent.id)
     if (seen)

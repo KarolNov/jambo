@@ -13,5 +13,6 @@ export {
   type Prepared,
   REF_PREFIX,
 } from './record'
+export { stampRepeats } from './repeat'
 export { type Snapshot, type SnapshotPresence, type SnapshotSound, snapshotOf } from './snapshot'
 export { seatAgent } from './seat'
