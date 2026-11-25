@@ -156,16 +156,16 @@ describe('uploading a sound', () => {
     for (let attempt = 0; ; attempt++) {
       const ip = newAddress()
       const start = minute()
-      const responses = []
-      for (let i = 0; i < 121; i++)
-        responses.push(
-          await fetchApp(`/api/jams/funky-otter-dx01/sounds/${newUploadId()}`, {
-            headers: { 'CF-Connecting-IP': ip },
-          }),
-        )
+      const download = () =>
+        fetchApp(`/api/jams/funky-otter-dx01/sounds/${newUploadId()}`, {
+          headers: { 'CF-Connecting-IP': ip },
+        })
+      // The 120 allowed at once: one after another they take about 5 s, past the test timeout
+      // when the suite is busy. Then the one over the limit, on its own so it is the one refused.
+      const allowed = await Promise.all(Array.from({ length: 120 }, download))
+      const last = await download()
       if (minute() !== start && attempt === 0) continue
-      expect(responses.slice(0, 120).every((r) => r.status === 404)).toBe(true)
-      const last = responses[120]!
+      expect(allowed.every((r) => r.status === 404)).toBe(true)
       expect(last.status).toBe(429)
       expect(await last.json()).toEqual({ error: 'Too many downloads, try again in a minute' })
       return
