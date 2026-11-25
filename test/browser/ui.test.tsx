@@ -245,7 +245,7 @@ describe('tabs', () => {
 
 describe('design showcase', () => {
   // @scenario ui: Try another colour
-  it("paints the slider's lights, the knob's arc and the focus rings in the picked colour", async () => {
+  it("paints the slider's lights, the knob's arc, the switches and the focus rings in the picked colour", async () => {
     const { container } = await render(
       <Themed>
         <Showcase />
@@ -262,6 +262,26 @@ describe('design showcase', () => {
     expect(prop(leds, '--led', '::after')).toBe(coral)
     const dial = container.querySelector('.ui-knob .ui-knob-dial')!
     expect(prop(dial, '--ui-c', '::before')).toBe(coral)
+    // The switches, the primary button and the other accent tints, as in a jam.
+    for (const el of [
+      container.querySelector('.ui-switch')!,
+      page.getByRole('button', { name: 'Tap to start audio' }).element(),
+    ])
+      expect(prop(el, '--accent-2')).toBe(coral)
+  })
+
+  it('paints Misty Yak amber when you pick violet, so they never look like you', async () => {
+    const { container } = await render(
+      <Themed>
+        <Showcase />
+      </Themed>,
+    )
+    const held = () => container.querySelector<HTMLElement>('.ui-knob.is-held')!
+    const t = theme() as 'light' | 'dark'
+    expect(held().style.getPropertyValue('--ui-held')).toBe(SWATCHES.violet[t])
+    await userEvent.click(page.getByRole('button', { name: /^Collaborator colour:/ }))
+    await userEvent.click(page.getByRole('option', { name: 'Violet' }))
+    await expect.poll(() => held().style.getPropertyValue('--ui-held')).toBe(SWATCHES.amber[t])
   })
 })
 
@@ -399,7 +419,7 @@ describe('someone else moving a control', () => {
   const coral = () => SWATCHES.coral[theme() as 'dark' | 'light']
 
   // @scenario ui: Watch someone turn a knob
-  it('rings a knob in their colour, names them in its bubble, and follows their value', async () => {
+  it('lights a knob in their colour, names them in its bubble, and follows their value', async () => {
     session = makeSession('Groovy Otter')
     const id = addTrack(session, { name: 'Bassline', reverb: 0.2 })
     await renderJam(<Mixer />, session)
@@ -416,12 +436,14 @@ describe('someone else moving a control', () => {
     const wrap = knob.element().closest<HTMLElement>('.ui-knob')!
     await expect.poll(() => wrap.classList.contains('is-held')).toBe(true)
     expect(wrap.style.getPropertyValue('--ui-held')).toBe(coral())
+    // Its arc is lit in their colour, not the loop's.
+    expect(wrap.style.getPropertyValue('--ui-c')).toBe(coral())
     expect(wrap.querySelector('.ui-knob-bubble')!.textContent).toBe('Misty Yak')
     expect(Number(wrap.style.getPropertyValue('--f'))).toBeCloseTo(0.6)
   })
 
   // @scenario ui: Drag it too
-  it('shows your own value in the bubble while you drag a slider they hold, keeping their ring', async () => {
+  it('shows your own value in the bubble while you drag a slider they hold, still in their colour', async () => {
     session = makeSession('Groovy Otter')
     const id = addTrack(session, { name: 'Bassline', gain: 0.5 })
     const { screen } = await renderJam(<Mixer />, session)
@@ -446,7 +468,7 @@ describe('someone else moving a control', () => {
   })
 
   // @scenario board/session: Both at once
-  it("lets you drag a loop's level Misty Yak is dragging, showing their ring while you do", async () => {
+  it("lets you drag a loop's level Misty Yak is dragging, still in their colour while you do", async () => {
     session = makeSession('Groovy Otter')
     const id = addTrack(session, { name: 'Bassline', gain: 0.5 })
     const { screen } = await renderJam(<Mixer />, session)
@@ -458,9 +480,9 @@ describe('someone else moving a control', () => {
     pressed = true
     await commands.mouseMove(at.x + 30, at.y)
     await expect.poll(() => fader().classList.contains('is-dragging')).toBe(true)
-    // Their ring stays on while you drag.
+    // It stays in their colour while you drag.
     expect(fader().classList.contains('is-held')).toBe(true)
-    expect(fader().style.getPropertyValue('--ui-held')).toBe(coral())
+    expect(fader().style.getPropertyValue('--ui-c')).toBe(coral())
     await commands.mouseUp()
     pressed = false
     // Nothing stopped you: your drag reached the board.

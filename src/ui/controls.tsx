@@ -139,7 +139,10 @@ export type Holder = { name: string; color: string }
 
 /** What a live control shared with others takes, to show who else is turning it. */
 type SharedProps = {
-  /** Someone else turning it now: a ring in their colour, and their name in the bubble unless you drag it too. */
+  /**
+   * Someone else turning it now: it lights in their colour in place of its own, and their name is
+   * in the bubble unless you drag it too.
+   */
   heldBy?: Holder
   /** Called with true when a drag starts, and false when it ends or the control goes mid-drag. */
   onDragChange?: (dragging: boolean) => void
@@ -171,8 +174,12 @@ function bubbleText(value: string, dragging: boolean, heldBy?: Holder) {
   )
 }
 
+/**
+ * A held control's colour: the holder's, in place of its own (`--ui-c`), so what moves on it shows
+ * as theirs. `--ui-held` keeps it for anything that needs the holder's colour by name.
+ */
 const heldVars = (heldBy?: Holder) =>
-  heldBy ? ({ '--ui-held': heldBy.color } as CSSProperties) : undefined
+  heldBy ? ({ '--ui-held': heldBy.color, '--ui-c': heldBy.color } as CSSProperties) : undefined
 
 export type RangeProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -205,8 +212,8 @@ const PAGE_STEPS = 5
  * value in `color`, optional tick marks and a detent. The value shows in a bubble while dragged.
  * On Android phones, a drag ticks lightly as it passes each light of the strip (throttled, so a fast drag
  * doesn't buzz) and firmer as it lands on the detent; keys don't tick.
- * While someone else drags it (`heldBy`), the cap is ringed in their colour and the bubble names
- * them. It stays a native range input, so keys and screen readers work as usual.
+ * While someone else drags it (`heldBy`), its lights and cap line turn their colour and the
+ * bubble names them. It stays a native range input, so keys and screen readers work as usual.
  */
 export function Range({
   label,
@@ -487,7 +494,7 @@ export type KnobProps = {
  * as it turns, once a frame, and Escape applies the start value again unless a peer has changed
  * it since. On Android phones a turn ticks lightly as it passes each light of the ring, throttled so a
  * fast turn doesn't buzz. Arrows, Page Up/Down, Home and End turn it from the keyboard, silently; a double-click resets it to `defaultValue`. While
- * someone else turns it (`heldBy`), it is ringed in their colour and the bubble names them. Screen
+ * someone else turns it (`heldBy`), its arc and index line turn their colour and the bubble names them. Screen
  * readers hear a slider.
  */
 export function Knob({
@@ -528,9 +535,11 @@ export function Knob({
   useDragReport(scrub.dragging, onDragChange)
   const f = fraction(scrub.shown, min, max)
   const lit = lights ? litFraction(f, lights) : f
-  const vars = { '--f': f, '--lit': lit, ...heldVars(heldBy) } as CSSProperties
+  const vars = { '--f': f, '--lit': lit } as CSSProperties
   if (lights) Object.assign(vars, { '--segments': lights })
   if (color) Object.assign(vars, { '--ui-c': color })
+  // Last, so the holder's colour wins over the knob's own.
+  Object.assign(vars, heldVars(heldBy))
   return (
     <span
       className={`ui-knob ${lights ? 'is-segmented' : ''} ${scrub.dragging ? 'is-dragging' : ''} ${heldBy ? 'is-held' : ''} ${className}`}
