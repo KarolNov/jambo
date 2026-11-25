@@ -109,29 +109,46 @@ describe('joinPresence', () => {
 
 describe('listHolders', () => {
   const knob = controlKey('t1', 'reverb')
+  /** This tab: client 5. */
+  const self = { id: me.id, clientID: 5 }
+  const sky = { id: 's', color: 'sky' } as const
+  const states = (...list: [number, unknown][]) => list
 
   // @scenario board/session: Someone turns the reverb
   it('names who else is turning each control', () => {
-    const states = [{ person: coral, control: knob }, { person: { id: 'x', color: 'sky' } }]
-    expect(listHolders(states, me.id)).toEqual(new Map([[knob, coral]]))
+    const held = states([1, { person: coral, control: knob }], [2, { person: sky }])
+    expect(listHolders(held, self)).toEqual(new Map([[knob, coral]]))
   })
 
   it('never lists you, even turning it from another tab', () => {
-    expect(listHolders([{ person: me, control: knob }], me.id).size).toBe(0)
+    expect(listHolders(states([5, { person: me, control: knob }]), self).size).toBe(0)
+    expect(listHolders(states([1, { person: me, control: knob }]), self).size).toBe(0)
   })
 
-  it('keeps the first person on a control two people turn at once', () => {
-    const sky = { id: 's', color: 'sky' } as const
-    const states = [
-      { person: coral, control: knob },
-      { person: sky, control: knob },
-    ]
-    expect(listHolders(states, me.id).get(knob)).toEqual(coral)
+  // @scenario board/session: Grab at once
+  it('gives a control two people grab at once to the lower client id', () => {
+    const both = states([7, { person: sky, control: knob }], [3, { person: coral, control: knob }])
+    expect(listHolders(both, self).get(knob)).toEqual(coral)
+  })
+
+  it('lists who beat this tab to a control, and nobody when this tab wins', () => {
+    const lost = states([5, { person: me, control: knob }], [3, { person: coral, control: knob }])
+    expect(listHolders(lost, self).get(knob)).toEqual(coral)
+    const won = states([5, { person: me, control: knob }], [9, { person: coral, control: knob }])
+    expect(listHolders(won, self).size).toBe(0)
+  })
+
+  it("doesn't let your other tab win a control from someone else", () => {
+    const tabs = states([1, { person: me, control: knob }], [3, { person: coral, control: knob }])
+    expect(listHolders(tabs, self).get(knob)).toEqual(coral)
   })
 
   it('skips a control without a readable person, and agents', () => {
-    const states = [{ control: knob }, { person: { id: 'agent:a', color: 'sky' }, control: knob }]
-    expect(listHolders(states, me.id).size).toBe(0)
+    const held = states(
+      [1, { control: knob }],
+      [2, { person: { id: 'agent:a', color: 'sky' }, control: knob }],
+    )
+    expect(listHolders(held, self).size).toBe(0)
   })
 })
 

@@ -7,7 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Track } from '../../shared/board'
 import { barMs, beatSeconds } from '../../shared/looper'
 import { JamClock } from '../../src/audio/clock'
+import { FILTER_PEAK_MAX, filterSweep } from '../../src/audio/knobs'
 import { Engine, type RecorderState } from '../../src/audio/engine'
+import { MASTER_SOUND_DEFAULTS, MasterChain, type MasterSound } from '../../src/audio/master'
 import { SampleLoader } from '../../src/audio/samples'
 import { agree, emit, mockServer, offlineProvider, SLUG } from './jam'
 
@@ -52,12 +54,14 @@ async function offline({
   sound = 'kick',
   tracks = [],
   metronome = true,
+  master,
 }: {
   seconds: number
   bpm?: number
   sound?: string
   tracks?: Track[]
   metronome?: boolean
+  master?: Partial<MasterSound>
 }) {
   const ctx = new OfflineAudioContext(2, Math.ceil(RATE * seconds), RATE)
   const engine = new Engine(new JamClock(offlineProvider()), new SampleLoader(SLUG), () => ctx)
@@ -68,6 +72,7 @@ async function offline({
     pads: new Map([[PAD, sound]]),
     tracks: new Map(tracks.map((t, i) => [`t${i}`, t])),
     uploads: new Set(),
+    master: master && { ...MASTER_SOUND_DEFAULTS, ...master },
   })
   await engine.unlock()
   expect(engine.ready).toBe(true)
@@ -262,5 +267,396 @@ describe('jam clock', () => {
     } finally {
       clock.dispose()
     }
+  })
+})
+
+/** How bright a stretch sounds: the energy of its sample-to-sample changes, which highs dominate. */
+const brightness = (data: Float32Array) => {
+  let sum = 0
+  for (let i = 1; i < data.length; i++) sum += (data[i]! - data[i - 1]!) ** 2
+  return sum
+}
+
+const rms = (data: Float32Array) =>
+  Math.sqrt(data.reduce((sum, x) => sum + x * x, 0) / Math.max(1, data.length))
+
+/**
+ * `left` and `right` played through a lone master chain set to `sound`, rendered offline.
+ */
+async function throughChain(
+  left: Float32Array,
+  right: Float32Array,
+  sound: MasterSound,
+  /** Changes made while it renders: at each time (seconds), what to do to the chain. */
+  changes: [number, (chain: MasterChain) => void][] = [],
+) {
+  const ctx = new OfflineAudioContext(2, left.length, RATE)
+  const input = ctx.createBuffer(2, left.length, RATE)
+  input.copyToChannel(left as Float32Array<ArrayBuffer>, 0)
+  input.copyToChannel(right as Float32Array<ArrayBuffer>, 1)
+  const chain = await MasterChain.create(ctx, ctx.destination)
+  chain.set(sound, true)
+  for (const [at, change] of changes)
+    void ctx.suspend(at).then(() => {
+      change(chain)
+      void ctx.resume()
+    })
+  const src = ctx.createBufferSource()
+  src.buffer = input
+  src.connect(chain.input)
+  src.start()
+  const out = await ctx.startRendering()
+  return [out.getChannelData(0), out.getChannelData(1)] as const
+}
+
+const DEFAULTS = MASTER_SOUND_DEFAULTS
+
+describe('master', () => {
+  /** A quarter second of noise, different in each ear: loud, bright and wide. */
+  const noise = (seed: number) => {
+    const out = new Float32Array(RATE / 4)
+    for (let i = 0; i < out.length; i++) {
+      seed = (seed * 16807) % 2147483647
+      out[i] = (seed / 2147483647) * 2 - 1
+    }
+    return out
+  }
+  /** A quarter second of a sine at `hz`. */
+  const sine = (hz: number, level = 0.5) =>
+    new Float32Array(RATE / 4).map((_, i) => level * Math.sin((2 * Math.PI * hz * i) / RATE))
+  /** The loudest sample after the first tenth, once a filter has settled. */
+  const steadyPeak = (data: Float32Array) =>
+    data.subarray(data.length / 10).reduce((m, v) => Math.max(m, Math.abs(v)), 0)
+
+  it('passes the mix through unchanged at its defaults', async () => {
+    const left = noise(3)
+    const right = noise(11)
+    const [outLeft, outRight] = await throughChain(left, right, DEFAULTS)
+    for (let i = 0; i < left.length; i++) {
+      expect(Math.abs(outLeft[i]! - left[i]!), `left ${i}`).toBeLessThan(1e-5)
+      expect(Math.abs(outRight[i]! - right[i]!), `right ${i}`).toBeLessThan(1e-5)
+    }
+  })
+
+  // @scenario audio/master: Older jam
+  it('plays a jam without master settings as one at the defaults', async () => {
+    const seconds = barMs(100) / 1000
+    const tracks = [track({ pan: -0.5, reverb: 0.5 })]
+    const without = await render(await offline({ seconds, tracks, sound: 'hat' }))
+    const defaults = await render(await offline({ seconds, tracks, sound: 'hat', master: {} }))
+    for (const ch of [0, 1]) expect(defaults[ch]).toEqual(without[ch])
+  })
+
+  // @scenario audio/master: Darken everything
+  it('darkens every loop with master tone below 0, and thins them above it', async () => {
+    const seconds = barMs(100) / 1000
+    const tracks = [track(), track({ hits: [{ padId: PAD, beat: 2 }] })]
+    const [flat] = await render(await offline({ seconds, tracks, sound: 'hat' }))
+    const [dark] = await render(
+      await offline({ seconds, tracks, sound: 'hat', master: { tone: -0.6 } }),
+    )
+    expect(brightness(dark)).toBeLessThan(brightness(flat) / 4)
+    // Both loops still sound, darker.
+    const beat = beatSeconds(100)
+    expect(peak(dark, 0, 0.1)).toBeGreaterThan(0)
+    expect(peak(dark, 2 * beat, 2 * beat + 0.1)).toBeGreaterThan(0)
+
+    const kick = await render(await offline({ seconds, tracks, master: {} }))
+    const thin = await render(await offline({ seconds, tracks, master: { tone: 0.8 } }))
+    // A high-pass takes the kick's weight away.
+    expect(rms(thin[0])).toBeLessThan(rms(kick[0]) / 2)
+  })
+
+  it('darkens pads played live too', async () => {
+    const seconds = 0.5
+    const live = async (tone: number) => {
+      const audio = await offline({ seconds, sound: 'hat', master: { tone } })
+      void audio.ctx.suspend(0.1).then(() => {
+        audio.engine.hitPad(PAD)
+        void audio.ctx.resume()
+      })
+      return await render(audio)
+    }
+    const [flat, flatRight] = await live(0)
+    expect(peak(flat)).toBeGreaterThan(0.05)
+    // A mono pad on its own still plays from both speakers.
+    for (let i = 0; i < flat.length; i++)
+      expect(Math.abs(flat[i]! - flatRight[i]!), `sample ${i}`).toBeLessThan(1e-5)
+    expect(brightness((await live(-0.6))[0])).toBeLessThan(brightness(flat) / 4)
+  })
+
+  // @scenario audio/master: Clicks stay dry
+  it('leaves the count-in and the metronome dry', async () => {
+    const bar = barMs(100)
+    const take: RecorderState = {
+      phase: 'recording',
+      countStart: 0,
+      recordStart: bar,
+      recordBar: 1,
+    }
+    const seconds = (2 * bar) / 1000
+    const dry = await render(await offline({ seconds }), take)
+    const wet = await render(
+      await offline({
+        seconds,
+        master: {
+          tone: -1,
+          drive: 1,
+          width: -1,
+          filter: { x: -1, y: 1 },
+          throw: { x: 0.5, y: 1 },
+          lofi: { x: 1, y: 1 },
+        },
+      }),
+      take,
+    )
+    for (const ch of [0, 1]) expect(wet[ch]).toEqual(dry[ch])
+  })
+
+  // @scenario audio/master: Width to mono
+  it('plays a loop panned hard left equally from both speakers at width -1', async () => {
+    const seconds = barMs(100) / 1000
+    const [left, right] = await render(
+      await offline({ seconds, tracks: [track({ pan: -1 })], master: { width: -1 } }),
+    )
+    expect(peak(left)).toBeGreaterThan(0.05)
+    for (let i = 0; i < left.length; i++)
+      expect(Math.abs(left[i]! - right[i]!), `sample ${i}`).toBeLessThan(1e-5)
+  })
+
+  it('widens the mix above width 0, leaving its middle alone', async () => {
+    const left = noise(3)
+    const right = noise(11)
+    const side = (l: Float32Array, r: Float32Array) => rms(l.map((x, i) => x - r[i]!))
+    const mid = (l: Float32Array, r: Float32Array) => rms(l.map((x, i) => x + r[i]!))
+    const [wideLeft, wideRight] = await throughChain(left, right, { ...DEFAULTS, width: 1 })
+    expect(side(wideLeft, wideRight)).toBeCloseTo(2 * side(left, right), 2)
+    expect(mid(wideLeft, wideRight)).toBeCloseTo(mid(left, right), 2)
+  })
+
+  it('passes the mix through unchanged with the filter open, whatever its resonance', async () => {
+    const left = noise(3)
+    const right = noise(11)
+    const [outLeft, outRight] = await throughChain(left, right, {
+      ...DEFAULTS,
+      filter: { x: 0, y: 1 },
+    })
+    for (let i = 0; i < left.length; i++) {
+      expect(Math.abs(outLeft[i]! - left[i]!), `left ${i}`).toBeLessThan(1e-5)
+      expect(Math.abs(outRight[i]! - right[i]!), `right ${i}`).toBeLessThan(1e-5)
+    }
+  })
+
+  // @scenario audio/master: Sweep down
+  it('darkens the whole mix steadily as the filter goes from x 0 to x -1', async () => {
+    const seconds = barMs(100) / 1000
+    const tracks = [track(), track({ hits: [{ padId: PAD, beat: 2 }] })]
+    const at = async (x: number) =>
+      brightness(
+        (
+          await render(
+            await offline({ seconds, tracks, sound: 'hat', master: { filter: { x, y: 0 } } }),
+          )
+        )[0],
+      )
+    const sweep = [await at(0), await at(-0.33), await at(-0.66), await at(-1)]
+    for (let i = 1; i < sweep.length; i++) expect(sweep[i]).toBeLessThan(sweep[i - 1]!)
+    expect(sweep[3]).toBeLessThan(sweep[0]! / 4)
+  })
+
+  it('thins the mix with the filter above x 0, and rings with resonance', async () => {
+    const left = noise(3)
+    const right = noise(11)
+    const [open] = await throughChain(left, right, DEFAULTS)
+    const [thin] = await throughChain(left, right, { ...DEFAULTS, filter: { x: 0.6, y: 0 } })
+    // Brightness for its loudness: a high-pass leaves less, and what it leaves is higher.
+    const tilt = (data: Float32Array) => brightness(data) / (rms(data) ** 2 * data.length)
+    expect(rms(thin)).toBeLessThan(rms(open))
+    expect(tilt(thin)).toBeGreaterThan(tilt(open))
+    // Strong resonance stacks energy at the cutoff: a tone there stands out over one below it.
+    const cutoff = filterSweep(-0.5, 1, RATE / 2).frequency
+    const stands = async (y: number) => {
+      const filter = { x: -0.5, y }
+      const [at] = await throughChain(sine(cutoff), sine(cutoff), { ...DEFAULTS, filter })
+      const [below] = await throughChain(sine(cutoff / 4), sine(cutoff / 4), {
+        ...DEFAULTS,
+        filter,
+      })
+      return steadyPeak(at) / steadyPeak(below)
+    }
+    expect(await stands(1)).toBeGreaterThan((await stands(0)) * 3)
+  })
+
+  it("keeps a loud mix's peaks within 6 dB at full resonance", async () => {
+    // A loud tone right at the cutoff, where resonance lifts it most.
+    for (const x of [-0.9, -0.5, 0.5]) {
+      const cutoff = filterSweep(x, 1, RATE / 2).frequency
+      const [l, r] = await throughChain(sine(cutoff, 0.45), sine(cutoff, 0.45), {
+        ...DEFAULTS,
+        filter: { x, y: 1 },
+      })
+      expect(steadyPeak(l), `x ${x}`).toBeLessThan(0.45 * FILTER_PEAK_MAX * 1.05)
+      expect(steadyPeak(r), `x ${x}`).toBeLessThan(1)
+    }
+  })
+
+  it('saturates and evens the mix with drive', async () => {
+    // A sine at 0.9: its peaks are √2 times its loudness. Drive rounds them off.
+    const sine = new Float32Array(RATE / 2).map(
+      (_, i) => 0.9 * Math.sin((2 * Math.PI * 220 * i) / RATE),
+    )
+    const crest = (data: Float32Array) => peak(data) / rms(data)
+    const [clean] = await throughChain(sine, sine, DEFAULTS)
+    expect(crest(clean)).toBeCloseTo(Math.SQRT2, 2)
+    // After the compressor settles.
+    const [driven] = await throughChain(sine, sine, { ...DEFAULTS, drive: 0.4 })
+    const settled = driven.subarray(RATE / 4)
+    expect(crest(settled)).toBeLessThan(1.3)
+    // ...and leaves it about as loud, not quieter.
+    expect(rms(settled)).toBeGreaterThan(rms(clean) * 0.7)
+  })
+})
+
+describe('throw', () => {
+  /** A click at each of `times` (seconds), in both ears, in a buffer `seconds` long. */
+  const clicks = (seconds: number, ...times: number[]) => {
+    const out = new Float32Array(Math.round(RATE * seconds))
+    for (const t of times) out[Math.round(t * RATE)] = 1
+    return out
+  }
+
+  // @scenario audio/master: Throw a quarter note
+  it('repeats the mix every quarter note at x 0.9, fading slowly', async () => {
+    const input = clicks(2.2, 0)
+    // The time at 120 BPM, as the engine sets it.
+    const quarter = beatSeconds(120)
+    const [out] = await throughChain(input, input, { ...DEFAULTS, throw: { x: 0.9, y: 0.8 } }, [
+      [0, (c) => c.throwTime(quarter)],
+    ])
+    const repeats = [1, 2, 3, 4].map((n) => peak(out, n * quarter - 0.005, n * quarter + 0.005))
+    // Nothing between the repeats.
+    expect(peak(out, 0.01, quarter - 0.01)).toBeLessThan(1e-4)
+    expect(repeats[0]).toBeGreaterThan(0.5)
+    for (let n = 1; n < repeats.length; n++) {
+      expect(repeats[n]).toBeLessThan(repeats[n - 1]!)
+      // Slowly: each repeat keeps most of the one before it.
+      expect(repeats[n]! / repeats[n - 1]!).toBeGreaterThan(0.6)
+    }
+  })
+
+  it('picks an eighth, a dotted eighth or a quarter note by thirds of x, on the tempo', async () => {
+    const bpm = 120
+    for (const [x, beats] of [
+      [0.1, 0.5],
+      [0.5, 0.75],
+      [0.9, 1],
+    ] as const) {
+      const audio = await offline({
+        seconds: 1.5,
+        bpm,
+        tracks: [track()],
+        metronome: false,
+        master: { throw: { x, y: 1 } },
+      })
+      const [left] = await render(audio)
+      const echo = beats * beatSeconds(bpm)
+      // The kick is still ringing at the first echo; the echo makes it louder there than without.
+      const [plain] = await render(
+        await offline({ seconds: 1.5, bpm, tracks: [track()], metronome: false }),
+      )
+      expect(peak(left, echo, echo + 0.01), `x ${x}`).toBeGreaterThan(
+        peak(plain, echo, echo + 0.01) + 0.1,
+      )
+    }
+  })
+
+  // @scenario audio/master: Tail after reset
+  it('sends nothing new into the echo after a reset, and lets the tail ring out', async () => {
+    const quarter = beatSeconds(120)
+    // A click before the reset, and one after it whose echoes would land between the first's.
+    const input = clicks(3, 0, 1.25)
+    const [out] = await throughChain(input, input, { ...DEFAULTS, throw: { x: 0.9, y: 0.8 } }, [
+      [0, (c) => c.throwTime(quarter)],
+      [0.75, (c) => c.set({ ...DEFAULTS, throw: { x: 0, y: 0 } })],
+    ])
+    // The first click's tail keeps ringing past the reset...
+    expect(peak(out, 1.5 - 0.005, 1.5 + 0.005)).toBeGreaterThan(0.2)
+    expect(peak(out, 2 - 0.005, 2 + 0.005)).toBeGreaterThan(0.1)
+    // ...while the second click plays dry and doesn't echo.
+    expect(peak(out, 1.25 - 0.001, 1.25 + 0.001)).toBeCloseTo(1, 1)
+    expect(peak(out, 1.75 - 0.005, 1.75 + 0.005)).toBeLessThan(1e-3)
+  })
+
+  // @scenario audio/master: Heard together
+  it("moves the echo's time only at the jam's next 1/16", async () => {
+    const bpm = 120
+    const audio = await offline({
+      seconds: 0.5,
+      bpm,
+      metronome: false,
+      master: { throw: { x: 0.1, y: 1 } },
+    })
+    const { ctx, engine } = audio
+    // The room's grid maps straight onto the render's timeline.
+    engine['shift'] = SHIFT
+    // The echo's time: its looped delay and the fixed one ahead of it.
+    const time = () => {
+      const chain = engine['chain']!
+      return chain['throwDelay'].delayTime.value + chain['throwLatency']
+    }
+    const eighth = 0.5 * beatSeconds(bpm)
+    const sixteenth = 0.25 * beatSeconds(bpm)
+    const seen: Record<string, number> = {}
+    const at = (t: number, read: () => void) =>
+      void ctx.suspend(t).then(() => {
+        read()
+        void ctx.resume()
+      })
+    at(0.1, () => {
+      seen.before = time()
+      engine.update({
+        bpm,
+        pads: new Map(),
+        tracks: new Map(),
+        uploads: new Set(),
+        master: { ...MASTER_SOUND_DEFAULTS, throw: { x: 0.9, y: 1 } },
+      })
+    })
+    at(sixteenth - 0.005, () => (seen.justBefore = time()))
+    at(sixteenth + 0.05, () => (seen.after = time()))
+    await render(audio)
+    expect(seen.before).toBeCloseTo(eighth)
+    expect(seen.justBefore).toBeCloseTo(eighth)
+    expect(seen.after).toBeCloseTo(2 * eighth, 3)
+  })
+})
+
+describe('lofi', () => {
+  const sine = new Float32Array(RATE / 4).map(
+    (_, i) => 0.5 * Math.sin((2 * Math.PI * 440 * i) / RATE),
+  )
+
+  it('passes the mix through unchanged at 0/0', async () => {
+    const [out] = await throughChain(sine, sine, { ...DEFAULTS, lofi: { x: 0, y: 0 } })
+    for (let i = 0; i < sine.length; i++)
+      expect(Math.abs(out[i]! - sine[i]!), `${i}`).toBeLessThan(1e-6)
+  })
+
+  it('holds samples for a lower rate as x rises', async () => {
+    const [out] = await throughChain(sine, sine, { ...DEFAULTS, lofi: { x: 1, y: 0 } })
+    // At 4 kHz each sample is held for 12 of the context's: most neighbours are equal.
+    let same = 0
+    for (let i = 1; i < out.length; i++) if (out[i] === out[i - 1]) same++
+    expect(same / out.length).toBeGreaterThan(0.85)
+  })
+
+  // @scenario audio/master: Crunch
+  it('rounds samples to fewer levels as y rises', async () => {
+    const levels = (data: Float32Array) => new Set(data).size
+    const [clean] = await throughChain(sine, sine, DEFAULTS)
+    const [crushed] = await throughChain(sine, sine, { ...DEFAULTS, lofi: { x: 0, y: 1 } })
+    // 4 bits: 8 levels each side of 0, and the sine reaches half of them.
+    expect(levels(crushed)).toBeLessThanOrEqual(10)
+    expect(levels(clean)).toBeGreaterThan(100)
   })
 })

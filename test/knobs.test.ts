@@ -1,11 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import {
+  DRIVE_HEADROOM,
   TONE_HIGH_HZ,
   TONE_LOW_HZ,
+  driveCurve,
+  driveGlue,
   echoSeconds,
+  FILTER_PEAK_MAX,
+  FILTER_Q_MAX,
+  FILTER_Q_MIN,
+  filterSweep,
+  LOFI_RATE_FULL_HZ,
+  lofiCrush,
   pitchRate,
   reverbImpulse,
+  THROW_FEEDBACK_MAX,
+  THROW_FEEDBACK_MIN,
+  throwEcho,
   toneFilter,
+  widthGains,
 } from '../src/audio/knobs'
 
 describe('toneFilter', () => {
@@ -83,5 +96,105 @@ describe('reverbImpulse', () => {
 
   it('is the same on every client', () => {
     expect(reverbImpulse(1000, 1)).toEqual(reverbImpulse(1000, 1))
+  })
+})
+
+describe('driveCurve', () => {
+  const at = (curve: Float32Array, x: number) =>
+    curve[Math.round(((x / DRIVE_HEADROOM + 1) / 2) * (curve.length - 1))]!
+
+  it('is a straight line at 0', () => {
+    const curve = driveCurve(0)
+    for (const x of [-DRIVE_HEADROOM, -1, -0.25, 0, 0.5, 1, DRIVE_HEADROOM])
+      expect(at(curve, x)).toBeCloseTo(x, 5)
+  })
+
+  it('keeps quiet sounds at their level and rounds loud ones off', () => {
+    const curve = driveCurve(1)
+    expect(at(curve, 0)).toBe(0)
+    // One point of the curve above 0.
+    expect(at(curve, 1 / 256)).toBeCloseTo(1 / 256, 5)
+    expect(at(curve, 1)).toBeLessThan(0.3)
+    expect(at(curve, -1)).toBeCloseTo(-at(curve, 1), 6)
+  })
+})
+
+describe('driveGlue', () => {
+  it('leaves the mix alone at 0 and squeezes it harder as drive rises', () => {
+    expect(driveGlue(0)).toEqual({ threshold: -0, ratio: 1, makeup: 1 })
+    expect(driveGlue(1)).toEqual({ threshold: -24, ratio: 6, makeup: 3 })
+  })
+})
+
+describe('widthGains', () => {
+  it('leaves the mix at 0, folds it to mono at -1 and doubles the sides at +1', () => {
+    expect(widthGains(0)).toEqual({ direct: 1, cross: -0 })
+    expect(widthGains(-1)).toEqual({ direct: 0.5, cross: 0.5 })
+    expect(widthGains(1)).toEqual({ direct: 1.5, cross: -0.5 })
+  })
+})
+
+describe('filterSweep', () => {
+  const db = (q: number) => 20 * Math.log10(q)
+
+  it('is open at x 0, a low-pass at Nyquist, whatever the resonance', () => {
+    expect(filterSweep(0, 0, 24000)).toMatchObject({ type: 'lowpass', frequency: 24000 })
+    expect(filterSweep(0, 1, 24000)).toMatchObject({ type: 'lowpass', frequency: 24000 })
+  })
+
+  it('sweeps as tone does: a low-pass closing to the left, a high-pass rising to the right', () => {
+    for (const x of [-1, -0.5, 0.3, 1])
+      expect(filterSweep(x, 0, 24000)).toMatchObject(toneFilter(x, 24000))
+  })
+
+  it('raises the resonance from none at y 0 to strong at y 1, in decibels', () => {
+    expect(filterSweep(-0.5, 0).q).toBeCloseTo(db(FILTER_Q_MIN))
+    expect(filterSweep(-0.5, 1).q).toBeCloseTo(db(FILTER_Q_MAX))
+    expect(filterSweep(-0.5, 0.5).q).toBeGreaterThan(filterSweep(-0.5, 0.2).q)
+  })
+
+  it('trims its output so the resonant peak stays within FILTER_PEAK_MAX, and not where it is open', () => {
+    const peak = (x: number, y: number) => {
+      const { q, gain } = filterSweep(x, y)
+      return 10 ** (q / 20) * gain
+    }
+    for (const x of [-1, -0.5, -0.1, 0.1, 0.5, 1])
+      for (const y of [0, 0.5, 1]) expect(peak(x, y)).toBeLessThanOrEqual(FILTER_PEAK_MAX + 1e-9)
+    expect(filterSweep(0, 1).gain).toBe(1)
+    expect(filterSweep(-0.5, 0).gain).toBe(1)
+    // Fades in off 0, so a small move doesn't jump the level.
+    expect(filterSweep(-0.05, 1).gain).toBeGreaterThan(filterSweep(-0.5, 1).gain)
+  })
+})
+
+describe('throwEcho', () => {
+  it('picks an eighth, a dotted eighth or a quarter note in thirds of x', () => {
+    expect([0, 0.2, 0.34, 0.6, 0.67, 1].map((x) => throwEcho(x, 0.5).beats)).toEqual([
+      0.5, 0.5, 0.75, 0.75, 1, 1,
+    ])
+  })
+
+  it('sends nothing at y 0 and all of the mix at y 1, with feedback capped below runaway', () => {
+    expect(throwEcho(0, 0)).toMatchObject({ send: 0, feedback: THROW_FEEDBACK_MIN })
+    expect(throwEcho(0, 1).send).toBe(1)
+    expect(throwEcho(0, 1).feedback).toBeCloseTo(THROW_FEEDBACK_MAX)
+    expect(THROW_FEEDBACK_MAX).toBeLessThan(1)
+  })
+})
+
+describe('lofiCrush', () => {
+  it('is untouched at 0/0 and coarse at 1/1', () => {
+    expect(lofiCrush(0, 0)).toEqual({ rate: LOFI_RATE_FULL_HZ, bits: 16 })
+    expect(lofiCrush(1, 1).rate).toBeCloseTo(4000)
+    expect(lofiCrush(1, 1).bits).toBe(4)
+  })
+
+  it("starts at the context's own rate, so x 0 passes through on any device", () => {
+    expect(lofiCrush(0, 0, 96000).rate).toBe(96000)
+    expect(lofiCrush(1, 0, 96000).rate).toBeCloseTo(8000)
+  })
+
+  it('lowers the rate exponentially', () => {
+    expect(lofiCrush(0.5, 0).rate).toBeCloseTo(Math.sqrt(48000 * 4000))
   })
 })

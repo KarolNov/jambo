@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { fraction, LEDS, litFraction, notch, notchCount, snap, stepBy } from '../src/ui/fader'
+import {
+  fraction,
+  LEDS,
+  litFraction,
+  notch,
+  notchCount,
+  snap,
+  stepBy,
+  valueAt,
+} from '../src/ui/fader'
 import { tickGate } from '../src/ui/hapticGate'
 
 describe('fader detent', () => {
@@ -93,5 +102,18 @@ describe('haptic throttle', () => {
     expect(gate('detent', 1)).toBe(true)
     expect(gate('tap', 2)).toBe(true)
     expect(gate('tap', 3)).toBe(true)
+  })
+})
+
+describe('xy pad press', () => {
+  it('reads the value at a press, on the step grid', () => {
+    expect(valueAt(0.5, -1, 1, 0.01)).toBe(0)
+    expect(valueAt(0.123, 0, 1, 0.01)).toBe(0.12)
+    expect(valueAt(0.25, -1, 1, 0.01)).toBe(-0.5)
+  })
+
+  it('holds at the ends past the square', () => {
+    expect(valueAt(-0.2, -1, 1, 0.01)).toBe(-1)
+    expect(valueAt(1.4, 0, 1, 0.01)).toBe(1)
   })
 })

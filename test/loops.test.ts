@@ -7,9 +7,17 @@ import {
   SOUND_READOUTS,
   snapLabel,
   soundChanged,
+  TOUCHPAD_READOUTS,
 } from '../src/board/console/loops'
 
 describe('the mixer', () => {
+  it("reads the filter's cutoff as Open only at exactly 0", () => {
+    const cutoff = TOUCHPAD_READOUTS.filter.x.format
+    expect(cutoff(0)).toBe('Open')
+    expect(cutoff(-0.004)).toBe('Low-pass 1%')
+    expect(cutoff(0.6)).toBe('High-pass 60%')
+  })
+
   it('names every snap setting the board allows', () => {
     expect(SNAP_OPTIONS.map((o) => o.label)).toEqual(['Off', '1/32', '1/16', '1/8', '1/4'])
     expect(SNAP_OPTIONS.map((o) => Number(o.value))).toEqual([...QUANTIZE])

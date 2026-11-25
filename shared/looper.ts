@@ -83,6 +83,18 @@ export const barStart = (bar: number, bpm: number) => bar * barMs(bpm)
 /** The first jam bar starting at or after room time `roomMs`. */
 export const nextJamBar = (roomMs: number, bpm: number) => ceilNear(roomMs / barMs(bpm))
 
+/** A sixteenth note, in beats: the grid that grid-timed master changes wait for. */
+export const SIXTEENTH = 0.25
+
+/**
+ * The first line of the jam's grid of `beats` (a sixteenth by default) at or after room time
+ * `roomMs`, in room ms. Lines count from the epoch, as bars do, so every client finds the same one.
+ */
+export const nextGridLine = (roomMs: number, bpm: number, beats = SIXTEENTH) => {
+  const step = beats * beatSeconds(bpm) * 1000
+  return ceilNear(roomMs / step) * step
+}
+
 /**
  * `Math.ceil`, but a value within rounding error of a whole number is that number. The tolerance
  * is relative: room times since the epoch put bar and beat counts around 1e9, where a fixed 1e-9

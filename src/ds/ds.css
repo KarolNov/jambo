@@ -188,3 +188,21 @@
   border-radius: 18px;
   background: var(--bg);
 }
+/* The XY pad demos: small enough for a card, with room above for the bubble at the top edge. */
+:root[data-theme] .ds-xy {
+  --xy: 160px;
+  margin-top: 28px;
+}
+/* A live pad with its readout under it. The readout is as wide as the pad and doesn't wrap, so
+   neither changes size as the numbers do. */
+:root[data-theme] .ds-xy-live {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: 160px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--muted);
+}

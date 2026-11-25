@@ -54,10 +54,13 @@ control's own shadow. No outer outlines. Every control must show it on `:focus-v
   `src/board/colors.ts` (or `SWATCHES` in `src/theme/palette.ts`). Never store or hard-code a hex.
 - A control that belongs to something coloured takes the colour as a prop (`color` on `Range` and
   `Knob`), which sets `--ui-c`. Without one it uses `--accent-2`. `Pad` lights in `--glow`.
-- Someone else moving a shared control shows in their colour: pass `heldBy` (a `Holder`: their
-  name and swatch) to `Range` or `Knob`, which lights it in that colour in place of its own (the
-  fader's LEDs and cap line, the knob's arc and index line; no outline) and keeps the bubble up with
-  their name. Report your own drags with `onDragChange` so others see yours.
+- Someone else moving a shared control shows in their colour and locks it: pass `heldBy` (a
+  `Holder`: their name and swatch) to `Range`, `Knob` or `XYPad`, which lights it in that colour
+  in place of its own (the fader's LEDs and cap line, the knob's arc and index line, the pad's puck
+  and lines; no outline), keeps the
+  bubble up with their name, and ignores your drags and keys until they let go (it keeps focus).
+  If it arrives mid-drag (you lost a simultaneous grab), your drag ends where it is. Report your
+  own drags with `onDragChange` so others see yours; `useHolders` decides who holds what.
 - Red means record or destroy (`--accent`, `tone="danger"`). Don't use it for anything else.
 
 ## Motion and haptics
@@ -150,6 +153,23 @@ step when there are fewer steps than that. Keys and the double-click reset don't
   change is costly or only the end value matters.
 - Not for the main level of something (`Range`) or typed values (`ScrubField`).
 
+### XYPad
+
+A square that sets two values at once (`XYPadProps`, each axis an `XYAxis`: its slider's
+`label`, range, `step` and `format`). Press anywhere and drag: the puck jumps there and follows,
+with a line through it on each axis in `color`. A drag previews locally and applies once on
+release; with `live` it applies as it moves, at most once a frame, as a live `Knob` does. It
+stays where it is let go. Escape mid-drag puts it back where the drag started (and applies that
+again when live). ← → move X a step and ↑ ↓ move Y, whichever axis has focus (held together, one of each moves it
+diagonally; a move of the other axis is announced), Shift for ten;
+Page Up/Down, Home and End move the focused axis. `home` marks a position (where it is off).
+While someone else holds it, its puck and lines turn their colour, with no outline. Screen readers hear a group named `label` with two sliders. Size it with `--xy` (default 200px,
+never wider than its container); leave room above for the bubble.
+
+- Use for two parameters played together by feel, such as a touchpad mode's X and Y. Make it
+  `live` when everyone hears it move.
+- Not for one value (`Knob`, `Range`) or exact numbers (`ScrubField`).
+
 ### ScrubField
 
 A number field whose label scrubs it (`ScrubFieldProps`), on `useScrub`: drag the label sideways,
@@ -210,7 +230,9 @@ label's colour eases. Tabs that don't fit go behind a "+N" tab that opens a menu
 (`src/ui/tabFit.ts`); the selected tab always shows, in place of the last one that fits. ← →
 move through every tab, shown or not, and select as they go, Home and End jump to the ends, and
 Tab moves on to "+N", then into the panel. Pass `value` and `onChange` to control it, or
-`defaultValue` to let it keep the selection.
+`defaultValue` to let it keep the selection. A tab's `dot` puts a dot in `--ui-c` after its label
+to say its content is on (a touchpad mode away from 0/0): give it what screen readers hear ("on"),
+or `''` to keep its room without showing it, so tabs don't change width as dots come and go.
 
 - Use for a few parallel versions of the same content where people want one at a time, such as
   the setup steps per AI app on `/about`. Keep labels short, so more of them fit before "+N".

@@ -58,3 +58,13 @@ export function stepBy(
   const next = origin + ((delta > 0 ? Math.floor(q) : Math.ceil(q)) + delta) * keyStep
   return Math.min(max, Math.max(min, Number(next.toFixed(6))))
 }
+
+/**
+ * The value at `f` (0 to 1) of the way from `min` to `max`, on the `step` grid from `min`: where
+ * a press lands on an XY pad's axis. Outside 0–1 it holds at the ends.
+ */
+export function valueAt(f: number, min: number, max: number, step: number): number {
+  const v = min + Math.min(1, Math.max(0, f)) * (max - min)
+  const stepped = min + Math.round((v - min) / step) * step
+  return Math.min(max, Math.max(min, Number(stepped.toFixed(6))))
+}

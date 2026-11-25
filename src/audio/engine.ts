@@ -14,6 +14,7 @@ import {
   ceilNear,
   finishTake,
   hitsInWindow,
+  nextGridLine,
   nextJamBar,
   trackStart,
 } from '../../shared/looper'
@@ -24,8 +25,10 @@ import {
   echoSeconds,
   pitchRate,
   reverbImpulse,
+  throwEcho,
   toneFilter,
 } from './knobs'
+import { MASTER_SOUND_DEFAULTS, MasterChain, type MasterSound } from './master'
 import type { SampleLoader } from './samples'
 import { click, renderKit } from './synth'
 import { keepAwake, preferPlayback } from './session'
@@ -56,8 +59,9 @@ export interface PadHit {
 }
 
 /**
- * A loop's chain: hits → filter (tone) → panner (pan) → gain (level, mute) → master, with the
- * gain also feeding the shared reverb and echo through its sends, so a muted loop sends nothing.
+ * A loop's chain: hits → filter (tone) → panner (pan) → gain (level, mute) → the master chain,
+ * with the gain also feeding the shared reverb and echo through its sends, so a muted loop sends
+ * nothing.
  */
 interface Chain {
   filter: BiquadFilterNode
@@ -98,13 +102,20 @@ interface Playing {
  */
 export class Engine {
   private ctx?: AudioContext | OfflineAudioContext
+  /** The master gain: the master chain plays into it, and so do the clicks, which stay dry. */
   private master?: GainNode
+  /** The master stage everything but the clicks plays through. */
+  private chain?: MasterChain
+  /** The board's master knobs, kept for when audio starts. */
+  private masterSound: MasterSound = MASTER_SOUND_DEFAULTS
   /** The shared room every loop's reverb send feeds. */
   private reverb?: ConvolverNode
   /** The shared echo every loop's echo send feeds; its time follows the tempo. */
   private echo?: DelayNode
   /** The tempo the echo's time was last set for. */
   private echoBpm?: number
+  /** The master throw's echo time last set, in seconds. */
+  private throwSeconds?: number
   private buffers = new Map<string, AudioBuffer>()
   /** Room ms → audio seconds: `audio = room / 1000 + shift`. Undefined until the clock is agreed. */
   private shift?: number
@@ -173,27 +184,31 @@ export class Engine {
     const master = ctx.createGain()
     master.gain.value = 0.8
     master.connect(ctx.destination)
+    const chain = await MasterChain.create(ctx, master)
     const [left, right] = reverbImpulse(ctx.sampleRate)
     const impulse = ctx.createBuffer(2, left.length, ctx.sampleRate)
     impulse.copyToChannel(left, 0)
     impulse.copyToChannel(right, 1)
     const reverb = ctx.createConvolver()
     reverb.buffer = impulse
-    reverb.connect(master)
+    reverb.connect(chain.input)
     const echo = ctx.createDelay(echoSeconds(BPM.min))
     echo.delayTime.value = echoSeconds(this.bpm)
     const feedback = ctx.createGain()
     feedback.gain.value = ECHO_FEEDBACK
     echo.connect(feedback).connect(echo)
-    echo.connect(master)
+    echo.connect(chain.input)
     this.buffers = await renderKit(ctx.sampleRate)
     this.samples.attach(ctx)
     this.ctx = ctx
     this.master = master
+    this.chain = chain
     this.reverb = reverb
     this.echo = echo
-    // The tempo may have changed while the kit rendered.
+    // The tempo and the master settings may have changed while the kit rendered.
+    chain.set(this.masterSound, true)
     this.syncEcho()
+    this.syncThrow()
     for (const p of this.playing.values()) this.attach(p)
     // Only a live context runs in real time; an offline one is scheduled up front and rendered.
     if (isLive(ctx)) this.timer = setInterval(() => this.tick(), TICK_MS)
@@ -249,17 +264,27 @@ export class Engine {
     this.hitTimers.add(t)
   }
 
-  /** Feeds the board's current state: tempo, pad sounds, uploads, and every readable track by id. */
+  /**
+   * Feeds the board's current state: tempo, pad sounds, uploads, every readable track by id, and
+   * the master settings (left as they are when not given).
+   */
   update(state: {
     bpm: number
     pads: Map<string, string>
     tracks: Map<string, Track>
     uploads: ReadonlySet<string>
+    master?: MasterSound
   }) {
+    if (state.master) {
+      const { tone, drive, width, filter, throw: echo, lofi } = state.master
+      this.masterSound = { tone, drive, width, filter, throw: echo, lofi }
+      this.chain?.set(this.masterSound)
+    }
     this.samples.sync(state.uploads)
     this.boardBpm = state.bpm
     if (this.recorder.phase === 'idle') this.bpm = this.boardBpm
     this.syncEcho()
+    this.syncThrow()
     this.pads = state.pads
     for (const [id, p] of this.playing) {
       if (!state.tracks.has(id)) {
@@ -297,7 +322,7 @@ export class Engine {
       reverb: ctx.createGain(),
       echo: ctx.createGain(),
     }
-    chain.filter.connect(chain.panner).connect(chain.gain).connect(this.master!)
+    chain.filter.connect(chain.panner).connect(chain.gain).connect(this.chain!.input)
     chain.gain.connect(chain.reverb).connect(this.reverb!)
     chain.gain.connect(chain.echo).connect(this.echo!)
     p.chain = chain
@@ -349,11 +374,33 @@ export class Engine {
     echo.delayTime.setTargetAtTime(seconds, this.ctx.currentTime, KNOB_RAMP)
   }
 
+  /**
+   * Keeps the master throw's echo on its zone's note at the current tempo. A change waits for the
+   * jam's next 1/16, so everyone hears it on the same grid line; before the clock is agreed (and
+   * the first time) it applies at once. While the send is closed (Y 0, as after a reset) the time
+   * stays, so echoes still sounding ring out at their own spacing; it moves once the send opens.
+   */
+  private syncThrow() {
+    const ctx = this.ctx
+    const chain = this.chain
+    if (!ctx || !chain) return
+    if (this.throwSeconds !== undefined && this.masterSound.throw.y === 0) return
+    const seconds = throwEcho(this.masterSound.throw.x, 0).beats * beatSeconds(this.bpm)
+    if (seconds === this.throwSeconds) return
+    const first = this.throwSeconds === undefined
+    this.throwSeconds = seconds
+    const shift = this.shift
+    if (first || shift === undefined) return chain.throwTime(seconds)
+    const line = nextGridLine(audioToRoom(ctx.currentTime, shift), this.bpm)
+    chain.throwTime(seconds, roomToAudio(line, shift))
+  }
+
   /** Plays a pad now, and records the hit if a take is running. */
   hitPad(padId: string) {
     const ctx = this.ctx
     if (!ctx) return
-    this.play(this.pads.get(padId), ctx.currentTime, this.master!)
+    // Live pads are part of the mix, so they go through the master stage too.
+    this.play(this.pads.get(padId), ctx.currentTime, this.chain!.input)
     this.announce({ padId })
     const now = this.heardNow()
     if (this.recorder.phase !== 'idle' && now !== undefined) {
@@ -412,6 +459,7 @@ export class Engine {
     // A tempo change that arrived during the take applies now.
     this.bpm = this.boardBpm
     this.syncEcho()
+    this.syncThrow()
     return take && { ...take, startBar: rec.recordBar }
   }
 

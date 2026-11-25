@@ -203,4 +203,29 @@ describe('a live drag', () => {
     tick()
     expect(applied).toEqual([0.3])
   })
+
+  it('compares values with `same`, so a pair that did not change is not applied again', () => {
+    type P = readonly [number, number]
+    const applied: P[] = []
+    let board: P = [0, 0]
+    const queued: (() => void)[] = []
+    const drag = liveDrag<P>(
+      [0, 0],
+      (v) => {
+        applied.push(v)
+        board = v
+      },
+      () => board,
+      { request: (run) => queued.push(run), cancel: () => {} },
+      (a, b) => a[0] === b[0] && a[1] === b[1],
+    )
+    drag.move([0.5, 0.2])
+    queued.shift()!()
+    drag.move([0.5, 0.2])
+    queued.shift()!()
+    expect(applied).toEqual([[0.5, 0.2]])
+    // Cancelled: back to the start, since nobody else moved it.
+    drag.end(false)
+    expect(board).toEqual([0, 0])
+  })
 })

@@ -6,7 +6,7 @@ import { SampleLoader } from '../audio/samples'
 import { Console } from './console/Console'
 import { type ConnectionStatus, onStatus, openJam } from './doc'
 import { identity } from './identity'
-import { bpmAtom, padsAtom, soundsAtom, tracksAtom } from './model'
+import { bpmAtom, masterAtom, padsAtom, soundsAtom, tracksAtom } from './model'
 import { joinPresence } from './presence'
 import { Me, takeSeat } from './seat'
 import { makeBoard, type Session, SessionContext } from './session'
@@ -52,13 +52,42 @@ export function EngineFeed({ engine }: { engine: Engine }) {
   const pads = useAtomValue(padsAtom)
   const tracks = useAtomValue(tracksAtom)
   const sounds = useAtomValue(soundsAtom)
+  const master = useAtomValue(masterAtom)
+  const { tone, drive, width } = master
+  // By value: the atom gives a new object on every read.
+  const { x: filterX, y: filterY } = master.filter
+  const { x: throwX, y: throwY } = master.throw
+  const { x: lofiX, y: lofiY } = master.lofi
   useEffect(() => {
     engine.update({
       bpm,
       pads: new Map([...pads].map(([id, p]) => [id, p.soundId])),
       tracks,
       uploads: new Set(sounds.keys()),
+      master: {
+        tone,
+        drive,
+        width,
+        filter: { x: filterX, y: filterY },
+        throw: { x: throwX, y: throwY },
+        lofi: { x: lofiX, y: lofiY },
+      },
     })
-  }, [engine, bpm, pads, tracks, sounds])
+  }, [
+    engine,
+    bpm,
+    pads,
+    tracks,
+    sounds,
+    tone,
+    drive,
+    width,
+    filterX,
+    filterY,
+    throwX,
+    throwY,
+    lofiX,
+    lofiY,
+  ])
   return null
 }

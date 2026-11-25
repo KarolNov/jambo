@@ -81,3 +81,135 @@ export function reverbImpulse(
   }
   return [channel(1), channel(7)]
 }
+
+/*
+ * The master knobs (see `MASTER_KNOBS`). Master tone uses `toneFilter`, as a track's tone does.
+ */
+
+/** How far above full scale the drive's shaper reads: its curve spans ±this, so a hot mix isn't clipped flat. */
+export const DRIVE_HEADROOM = 4
+/** Points in the drive's shaping curve. Odd, so 0 maps to 0 exactly. */
+const DRIVE_CURVE_POINTS = 2049
+/** How hard drive 1 bends the mix: tanh's slope. */
+const DRIVE_BEND = 4
+
+/**
+ * The drive's shaping curve over input ±`DRIVE_HEADROOM` (the engine scales the mix by its inverse
+ * on the way in): `tanh(k·x)/k`, which keeps quiet sounds at their level and rounds loud ones off
+ * toward `1/k`. At 0 it is a straight line.
+ */
+export function driveCurve(drive: number): Float32Array<ArrayBuffer> {
+  const k = DRIVE_BEND * drive
+  const curve = new Float32Array(DRIVE_CURVE_POINTS)
+  for (let i = 0; i < DRIVE_CURVE_POINTS; i++) {
+    const x = ((i / (DRIVE_CURVE_POINTS - 1)) * 2 - 1) * DRIVE_HEADROOM
+    curve[i] = k > 0 ? Math.tanh(k * x) / k : x
+  }
+  return curve
+}
+
+/**
+ * The glue after the shaper: a compressor that squeezes harder as drive rises (threshold down to
+ * -24 dB, ratio up to 6:1), and the gain that brings the squeezed mix back up, so driving the mix
+ * evens it out without leaving it quieter.
+ */
+export function driveGlue(drive: number): { threshold: number; ratio: number; makeup: number } {
+  return { threshold: -24 * drive, ratio: 1 + 5 * drive, makeup: 1 + 2 * drive }
+}
+
+/**
+ * The stereo width as a mid/side mix, written as two gains per ear: `direct` from the same side and
+ * `cross` from the other. 0 leaves the mix as it is (1, 0); -1 folds it to mono (½, ½); +1 doubles
+ * the side signal (1.5, -½).
+ */
+export function widthGains(width: number): { direct: number; cross: number } {
+  return { direct: (2 + width) / 2, cross: -width / 2 }
+}
+
+/*
+ * The touchpad's modes (see `FX_MODES`).
+ */
+
+/** The filter mode's resonance as a linear Q: none (a Butterworth's 0.7) at Y 0, strong at Y 1. */
+export const FILTER_Q_MIN = Math.SQRT1_2
+export const FILTER_Q_MAX = 6
+/** The most the filter's resonant peak may rise above the sound going in: +6 dB. */
+export const FILTER_PEAK_MAX = 2
+
+/** How far X moves off 0 before the filter's resonance trim is in full. */
+export const FILTER_TRIM_FADE = 0.1
+
+/**
+ * The filter mode at `x`, `y`: X sweeps the whole mix as `toneFilter` does (a low-pass closing
+ * toward -1, a high-pass rising toward +1, open at 0), and Y raises the resonance, exponentially
+ * from `FILTER_Q_MIN` to `FILTER_Q_MAX`. `q` is in decibels, as a low- or high-pass
+ * `BiquadFilterNode` reads its Q. At x 0 the low-pass sits at `open` (pass the Nyquist), where it
+ * passes the sound through whatever the resonance. `gain` trims the filter's output as the
+ * resonance rises, so its peak (Q times the input, at the cutoff) stays within `FILTER_PEAK_MAX`
+ * and doesn't clip a loud mix; it fades in over the first `FILTER_TRIM_FADE` of X, so it is 1
+ * where the filter is open.
+ */
+export function filterSweep(
+  x: number,
+  y: number,
+  open?: number,
+): { type: 'lowpass' | 'highpass'; frequency: number; q: number; gain: number } {
+  const q = FILTER_Q_MIN * (FILTER_Q_MAX / FILTER_Q_MIN) ** y
+  const fade = Math.min(1, Math.abs(x) / FILTER_TRIM_FADE)
+  return {
+    ...toneFilter(x, open),
+    q: 20 * Math.log10(q),
+    gain: Math.min(1, FILTER_PEAK_MAX / q) ** fade,
+  }
+}
+
+/** The throw's echo times, in beats, one per third of X: an eighth, a dotted eighth, a quarter. */
+export const THROW_BEATS = [0.5, 0.75, 1] as const
+/** The throw's feedback at the lightest throw and at Y 1: kept below runaway. */
+export const THROW_FEEDBACK_MIN = 0.3
+export const THROW_FEEDBACK_MAX = 0.85
+
+/** Which of `THROW_BEATS` the throw's `x` picks: three equal zones, the last including 1. */
+export const throwZone = (x: number) =>
+  Math.max(0, Math.min(THROW_BEATS.length - 1, Math.floor(x * THROW_BEATS.length)))
+
+/**
+ * The throw mode at `x`, `y`: X picks the echo time in beats from `THROW_BEATS` in three equal
+ * zones; Y is the send of the whole mix into the echo (none at 0, all of it at 1) and raises its
+ * feedback from `THROW_FEEDBACK_MIN` to `THROW_FEEDBACK_MAX`.
+ */
+export function throwEcho(x: number, y: number): { beats: number; send: number; feedback: number } {
+  return {
+    beats: THROW_BEATS[throwZone(x)]!,
+    send: y,
+    feedback: THROW_FEEDBACK_MIN + (THROW_FEEDBACK_MAX - THROW_FEEDBACK_MIN) * y,
+  }
+}
+
+/**
+ * The lo-fi's sample rate at X 0 and at X 1, at a 48 kHz context. The crusher scales them to the
+ * context's own rate (`lofiCrush`'s `fullRate`), so X 0 passes every sample on any device and
+ * every X above it is heard; readouts show the 48 kHz figures.
+ */
+export const LOFI_RATE_FULL_HZ = 48000
+export const LOFI_RATE_MIN_HZ = 4000
+/** The lo-fi's bit depth at Y 0 (where the crusher leaves samples as they are) and at Y 1. */
+export const LOFI_BITS_MAX = 16
+export const LOFI_BITS_MIN = 4
+
+/**
+ * The lo-fi mode at `x`, `y`: X lowers the sample rate exponentially from `fullRate` (the
+ * context's own; `LOFI_RATE_FULL_HZ` by default) by the ratio `LOFI_RATE_MIN_HZ` /
+ * `LOFI_RATE_FULL_HZ`, Y the bit depth from `LOFI_BITS_MAX` to `LOFI_BITS_MIN`. The crusher holds
+ * each sample for `rate` (Hz) and rounds to `bits`; at 0/0 it passes the sound through.
+ */
+export function lofiCrush(
+  x: number,
+  y: number,
+  fullRate = LOFI_RATE_FULL_HZ,
+): { rate: number; bits: number } {
+  return {
+    rate: fullRate * (LOFI_RATE_MIN_HZ / LOFI_RATE_FULL_HZ) ** x,
+    bits: LOFI_BITS_MAX - (LOFI_BITS_MAX - LOFI_BITS_MIN) * y,
+  }
+}

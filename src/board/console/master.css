@@ -1,0 +1,108 @@
+/* The master stage: an inset tray between the deck and the mixer, the touchpad beside its knobs. */
+/* The tray's corner radius and side padding, so the title can be placed against the corner. */
+:root[data-theme] .console-master {
+  --tray-r: 28px;
+  --tray-pad: 22px;
+  display: grid;
+  gap: 10px;
+  margin: 40px 24px 0;
+  padding: 18px var(--tray-pad) 16px;
+  border-radius: var(--tray-r);
+  box-shadow: var(--inset);
+}
+/* A square-cornered thing inside a rounded tray sits right when its inset equals the tray's
+   radius (the concentric rule: inner radius = outer radius - inset, and the title's is 0). So the
+   title starts --tray-r from the edge, not --tray-pad, clear of the corner's curve. */
+:root[data-theme] .console-master-title {
+  margin: 0 0 0 calc(var(--tray-r) - var(--tray-pad));
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+:root[data-theme] .console-master-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 18px 32px;
+}
+/* The touchpad: mode tabs over a card holding the pad, how it reads and its reset. Wide enough
+   for every mode's tab (Filter, Throw and Lo-fi now, Repeat once it joins), so none goes behind
+   "+N" beside the knobs. */
+:root[data-theme] .console-touchpad {
+  flex: 0 1 400px;
+  min-width: 0;
+}
+:root[data-theme] .console-touchpad-mode {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 10px;
+  /* Room above the pad for its bubble when the puck is at the top. */
+  padding: 30px 0 4px;
+}
+:root[data-theme] .console-touchpad-pad {
+  --xy: 220px;
+}
+:root[data-theme] .console-touchpad-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+:root[data-theme] .console-touchpad-reading {
+  font-size: 12px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--muted);
+}
+:root[data-theme] .console-master-knobs {
+  flex: 1 1 300px;
+  align-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  /* Room above for a knob's value bubble while it turns. */
+  padding-top: 14px;
+}
+/* Each knob's cell is one fixed column, wide enough for the longest reading ("Narrow 100%"), so
+   no reading moves a knob. */
+:root[data-theme] .console-master-knob {
+  display: grid;
+  grid-template-columns: 100%;
+  justify-items: center;
+  gap: 2px;
+  width: 92px;
+}
+:root[data-theme] .console-master-knob .ui-knob {
+  margin-bottom: 4px;
+}
+:root[data-theme] .console-master-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+:root[data-theme] .console-master-value {
+  font-size: 12px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+@media (max-width: 760px) {
+  :root[data-theme] .console-master {
+    --tray-pad: 14px;
+    margin: 28px 16px 0;
+    padding: 14px;
+  }
+  :root[data-theme] .console-master-knobs {
+    justify-content: center;
+  }
+  :root[data-theme] .console-touchpad {
+    flex-basis: 100%;
+  }
+}
