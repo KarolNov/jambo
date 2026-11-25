@@ -29,7 +29,7 @@
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",
     "agents": "0.33.0",
-    "duratom": "^0.1.0",
+    "duratom": "^0.2.0",
     "hono": "^4.13.19",
     "hono-party": "^2.1.0",
     "jotai": "^3.0.2",

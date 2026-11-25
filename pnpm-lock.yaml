@@ -15,8 +15,8 @@ importers:
         specifier: 0.33.0
         version: 0.33.0(@babel/core@8.1.2)(@babel/runtime@7.29.14)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/server@2.4.0)(react@19.3.1)(rolldown@1.2.19)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(yaml@2.9.1))(zod@4.6.7)
       duratom:
-        specifier: ^0.1.0
-        version: 0.1.0(jotai-family@1.1.0(jotai@3.0.2(@types/react@19.3.0)(react@19.3.1)))(jotai@3.0.2(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(yjs@13.6.33)
+        specifier: ^0.2.0
+        version: 0.2.0(jotai-family@1.1.0(jotai@3.0.2(@types/react@19.3.0)(react@19.3.1)))(jotai@3.0.2(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(yjs@13.6.33)
       hono:
         specifier: ^4.13.19
         version: 4.13.19
@@ -1127,8 +1127,8 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
-  duratom@0.1.0:
-    resolution: {integrity: sha512-UeagE7LNIUlJOmiTNncq0vH9V7372MT3XpYY7CS6lL7nRPoaw2TNTxCBm1myrYyZv3SiADTRHUSj8Ov3F9zuJA==}
+  duratom@0.2.0:
+    resolution: {integrity: sha512-kf31UZ4gTAGLQKK/dEOBH3ynXj1VR8uv5wMSTlidWXC2vrhJDazyDVzGJ9g/Q/OAHslMBEq1UiUys786/yj8ww==}
     peerDependencies:
       jotai: ^2.9.0 || ^3.0.0
       jotai-family: ^1.0.0
@@ -2568,7 +2568,7 @@ snapshots:
 
   detect-libc@2.1.2: {}
 
-  duratom@0.1.0(jotai-family@1.1.0(jotai@3.0.2(@types/react@19.3.0)(react@19.3.1)))(jotai@3.0.2(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(yjs@13.6.33):
+  duratom@0.2.0(jotai-family@1.1.0(jotai@3.0.2(@types/react@19.3.0)(react@19.3.1)))(jotai@3.0.2(@types/react@19.3.0)(react@19.3.1))(react@19.3.1)(yjs@13.6.33):
     dependencies:
       '@standard-schema/spec': 1.1.0
       jotai: 3.0.2(@types/react@19.3.0)(react@19.3.1)
