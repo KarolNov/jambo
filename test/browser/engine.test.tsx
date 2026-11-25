@@ -357,11 +357,14 @@ describe('master', () => {
         audio.engine.hitPad(PAD)
         void audio.ctx.resume()
       })
-      return (await render(audio))[0]
+      return await render(audio)
     }
-    const flat = await live(0)
+    const [flat, flatRight] = await live(0)
     expect(peak(flat)).toBeGreaterThan(0.05)
-    expect(brightness(await live(-0.6))).toBeLessThan(brightness(flat) / 4)
+    // A mono pad on its own still plays from both speakers.
+    for (let i = 0; i < flat.length; i++)
+      expect(Math.abs(flat[i]! - flatRight[i]!), `sample ${i}`).toBeLessThan(1e-5)
+    expect(brightness((await live(-0.6))[0])).toBeLessThan(brightness(flat) / 4)
   })
 
   // @scenario audio/master: Clicks stay dry

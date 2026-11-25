@@ -241,8 +241,9 @@ export function Range({
   const [dragging, setDragging] = useState(false)
   useDragReport(dragging, onDragChange)
   const held = !!heldBy
-  // Set when someone else took it mid-drag: the rest of that press moves nothing.
-  const lost = useRef(false)
+  // The pointer of the press now on it, and whether that press is lost (pressed while held, or
+  // taken by someone else mid-drag): the rest of a lost press moves nothing.
+  const press = useRef<{ id: number; lost: boolean }>(undefined)
   // While dragged, the fader shows `draft` at once and hands it on at most once a frame, so a
   // drag doesn't send a change for every 0.01 it passes.
   const [draft, setDraft] = useState<number>()
@@ -259,14 +260,14 @@ export function Range({
     if (!held || !sender.current) return
     sender.current.drop()
     sender.current = undefined
-    lost.current = true
+    if (press.current) press.current.lost = true
     setDraft(undefined)
     setDragging(false)
   }, [held])
-  // A lost press ends with the pointer.
+  // A press ends with its own pointer, not with another finger lifting elsewhere.
   useEffect(() => {
-    const free = () => {
-      lost.current = false
+    const free = (e: PointerEvent) => {
+      if (e.pointerId === press.current?.id) press.current = undefined
     }
     window.addEventListener('pointerup', free)
     window.addEventListener('pointercancel', free)
@@ -303,7 +304,7 @@ export function Range({
   const notches = notchCount(min, max, step)
   const drag = (raw: number) => {
     // Held by someone else: the input snaps back to their value on the next render.
-    if (held || lost.current) return
+    if (held || press.current?.lost) return
     const v = snap(raw, detent)
     if (v === shown) return
     if (!sender.current) {
@@ -354,7 +355,7 @@ export function Range({
         onChange={(e) => drag(Number(e.target.value))}
         onPointerDown={(e) => {
           // Pressed while held: the whole press moves nothing, even if they let go during it.
-          lost.current = held
+          press.current = { id: e.pointerId, lost: held }
           if (held) return
           sender.current = liveDrag(
             value,

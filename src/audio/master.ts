@@ -31,6 +31,11 @@ export class MasterChain {
     out: AudioNode,
   ) {
     this.input = ctx.createGain()
+    // Always stereo, so a lone mono sound (a live pad, with nothing else playing) reaches both ears:
+    // the width stage's splitter would otherwise put it in the left one only.
+    this.input.channelCount = 2
+    this.input.channelCountMode = 'explicit'
+    this.input.channelInterpretation = 'speakers'
     this.tone = ctx.createBiquadFilter()
     this.dry = ctx.createGain()
     this.wet = ctx.createGain()
@@ -72,10 +77,10 @@ export class MasterChain {
   set(sound: MasterSound, now = false) {
     const ctx = this.ctx
     const applied = this.applied
-    const set = (key: string, param: AudioParam, value: number) => {
+    const set = (key: string, param: AudioParam, value: number, jump = now) => {
       if (applied[key] === value) return
       applied[key] = value
-      if (now) param.value = value
+      if (jump) param.value = value
       else param.setTargetAtTime(value, ctx.currentTime, KNOB_RAMP)
     }
 
@@ -91,9 +96,11 @@ export class MasterChain {
       applied.drive = sound.drive
       this.shaper.curve = driveCurve(sound.drive)
     }
+    // Switched, not crossfaded: the wet path runs behind the compressor's lookahead, so a fade
+    // would play both copies a few milliseconds apart and comb the mix.
     const on = sound.drive > 0 ? 1 : 0
-    set('dry', this.dry.gain, 1 - on)
-    set('wet', this.wet.gain, on)
+    set('dry', this.dry.gain, 1 - on, true)
+    set('wet', this.wet.gain, on, true)
     const glue = driveGlue(sound.drive)
     set('threshold', this.compressor.threshold, glue.threshold)
     set('ratio', this.compressor.ratio, glue.ratio)
