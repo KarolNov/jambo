@@ -1,6 +1,7 @@
 /** The mixer's wording and geometry, kept apart from React so it can be tested. */
 import {
   BEATS_PER_BAR,
+  type MasterKnob,
   QUANTIZE,
   SOUND_KNOB_NAMES,
   SOUND_KNOBS,
@@ -57,4 +58,29 @@ export const SOUND_READOUTS: Record<SoundKnob, { label: string; format: (v: numb
 export const soundChanged = (track: Partial<Record<SoundKnob, number>>) => {
   const sound = soundOf(track)
   return SOUND_KNOB_NAMES.some((k) => sound[k] !== SOUND_KNOBS[k].default)
+}
+
+/** The master knobs the console shows, in order. Swing joins them once the scheduler swings. */
+export const MASTER_CONSOLE_KNOBS = [
+  'tone',
+  'drive',
+  'width',
+] as const satisfies readonly MasterKnob[]
+
+/** Each master knob's name and how its value reads, for its label and bubble. */
+export const MASTER_READOUTS: Record<
+  (typeof MASTER_CONSOLE_KNOBS)[number],
+  { label: string; format: (v: number) => string }
+> = {
+  tone: SOUND_READOUTS.tone,
+  drive: { label: 'Drive', format: (v) => (pct(v) === 0 ? 'Off' : `${pct(v)}%`) },
+  width: {
+    label: 'Width',
+    format: (v) =>
+      pct(v) === 0
+        ? 'Stereo'
+        : pct(v) === 100 && v < 0
+          ? 'Mono'
+          : `${v < 0 ? 'Narrow' : 'Wide'} ${pct(v)}%`,
+  },
 }

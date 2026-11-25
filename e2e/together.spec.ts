@@ -179,3 +179,114 @@ test.describe('two people in a jam', () => {
     await expect(loopNames(a.page)).toHaveValue('Offline kicks')
   })
 })
+
+test.describe('locked while held', () => {
+  /** Presses the middle of `knob` on `page` and drags it up by `dy` pixels, keeping the button down. */
+  async function grab(page: Page, knob: ReturnType<Page['getByRole']>, dy: number) {
+    await knob.scrollIntoViewIfNeeded()
+    const box = (await knob.boundingBox())!
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x, y - dy, { steps: 8 })
+    return { x, y }
+  }
+
+  /** `page`'s own name in the jam, as the room seated it, from its entry in Who's here. */
+  const ownName = async (page: Page) =>
+    (await people(page)
+      .and(page.locator('[aria-label$=" (you)"]'))
+      .getAttribute('aria-label'))!.replace(/ \(you\)$/, '')
+
+  // @scenario audio/master: Darken everything
+  // @scenario board/session: Held by someone else
+  // @scenario audio/master: Kept on reload
+  test('master tone turns for both, and only its holder can move it', async ({ browser }) => {
+    const a = await person(browser)
+    const b = await person(browser)
+    const link = await startJam(a.page)
+    await openJam(b.page, link)
+    const toneA = a.page.getByRole('slider', { name: 'Master tone' })
+    const toneB = b.page.getByRole('slider', { name: 'Master tone' })
+    await expect(toneB).toHaveAttribute('aria-valuenow', '0')
+    const nameA = await ownName(a.page)
+
+    // A turns master tone down and keeps holding it.
+    const at = await grab(a.page, toneA, -60)
+    await expect(toneB).toHaveAttribute('aria-description', `${nameA} is turning it`)
+    await expect(toneB).toHaveAttribute('aria-disabled', 'true')
+    await expect.poll(async () => Number(await toneB.getAttribute('aria-valuenow'))).toBeLessThan(0)
+    const held = await toneB.getAttribute('aria-valuenow')
+
+    // B can't turn it, by key or by drag, while A holds it.
+    await toneB.focus()
+    await b.page.keyboard.press('ArrowUp')
+    await b.page.keyboard.press('End')
+    await toneB.scrollIntoViewIfNeeded()
+    const boxB = (await toneB.boundingBox())!
+    await b.page.mouse.move(boxB.x + boxB.width / 2, boxB.y + boxB.height / 2)
+    await b.page.mouse.down()
+    await b.page.mouse.move(boxB.x + boxB.width / 2, boxB.y - 100, { steps: 8 })
+    await b.page.mouse.up()
+    await expect(toneA).toHaveAttribute('aria-valuenow', held!)
+    await expect(toneB).toHaveAttribute('aria-valuenow', held!)
+    // A never saw B take hold of it.
+    await expect(toneA).not.toHaveAttribute('aria-description', /turning/)
+
+    // A keeps turning, then lets go: both settle on A's value, and B is free again.
+    await a.page.mouse.move(at.x, at.y + 100, { steps: 8 })
+    await a.page.mouse.up()
+    const settled = await toneA.getAttribute('aria-valuenow')
+    expect(Number(settled)).toBeLessThan(Number(held))
+    await expect(toneB).toHaveAttribute('aria-valuenow', settled!)
+    await expect(toneB).not.toHaveAttribute('aria-disabled', 'true')
+    await toneB.focus()
+    await b.page.keyboard.press('ArrowUp')
+    await expect(toneA).not.toHaveAttribute('aria-valuenow', settled!)
+    const final = await toneB.getAttribute('aria-valuenow')
+
+    // It stays where it was left, for someone who reloads.
+    await b.page.reload()
+    await expect(b.page.getByRole('slider', { name: 'Master tone' })).toHaveAttribute(
+      'aria-valuenow',
+      final!,
+    )
+  })
+
+  // @scenario board/session: Held by someone else
+  test("a loop's level doesn't move for someone else while it is dragged", async ({
+    browser,
+    request,
+  }) => {
+    const a = await person(browser)
+    const b = await person(browser)
+    const link = await startJam(a.page)
+    await openJam(b.page, link)
+    await agentAddsLoop(request, link, 'Kicks')
+    for (const p of [a.page, b.page]) await expect(loopNames(p)).toHaveValue('Kicks')
+    const levelA = a.page.getByRole('slider', { name: 'Level of Kicks' })
+    const levelB = b.page.getByRole('slider', { name: 'Level of Kicks' })
+    const nameA = await ownName(a.page)
+
+    await levelA.scrollIntoViewIfNeeded()
+    const box = (await levelA.boundingBox())!
+    await a.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await a.page.mouse.down()
+    await a.page.mouse.move(box.x + box.width * 0.3, box.y + box.height / 2, { steps: 6 })
+    await expect(levelB).toHaveAttribute('aria-description', `${nameA} is moving it`)
+    const held = await levelA.inputValue()
+    await expect(levelB).toHaveValue(held)
+
+    await levelB.focus()
+    await b.page.keyboard.press('ArrowUp')
+    await b.page.keyboard.press('Home')
+    await expect(levelB).toHaveValue(held)
+    await expect(levelA).toHaveValue(held)
+
+    await a.page.mouse.up()
+    await expect(levelB).not.toHaveAttribute('aria-description', /moving/)
+    await b.page.keyboard.press('Home')
+    await expect(levelA).toHaveValue('0')
+  })
+})

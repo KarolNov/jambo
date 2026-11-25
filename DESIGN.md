@@ -54,10 +54,12 @@ control's own shadow. No outer outlines. Every control must show it on `:focus-v
   `src/board/colors.ts` (or `SWATCHES` in `src/theme/palette.ts`). Never store or hard-code a hex.
 - A control that belongs to something coloured takes the colour as a prop (`color` on `Range` and
   `Knob`), which sets `--ui-c`. Without one it uses `--accent-2`. `Pad` lights in `--glow`.
-- Someone else moving a shared control shows in their colour: pass `heldBy` (a `Holder`: their
-  name and swatch) to `Range` or `Knob`, which lights it in that colour in place of its own (the
-  fader's LEDs and cap line, the knob's arc and index line; no outline) and keeps the bubble up with
-  their name. Report your own drags with `onDragChange` so others see yours.
+- Someone else moving a shared control shows in their colour and locks it: pass `heldBy` (a
+  `Holder`: their name and swatch) to `Range` or `Knob`, which lights it in that colour in place of
+  its own (the fader's LEDs and cap line, the knob's arc and index line; no outline), keeps the
+  bubble up with their name, and ignores your drags and keys until they let go (it keeps focus).
+  If it arrives mid-drag (you lost a simultaneous grab), your drag ends where it is. Report your
+  own drags with `onDragChange` so others see yours; `useHolders` decides who holds what.
 - Red means record or destroy (`--accent`, `tone="danger"`). Don't use it for anything else.
 
 ## Motion and haptics

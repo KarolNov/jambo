@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  DRIVE_HEADROOM,
   TONE_HIGH_HZ,
   TONE_LOW_HZ,
+  driveCurve,
+  driveGlue,
   echoSeconds,
   pitchRate,
   reverbImpulse,
   toneFilter,
+  widthGains,
 } from '../src/audio/knobs'
 
 describe('toneFilter', () => {
@@ -83,5 +87,40 @@ describe('reverbImpulse', () => {
 
   it('is the same on every client', () => {
     expect(reverbImpulse(1000, 1)).toEqual(reverbImpulse(1000, 1))
+  })
+})
+
+describe('driveCurve', () => {
+  const at = (curve: Float32Array, x: number) =>
+    curve[Math.round(((x / DRIVE_HEADROOM + 1) / 2) * (curve.length - 1))]!
+
+  it('is a straight line at 0', () => {
+    const curve = driveCurve(0)
+    for (const x of [-DRIVE_HEADROOM, -1, -0.25, 0, 0.5, 1, DRIVE_HEADROOM])
+      expect(at(curve, x)).toBeCloseTo(x, 5)
+  })
+
+  it('keeps quiet sounds at their level and rounds loud ones off', () => {
+    const curve = driveCurve(1)
+    expect(at(curve, 0)).toBe(0)
+    // One point of the curve above 0.
+    expect(at(curve, 1 / 256)).toBeCloseTo(1 / 256, 5)
+    expect(at(curve, 1)).toBeLessThan(0.3)
+    expect(at(curve, -1)).toBeCloseTo(-at(curve, 1), 6)
+  })
+})
+
+describe('driveGlue', () => {
+  it('leaves the mix alone at 0 and squeezes it harder as drive rises', () => {
+    expect(driveGlue(0)).toEqual({ threshold: -0, ratio: 1, makeup: 1 })
+    expect(driveGlue(1)).toEqual({ threshold: -24, ratio: 6, makeup: 3 })
+  })
+})
+
+describe('widthGains', () => {
+  it('leaves the mix at 0, folds it to mono at -1 and doubles the sides at +1', () => {
+    expect(widthGains(0)).toEqual({ direct: 1, cross: -0 })
+    expect(widthGains(-1)).toEqual({ direct: 0.5, cross: 0.5 })
+    expect(widthGains(1)).toEqual({ direct: 1.5, cross: -0.5 })
   })
 })

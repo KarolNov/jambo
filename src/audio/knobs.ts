@@ -81,3 +81,47 @@ export function reverbImpulse(
   }
   return [channel(1), channel(7)]
 }
+
+/*
+ * The master knobs (see `MASTER_KNOBS`). Master tone uses `toneFilter`, as a track's tone does.
+ */
+
+/** How far above full scale the drive's shaper reads: its curve spans ±this, so a hot mix isn't clipped flat. */
+export const DRIVE_HEADROOM = 4
+/** Points in the drive's shaping curve. Odd, so 0 maps to 0 exactly. */
+const DRIVE_CURVE_POINTS = 2049
+/** How hard drive 1 bends the mix: tanh's slope. */
+const DRIVE_BEND = 4
+
+/**
+ * The drive's shaping curve over input ±`DRIVE_HEADROOM` (the engine scales the mix by its inverse
+ * on the way in): `tanh(k·x)/k`, which keeps quiet sounds at their level and rounds loud ones off
+ * toward `1/k`. At 0 it is a straight line.
+ */
+export function driveCurve(drive: number): Float32Array<ArrayBuffer> {
+  const k = DRIVE_BEND * drive
+  const curve = new Float32Array(DRIVE_CURVE_POINTS)
+  for (let i = 0; i < DRIVE_CURVE_POINTS; i++) {
+    const x = ((i / (DRIVE_CURVE_POINTS - 1)) * 2 - 1) * DRIVE_HEADROOM
+    curve[i] = k > 0 ? Math.tanh(k * x) / k : x
+  }
+  return curve
+}
+
+/**
+ * The glue after the shaper: a compressor that squeezes harder as drive rises (threshold down to
+ * -24 dB, ratio up to 6:1), and the gain that brings the squeezed mix back up, so driving the mix
+ * evens it out without leaving it quieter.
+ */
+export function driveGlue(drive: number): { threshold: number; ratio: number; makeup: number } {
+  return { threshold: -24 * drive, ratio: 1 + 5 * drive, makeup: 1 + 2 * drive }
+}
+
+/**
+ * The stereo width as a mid/side mix, written as two gains per ear: `direct` from the same side and
+ * `cross` from the other. 0 leaves the mix as it is (1, 0); -1 folds it to mono (½, ½); +1 doubles
+ * the side signal (1.5, -½).
+ */
+export function widthGains(width: number): { direct: number; cross: number } {
+  return { direct: (2 + width) / 2, cross: -width / 2 }
+}

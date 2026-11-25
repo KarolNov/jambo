@@ -140,8 +140,10 @@ export type Holder = { name: string; color: string }
 /** What a live control shared with others takes, to show who else is turning it. */
 type SharedProps = {
   /**
-   * Someone else turning it now: it lights in their colour in place of its own, and their name is
-   * in the bubble unless you drag it too.
+   * Someone else holding it now: it lights in their colour in place of its own, their name is in
+   * the bubble, and it doesn't move for you until they let go. Set while you drag it (you lost a
+   * simultaneous grab), your drag ends where it is, without putting anything back, and their value
+   * shows.
    */
   heldBy?: Holder
   /** Called with true when a drag starts, and false when it ends or the control goes mid-drag. */
@@ -212,8 +214,9 @@ const PAGE_STEPS = 5
  * value in `color`, optional tick marks and a detent. The value shows in a bubble while dragged.
  * On Android phones, a drag ticks lightly as it passes each light of the strip (throttled, so a fast drag
  * doesn't buzz) and firmer as it lands on the detent; keys don't tick.
- * While someone else drags it (`heldBy`), its lights and cap line turn their colour and the
- * bubble names them. It stays a native range input, so keys and screen readers work as usual.
+ * While someone else drags it (`heldBy`), its lights and cap line turn their colour, the bubble
+ * names them, and it ignores drags and keys. It stays a native range input (kept enabled, so it
+ * keeps focus while held), so keys and screen readers work as usual.
  */
 export function Range({
   label,
@@ -237,6 +240,9 @@ export function Range({
 }: RangeProps) {
   const [dragging, setDragging] = useState(false)
   useDragReport(dragging, onDragChange)
+  const held = !!heldBy
+  // Set when someone else took it mid-drag: the rest of that press moves nothing.
+  const lost = useRef(false)
   // While dragged, the fader shows `draft` at once and hands it on at most once a frame, so a
   // drag doesn't send a change for every 0.01 it passes.
   const [draft, setDraft] = useState<number>()
@@ -248,6 +254,27 @@ export function Range({
     latest.current = { value, onChange }
   })
 
+  // Taken by someone else mid-drag (a simultaneous grab they won): stop where it is.
+  useEffect(() => {
+    if (!held || !sender.current) return
+    sender.current.drop()
+    sender.current = undefined
+    lost.current = true
+    setDraft(undefined)
+    setDragging(false)
+  }, [held])
+  // A lost press ends with the pointer.
+  useEffect(() => {
+    const free = () => {
+      lost.current = false
+    }
+    window.addEventListener('pointerup', free)
+    window.addEventListener('pointercancel', free)
+    return () => {
+      window.removeEventListener('pointerup', free)
+      window.removeEventListener('pointercancel', free)
+    }
+  }, [])
   useEffect(() => {
     if (!dragging) return
     const end = () => {
@@ -275,6 +302,8 @@ export function Range({
   // keys step on their own grid, so they can always leave the detent, and never tick.
   const notches = notchCount(min, max, step)
   const drag = (raw: number) => {
+    // Held by someone else: the input snaps back to their value on the next render.
+    if (held || lost.current) return
     const v = snap(raw, detent)
     if (v === shown) return
     if (!sender.current) {
@@ -316,6 +345,7 @@ export function Range({
         aria-label={label}
         aria-valuetext={format(shown)}
         aria-description={heldBy && `${heldBy.name} is moving it`}
+        aria-disabled={held || undefined}
         className="ui-range"
         min={min}
         max={max}
@@ -323,6 +353,9 @@ export function Range({
         value={shown}
         onChange={(e) => drag(Number(e.target.value))}
         onPointerDown={(e) => {
+          // Pressed while held: the whole press moves nothing, even if they let go during it.
+          lost.current = held
+          if (held) return
           sender.current = liveDrag(
             value,
             (v) => latest.current.onChange(v),
@@ -338,7 +371,7 @@ export function Range({
           const v = keyValue(e, shown, { min, max, step: keyStep }, PAGE_STEPS)
           if (v === undefined) return
           e.preventDefault()
-          if (v !== shown) onChange(v)
+          if (v !== shown && !held) onChange(v)
         }}
         {...rest}
       />
@@ -514,6 +547,8 @@ export function Knob({
   onDragChange,
   className = '',
 }: KnobProps) {
+  // Held by someone else: it stays focusable, but drags, keys and the reset do nothing.
+  const locked = disabled || !!heldBy
   // The whole sweep takes about 200px of drag, but never less than a pixel a step.
   const pixelsPerStep = Math.max(1, 200 / ((max - min) / step))
   const lights = segments && Math.max(1, Math.round(segments))
@@ -528,7 +563,7 @@ export function Knob({
     pixelsPerStep,
     axis: 'xy',
     live,
-    disabled,
+    disabled: locked,
     ticks: (a, b) =>
       notch(fraction(a, min, max), notches) !== notch(fraction(b, min, max), notches),
   })
@@ -556,16 +591,16 @@ export function Knob({
         aria-valuemax={max}
         aria-valuenow={scrub.shown}
         aria-valuetext={format(scrub.shown)}
-        aria-disabled={disabled || undefined}
+        aria-disabled={locked || undefined}
         aria-description={heldBy && `${heldBy.name} is turning it`}
         aria-orientation="vertical"
         className="ui-knob-dial"
         {...scrub.handlers}
         onDoubleClick={() => {
-          if (!disabled && defaultValue !== value) onChange(defaultValue)
+          if (!locked && defaultValue !== value) onChange(defaultValue)
         }}
         onKeyDown={(e) => {
-          if (disabled || scrub.dragging) return
+          if (locked || scrub.dragging) return
           const v = keyValue(e, value, { min, max, step })
           if (v === undefined) return
           e.preventDefault()

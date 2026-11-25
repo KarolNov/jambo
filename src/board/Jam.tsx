@@ -6,7 +6,7 @@ import { SampleLoader } from '../audio/samples'
 import { Console } from './console/Console'
 import { type ConnectionStatus, onStatus, openJam } from './doc'
 import { identity } from './identity'
-import { bpmAtom, padsAtom, soundsAtom, tracksAtom } from './model'
+import { bpmAtom, masterAtom, padsAtom, soundsAtom, tracksAtom } from './model'
 import { joinPresence } from './presence'
 import { Me, takeSeat } from './seat'
 import { makeBoard, type Session, SessionContext } from './session'
@@ -52,13 +52,15 @@ export function EngineFeed({ engine }: { engine: Engine }) {
   const pads = useAtomValue(padsAtom)
   const tracks = useAtomValue(tracksAtom)
   const sounds = useAtomValue(soundsAtom)
+  const { tone, drive, width } = useAtomValue(masterAtom)
   useEffect(() => {
     engine.update({
       bpm,
       pads: new Map([...pads].map(([id, p]) => [id, p.soundId])),
       tracks,
       uploads: new Set(sounds.keys()),
+      master: { tone, drive, width },
     })
-  }, [engine, bpm, pads, tracks, sounds])
+  }, [engine, bpm, pads, tracks, sounds, tone, drive, width])
   return null
 }

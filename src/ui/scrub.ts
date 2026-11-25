@@ -85,7 +85,8 @@ export function useScrub({
   const pos = (e: { clientX: number; clientY: number }) =>
     axis === 'xy' ? e.clientX - e.clientY : e.clientX
 
-  const end = (commit: boolean) => {
+  /** Ends the drag: committing it, cancelling it, or `drop`ping it (nothing more is applied, nothing put back). */
+  const end = (commit: boolean, drop = false) => {
     const d = drag.current
     if (!d) return
     drag.current = undefined
@@ -96,7 +97,7 @@ export function useScrub({
     setDraft(undefined)
     const s = sender.current
     sender.current = undefined
-    if (s) return s.end(commit)
+    if (s) return drop ? s.drop() : s.end(commit)
     // Against the value now, not at the start: it may have changed under the drag (a peer).
     if (commit && d.moved && v !== undefined && v !== latest.current.value) onCommit(v)
   }
@@ -128,9 +129,10 @@ export function useScrub({
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
   }, [dragging])
-  // Disabled mid-drag (the tempo locks): drop the drag without applying it.
+  // Disabled mid-drag (the tempo locks, or someone else won the control): drop the drag where it
+  // is. A live drag leaves what it applied, so it can't overwrite whoever took over.
   useEffect(() => {
-    if (disabled) latest.current.end(false)
+    if (disabled) latest.current.end(false, true)
   }, [disabled])
 
   const handlers = {

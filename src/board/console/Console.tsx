@@ -5,13 +5,14 @@ import { useSession } from '../session'
 import { Debug } from '../Debug'
 import { Deck } from './Deck'
 import { Header } from './Header'
+import { Master } from './Master'
 import { Mixer } from './Mixer'
 import { Unlock } from './Pads'
 import './console.css'
 
 const DEBUG = new URLSearchParams(window.location.search).has('debug')
 
-/** The jam page as one soft console: header, deck (pads, readout, transport), then the mixer. */
+/** The jam page as one soft console: header, deck (pads, readout, transport), master, then the mixer. */
 export function Console({ slug, status }: { slug: string; status: ConnectionStatus }) {
   useYourColor()
   return (
@@ -21,6 +22,7 @@ export function Console({ slug, status }: { slug: string; status: ConnectionStat
       {/* Under the header below 1000px; wider screens show it in the header. */}
       <Unlock className="console-unlock-page" />
       <Deck slug={slug} />
+      <Master />
       <Mixer />
     </main>
   )

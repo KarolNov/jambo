@@ -90,18 +90,31 @@ export function usePeople(awareness: Awareness, me: Person): Person[] {
 /** A loop's knob or fader as presence names it: `track.<trackId>.<control>`. See `CONTROL_KEYS`. */
 export const controlKey = CONTROL_KEYS.track
 
+/** This browser tab as presence knows it: who you are, and this tab's awareness client id. */
+export type Self = { id: string; clientID: number }
+
 /**
- * Who else is turning each control, by control key: the first person found per control. Never you,
- * even from another tab of yours, since that is still you turning it.
+ * Who else holds each control, by control key. When several hold one at once, the lowest
+ * awareness client id keeps it; if that is this tab, nobody else is listed for it, and if it is
+ * someone else while this tab holds it too, this tab has lost it and should let go. Your other
+ * tabs never count, either way: that is still you turning it.
  */
-export function listHolders(states: Iterable<unknown>, meId: string): Map<string, Person> {
-  const holders = new Map<string, Person>()
-  for (const state of states) {
+export function listHolders(
+  states: Iterable<readonly [clientID: number, state: unknown]>,
+  self: Self,
+): Map<string, Person> {
+  const winners = new Map<string, { clientID: number; person?: Person }>()
+  for (const [clientID, state] of states) {
     const s = state as { person?: unknown; control?: unknown } | null
     if (typeof s?.control !== 'string') continue
-    const person = toPerson(s.person)
-    if (person && person.id !== meId && !holders.has(s.control)) holders.set(s.control, person)
+    const mine = clientID === self.clientID
+    const person = mine ? undefined : toPerson(s.person)
+    if (!mine && (!person || person.id === self.id)) continue
+    const was = winners.get(s.control)
+    if (!was || clientID < was.clientID) winners.set(s.control, { clientID, person })
   }
+  const holders = new Map<string, Person>()
+  for (const [control, { person }] of winners) if (person) holders.set(control, person)
   return holders
 }
 
@@ -119,17 +132,24 @@ export function holdControl(awareness: Awareness, control: string, held: boolean
   }
 }
 
+const readHolders = (awareness: Awareness, meId: string) =>
+  listHolders(awareness.getStates().entries(), { id: meId, clientID: awareness.clientID })
+
 const sameHolders = (a: Map<string, Person>, b: Map<string, Person>) =>
   a.size === b.size && [...a].every(([k, p]) => b.get(k) === p || sameHolder(b.get(k), p))
 const sameHolder = (a: Person | undefined, b: Person) =>
   a?.id === b.id && a.name === b.name && a.color === b.color
 
-/** Who else is turning which control, re-rendering only when that changes. */
+/**
+ * Who else holds which control (see `listHolders`), re-rendering only when that changes. A control
+ * listed here is locked for you; one you hold that shows up here is one you lost to a simultaneous
+ * grab.
+ */
 export function useHolders(awareness: Awareness, meId: string): Map<string, Person> {
-  const [holders, setHolders] = useState(() => listHolders(awareness.getStates().values(), meId))
+  const [holders, setHolders] = useState(() => readHolders(awareness, meId))
   useEffect(() => {
     const onChange = () => {
-      const next = listHolders(awareness.getStates().values(), meId)
+      const next = readHolders(awareness, meId)
       setHolders((was) => (sameHolders(was, next) ? was : next))
     }
     awareness.on('change', onChange)

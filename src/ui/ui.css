@@ -484,6 +484,9 @@
 }
 /* Someone else is moving it: its lights are in their colour (`--ui-c`, set by the component), and
    the bubble shows with their name. */
+:root[data-theme] .ui-fader.is-held .ui-range {
+  cursor: not-allowed;
+}
 :root[data-theme] .ui-fader.is-held .ui-fader-bubble {
   opacity: 1;
   transform: translate(-50%, 0) scale(1);
@@ -796,6 +799,11 @@
 }
 /* Someone else is turning it: its arc is in their colour (`--ui-c`, set by the component), and the
    bubble shows with their name. */
+:root[data-theme] .ui-knob.is-held .ui-knob-dial[aria-disabled='true'] {
+  /* Held, not off: it stays at full strength, showing their value. */
+  opacity: 1;
+  cursor: not-allowed;
+}
 :root[data-theme] .ui-knob.is-held .ui-knob-bubble {
   opacity: 1;
   transform: translate(-50%, 0) scale(1);

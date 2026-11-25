@@ -26,6 +26,7 @@ import {
   reverbImpulse,
   toneFilter,
 } from './knobs'
+import { MasterChain, type MasterSound } from './master'
 import type { SampleLoader } from './samples'
 import { click, renderKit } from './synth'
 import { keepAwake, preferPlayback } from './session'
@@ -56,8 +57,9 @@ export interface PadHit {
 }
 
 /**
- * A loop's chain: hits → filter (tone) → panner (pan) → gain (level, mute) → master, with the
- * gain also feeding the shared reverb and echo through its sends, so a muted loop sends nothing.
+ * A loop's chain: hits → filter (tone) → panner (pan) → gain (level, mute) → the master chain,
+ * with the gain also feeding the shared reverb and echo through its sends, so a muted loop sends
+ * nothing.
  */
 interface Chain {
   filter: BiquadFilterNode
@@ -98,7 +100,12 @@ interface Playing {
  */
 export class Engine {
   private ctx?: AudioContext | OfflineAudioContext
+  /** The master gain: the master chain plays into it, and so do the clicks, which stay dry. */
   private master?: GainNode
+  /** The master stage everything but the clicks plays through. */
+  private chain?: MasterChain
+  /** The board's master knobs, kept for when audio starts. */
+  private masterSound: MasterSound = { tone: 0, drive: 0, width: 0 }
   /** The shared room every loop's reverb send feeds. */
   private reverb?: ConvolverNode
   /** The shared echo every loop's echo send feeds; its time follows the tempo. */
@@ -173,23 +180,26 @@ export class Engine {
     const master = ctx.createGain()
     master.gain.value = 0.8
     master.connect(ctx.destination)
+    const chain = new MasterChain(ctx, master)
+    chain.set(this.masterSound, true)
     const [left, right] = reverbImpulse(ctx.sampleRate)
     const impulse = ctx.createBuffer(2, left.length, ctx.sampleRate)
     impulse.copyToChannel(left, 0)
     impulse.copyToChannel(right, 1)
     const reverb = ctx.createConvolver()
     reverb.buffer = impulse
-    reverb.connect(master)
+    reverb.connect(chain.input)
     const echo = ctx.createDelay(echoSeconds(BPM.min))
     echo.delayTime.value = echoSeconds(this.bpm)
     const feedback = ctx.createGain()
     feedback.gain.value = ECHO_FEEDBACK
     echo.connect(feedback).connect(echo)
-    echo.connect(master)
+    echo.connect(chain.input)
     this.buffers = await renderKit(ctx.sampleRate)
     this.samples.attach(ctx)
     this.ctx = ctx
     this.master = master
+    this.chain = chain
     this.reverb = reverb
     this.echo = echo
     // The tempo may have changed while the kit rendered.
@@ -249,13 +259,22 @@ export class Engine {
     this.hitTimers.add(t)
   }
 
-  /** Feeds the board's current state: tempo, pad sounds, uploads, and every readable track by id. */
+  /**
+   * Feeds the board's current state: tempo, pad sounds, uploads, every readable track by id, and
+   * the master knobs (left as they are when not given).
+   */
   update(state: {
     bpm: number
     pads: Map<string, string>
     tracks: Map<string, Track>
     uploads: ReadonlySet<string>
+    master?: MasterSound
   }) {
+    if (state.master) {
+      const { tone, drive, width } = state.master
+      this.masterSound = { tone, drive, width }
+      this.chain?.set(this.masterSound)
+    }
     this.samples.sync(state.uploads)
     this.boardBpm = state.bpm
     if (this.recorder.phase === 'idle') this.bpm = this.boardBpm
@@ -297,7 +316,7 @@ export class Engine {
       reverb: ctx.createGain(),
       echo: ctx.createGain(),
     }
-    chain.filter.connect(chain.panner).connect(chain.gain).connect(this.master!)
+    chain.filter.connect(chain.panner).connect(chain.gain).connect(this.chain!.input)
     chain.gain.connect(chain.reverb).connect(this.reverb!)
     chain.gain.connect(chain.echo).connect(this.echo!)
     p.chain = chain
@@ -353,7 +372,8 @@ export class Engine {
   hitPad(padId: string) {
     const ctx = this.ctx
     if (!ctx) return
-    this.play(this.pads.get(padId), ctx.currentTime, this.master!)
+    // Live pads are part of the mix, so they go through the master stage too.
+    this.play(this.pads.get(padId), ctx.currentTime, this.chain!.input)
     this.announce({ padId })
     const now = this.heardNow()
     if (this.recorder.phase !== 'idle' && now !== undefined) {

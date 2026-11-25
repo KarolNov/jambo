@@ -72,7 +72,7 @@ describe('knob', () => {
       </Themed>,
     )
     const knob = page.getByRole('slider', { name: 'Reverb' })
-    await userEvent.dblClick(knob)
+    await userEvent.dblClick(knob, { force: true })
     expect(onChange).toHaveBeenCalledWith(0)
     await expect.element(knob).toHaveAttribute('aria-valuenow', '0')
   })
@@ -407,8 +407,10 @@ describe('someone else moving a control', () => {
 
   const misty = { id: 'misty-id', name: 'Misty Yak', color: 'coral' } as const
   /** Misty Yak, in another browser, holding `control` of track `id`: their presence reaches this one. */
-  function mistyHolds(id: string, control: string) {
-    const theirs = new Awareness(new Y.Doc())
+  function mistyHolds(id: string, control: string, clientID?: number) {
+    const doc = new Y.Doc()
+    if (clientID !== undefined) doc.clientID = clientID
+    const theirs = new Awareness(doc)
     theirs.setLocalState({ person: misty, control: controlKey(id, control) })
     applyAwarenessUpdate(
       session.jam.awareness,
@@ -442,51 +444,80 @@ describe('someone else moving a control', () => {
     expect(Number(wrap.style.getPropertyValue('--f'))).toBeCloseTo(0.6)
   })
 
-  // @scenario ui: Drag it too
-  it('shows your own value in the bubble while you drag a slider they hold, still in their colour', async () => {
+  // @scenario ui: Try to drag it
+  // @scenario board/session: Held by someone else
+  it("doesn't move a loop's level Misty Yak is dragging, by pointer or by key", async () => {
     session = makeSession('Groovy Otter')
     const id = addTrack(session, { name: 'Bassline', gain: 0.5 })
     const { screen } = await renderJam(<Mixer />, session)
     mistyHolds(id, 'gain')
     const fader = () => screen.container.querySelector<HTMLElement>('.ui-fader')!
-    const bubble = () => fader().querySelector('.ui-fader-bubble')!.textContent
-    await expect.poll(bubble).toBe('Misty Yak')
+    const slider = page.getByRole('slider', { name: 'Level of Bassline' })
+    await expect.poll(() => fader().classList.contains('is-held')).toBe(true)
+    await expect.element(slider).toHaveAttribute('aria-disabled', 'true')
 
     const at = await commands.mouseDown('input[aria-label="Level of Bassline"]')
     pressed = true
-    await commands.mouseMove(at.x + 20, at.y)
-    await expect.poll(() => fader().classList.contains('is-dragging')).toBe(true)
-    expect(bubble()).not.toBe('Misty Yak')
-    expect(bubble()).toBe(
-      page
-        .getByRole('slider', { name: 'Level of Bassline' })
-        .element()
-        .getAttribute('aria-valuetext'),
-    )
+    await commands.mouseMove(at.x + 40, at.y, 4)
+    await commands.mouseUp()
+    pressed = false
+    expect(fader().classList.contains('is-dragging')).toBe(false)
+    // You never held it, and nothing reached the board.
+    expect(session.jam.awareness.getLocalState()?.control).toBeUndefined()
+    expect(session.jam.store.get(tracksAtom).get(id)?.gain).toBe(0.5)
+    await expect.element(slider).toHaveValue('0.5')
+
+    await userEvent.keyboard('{ArrowUp}')
+    expect(session.jam.store.get(tracksAtom).get(id)?.gain).toBe(0.5)
+    // It stays in Misty's colour.
     expect(fader().classList.contains('is-held')).toBe(true)
-    expect(fader().style.getPropertyValue('--ui-held')).toBe(coral())
+    expect(fader().style.getPropertyValue('--ui-c')).toBe(coral())
   })
 
-  // @scenario board/session: Both at once
-  it("lets you drag a loop's level Misty Yak is dragging, still in their colour while you do", async () => {
+  it("doesn't turn a knob Misty Yak is turning, by key or by double-click", async () => {
+    session = makeSession('Groovy Otter')
+    const id = addTrack(session, { name: 'Bassline', reverb: 0.2 })
+    await renderJam(<Mixer />, session)
+    await userEvent.click(page.getByRole('button', { name: 'Effects' }))
+    const knob = page.getByRole('slider', { name: 'Reverb of Bassline' })
+    mistyHolds(id, 'reverb')
+    await expect.element(knob).toHaveAttribute('aria-disabled', 'true')
+    knob.element().focus()
+    await userEvent.keyboard('{ArrowUp}')
+    await userEvent.dblClick(knob, { force: true })
+    expect(session.jam.store.get(tracksAtom).get(id)?.reverb).toBe(0.2)
+  })
+
+  // @scenario board/session: Grab at once
+  it('ends your drag where it is when someone with a lower client id grabbed it at the same time', async () => {
     session = makeSession('Groovy Otter')
     const id = addTrack(session, { name: 'Bassline', gain: 0.5 })
     const { screen } = await renderJam(<Mixer />, session)
-    mistyHolds(id, 'gain')
     const fader = () => screen.container.querySelector<HTMLElement>('.ui-fader')!
-    await expect.poll(() => fader().classList.contains('is-held')).toBe(true)
 
     const at = await commands.mouseDown('input[aria-label="Level of Bassline"]')
     pressed = true
     await commands.mouseMove(at.x + 30, at.y)
     await expect.poll(() => fader().classList.contains('is-dragging')).toBe(true)
-    // It stays in their colour while you drag.
+    const key = controlKey(id, 'gain')
+    await expect.poll(() => session.jam.awareness.getLocalState()?.control).toBe(key)
+    await expect.poll(() => session.jam.store.get(tracksAtom).get(id)?.gain).not.toBe(0.5)
+
+    // Misty grabbed it in the same moment from a lower client id, and turns it to 1.2.
+    mistyHolds(id, 'gain', 1)
+    expect(
+      board(session.jam.doc, { kind: 'user', id: misty.id }).track(id).set({ gain: 1.2 }).ok,
+    ).toBe(true)
+    await expect.poll(() => fader().classList.contains('is-dragging')).toBe(false)
     expect(fader().classList.contains('is-held')).toBe(true)
-    expect(fader().style.getPropertyValue('--ui-c')).toBe(coral())
+    // You let go of it for everyone...
+    await expect.poll(() => session.jam.awareness.getLocalState()?.control).toBeUndefined()
+    // ...and the rest of your press moves nothing, so their value stays.
+    await commands.mouseMove(at.x - 60, at.y, 4)
     await commands.mouseUp()
     pressed = false
-    // Nothing stopped you: your drag reached the board.
-    await expect.poll(() => session.jam.store.get(tracksAtom).get(id)?.gain).not.toBe(0.5)
+    expect(session.jam.store.get(tracksAtom).get(id)?.gain).toBe(1.2)
+    await expect.element(page.getByRole('slider', { name: 'Level of Bassline' })).toHaveValue('1.2')
   })
 })
 

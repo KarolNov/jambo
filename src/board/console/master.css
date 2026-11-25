@@ -1,0 +1,58 @@
+/* The master stage: an inset tray between the deck and the mixer, its knobs in one row. */
+:root[data-theme] .console-master {
+  display: grid;
+  gap: 10px;
+  margin: 40px 24px 0;
+  padding: 18px 22px 16px;
+  border-radius: 28px;
+  box-shadow: var(--inset);
+}
+:root[data-theme] .console-master-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+:root[data-theme] .console-master-knobs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  /* Room above for a knob's value bubble while it turns. */
+  padding-top: 14px;
+}
+/* Each knob's cell is one fixed column, wide enough for the longest reading ("Narrow 100%"), so
+   no reading moves a knob. */
+:root[data-theme] .console-master-knob {
+  display: grid;
+  grid-template-columns: 100%;
+  justify-items: center;
+  gap: 2px;
+  width: 92px;
+}
+:root[data-theme] .console-master-knob .ui-knob {
+  margin-bottom: 4px;
+}
+:root[data-theme] .console-master-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+:root[data-theme] .console-master-value {
+  font-size: 12px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+@media (max-width: 760px) {
+  :root[data-theme] .console-master {
+    margin: 28px 16px 0;
+    padding: 14px;
+  }
+  :root[data-theme] .console-master-knobs {
+    justify-content: center;
+  }
+}
