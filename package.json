@@ -41,7 +41,6 @@
     "web-haptics": "0.0.6",
     "y-partyserver": "^2.2.0",
     "y-protocols": "^1.0.7",
-    "y-utility": "0.1.4",
     "yjs": "^13.6.33",
     "zod": "^4"
   },

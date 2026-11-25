@@ -1,3 +1,5 @@
+import { readKey } from 'duratom/core'
+import type * as Y from 'yjs'
 import { z } from 'zod'
 import { NAME_MAX } from '../names'
 import { Color } from '../colors'
@@ -176,7 +178,8 @@ const fxAxes = (m: FxMode) =>
   })
 
 /**
- * One stored value per master control, in the root array `master` (a y-utility `YKeyValue`).
+ * One stored value per master control, in the root array `master`, kept in y-utility's
+ * `YKeyValue` layout through duratom's key-value kind (`readKey`, `writeKey`, `keyValueAtom`).
  * Knobs hold a number; filter, throw and lofi hold `{x, y}`; repeat also holds `startBeat`.
  */
 export const MasterValues = {
@@ -207,17 +210,26 @@ export const MASTER_DEFAULTS: Master = {
 }
 
 /**
- * Folds the `master` array's entries to every master setting: for each key the rightmost readable
- * entry wins, as in `YKeyValue`; unknown keys and unreadable values are dropped.
+ * Every master setting stored in the `master` array, with missing or unreadable ones at their
+ * defaults. Each key reads its current entry (the rightmost, as in `YKeyValue`) through its schema.
  */
-export function masterOf(entries: readonly unknown[]): Master {
-  const out: Record<string, unknown> = { ...MASTER_DEFAULTS }
-  for (const e of entries) {
-    if (typeof e !== 'object' || e === null) continue
-    const { key, val } = e as { key?: unknown; val?: unknown }
-    if (typeof key !== 'string' || !Object.hasOwn(MasterValues, key)) continue
-    const parsed = MasterValues[key as MasterKey].safeParse(val)
-    if (parsed.success) out[key] = parsed.data
+export function masterOf(master: Y.Array<unknown> | undefined): Master {
+  const out: Record<string, unknown> = {}
+  for (const key of MASTER_KEYS) {
+    const r = readKey(MasterValues[key], master, key)
+    out[key] = r && !r.issues ? r.value : MASTER_DEFAULTS[key]
+  }
+  return out as Master
+}
+
+/** Master settings from a `keyValueAtom` read: each valid value, or its default. */
+export function masterFromRead(read: {
+  [K in MasterKey]?: { value: Master[K] } | { issues: unknown } | undefined
+}): Master {
+  const out: Record<string, unknown> = {}
+  for (const key of MASTER_KEYS) {
+    const r = read[key]
+    out[key] = r && 'value' in r ? r.value : MASTER_DEFAULTS[key]
   }
   return out as Master
 }
@@ -238,7 +250,7 @@ export const CONTROL_KEYS = {
   fx: (mode: FxMode) => `fx.${mode}`,
 } as const
 
-/** Root types of a board doc: maps, except `master`, an array kept as a `YKeyValue`. */
+/** Root types of a board doc: maps, except `master`, a key-value array (`select.keyValue`). */
 export const ROOTS = {
   meta: 'meta',
   pads: 'pads',

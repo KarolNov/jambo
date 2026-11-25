@@ -1,6 +1,5 @@
 import { isMap } from 'duratom'
-import { create, read, write } from 'duratom/core'
-import { YKeyValue } from 'y-utility/y-keyvalue'
+import { create, read, readKey, write, writeKey } from 'duratom/core'
 import * as Y from 'yjs'
 import { isUploadId, padKeyOrder, SOUND_IDS, UPLOADS } from '../sounds'
 import { type Issue, Op, type OpResult } from './ops'
@@ -8,7 +7,6 @@ import {
   LIMITS,
   type MasterKey,
   MasterValues,
-  masterOf,
   Meta,
   Pad,
   ROOTS,
@@ -65,19 +63,10 @@ export function countUploads(doc: Y.Doc): number {
   return n
 }
 
-const masters = new WeakMap<Y.Doc, YKeyValue<unknown>>()
-
-/**
- * The doc's `master` settings as a `YKeyValue`: one per doc, so its observer, which drops entries
- * a newer one replaced, is added once.
- */
-function masterOfDoc(doc: Y.Doc): YKeyValue<unknown> {
-  let kv = masters.get(doc)
-  if (!kv) {
-    kv = new YKeyValue(doc.getArray<{ key: string; val: unknown }>(ROOTS.master))
-    masters.set(doc, kv)
-  }
-  return kv
+/** The beat repeat's slice starts on, or 0 while repeat is unset or unreadable. */
+const readStartBeat = (master: Y.Array<unknown>) => {
+  const r = readKey(MasterValues.repeat, master, 'repeat')
+  return r && !r.issues ? r.value.startBeat : 0
 }
 
 /** Checks `val` against the schema of master control `key`, keyed under the field name. */
@@ -204,26 +193,25 @@ function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
       const entries = Object.entries(op.set) as [MasterKey, number][]
       const issues = entries.flatMap(([k, val]) => checkMaster(k, val, ['set', k]) ?? [])
       if (issues.length > 0) return { ok: false, issues }
-      const kv = masterOfDoc(doc)
-      for (const [k, val] of entries) kv.set(k, val)
+      const master = doc.getArray(ROOTS.master)
+      for (const [k, val] of entries) writeKey(MasterValues[k], master, k, val)
       return { ok: true }
     }
     case 'setFx': {
       if (op.mode !== 'repeat' && op.startBeat !== undefined)
         return fail(`Only repeat takes a start beat`, ['startBeat'])
-      const kv = masterOfDoc(doc)
+      const master = doc.getArray(ROOTS.master)
       const val =
         op.mode === 'repeat'
           ? {
               x: op.x,
               y: op.y,
-              startBeat: op.startBeat ?? masterOf(kv.yarray.toArray()).repeat.startBeat,
+              startBeat: op.startBeat ?? readStartBeat(master),
             }
           : { x: op.x, y: op.y }
       const issues = checkMaster(op.mode, val, [])
       if (issues) return { ok: false, issues }
-      kv.set(op.mode, val)
-      return { ok: true }
+      return fromResult(writeKey(MasterValues[op.mode], master, op.mode, val as never))
     }
   }
 }

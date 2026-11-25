@@ -1,6 +1,16 @@
-import { collection, liveAtom, select, typedAtom } from 'duratom'
+import { collection, keyValueAtom, select, typedAtom } from 'duratom'
 import { atom } from 'jotai'
-import { BPM, masterOf, Meta, Pad, ROOTS, SHAPES, Sound, Track } from '../../shared/board'
+import {
+  BPM,
+  masterFromRead,
+  MasterValues,
+  Meta,
+  Pad,
+  ROOTS,
+  SHAPES,
+  Sound,
+  Track,
+} from '../../shared/board'
 
 /** Reads of the board doc. Writes never go through these atoms: they go through the board SDK. */
 export const meta = typedAtom(select.map(ROOTS.meta), Meta, SHAPES.meta)
@@ -8,11 +18,11 @@ export const pads = collection(select.map(ROOTS.pads), Pad, SHAPES.pad)
 export const tracks = collection(select.map(ROOTS.tracks), Track, SHAPES.track)
 export const sounds = collection(select.map(ROOTS.sounds), Sound, SHAPES.sound)
 
-/** The `master` array's entries; duratom has no key-value kind, so `masterAtom` folds them. */
-const masterEntries = liveAtom(select.array<unknown>(ROOTS.master).toArray())
+/** The master key-value array, one schema per control. Read-only here: writes go through `apply`. */
+const master = keyValueAtom(select.keyValue(ROOTS.master), MasterValues)
 
-/** Every master setting (knobs and touchpad modes), with missing ones at their defaults. */
-export const masterAtom = atom((get) => masterOf(get(masterEntries)))
+/** Every master setting (knobs and touchpad modes), with missing or unreadable ones at defaults. */
+export const masterAtom = atom((get) => masterFromRead(get(master)))
 
 export const bpmAtom = atom((get) => {
   const m = get(meta)

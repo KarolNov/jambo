@@ -636,7 +636,7 @@ describe('board model', () => {
 })
 
 describe('master settings', () => {
-  const masterOfDoc = (doc: Y.Doc) => masterOf(doc.getArray(ROOTS.master).toArray())
+  const masterOfDoc = (doc: Y.Doc) => masterOf(doc.getArray(ROOTS.master))
   const entries = (doc: Y.Doc) =>
     doc
       .getArray<{ key: string }>(ROOTS.master)
@@ -718,13 +718,15 @@ describe('master settings', () => {
     board(c, me).master({ drive: 0.7 })
     Y.applyUpdate(a, Y.encodeStateAsUpdate(c))
     Y.applyUpdate(c, Y.encodeStateAsUpdate(a))
-    // Cleanups each side made after merging travel too.
-    Y.applyUpdate(a, Y.encodeStateAsUpdate(c))
     const ma = masterOfDoc(a)
     expect(ma).toEqual(masterOfDoc(c))
     expect(ma.filter).toEqual({ x: -0.8, y: 0.2 })
     expect(ma.throw).toEqual({ x: 0.9, y: 0.8 })
     expect([0.2, 0.7]).toContain(ma.drive)
+    // Both drives stay until the next write to drive, which drops the older one.
+    board(a, me).master({ drive: 0.5 })
+    Y.applyUpdate(c, Y.encodeStateAsUpdate(a))
+    expect(masterOfDoc(c).drive).toBe(0.5)
     expect(entries(a).sort()).toEqual(['drive', 'filter', 'throw'])
     expect(entries(c).sort()).toEqual(['drive', 'filter', 'throw'])
   })
@@ -746,17 +748,20 @@ describe('master settings', () => {
     })
   })
 
-  it('reads the rightmost readable entry per key and drops unreadable ones', () => {
-    expect(
-      masterOf([
-        { key: 'tone', val: -0.5 },
-        { key: 'tone', val: 7 },
-        { key: 'filter', val: { x: 'left' } },
-        { key: 'volume', val: 1 },
-        null,
-        'swing',
-      ]),
-    ).toEqual({ ...MASTER_DEFAULTS, tone: -0.5 })
+  it('reads the current entry per key, and an unreadable one as its default', () => {
+    const doc = new Y.Doc()
+    doc.getArray(ROOTS.master).push([
+      { key: 'tone', val: -0.5 },
+      { key: 'swing', val: 0.3 },
+      { key: 'swing', val: 7 },
+      { key: 'filter', val: { x: 'left' } },
+      { key: 'volume', val: 1 },
+    ])
+    expect(masterOfDoc(doc)).toEqual({ ...MASTER_DEFAULTS, tone: -0.5 })
+    // Writing a valid value repairs it.
+    board(doc, me).master({ swing: 0.4 })
+    expect(masterOfDoc(doc).swing).toBe(0.4)
+    expect(masterOf(undefined)).toEqual(MASTER_DEFAULTS)
   })
 
   // @scenario audio/master: Older jam
