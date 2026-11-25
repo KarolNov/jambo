@@ -245,7 +245,7 @@ describe('tabs', () => {
 
 describe('design showcase', () => {
   // @scenario ui: Try another colour
-  it("paints the slider's lights, the knob's arc and the focus rings in the picked colour", async () => {
+  it("paints the slider's lights, the knob's arc, the switches and the focus rings in the picked colour", async () => {
     const { container } = await render(
       <Themed>
         <Showcase />
@@ -262,6 +262,26 @@ describe('design showcase', () => {
     expect(prop(leds, '--led', '::after')).toBe(coral)
     const dial = container.querySelector('.ui-knob .ui-knob-dial')!
     expect(prop(dial, '--ui-c', '::before')).toBe(coral)
+    // The switches, the primary button and the other accent tints, as in a jam.
+    for (const el of [
+      container.querySelector('.ui-switch')!,
+      page.getByRole('button', { name: 'Tap to start audio' }).element(),
+    ])
+      expect(prop(el, '--accent-2')).toBe(coral)
+  })
+
+  it('paints Misty Yak amber when you pick violet, so they never look like you', async () => {
+    const { container } = await render(
+      <Themed>
+        <Showcase />
+      </Themed>,
+    )
+    const held = () => container.querySelector<HTMLElement>('.ui-knob.is-held')!
+    const t = theme() as 'light' | 'dark'
+    expect(held().style.getPropertyValue('--ui-held')).toBe(SWATCHES.violet[t])
+    await userEvent.click(page.getByRole('button', { name: /^Collaborator colour:/ }))
+    await userEvent.click(page.getByRole('option', { name: 'Violet' }))
+    await expect.poll(() => held().style.getPropertyValue('--ui-held')).toBe(SWATCHES.amber[t])
   })
 })
 

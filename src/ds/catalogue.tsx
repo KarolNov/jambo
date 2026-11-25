@@ -2,9 +2,10 @@
  * The /ds catalogue: one entry per component exported from src/ui/index.ts, with demos of its
  * states and the rules for using it. test/ds.test.ts fails when an export has no entry here (it
  * reads each `name: '…'`), so add one with every new export. Demos take the page's collaborator
- * colour from the CSS variables Showcase sets (`--ui-c`, `--glow`, `--focus`).
+ * colour from the CSS variables Showcase sets (`--ui-c`, `--glow`, `--focus`, `--accent-2`).
  */
-import { type ReactNode, useRef, useState } from 'react'
+import { createContext, type ReactNode, useContext, useRef, useState } from 'react'
+import type { ColorName } from '../../shared/colors'
 import {
   Button,
   type Group,
@@ -79,10 +80,17 @@ function SwitchDemo({
   )
 }
 
-/** Someone else turning a demo control, in a collaborator colour for the theme. */
+/** The collaborator colour picked on the page, which the demos are painted in (yours, in a jam). */
+export const PickedColor = createContext<ColorName>('teal')
+
+/**
+ * Someone else turning a demo control, in a collaborator colour for the theme: violet, or amber
+ * when violet is the picked colour, so they never look like you.
+ */
 function usePeer(held?: boolean) {
   const theme = useTheme()
-  return held ? { name: 'Misty Yak', color: SWATCHES.violet[theme] } : undefined
+  const theirs = useContext(PickedColor) === 'violet' ? 'amber' : 'violet'
+  return held ? { name: 'Misty Yak', color: SWATCHES[theirs][theme] } : undefined
 }
 
 function RangeDemo({
