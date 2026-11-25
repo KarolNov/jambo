@@ -6,8 +6,13 @@ import * as Y from 'yjs'
 import {
   AGENT_AUTHOR_PREFIX,
   AGENT_LIMITS,
+  type Change,
+  changesBetween,
   checkSummary,
+  type Holding,
+  holdingOf,
   holdsOf,
+  LISTEN,
   prepare,
   type Snapshot,
   type SnapshotPresence,
@@ -75,6 +80,30 @@ export interface AgentRunResult {
   ops: AgentOpResult[]
 }
 
+/** What a listen came to: what changed since the agent last looked, or the whole board. */
+export interface AgentListenResult {
+  agent: AgentView & { key: string }
+  changes: Change[]
+  /** Who is turning which control right now. */
+  holding: Holding[]
+  /** The whole jam, when the room has no record of what this agent last saw. */
+  board?: Snapshot
+}
+
+/** What one agent last saw, so a listen can answer only what changed since. */
+interface Seen {
+  board: Snapshot
+  /** Others' changes the agent hadn't seen yet when its own run moved `board` on. */
+  carried: Change[]
+  holding: Holding[]
+  answeredAt: number
+}
+
+const sameHolding = (a: Holding[], b: Holding[]) =>
+  a.length === b.length && a.every((h, i) => h.control === b[i]!.control && h.by === b[i]!.by)
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, Math.max(0, ms)))
+
 /** What an upload or removal came to: a result, or an HTTP status and a message for people. */
 export type SoundResult<T extends object = object> =
   | ({ ok: true } & T)
@@ -110,12 +139,21 @@ export class Board extends YServer<Env> {
   /** Agents present in this jam over MCP. */
   private readonly roster = new Roster(this.ctx.storage, () => this.name)
   private agentRefresh: ReturnType<typeof setInterval> | null = null
+  /** What each agent last saw, by agent id. In memory: after an eviction a listen sends the board. */
+  private readonly seen = new Map<string, Seen>()
+  /** Listens waiting for the jam to change. */
+  private readonly wakers = new Set<() => void>()
 
   override async onLoad() {
     const saved = await this.ctx.storage.get<Uint8Array>(SNAPSHOT_KEY)
     if (saved) Y.applyUpdate(this.document, saved)
     seedBoard(this.document)
     this.loaded = true
+    const wake = () => {
+      for (const w of [...this.wakers]) w()
+    }
+    this.document.on('update', wake)
+    this.document.awareness.on('change', wake)
     await this.roster.load()
     this.publishAgents()
     if (await this.ctx.storage.get(EXPIRED_KEY)) {
@@ -202,7 +240,83 @@ export class Board extends YServer<Env> {
   ): Promise<{ agent: AgentView & { key: string }; board: Snapshot } | { error: string }> {
     const agent = await this.agentJoin(hello)
     if ('error' in agent) return agent
-    return { agent, board: snapshotOf(this.document, this.here()) }
+    const board = snapshotOf(this.document, this.here())
+    this.seen.set(agent.id, { board, carried: [], holding: this.holding(), answeredAt: 0 })
+    return { agent, board }
+  }
+
+  /** Who is turning which control right now. */
+  private holding(): Holding[] {
+    return holdingOf(holdsOf(this.document.awareness.getStates().values()))
+  }
+
+  /** Resolves on the next change to the doc or to anyone's presence, or after `ms`. */
+  private nextChange(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      const done = () => {
+        clearTimeout(timer)
+        this.wakers.delete(done)
+        resolve()
+      }
+      const timer = setTimeout(done, ms)
+      this.wakers.add(done)
+    })
+  }
+
+  /**
+   * Waits up to `waitMs` for the jam to change, then answers what changed since this agent last
+   * looked (its own runs left out) and who is turning what. Answers at once when something
+   * already changed, and never sooner than `LISTEN.minGapMs` after the agent's last answer. With
+   * no record of what the agent saw (it never joined, or the room was evicted), answers the board.
+   */
+  async agentListen(
+    hello: AgentHello,
+    waitMs: number,
+  ): Promise<AgentListenResult | { error: string }> {
+    const agent = await this.agentJoin(hello)
+    if ('error' in agent) return agent
+    const present = new Set(this.roster.list().map((a) => a.id))
+    for (const id of this.seen.keys()) if (!present.has(id)) this.seen.delete(id)
+
+    const seen = this.seen.get(agent.id)
+    if (!seen) {
+      const board = snapshotOf(this.document, this.here())
+      const holding = this.holding()
+      this.seen.set(agent.id, { board, carried: [], holding, answeredAt: Date.now() })
+      return { agent, changes: [], holding, board }
+    }
+
+    const deadline = Date.now() + Math.min(Math.max(waitMs, 0), LISTEN.maxWaitMs)
+    const look = () => {
+      const board = snapshotOf(this.document, this.here())
+      const changes = [...seen.carried, ...changesBetween(seen.board, board)]
+      const holding = this.holding()
+      return {
+        board,
+        changes,
+        holding,
+        moved: changes.length > 0 || !sameHolding(holding, seen.holding),
+      }
+    }
+    let now = look()
+    while (!now.moved && Date.now() < deadline) {
+      await this.nextChange(deadline - Date.now())
+      // Let a drag or a burst of edits settle, so it comes as one answer.
+      await sleep(Math.min(LISTEN.settleMs, deadline - Date.now()))
+      now = look()
+    }
+    const gap = seen.answeredAt + LISTEN.minGapMs - Date.now()
+    if (gap > 0) {
+      await sleep(gap)
+      now = look()
+    }
+    Object.assign(seen, {
+      board: now.board,
+      carried: [],
+      holding: now.holding,
+      answeredAt: Date.now(),
+    })
+    return { agent, changes: now.changes, holding: now.holding }
   }
 
   /** After an agent joins or acts: tells everyone, and counts it as a visit for retention. */
@@ -215,6 +329,8 @@ export class Board extends YServer<Env> {
   /** Takes an agent out of the jam at once. */
   async agentLeave(key: string): Promise<boolean> {
     const left = await this.roster.leave(key)
+    const present = new Set(this.roster.list().map((a) => a.id))
+    for (const id of this.seen.keys()) if (!present.has(id)) this.seen.delete(id)
     this.publishAgents()
     await this.schedule()
     return left
@@ -243,6 +359,10 @@ export class Board extends YServer<Env> {
       return { op, id: p.id, issues }
     })
     const ops = prepared.flatMap((p) => (p.op ? [p.op] : []))
+    // What others changed since this agent last looked stays news; its own run doesn't.
+    const seen = this.seen.get(agent.id)
+    if (seen)
+      seen.carried.push(...changesBetween(seen.board, snapshotOf(this.document, this.here())))
     const applied = apply(this.document, ops, { kind: 'ai', id: AGENT_AUTHOR_PREFIX + agent.id })
     let next = 0
     const results = prepared.map((p, i): AgentOpResult => {
@@ -260,6 +380,7 @@ export class Board extends YServer<Env> {
         ...('id' in p && p.id ? { id: p.id } : {}),
       }
     })
+    if (seen) seen.board = snapshotOf(this.document, this.here())
     await this.agentActed()
     return { agent: { key: agent.key, ...toView(agent) }, summary: checked.summary, ops: results }
   }

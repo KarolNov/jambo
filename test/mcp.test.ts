@@ -117,7 +117,7 @@ describe('the MCP server', () => {
     const slug = 'funky-otter-mc02'
     const person = await connectBoard(slug)
     const out = await call('run', {
-      jam: `https://jambo.example/jam/${slug}`,
+      jam: `http://jambo.test/jam/${slug}`,
       kind: 'claude',
       summary: 'A kick on every beat',
       ops: [

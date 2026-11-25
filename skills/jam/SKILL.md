@@ -1,6 +1,6 @@
 ---
 name: jam
-description: Join a jambo jam and play in it as an AI agent over MCP. Use when the user gives a jambo jam link (like https://jambo.example/jam/funky-otter-k7q2) or runs /jam with one, or asks you to add a beat, change sounds or tidy loops in a jam.
+description: Join a jambo jam and play in it as an AI agent over MCP, listening to what people change and answering it. Use when the user gives a jambo jam link (like https://jambo.example/jam/funky-otter-k7q2) or runs /jam with one, or asks you to add a beat, change sounds, tidy loops or jam along in a jam.
 ---
 
 # /jam <url>
@@ -9,13 +9,15 @@ jambo is a collaborative looper: a 4×4 pad board and a mixer of loops that ever
 
 ## Connect
 
-The server is `/mcp` on the jam link's host, for example `https://jambo.karolnov.dev/mcp` for `https://jambo.karolnov.dev/jam/funky-otter-k7q2`. If the `jambo` tools (`join`, `run`, `upload_sound`, `leave`) aren't available, ask the user to add the server and start a new session:
+The server is `/mcp` on the jam link's host, for example `https://jambo.karolnov.dev/mcp` for `https://jambo.karolnov.dev/jam/funky-otter-k7q2`. The `jambo` plugin adds that one. If the `jambo` tools (`join`, `listen`, `run`, `upload_sound`, `leave`) aren't available, ask the user to add the server and start a new session:
 
 ```bash
 claude mcp add --transport http jambo https://jambo.karolnov.dev/mcp
 ```
 
-No sign-in: the jam link is the only key, as it is for people.
+Each server plays only its own jams: pass the whole link, not just the slug, and a server refuses a link on another host, naming the `/mcp` to add for it. For a preview or dev deploy, add its `/mcp` under another name (`claude mcp add --transport http jambo-dev https://<host>/mcp`) and use that server's tools for its jams.
+
+No sign-in: the jam link is the only key, as it is for people. A deploy behind Cloudflare Access refuses agents; ask the user for a public one.
 
 ## Who you are
 
@@ -27,7 +29,7 @@ Every tool takes `jam` (the link or its slug) and optional `agentKey`, `kind`, `
 
 ## Play
 
-1. `join` to appear and read the jam: its answer's `board` holds `bpm`, `pads` (`id`, `key`, `soundId`), `sounds`, `tracks`, `master` (the master knobs and touchpad modes) and `here`. Others change the jam too, so `join` again before acting on what you read a while ago.
+1. `join` to appear and read the jam: its answer's `board` holds `bpm`, `pads` (`id`, `key`, `soundId`), `sounds`, `tracks`, `master` (the master knobs and touchpad modes) and `here`. Others change the jam too: `listen` (under **Jam live**) tells you what they changed since you last looked, without reading the whole board again.
 2. `run` with `ops`, a list of operations, and a `summary` of 1 to 140 characters saying what it does ("Four-on-the-floor kick under the bass"). The server's instructions and the tool's schema list every operation; the essentials:
 
 ```json
@@ -64,6 +66,33 @@ Every tool takes `jam` (the link or its slug) and optional `agentKey`, `kind`, `
 
 3. `upload_sound` with `soundName` and `wav` (base64 of a mono 16-bit 44.1 kHz WAV, up to 10 seconds) to bring your own sound; then `assignPad` its id in a run. Where to get one is under **Bring a sound**.
 4. `leave` when you are done. Otherwise you leave by yourself 5 minutes after your last call. Come back with the same `agentKey` and you are the same agent, with your tracks and your name.
+
+## Jam live
+
+`listen` is how you hear the others. Pass your `agentKey` and `wait` (seconds, up to 25; default 20): it waits until someone changes the jam, then answers only what changed since you last looked, your own runs left out:
+
+```json
+{
+  "changes": [
+    { "what": "master", "set": { "drive": 0.7 } },
+    { "what": "trackChanged", "id": "0mw…", "name": "Hats", "set": { "gain": 0.4 } }
+  ],
+  "holding": [{ "control": "fx.filter", "by": "Misty Yak" }]
+}
+```
+
+- `changes` come as `tempo`, `pad`, `soundAdded`, `soundRemoved`, `trackAdded`, `trackRemoved`, `trackChanged` (only the changed fields, new values), `master` (only the changed knobs and modes), `joined` and `left`. A knob drag comes as one change with where it ended.
+- `holding` is who is turning which control right now: `master.<knob>`, `fx.<mode>` or `track.<trackId>.<field>`. Leave those alone until they let go; it is also a cue to what they're doing.
+- `changes: []` with the same `holding` means the wait ran out with nothing new. When the jam doesn't remember what you last saw (your first `listen`, or after a while), it answers `board` too, as `join` does.
+- `listen` doesn't count toward the 20 calls a minute, and answers at most every 3 seconds.
+
+To jam along, loop until the user stops you or the jam goes quiet for a few minutes:
+
+1. `listen`.
+2. If someone changed something, answer it musically, in one small `run`: they filtered down, so thin your part; they added a bass, so leave room for it; they turned drive up, so keep your parts sparse. Not every change needs an answer: often the best move is none.
+3. Say in a line what you heard and what you did, then `listen` again.
+
+Keep runs small and few while you listen, so people stay in charge: you are a bandmate, not the producer.
 
 ## Bring a sound
 
@@ -115,8 +144,8 @@ Keep one-shots short (under 2 s): a pad hit plays the whole sound, so long tails
 
 **The master stage is everyone's.** It changes how the whole jam sounds for everyone in it, so touch it only when the user asks, or for a moment that needs it: a filter sweep down into a drop and back to 0/0, a short throw on the last bar of a phrase, a bar of repeat as a fill. Reset what you turned on when the moment passes, unless the user wants it to stay. A little goes a long way: swing 0.2 to 0.4 loosens straight 16ths, and `drive` above 0.5 turns gritty.
 
-**Build in steps.** One idea per run, with a summary that says what it adds and why ("Offbeat hats to lift the groove"). Then `join` again, look at what changed, and offer the next step, so the user and others in the jam can steer.
+**Build in steps.** One idea per run, with a summary that says what it adds and why ("Offbeat hats to lift the groove"). Then `listen`, hear what others did, and offer the next step, so the user and others in the jam can steer.
 
 ## Manners
 
-You have the same powers as anyone with the link: you can change and remove other people's loops. Change what the user asked for and leave the rest alone. Calls are limited to 20 a minute.
+You have the same powers as anyone with the link: you can change and remove other people's loops. Change what the user asked for and leave the rest alone. Calls other than `listen` are limited to 20 a minute.
