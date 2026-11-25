@@ -133,5 +133,116 @@ export const SHAPES = {
   sound: {},
 } as const
 
-/** Root maps of a board doc. */
-export const ROOTS = { meta: 'meta', pads: 'pads', tracks: 'tracks', sounds: 'sounds' } as const
+/**
+ * The jam's master knobs: each one's range, step and default. Every default leaves the mix
+ * unchanged. Shared by the schema, the engine, the console and the agent docs.
+ */
+export const MASTER_KNOBS = {
+  /** Below 0 darkens (low-pass), above 0 thins (high-pass), as a track's tone does. */
+  tone: { min: -1, max: 1, step: 0.01, default: 0 },
+  /** Saturates the mix and evens its loudness. */
+  drive: { min: 0, max: 1, step: 0.01, default: 0 },
+  /** -1 is mono, 0 as recorded, +1 extra wide. */
+  width: { min: -1, max: 1, step: 0.01, default: 0 },
+  /** Delays every off-beat 16th, by up to half a 16th at 1. Applied at playback only. */
+  swing: { min: 0, max: 1, step: 0.01, default: 0 },
+} as const
+export type MasterKnob = keyof typeof MASTER_KNOBS
+export const MASTER_KNOB_NAMES = Object.keys(MASTER_KNOBS) as MasterKnob[]
+
+/**
+ * The touchpad's modes: each one's X and Y range. Every mode is off at 0/0, its default.
+ * Repeat also stores the jam beat its slice starts on.
+ */
+export const FX_MODES = {
+  /** X below 0 low-pass, above 0 high-pass; Y is resonance. */
+  filter: { x: { min: -1, max: 1 }, y: { min: 0, max: 1 } },
+  /** X picks the echo time, Y the send and feedback. */
+  throw: { x: { min: 0, max: 1 }, y: { min: 0, max: 1 } },
+  /** X lowers the sample rate, Y the bit depth. */
+  lofi: { x: { min: 0, max: 1 }, y: { min: 0, max: 1 } },
+  /** X picks the slice, Y the repeats' level; Y 0 is off. */
+  repeat: { x: { min: 0, max: 1 }, y: { min: 0, max: 1 } },
+} as const
+export type FxMode = keyof typeof FX_MODES
+export const FX_MODE_NAMES = Object.keys(FX_MODES) as FxMode[]
+
+const masterKnob = (k: MasterKnob) => z.number().min(MASTER_KNOBS[k].min).max(MASTER_KNOBS[k].max)
+
+const fxAxes = (m: FxMode) =>
+  z.object({
+    x: z.number().min(FX_MODES[m].x.min).max(FX_MODES[m].x.max),
+    y: z.number().min(FX_MODES[m].y.min).max(FX_MODES[m].y.max),
+  })
+
+/**
+ * One stored value per master control, in the root array `master` (a y-utility `YKeyValue`).
+ * Knobs hold a number; filter, throw and lofi hold `{x, y}`; repeat also holds `startBeat`.
+ */
+export const MasterValues = {
+  tone: masterKnob('tone'),
+  drive: masterKnob('drive'),
+  width: masterKnob('width'),
+  swing: masterKnob('swing'),
+  filter: fxAxes('filter'),
+  throw: fxAxes('throw'),
+  lofi: fxAxes('lofi'),
+  repeat: fxAxes('repeat').extend({ startBeat: z.number().min(0) }),
+} as const
+export type MasterKey = keyof typeof MasterValues
+export const MASTER_KEYS = Object.keys(MasterValues) as MasterKey[]
+
+/** Every master setting, with missing or unreadable ones at their defaults. */
+export type Master = { [K in MasterKey]: z.infer<(typeof MasterValues)[K]> }
+
+export const MASTER_DEFAULTS: Master = {
+  tone: MASTER_KNOBS.tone.default,
+  drive: MASTER_KNOBS.drive.default,
+  width: MASTER_KNOBS.width.default,
+  swing: MASTER_KNOBS.swing.default,
+  filter: { x: 0, y: 0 },
+  throw: { x: 0, y: 0 },
+  lofi: { x: 0, y: 0 },
+  repeat: { x: 0, y: 0, startBeat: 0 },
+}
+
+/**
+ * Folds the `master` array's entries to every master setting: for each key the rightmost readable
+ * entry wins, as in `YKeyValue`; unknown keys and unreadable values are dropped.
+ */
+export function masterOf(entries: readonly unknown[]): Master {
+  const out: Record<string, unknown> = { ...MASTER_DEFAULTS }
+  for (const e of entries) {
+    if (typeof e !== 'object' || e === null) continue
+    const { key, val } = e as { key?: unknown; val?: unknown }
+    if (typeof key !== 'string' || !Object.hasOwn(MasterValues, key)) continue
+    const parsed = MasterValues[key as MasterKey].safeParse(val)
+    if (parsed.success) out[key] = parsed.data
+  }
+  return out as Master
+}
+
+/** Whether a touchpad mode is away from 0/0, so it sounds and its tab shows a dot. */
+export const fxOn = (p: { x: number; y: number }) => p.x !== 0 || p.y !== 0
+
+/**
+ * Live controls as presence names them while someone holds one (the `control` awareness key).
+ * Shared by the client, which holds them, and the room, which refuses agents' ops on them.
+ */
+export const CONTROL_KEYS = {
+  /** A loop's level or sound knob: `<trackId>.<field>`, the field as `setTrack` names it. */
+  track: (trackId: string, field: string) => `${trackId}.${field}`,
+  /** A master knob: `master.<knob>`. */
+  master: (knob: MasterKnob) => `master.${knob}`,
+  /** A touchpad mode: `fx.<mode>`. */
+  fx: (mode: FxMode) => `fx.${mode}`,
+} as const
+
+/** Root types of a board doc: maps, except `master`, an array kept as a `YKeyValue`. */
+export const ROOTS = {
+  meta: 'meta',
+  pads: 'pads',
+  tracks: 'tracks',
+  sounds: 'sounds',
+  master: 'master',
+} as const

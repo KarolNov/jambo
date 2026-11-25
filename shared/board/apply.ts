@@ -1,9 +1,21 @@
 import { isMap } from 'duratom'
 import { create, read, write } from 'duratom/core'
+import { YKeyValue } from 'y-utility/y-keyvalue'
 import * as Y from 'yjs'
 import { isUploadId, padKeyOrder, SOUND_IDS, UPLOADS } from '../sounds'
 import { type Issue, Op, type OpResult } from './ops'
-import { LIMITS, Meta, Pad, ROOTS, SHAPES, Sound, Track } from './schema'
+import {
+  LIMITS,
+  type MasterKey,
+  MasterValues,
+  masterOf,
+  Meta,
+  Pad,
+  ROOTS,
+  SHAPES,
+  Sound,
+  Track,
+} from './schema'
 
 /** Who made a change: tagged on the transaction, so undo and presence can tell people apart. */
 export type Origin = { kind: 'user' | 'ai' | 'system'; id: string }
@@ -51,6 +63,29 @@ export function countUploads(doc: Y.Doc): number {
   let n = 0
   sounds.forEach((_, id) => isListedSound(sounds, id) && n++)
   return n
+}
+
+const masters = new WeakMap<Y.Doc, YKeyValue<unknown>>()
+
+/**
+ * The doc's `master` settings as a `YKeyValue`: one per doc, so its observer, which drops entries
+ * a newer one replaced, is added once.
+ */
+function masterOfDoc(doc: Y.Doc): YKeyValue<unknown> {
+  let kv = masters.get(doc)
+  if (!kv) {
+    kv = new YKeyValue(doc.getArray<{ key: string; val: unknown }>(ROOTS.master))
+    masters.set(doc, kv)
+  }
+  return kv
+}
+
+/** Checks `val` against the schema of master control `key`, keyed under the field name. */
+const checkMaster = (key: MasterKey, val: unknown, path: PropertyKey[] = [key]) => {
+  const r = MasterValues[key].safeParse(val)
+  return r.success
+    ? undefined
+    : r.error.issues.map((i): Issue => ({ message: i.message, path: [...path, ...i.path] }))
 }
 
 /** Operations only the room may apply: it stores and deletes the audio they list. */
@@ -163,6 +198,31 @@ function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
         const written = write(Pad, SHAPES.pad, node, { ...current.value, soundId: op.to })
         if (written.issues) return fromResult(written)
       }
+      return { ok: true }
+    }
+    case 'setMaster': {
+      const entries = Object.entries(op.set) as [MasterKey, number][]
+      const issues = entries.flatMap(([k, val]) => checkMaster(k, val, ['set', k]) ?? [])
+      if (issues.length > 0) return { ok: false, issues }
+      const kv = masterOfDoc(doc)
+      for (const [k, val] of entries) kv.set(k, val)
+      return { ok: true }
+    }
+    case 'setFx': {
+      if (op.mode !== 'repeat' && op.startBeat !== undefined)
+        return fail(`Only repeat takes a start beat`, ['startBeat'])
+      const kv = masterOfDoc(doc)
+      const val =
+        op.mode === 'repeat'
+          ? {
+              x: op.x,
+              y: op.y,
+              startBeat: op.startBeat ?? masterOf(kv.yarray.toArray()).repeat.startBeat,
+            }
+          : { x: op.x, y: op.y }
+      const issues = checkMaster(op.mode, val, [])
+      if (issues) return { ok: false, issues }
+      kv.set(op.mode, val)
       return { ok: true }
     }
   }

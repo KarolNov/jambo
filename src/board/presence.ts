@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Awareness } from 'y-protocols/awareness'
 import { AGENT_AUTHOR_PREFIX, isAgentAuthor } from '../../shared/agent'
+import { CONTROL_KEYS } from '../../shared/board'
 import { type ColorName, toColorName } from '../../shared/colors'
 import { toName } from '../../shared/names'
 import type { Me } from './seat'
@@ -86,8 +87,8 @@ export function usePeople(awareness: Awareness, me: Person): Person[] {
   return people
 }
 
-/** A live control as presence names it: a loop's knob or fader, `<trackId>.<control>`. */
-export const controlKey = (trackId: string, control: string) => `${trackId}.${control}`
+/** A loop's knob or fader as presence names it: `<trackId>.<control>`. See `CONTROL_KEYS`. */
+export const controlKey = CONTROL_KEYS.track
 
 /**
  * Who else is turning each control, by control key: the first person found per control. Never you,

@@ -1,12 +1,18 @@
-import { collection, select, typedAtom } from 'duratom'
+import { collection, liveAtom, select, typedAtom } from 'duratom'
 import { atom } from 'jotai'
-import { BPM, Meta, Pad, ROOTS, SHAPES, Sound, Track } from '../../shared/board'
+import { BPM, masterOf, Meta, Pad, ROOTS, SHAPES, Sound, Track } from '../../shared/board'
 
 /** Reads of the board doc. Writes never go through these atoms: they go through the board SDK. */
 export const meta = typedAtom(select.map(ROOTS.meta), Meta, SHAPES.meta)
 export const pads = collection(select.map(ROOTS.pads), Pad, SHAPES.pad)
 export const tracks = collection(select.map(ROOTS.tracks), Track, SHAPES.track)
 export const sounds = collection(select.map(ROOTS.sounds), Sound, SHAPES.sound)
+
+/** The `master` array's entries; duratom has no key-value kind, so `masterAtom` folds them. */
+const masterEntries = liveAtom(select.array<unknown>(ROOTS.master).toArray())
+
+/** Every master setting (knobs and touchpad modes), with missing ones at their defaults. */
+export const masterAtom = atom((get) => masterOf(get(masterEntries)))
 
 export const bpmAtom = atom((get) => {
   const m = get(meta)
