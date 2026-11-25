@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { commands, page, userEvent } from 'vitest/browser'
 import { Deck } from '../../src/board/console/Deck'
 import { Mixer } from '../../src/board/console/Mixer'
+import { finishTake } from '../../shared/looper'
 import { bpmAtom, tracksAtom } from '../../src/board/model'
 import type { Session } from '../../src/board/session'
 import { addTrack, agreeClock, endSession, makeSession, mockServer, renderJam, SLUG } from './jam'
@@ -187,34 +188,51 @@ describe('a take, in real time', () => {
     if (rec.phase === 'idle') throw new Error('not recording')
 
     // A beat apart from the first press, not from the end of the last one, so the driver's
-    // latency on each press doesn't add up across the take.
+    // latency on each press doesn't add up across the take. The driver doesn't promise when a
+    // press lands (under a full suite one can be half a beat late), so note the take's beat
+    // either side of each press: the hit must be recorded inside that window.
     const first = performance.now()
+    const pressed: { from: number; to: number }[] = []
     for (let n = 0; n < 4; n++) {
       await wait(first + n * beatMs - performance.now())
+      const from = engine.take()!.beat
       await userEvent.keyboard('1')
+      pressed.push({ from, to: engine.take()!.beat })
     }
     const played = engine.take()!.hits
     expect(played).toHaveLength(4)
+    // Note where the take is when Stop reaches the engine: on time it is within the first bar's
+    // grace, but under a full suite the click can land past it and the take rightly rounds up.
+    let stoppedAt: number | undefined
+    const stop = engine.stop.bind(engine)
+    vi.spyOn(engine, 'stop').mockImplementation(() => {
+      stoppedAt = engine.take()?.beat
+      return stop()
+    })
     await userEvent.click(page.getByRole('button', { name: 'Stop' }))
+    expect(stoppedAt).toBeDefined()
 
-    // Record: one new track holding the four hits, on the kick's pad, a beat apart as played.
+    // Record: one new track holding the four hits, on the kick's pad, at the beats they were
+    // played, as long as the take ran (one bar when Stop came in time).
     const tracks = [...session.jam.store.get(tracksAtom)]
     expect(tracks).toHaveLength(1)
     const [id, track] = tracks[0]!
     expect(track.author).toBe(session.me.id)
-    expect(track.bars).toBe(1)
+    expect(track.bars).toBe(finishTake(played, stoppedAt!)!.bars)
     expect(track.hits).toEqual(played.map((h) => ({ padId: 'r0c0', beat: Math.max(0, h.beat) })))
-    for (let n = 1; n < 4; n++)
-      expect(Math.abs(track.hits[n]!.beat - track.hits[n - 1]!.beat - 1)).toBeLessThan(0.2)
+    played.forEach((hit, n) => {
+      expect(hit.beat).toBeGreaterThanOrEqual(pressed[n]!.from)
+      expect(hit.beat).toBeLessThanOrEqual(pressed[n]!.to)
+    })
 
     // Your own take: the loop goes on from where the take is, on the take's own bar grid.
     await wait(300)
     const position = engine.position(id)
     expect(position).toBeDefined()
-    const bar = 4 * beatMs
-    const expected = ((engine.clock.now()! - rec.recordStart) % bar) / bar
+    const loop = track.bars * 4 * beatMs
+    const expected = ((engine.clock.now()! - rec.recordStart) % loop) / loop
     // As heard, so allow for the output's latency: within a tenth of a bar, either side of the wrap.
     const off = Math.abs(position! - expected)
-    expect(Math.min(off, 1 - off)).toBeLessThan(0.1)
+    expect(Math.min(off, 1 - off)).toBeLessThan(0.1 / track.bars)
   })
 })
