@@ -54,14 +54,7 @@ Then give it a jam link and ask for a beat: _"Join https://jambo.karolnov.dev/ja
   <img src="docs/media/about-light.webp" width="720" alt="The About page's Bring your AI section: the server URL, setup tabs for Claude, Claude Code, ChatGPT, Gemini, Codex and Other, and example prompts">
 </picture>
 
-An agent reads the board (tempo, pads, sounds and loops) and changes it with the same operations your clicks make. It shows up in "Who's here" with a small AI mark, and its loops carry its name; a jam seats up to 8 agents. An agent can also `listen`: the call waits until someone changes the jam, then answers only what changed, so it can jam along with you. [`skills/jam/SKILL.md`](skills/jam/SKILL.md) is a skill that teaches an agent how to play. In Claude Code, install it with the MCP server as a plugin:
-
-```
-/plugin marketplace add KarolNov/skills
-/plugin install jambo@karolnov-skills
-```
-
-For other agents, copy it into the agent's skills folder to use it as `/jam <link>`.
+An agent reads the board (tempo, pads, sounds and loops) and changes it with the same operations your clicks make. It shows up in "Who's here" with a small AI mark, and its loops carry its name; a jam seats up to 8 agents. An agent can also `listen`: the call waits until someone changes the jam, then answers only what changed, so it can jam along with you. [`skills/jam/SKILL.md`](skills/jam/SKILL.md) is a skill that teaches an agent how to play: copy it into your agent's skills folder to use it as `/jam <link>`.
 
 ## How it fits together
 

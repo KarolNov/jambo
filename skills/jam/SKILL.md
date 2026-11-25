@@ -9,7 +9,7 @@ jambo is a collaborative looper: a 4×4 pad board and a mixer of loops that ever
 
 ## Connect
 
-The server is `/mcp` on the jam link's host, for example `https://jambo.karolnov.dev/mcp` for `https://jambo.karolnov.dev/jam/funky-otter-k7q2`. The `jambo` plugin adds that one. If the `jambo` tools (`join`, `listen`, `run`, `upload_sound`, `leave`) aren't available, ask the user to add the server and start a new session:
+The server is `/mcp` on the jam link's host, for example `https://jambo.karolnov.dev/mcp` for `https://jambo.karolnov.dev/jam/funky-otter-k7q2`. If the `jambo` tools (`join`, `listen`, `run`, `upload_sound`, `leave`) aren't available, ask the user to add the server and start a new session:
 
 ```bash
 claude mcp add --transport http jambo https://jambo.karolnov.dev/mcp
