@@ -193,6 +193,16 @@
   --xy: 160px;
   margin-top: 28px;
 }
-:root[data-theme] .ds-knob-live:has(.ds-xy) {
-  flex-wrap: wrap;
+/* A live pad with its readout under it. The readout is as wide as the pad and doesn't wrap, so
+   neither changes size as the numbers do. */
+:root[data-theme] .ds-xy-live {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: 160px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--muted);
 }

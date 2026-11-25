@@ -101,11 +101,14 @@ function XYPadDemo({
   disabled,
   live,
   held,
+  centred,
 }: {
   start: [number, number]
   disabled?: boolean
   live?: boolean
   held?: boolean
+  /** Both axes -1 to 1, so 0/0 (home) is the middle of the square. */
+  centred?: boolean
 }) {
   const [[x, y], setXY] = useState(start)
   const peer = usePeer(held)
@@ -113,15 +116,19 @@ function XYPadDemo({
   const [changes, setChanges] = useState(0)
   const pad = (
     <XYPad
-      label="Filter"
+      label={centred ? 'Position' : 'Filter'}
       x={x}
       y={y}
       onChange={(nx, ny) => {
         setXY([nx, ny])
         setChanges((n) => n + 1)
       }}
-      xAxis={{ label: 'Cutoff', min: -1, max: 1, format: signed }}
-      yAxis={{ label: 'Resonance', format: percent }}
+      xAxis={{ label: centred ? 'Across' : 'Cutoff', min: -1, max: 1, format: signed }}
+      yAxis={
+        centred
+          ? { label: 'Up', min: -1, max: 1, format: signed }
+          : { label: 'Resonance', format: percent }
+      }
       home={{ x: 0, y: 0 }}
       live={live}
       disabled={disabled}
@@ -131,10 +138,10 @@ function XYPadDemo({
   )
   if (!live) return pad
   return (
-    <span className="ds-knob-live">
+    <span className="ds-xy-live">
       {pad}
       <span>
-        {signed(x)} · {percent(y)} · {changes} applied
+        {signed(x)} · {(centred ? signed : percent)(y)} · {changes} applied
       </span>
     </span>
   )
@@ -437,6 +444,10 @@ export const CATALOGUE: Entry[] = [
       'A square that sets two values at once: press anywhere and drag, and the puck follows with a line through it on each axis. Applies on release, or once a frame as it moves when live, and stays where it is let go; Escape puts it back. Arrows move it a step (Shift for ten). Screen readers hear two sliders.',
     states: [
       { label: 'At home', demo: <XYPadDemo start={[0, 0]} /> },
+      {
+        label: 'Centred: 0/0 in the middle, live',
+        demo: <XYPadDemo start={[0, 0]} centred live />,
+      },
       { label: 'Live: applies as it moves', demo: <XYPadDemo start={[-0.5, 0.4]} live /> },
       { label: 'Disabled', demo: <XYPadDemo start={[0.3, 0.6]} disabled /> },
       { label: 'Moved by someone else', demo: <XYPadDemo start={[-0.4, 0.7]} live held /> },
@@ -444,6 +455,7 @@ export const CATALOGUE: Entry[] = [
     use: [
       'Two parameters played together by feel, such as a touchpad effect’s cutoff and resonance.',
       'Make it live when everyone hears it as it moves, and mark home where it is off.',
+      'Centre home by giving both axes a range around 0 (-1 to 1): the puck rests in the middle.',
       'Name each axis for screen readers (xAxis.label, yAxis.label), and give each a format.',
     ],
     avoid: ['One value: use Knob or Range.', 'Values people need exactly: use ScrubField.'],
