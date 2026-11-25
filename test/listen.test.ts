@@ -162,13 +162,21 @@ describe('listen over MCP', () => {
 
   it('needs an agentKey, and is not counted toward the call limit', async () => {
     const slug = 'funky-otter-mw04'
-    const ip = newAddress()
-    expect((await call('listen', { jam: slug }, ip)).body.error).toMatch(/agentKey/)
-    const agentKey = (await call('join', { jam: slug }, ip)).body.agent.agentKey
-    for (let i = 0; i < 20; i++) await call('join', { jam: slug, agentKey }, ip)
-    expect((await call('join', { jam: slug, agentKey }, ip)).body.error).toMatch(/too many/)
-    const out = await call('listen', { jam: slug, agentKey, wait: 0 }, ip)
-    expect(out.isError).toBe(false)
+    expect((await call('listen', { jam: slug })).body.error).toMatch(/agentKey/)
+    // The limiter counts per clock minute, so a burst that crosses one is retried from a new address.
+    const minute = () => Math.floor(Date.now() / 60_000)
+    for (let attempt = 0; ; attempt++) {
+      const ip = newAddress()
+      const start = minute()
+      const agentKey = (await call('join', { jam: slug }, ip)).body.agent.agentKey
+      for (let i = 0; i < 20; i++) await call('join', { jam: slug, agentKey }, ip)
+      const limited = await call('join', { jam: slug, agentKey }, ip)
+      const out = await call('listen', { jam: slug, agentKey, wait: 0 }, ip)
+      if (minute() !== start && attempt === 0) continue
+      expect(limited.body.error).toMatch(/too many/)
+      expect(out.isError).toBe(false)
+      return
+    }
   })
 })
 

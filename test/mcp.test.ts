@@ -7,6 +7,9 @@ import { encodeWav } from '../shared/wav'
 import type { AgentView } from '../worker/agent/roster'
 import { connectBoard, until } from './client'
 
+/** The rate limiter's window: a clock minute. */
+const minute = () => Math.floor(Date.now() / 60_000)
+
 let address = 0
 /** A fresh client address per test, so one test's rate limit doesn't spill into another. */
 const newAddress = () => `198.51.100.${++address}`
@@ -248,19 +251,27 @@ describe('the MCP server', () => {
 
   // @scenario collab/agent: 21st call
   it('refuses the 21st call from one address within a minute', async () => {
-    const ip = newAddress()
-    let agentKey: string | undefined
-    for (let i = 0; i < 20; i++) {
-      const jam = { jam: 'funky-otter-mc05', kind: 'claude', ...(agentKey ? { agentKey } : {}) }
-      const out = await call('join', jam, ip)
-      expect(out.isError).toBe(false)
-      agentKey = out.body.agent.agentKey
+    // The limiter counts per clock minute, so a burst that crosses one is retried from a new address.
+    for (let attempt = 0; ; attempt++) {
+      const ip = newAddress()
+      const start = minute()
+      let agentKey: string | undefined
+      const ok: boolean[] = []
+      for (let i = 0; i < 20; i++) {
+        const jam = { jam: 'funky-otter-mc05', kind: 'claude', ...(agentKey ? { agentKey } : {}) }
+        const out = await call('join', jam, ip)
+        ok.push(!out.isError)
+        agentKey = out.body.agent?.agentKey ?? agentKey
+      }
+      const out = await call('join', { jam: 'funky-otter-mc05', agentKey }, ip)
+      if (minute() !== start && attempt === 0) continue
+      expect(ok).toEqual(Array(20).fill(true))
+      expect(out).toEqual({
+        isError: true,
+        body: { error: 'too many requests, try again in a minute' },
+      })
+      return
     }
-    const out = await call('join', { jam: 'funky-otter-mc05', agentKey }, ip)
-    expect(out).toEqual({
-      isError: true,
-      body: { error: 'too many requests, try again in a minute' },
-    })
   })
 })
 
@@ -365,13 +376,20 @@ describe('agent uploads', () => {
   })
 
   it('refuses the 11th upload from one address within a minute', async () => {
-    const ip = newAddress()
     const args = { jam: 'funky-otter-mc13', soundName: 'X', wav: '%%%' }
-    for (let i = 0; i < 10; i++)
-      expect((await call('upload_sound', args, ip)).body.error).toBe('wav is not base64')
-    expect((await call('upload_sound', args, ip)).body.error).toBe(
-      'Too many uploads, try again in a minute',
-    )
+    // The limiter counts per clock minute, so a burst that crosses one is retried from a new address.
+    for (let attempt = 0; ; attempt++) {
+      const ip = newAddress()
+      const start = minute()
+      const errors: string[] = []
+      for (let i = 0; i < 11; i++) errors.push((await call('upload_sound', args, ip)).body.error)
+      if (minute() !== start && attempt === 0) continue
+      expect(errors).toEqual([
+        ...Array(10).fill('wav is not base64'),
+        'Too many uploads, try again in a minute',
+      ])
+      return
+    }
   })
 
   // @scenario collab/agent: Wrong format
