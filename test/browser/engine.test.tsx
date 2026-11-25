@@ -675,14 +675,15 @@ describe('swing and repeat', () => {
    * its jam beat (room time over a beat, so engines on different shifts compare), pad and level.
    * Hits taken back by a repeat change are dropped. `shift` maps room ms onto its timeline.
    */
-  async function recorded(tracks: Track[], shift: number, swing = 0) {
+  async function recorded(tracks: Track[], shift: number, swing = 0, sound = 'kick') {
     const { engine } = await offline({ seconds: 1, bpm: BPM_120, metronome: false })
     const hits: { beat: number; padId: string; level: number; stopped: boolean }[] = []
     const play = engine['play'].bind(engine)
     const padOf = new Map<string, string>(BEAT_PADS.map((p) => [p, p]))
-    engine['play'] = (soundId, at, out, rate, level = 1) => {
-      const source = play('kick', at, out, rate, level)
-      if (!source || !soundId) return source
+    engine['play'] = (soundId, at, out, rate, level = 1, gate = {}) => {
+      const source = play(sound, at, out, rate, level, gate)
+      // Tails picked up mid-sound are counted apart from hits.
+      if (!source || !soundId || (gate.offset ?? 0) > 0) return source
       const hit = { beat: ((at - shift) * 1000) / BEAT_MS, padId: soundId, level, stopped: false }
       hits.push(hit)
       const stop = source.stop.bind(source)
@@ -780,6 +781,47 @@ describe('swing and repeat', () => {
       { beat: 0.75, padId: 'b1', level: 0.25 },
       { beat: 0.75, padId: 'b3', level: 0.75 },
     ])
+  })
+
+  /** Renders a one-bar loop of `sound` on every beat at 100 BPM, with `repeat` from the start. */
+  async function stutter(repeat: Master['repeat'] | undefined, sound = 'kick') {
+    const audio = await offline({
+      seconds: 4.8,
+      sound,
+      metronome: false,
+      tracks: [track({ hits: [0, 1, 2, 3].map((beat) => ({ padId: PAD, beat })) })],
+    })
+    audio.engine.update({
+      bpm: 100,
+      pads: new Map([[PAD, sound]]),
+      tracks: new Map([
+        ['t0', track({ hits: [0, 1, 2, 3].map((beat) => ({ padId: PAD, beat })) })],
+      ]),
+      uploads: new Set(),
+      master: { ...MASTER_SOUND_DEFAULTS, repeat: repeat ?? OFF },
+    })
+    audio.engine['shift'] = SHIFT
+    const [left] = await render(audio)
+    return left
+  }
+
+  it('cuts each repeat at its slice end, so 1/32 repeats of a long sound never pile up', async () => {
+    for (const sound of ['kick', 'open-hat']) {
+      const plain = peak(await stutter(undefined, sound), 1.2, 4.8)
+      const repeated = await stutter({ x: 0.9, y: 1, startBeat: 1 }, sound)
+      // No louder than one hit: without the cut, seven kicks overlapped at once.
+      expect(plain, sound).toBeGreaterThan(0.2)
+      expect(peak(repeated, 1.2, 4.8), sound).toBeLessThan(plain * 1.05)
+    }
+  })
+
+  it('repeats what is still ringing when the slice falls between hits', async () => {
+    // A 1/32 slice a 16th after the kick on beat 2: no hit in it, only the kick's tail.
+    const tail = await stutter({ x: 0.9, y: 1, startBeat: 1.25 })
+    const kick = peak(await stutter(undefined), 0, 0.6)
+    const level = peak(tail, 1.5, 4.8)
+    expect(level).toBeGreaterThan(0.01)
+    expect(level).toBeLessThan(kick / 4)
   })
 
   // @scenario audio/master: Same stutter
