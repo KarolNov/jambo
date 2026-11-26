@@ -73,6 +73,8 @@ const knobDrafts = Object.fromEntries(
   SOUND_KNOB_NAMES.map((k) => [k, z.number().optional().describe(knobHelp(k))]),
 ) as Record<SoundKnob, z.ZodOptional<z.ZodNumber>>
 
+const Beat = z.number().describe('When, in beats from the loop start: 0 <= beat < bars * 4')
+
 /**
  * The operations an agent may send in a run, as JSON. Only board changes a person can make; never
  * uploads. `addTrack` gives only what an agent decides; the room fills in the rest. The descriptions
@@ -83,12 +85,19 @@ const TrackDraft = z.object({
   bars: z.number().describe('Loop length in bars'),
   hits: z
     .array(
-      z.object({
-        padId: z.string().describe('The pad to hit, like r0c0'),
-        beat: z.number().describe('When, in beats from the loop start: 0 <= beat < bars * 4'),
-      }),
+      z.union([
+        z
+          .strictObject({ padId: z.string().describe('The pad to hit, like r0c0'), beat: Beat })
+          .describe('Plays whatever sound the pad holds'),
+        z
+          .strictObject({
+            soundId: z.string().describe('A listed sound: kit, upload or clip'),
+            beat: Beat,
+          })
+          .describe('Plays that sound whatever the pads hold, unsnapped, cut at the loop end'),
+      ]),
     )
-    .describe('The hits of the loop'),
+    .describe('The hits of the loop; each names a pad or a sound, not both'),
   gain: z.number().optional().describe('Level 0-1.5, default 1'),
   quantize: z.number().optional().describe('Snap in beats, default 0.25'),
   ...knobDrafts,
@@ -101,8 +110,8 @@ const Ref = z
 
 export const AgentCall = z.discriminatedUnion('op', [
   SetTempo.describe('Only while the jam has no tracks'),
-  AssignPad.describe('Point a pad at a kit sound or an upload'),
-  ReplaceSound.describe('Move every pad on one sound to another'),
+  AssignPad.describe('Point a pad at a kit sound or an upload, not a clip'),
+  ReplaceSound.describe("Move every pad and every track's sound hit on one sound to another"),
   z
     .object({
       op: z.literal('addTrack'),

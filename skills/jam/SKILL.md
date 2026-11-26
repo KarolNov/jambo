@@ -29,7 +29,7 @@ Every tool takes `jam` (the link or its slug) and optional `agentKey`, `kind`, `
 
 ## Play
 
-1. `join` to appear and read the jam: its answer's `board` holds `bpm`, `pads` (`id`, `key`, `soundId`), `sounds`, `tracks`, `master` (the master knobs and touchpad modes) and `here`. Others change the jam too: `listen` (under **Jam live**) tells you what they changed since you last looked, without reading the whole board again.
+1. `join` to appear and read the jam: its answer's `board` holds `bpm`, `pads` (`id`, `key`, `soundId`), `sounds` (each with its `kind`: `kit`, `upload` or `clip`), `tracks`, `master` (the master knobs and touchpad modes) and `here`. Others change the jam too: `listen` (under **Jam live**) tells you what they changed since you last looked, without reading the whole board again.
 2. `run` with `ops`, a list of operations, and a `summary` of 1 to 140 characters saying what it does ("Four-on-the-floor kick under the bass"). The server's instructions and the tool's schema list every operation; the essentials:
 
 ```json
@@ -57,7 +57,8 @@ Every tool takes `jam` (the link or its slug) and optional `agentKey`, `kind`, `
 ```
 
 - The operations apply in order as one change. Each gets `{ op, ok, issues?, id? }`: read the issues of any that failed and run again if needed. A new track's id comes back in its result; within the same run, use its `ref`.
-- Hits are in beats, 4 a bar: `0 <= beat < bars * 4`. Tracks hit **pads**, so point a pad at the sound you want (`assignPad`) and hit that pad.
+- Hits are in beats, 4 a bar: `0 <= beat < bars * 4`. Each hit names a pad (`{ "padId": "r0c0", "beat": 0 }`) or a sound (`{ "soundId": "kick", "beat": 0 }`), not both. A pad hit plays whatever the pad holds and snaps to the track's `quantize`; a sound hit plays that listed sound whatever the pads hold, at exactly its beat, and stops at the loop's end.
+- **Clips** (`kind: "clip"` in `sounds`) are voices people sang into their takes. They never go on a pad, and you can't record one, but you can reuse one in your own track with sound hits: a sung phrase on beat 0 of a 4-bar loop, say, or a short shout on every other bar. Read which track already uses it and where, so yours lands in time. A clip no track hits is deleted a minute later, so removing the last track that uses one loses it for good.
 - Every track has five optional sound knobs, set in `addTrack`'s `track` or `setTrack`'s `patch`: `reverb` and `echo` (0 to 1), `tone` (-1 to 1: below 0 darker, above 0 thinner), `pitch` (whole semitones, -12 to 12; also changes speed) and `pan` (-1 left to 1 right). A track without one plays at its default, which leaves the sound as it is: 0 for all five.
 - Tempo changes only while the jam has no tracks.
 - The **master stage** shapes the whole mix, for everyone. `{ "op": "setMaster", "set": { "swing": 0.3 } }` turns any of four knobs; ones left out keep their value: `tone` (-1 to 1: darker below 0, thinner above), `drive` (0 to 1: saturation and glue), `width` (-1 mono to 1 extra wide) and `swing` (0 to 1: delays every off-beat 16th, up to half a 16th). `{ "op": "setFx", "mode": "filter", "x": -0.6, "y": 0.2 }` puts one touchpad mode at x, y: `filter` (x -1 to 1: low-pass below 0, high-pass above; y resonance), `throw` (an echo of the whole mix: x picks 1/8, dotted 1/8 or 1/4 by thirds; y the send and feedback), `lofi` (x lowers the sample rate, y the bit depth) and `repeat` (stutters the loops: x picks a 1/4, 1/8, 1/16 or 1/32 slice by quarters; y the repeats' level, 0 off). Modes stay where they are left and all can be on at once; 0/0 is off, so `setFx` at 0/0 is the reset. Every default is 0, which leaves the sound as it is.
@@ -116,7 +117,7 @@ Keep one-shots short (under 2 s): a pad hit plays the whole sound, so long tails
 
 **Listen first.** Read `board` before you add anything: the tempo, which pads each track hits, and how busy it already is. Add what is missing (a bass under drums, hats over a kick) rather than another layer of what is there. If the user didn't say what to make, suggest something that fits and make that.
 
-**Pads are shared.** A track hits a pad, not a sound, so `assignPad` changes every loop that hits that pad, including other people's. Before reassigning a pad, check that no track in `board.tracks` hits it, or that the change is what the user wants. `replaceSound` swaps a sound on every pad at once: use it only when asked.
+**Pads are shared.** A pad hit plays whatever the pad holds, so `assignPad` changes every loop that hits that pad, including other people's. Before reassigning a pad, check that no track in `board.tracks` hits it, or that the change is what the user wants; for drums and notes, prefer hitting pads, as people do, so the board shows what plays. `replaceSound` swaps a sound on every pad and every sound hit at once: use it only when asked.
 
 **The grid.** 4 beats a bar; a beat's halves are `.5`, its sixteenths `.25` and `.75`. Starting points:
 

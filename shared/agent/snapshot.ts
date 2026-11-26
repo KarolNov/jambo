@@ -1,7 +1,19 @@
 import { isMap } from 'duratom'
 import { read } from 'duratom/core'
 import type * as Y from 'yjs'
-import { BPM, type Master, masterOf, Meta, Pad, ROOTS, SHAPES, Sound, Track } from '../board'
+import {
+  BPM,
+  kindOf,
+  type Master,
+  masterOf,
+  Meta,
+  Pad,
+  ROOTS,
+  SHAPES,
+  Sound,
+  type SoundKind,
+  Track,
+} from '../board'
 import type { ColorName } from '../colors'
 import { padKeyOrder, SOUNDS } from '../sounds'
 
@@ -15,10 +27,11 @@ export interface SnapshotPresence {
 export interface SnapshotSound {
   id: string
   name: string
-  kind: 'kit' | 'upload'
+  /** `clip`: a voice sung into a take; tracks hit it by sound id, never on a pad. */
+  kind: 'kit' | SoundKind
   /** Kit sounds: drums, percussion, tonal or fx. */
   category?: string
-  /** Uploads: the uploader's name, when known. */
+  /** Uploads and clips: the uploader's name, when known. */
   by?: string
   durationMs?: number
 }
@@ -65,12 +78,12 @@ export function snapshotOf(doc: Y.Doc, here: readonly SnapshotPresence[]): Snaps
   const pads = readAll<Pad>(doc.getMap(ROOTS.pads), Pad, SHAPES.pad)
     .map(([id, p]) => ({ id, key: p.key, row: p.row, col: p.col, soundId: p.soundId }))
     .sort((a, b) => padKeyOrder(a.key) - padKeyOrder(b.key))
-  const uploads = readAll<Sound>(doc.getMap(ROOTS.sounds), Sound, SHAPES.sound)
+  const listed = readAll<Sound>(doc.getMap(ROOTS.sounds), Sound, SHAPES.sound)
     .sort(byId)
     .map(([id, s]): SnapshotSound => ({
       id,
       name: s.name,
-      kind: 'upload',
+      kind: kindOf(s),
       ...(s.authorName ? { by: s.authorName } : {}),
       durationMs: s.durationMs,
     }))
@@ -86,7 +99,7 @@ export function snapshotOf(doc: Y.Doc, here: readonly SnapshotPresence[]): Snaps
   return {
     bpm: meta && !meta.issues ? meta.value.bpm : BPM.default,
     pads,
-    sounds: [...kit, ...uploads],
+    sounds: [...kit, ...listed],
     tracks,
     master: agentMaster(masterOf(doc.getArray(ROOTS.master))),
     here: here.map((p) => ({ ...p })),

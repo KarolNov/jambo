@@ -33,6 +33,17 @@ const track = (name: string): Track => ({
   effects: [],
 })
 
+const clip = {
+  name: 'Voice 1',
+  author: 'p1',
+  authorName: 'Groovy Otter',
+  color: 'teal',
+  durationMs: 1500,
+  bytes: 1000,
+  createdAt: 1,
+  kind: 'clip',
+} as const
+
 describe('jam links', () => {
   it('reads a full URL, a path and a bare slug', () => {
     expect(jamSlugOf('https://jambo.example/jam/funky-otter-k7q2')).toBe('funky-otter-k7q2')
@@ -146,6 +157,42 @@ describe('snapshot', () => {
     expect(snap.master).toEqual(AGENT_MASTER)
     // Plain data: survives a JSON round trip unchanged.
     expect(JSON.parse(JSON.stringify(snap))).toEqual(snap)
+  })
+
+  // @scenario collab/agent: Read a voice track
+  it('lists a clip with kind clip, and a track with a pad hit and a clip hit', () => {
+    const doc = new Y.Doc()
+    seedBoard(doc)
+    apply(doc, [{ op: 'addSound', id: 'u-cliiiiiiiiip', sound: clip }], SYSTEM)
+    apply(
+      doc,
+      [
+        {
+          op: 'addTrack',
+          id: 't1',
+          track: {
+            ...track('Voice'),
+            hits: [
+              { padId: 'r0c0', beat: 0 },
+              { soundId: 'u-cliiiiiiiiip', beat: 1.06 },
+            ],
+          },
+        },
+      ],
+      SYSTEM,
+    )
+    const snap = snapshotOf(doc, [])
+    expect(snap.sounds.find((s) => s.id === 'u-cliiiiiiiiip')).toEqual({
+      id: 'u-cliiiiiiiiip',
+      name: 'Voice 1',
+      kind: 'clip',
+      by: 'Groovy Otter',
+      durationMs: 1500,
+    })
+    expect(snap.tracks[0]!.hits).toEqual([
+      { padId: 'r0c0', beat: 0 },
+      { soundId: 'u-cliiiiiiiiip', beat: 1.06 },
+    ])
   })
 })
 
@@ -364,6 +411,68 @@ describe('prepare', () => {
       issues: [{ message: 'Every hit must fall inside the track', path: ['track', 'hits'] }],
     })
     expect(out[4]).toEqual({ issues: [{ message: "Track new:b wasn't added", path: ['id'] }] })
+  })
+
+  it('passes sound hits, and refuses a hit naming both a pad and a sound, or neither', () => {
+    n = 0
+    const hits = [
+      { padId: 'r0c0', beat: 0 },
+      { soundId: 'u-cliiiiiiiiip', beat: 1.06 },
+    ]
+    const [ok, both, neither] = prepare(
+      [
+        { op: 'addTrack', track: { name: 'Voice', bars: 1, hits } },
+        {
+          op: 'addTrack',
+          track: { name: 'Both', bars: 1, hits: [{ padId: 'r0c0', soundId: 'kick', beat: 0 }] },
+        },
+        { op: 'addTrack', track: { name: 'Neither', bars: 1, hits: [{ beat: 0 }] } },
+      ],
+      agent,
+      mint,
+    )
+    expect(ok).toMatchObject({ op: { op: 'addTrack', track: { hits } } })
+    expect(both).toHaveProperty('issues')
+    expect(neither).toHaveProperty('issues')
+  })
+
+  // @scenario collab/agent: Reuse a voice
+  it("adds a track that reuses a listed clip, and refuses one naming a sound the jam doesn't list", () => {
+    n = 0
+    const doc = new Y.Doc()
+    seedBoard(doc)
+    apply(doc, [{ op: 'addSound', id: 'u-cliiiiiiiiip', sound: clip }], SYSTEM)
+    const prepared = prepare(
+      [
+        {
+          op: 'addTrack',
+          track: {
+            name: 'Echoes',
+            bars: 4,
+            hits: [
+              { soundId: 'u-cliiiiiiiiip', beat: 0 },
+              { soundId: 'u-cliiiiiiiiip', beat: 8 },
+            ],
+          },
+        },
+        {
+          op: 'addTrack',
+          track: { name: 'Ghost', bars: 1, hits: [{ soundId: 'u-aaaaaaaaaaaa', beat: 0 }] },
+        },
+      ],
+      agent,
+      mint,
+    )
+    const ops = prepared.map((p) => ('op' in p ? p.op : undefined)).filter((o) => o !== undefined)
+    const results = apply(doc, ops, { kind: 'ai', id: 'pub1' })
+    const snap = snapshotOf(doc, [])
+    expect(snap.tracks.map((t) => t.name)).toEqual(['Echoes'])
+    expect(snap.tracks[0]!.hits).toEqual([
+      { soundId: 'u-cliiiiiiiiip', beat: 0 },
+      { soundId: 'u-cliiiiiiiiip', beat: 8 },
+    ])
+    expect(results[0]).toEqual({ ok: true })
+    expect(results[1]).toMatchObject({ ok: false })
   })
 
   it('refuses uploads and anything else an agent may not send', () => {
