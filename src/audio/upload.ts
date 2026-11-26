@@ -1,6 +1,6 @@
 import type { Sound } from '../../shared/board'
 import { UPLOAD_HEADERS, UPLOADS } from '../../shared/sounds'
-import { encodeWav, mixDown, normalise, trimSilence } from '../../shared/wav'
+import { encodeWav, mixDown, normalise, soundBounds } from '../../shared/wav'
 import type { Identity } from '../board/identity'
 import { soundUrl } from './samples'
 
@@ -23,6 +23,8 @@ const wellFormed = (text: string) =>
 export interface Prepared {
   wav: Uint8Array<ArrayBuffer>
   durationMs: number
+  /** Seconds of leading silence trimmed off: where the kept sound starts in what was given. */
+  trimmedStart: number
 }
 
 /** The name an upload starts with: the file's name without its extension, at most 40 characters. */
@@ -76,7 +78,9 @@ export async function prepareBuffer(
   const rate = UPLOADS.sampleRate
   const audio = await atUploadRate(buffer)
   const channels = Array.from({ length: audio.numberOfChannels }, (_, i) => audio.getChannelData(i))
-  const trimmed = trimSilence(mixDown(channels), rate)
+  const mixed = mixDown(channels)
+  const [start, end] = soundBounds(mixed, rate)
+  const trimmed = mixed.slice(start, end)
   if (trimmed.length === 0) throw new UploadError(`That ${what} is silent`)
   const seconds = trimmed.length / rate
   if (seconds > UPLOADS.maxSeconds)
@@ -86,6 +90,7 @@ export async function prepareBuffer(
   return {
     wav: encodeWav(normalise(trimmed), rate),
     durationMs: Math.ceil((trimmed.length * 1000) / rate),
+    trimmedStart: start / rate,
   }
 }
 
@@ -100,16 +105,17 @@ async function failure(res: Response, fallback: string): Promise<UploadError> {
   return new UploadError(fallback, res.status)
 }
 
-/** Uploads a prepared sample to the jam; the room lists it on the board for everyone. */
-export async function uploadSound(
+/** Posts a prepared sample to the jam's `path` (`sounds` or `clips`) with its details. */
+async function postSample(
   slug: string,
+  path: 'sounds' | 'clips',
   sample: Prepared,
   name: string,
   me: Identity,
 ): Promise<{ id: string; sound: Sound }> {
   let res: Response
   try {
-    res = await fetch(`/api/jams/${slug}/sounds`, {
+    res = await fetch(`/api/jams/${slug}/${path}`, {
       method: 'POST',
       body: sample.wav,
       headers: {
@@ -126,6 +132,17 @@ export async function uploadSound(
   if (!res.ok) throw await failure(res, 'The upload failed')
   return (await res.json()) as { id: string; sound: Sound }
 }
+
+/** Uploads a prepared sample to the jam; the room lists it on the board for everyone. */
+export const uploadSound = (slug: string, sample: Prepared, name: string, me: Identity) =>
+  postSample(slug, 'sounds', sample, name, me)
+
+/**
+ * Uploads a voice clip sung into a take; the room lists it as a clip, and frees it again unless a
+ * track names it soon (see `ORPHAN_CLIP_MS` in `worker/board.ts`).
+ */
+export const uploadClip = (slug: string, sample: Prepared, name: string, me: Identity) =>
+  postSample(slug, 'clips', sample, name, me)
 
 /** Removes an upload no pad uses. */
 export async function removeSound(slug: string, id: string): Promise<void> {

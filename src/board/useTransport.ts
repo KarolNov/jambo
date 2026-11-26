@@ -1,7 +1,8 @@
 import { useAtomValue } from 'jotai'
 import { useEffect, useState, useSyncExternalStore } from 'react'
-import { newId } from '../../shared/board'
+import { type Hit, LIMITS, newId } from '../../shared/board'
 import { bpmAtom, tracksAtom } from './model'
+import { lostMessage, saveClips } from './saveTake'
 import { isTyping } from './typing'
 import { useSession } from './session'
 import { TAKE_QUANTIZE, TEMPO_RANGE, takeName, tempoFor } from './transport'
@@ -9,14 +10,16 @@ import { useRecorderState } from './useEngineState'
 
 /**
  * The transport's state and actions, shared by every transport UI: record / stop (Space too),
- * tempo and the metronome. Stopping a take adds it to the board as a new track.
+ * tempo and the metronome. Stopping a take adds it to the board as a new track; a take with voice
+ * clips is `saving` while they are stored first, and recording waits for it.
  */
-export function useTransport() {
-  const { engine, board, me } = useSession()
+export function useTransport(slug: string) {
+  const { engine, board, me, jam } = useSession()
   const bpm = useAtomValue(bpmAtom)
   const tracks = useAtomValue(tracksAtom)
   const state = useRecorderState()
   const [message, setMessage] = useState<string>()
+  const [saving, setSaving] = useState(false)
   const metronome = useSyncExternalStore(
     (l) => engine.subscribe(l),
     () => engine.metronome,
@@ -25,10 +28,11 @@ export function useTransport() {
     (l) => engine.subscribe(l),
     () => engine.synced,
   )
-  /** Tempo can't change while the jam has loops, or during a take. */
-  const locked = tracks.size > 0 || state.phase !== 'idle'
+  /** Tempo can't change while the jam has loops, or during a take or its saving. */
+  const locked = tracks.size > 0 || state.phase !== 'idle' || saving
 
   const toggle = async () => {
+    if (saving) return
     if (!engine.ready) await engine.unlock()
     if (engine.state.phase === 'idle') {
       setMessage(undefined)
@@ -43,19 +47,43 @@ export function useTransport() {
     }
     const id = newId()
     engine.claim(id)
+    const name = takeName(me.name, tracks.values())
+    let hits: Hit[] = take.hits
+    let lost: string | undefined
+    if (take.clips) {
+      setSaving(true)
+      try {
+        const sung = await take.clips
+        const saved = await saveClips(
+          sung,
+          { bars: take.bars, bpm: take.bpm, trackName: name },
+          { slug, me, store: jam.store },
+        )
+        hits = [...hits, ...saved.hits]
+          .sort((a, b) => a.beat - b.beat)
+          .slice(0, LIMITS.hitsPerTrack)
+        lost = lostMessage(saved, hits.length > 0)
+      } finally {
+        setSaving(false)
+      }
+      if (hits.length === 0) {
+        setMessage(lost ?? 'Nothing recorded')
+        return
+      }
+    }
     const r = board.addTrack(id, {
-      name: takeName(me.name, tracks.values()),
+      name,
       author: me.id,
       color: me.color,
       bars: take.bars,
-      hits: take.hits,
+      hits,
       startBar: take.startBar,
       gain: 1,
       mute: false,
       quantize: TAKE_QUANTIZE,
       effects: [],
     })
-    setMessage(r.ok ? undefined : r.issues[0]?.message)
+    setMessage(r.ok ? lost : r.issues[0]?.message)
   }
 
   // Space toggles recording, except while typing.
@@ -82,6 +110,7 @@ export function useTransport() {
     state,
     synced,
     locked,
+    saving,
     metronome,
     message,
     toggle,

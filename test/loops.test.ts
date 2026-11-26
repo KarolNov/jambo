@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { QUANTIZE } from '../shared/board'
 import {
   beatPosition,
+  clipBar,
   loopSummary,
   SNAP_OPTIONS,
   SOUND_READOUTS,
@@ -34,6 +35,11 @@ describe('the mixer', () => {
     expect(beatPosition(0, 2)).toBe('0%')
     expect(beatPosition(4, 2)).toBe('50%')
     expect(beatPosition(1, 1)).toBe('25%')
+  })
+
+  it("draws a voice clip as a bar from its start to its end, cut at the loop's end", () => {
+    expect(clipBar(4, 6, 2)).toEqual({ left: '50%', width: '25%' })
+    expect(clipBar(3, 9, 1)).toEqual({ left: '75%', width: '25%' })
   })
 
   it('reads each sound knob the way the strip shows it', () => {

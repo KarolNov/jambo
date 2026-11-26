@@ -36,6 +36,17 @@ export const loopSummary = (bars: number, hits: number) =>
 export const beatPosition = (beat: number, bars: number) =>
   `${(beat / (bars * BEATS_PER_BAR)) * 100}%`
 
+/**
+ * Where a voice clip sounding from beat `start` to `end` sits across a loop of `bars`, as CSS
+ * `left` and `width` percentages: cut at the loop's end, where it stops playing.
+ */
+export function clipBar(start: number, end: number, bars: number) {
+  const length = bars * BEATS_PER_BAR
+  const from = Math.min(length, Math.max(0, start))
+  const to = Math.min(length, Math.max(from, end))
+  return { left: beatPosition(from, bars), width: `${((to - from) / length) * 100}%` }
+}
+
 const pct = (v: number) => Math.round(Math.abs(v) * 100)
 
 /** How each sound knob is named and reads under it in the Effects strip. */

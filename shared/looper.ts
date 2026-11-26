@@ -1,4 +1,5 @@
 import { BEATS_PER_BAR, isSoundHit, LIMITS, type Hit, type Track } from './board/schema'
+import { audioToRoom } from './clock'
 
 /** Seconds per beat and per bar at `bpm`. */
 export const beatSeconds = (bpm: number) => 60 / bpm
@@ -21,12 +22,7 @@ export function finishTake(
   hits: readonly Hit[],
   elapsedBeats: number,
 ): { bars: number; hits: Hit[] } | null {
-  const elapsedBars = elapsedBeats / BEATS_PER_BAR
-  const whole = Math.floor(elapsedBars)
-  const bars = Math.min(
-    LIMITS.bars,
-    Math.max(1, elapsedBars - whole <= STOP_GRACE_BARS ? whole : Math.ceil(elapsedBars)),
-  )
+  const bars = takeBars(elapsedBeats)
   const length = bars * BEATS_PER_BAR
   const kept = hits
     .filter((h) => h.beat >= -EARLY_HIT_BEATS && h.beat < length)
@@ -36,6 +32,54 @@ export function finishTake(
     })
     .slice(0, LIMITS.hitsPerTrack)
   return kept.length ? { bars, hits: kept } : null
+}
+
+/**
+ * How many bars a take stopped `elapsedBeats` after its first beat loops for: rounded up to whole
+ * bars (within `STOP_GRACE_BARS`), at least one, at most the longest loop.
+ */
+export function takeBars(elapsedBeats: number): number {
+  const elapsedBars = elapsedBeats / BEATS_PER_BAR
+  const whole = Math.floor(elapsedBars)
+  return Math.min(
+    LIMITS.bars,
+    Math.max(1, elapsedBars - whole <= STOP_GRACE_BARS ? whole : Math.ceil(elapsedBars)),
+  )
+}
+
+/**
+ * The take beat a voice clip was sung on: `capturedAt` is the context time of its first captured
+ * sample, which reached the context `roundTrip` seconds after the singer heard what was leaving
+ * the speakers then (mic in, plus the jam's audio out). Mapped back by `shift` to room time, as the
+ * clicks were scheduled, it is the beat they heard as they started. `recordStart` is the take's
+ * first beat in room ms. Never quantized: snapping it would move the whole phrase.
+ */
+export function sungBeat(
+  capturedAt: number,
+  roundTrip: number,
+  shift: number,
+  recordStart: number,
+  bpm: number,
+): number {
+  return (audioToRoom(capturedAt - roundTrip, shift) - recordStart) / (beatSeconds(bpm) * 1000)
+}
+
+/**
+ * The part of a clip sung from take beat `beat` for `seconds` that a loop of `lengthBeats` keeps:
+ * nothing before its first beat and nothing past its end. `skip` and `keep` are seconds into the
+ * clip, `beat` where what is kept starts. Undefined when none of it is in the loop.
+ */
+export function clipSpan(
+  beat: number,
+  seconds: number,
+  lengthBeats: number,
+  bpm: number,
+): { skip: number; keep: number; beat: number } | undefined {
+  const b = beatSeconds(bpm)
+  const from = Math.max(0, beat * b)
+  const to = Math.min(beat * b + seconds, lengthBeats * b)
+  if (to <= from) return undefined
+  return { skip: from - beat * b, keep: to - from, beat: Math.max(0, beat) }
 }
 
 /** Where a hit sounds within its loop, in beats: snapped to `quantize` (0 = off), wrapped. */

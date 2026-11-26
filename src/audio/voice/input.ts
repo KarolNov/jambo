@@ -159,6 +159,14 @@ export class VoiceInput {
     return this.ctx.sampleRate
   }
 
+  /**
+   * The context time the current recording's first sample was captured at, once the worklet has
+   * said; known by the time `stop` resolves.
+   */
+  get startedAt(): number | undefined {
+    return this.startFrame === undefined ? undefined : this.startFrame / this.ctx.sampleRate
+  }
+
   /** Seconds recorded so far. */
   get seconds() {
     return this.frames / this.ctx.sampleRate

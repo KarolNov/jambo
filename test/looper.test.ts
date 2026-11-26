@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   barStart,
+  clipSpan,
   finishTake,
   hitsInWindow,
   ceilNear,
@@ -11,7 +12,9 @@ import {
   repeatLine,
   repeatSlice,
   repeatStamp,
+  sungBeat,
   swingDelay,
+  takeBars,
   trackStart,
 } from '../shared/looper'
 
@@ -47,6 +50,54 @@ describe('finishTake', () => {
   // @scenario audio/looper: Slightly early first hit
   it('keeps hits a hair early as the first beat and drops ones outside the loop', () => {
     expect(finishTake([h(-0.1), h(-1), h(3.9), h(4.2)], 4.1)?.hits).toEqual([h(0), h(3.9)])
+  })
+})
+
+describe('takeBars', () => {
+  it('rounds up past the grace and down within it, between one bar and the longest loop', () => {
+    expect(takeBars(2.3 * 4)).toBe(3)
+    expect(takeBars(2.05 * 4)).toBe(2)
+    expect(takeBars(0.4)).toBe(1)
+    expect(takeBars(40 * 4)).toBe(16)
+  })
+})
+
+describe('voice clips in a take', () => {
+  // 100 BPM: 0.6 s a beat. The take's first beat is at room time 60 s; audio = room / 1000 + 5.
+  const bpm = 100
+  const shift = 5
+  const recordStart = 60_000
+  /** The context time of take beat `beat` on this grid. */
+  const audioAt = (beat: number) => (recordStart + beat * 600) / 1000 + shift
+
+  // @scenario audio/voice: Calibrated
+  it('places a clip sung with beat 2 on beat 2, taking off the measured round trip', () => {
+    // Sung exactly as beat 2 was heard: the first sample reached the context 120 ms after.
+    const beat = sungBeat(audioAt(2) + 0.12, 0.12, shift, recordStart, bpm)
+    expect(Math.abs(beat - 2) * 600).toBeLessThan(20)
+    // Uncorrected, it would land 120 ms late.
+    expect(sungBeat(audioAt(2) + 0.12, 0, shift, recordStart, bpm)).toBeCloseTo(2.2)
+  })
+
+  it('never snaps a clip to the grid', () => {
+    expect(sungBeat(audioAt(1.06), 0, shift, recordStart, bpm)).toBeCloseTo(1.06)
+  })
+
+  it("keeps a clip whole inside the loop and cuts it at the loop's end", () => {
+    // From beat 4 for 1.2 s (two beats) in a two-bar loop: all of it.
+    expect(clipSpan(4, 1.2, 8, bpm)).toEqual({ skip: 0, keep: expect.closeTo(1.2), beat: 4 })
+    // From beat 7 for 1.2 s in the same loop: only the beat before its end.
+    const cut = clipSpan(7, 1.2, 8, bpm)!
+    expect(cut.keep).toBeCloseTo(0.6)
+    expect(cut.beat).toBe(7)
+  })
+
+  it('drops what was sung before the first beat, and a clip wholly outside the loop', () => {
+    const early = clipSpan(-0.5, 1.2, 4, bpm)!
+    expect(early.skip).toBeCloseTo(0.3)
+    expect(early.keep).toBeCloseTo(0.9)
+    expect(early.beat).toBe(0)
+    expect(clipSpan(4.1, 1, 4, bpm)).toBeUndefined()
   })
 })
 

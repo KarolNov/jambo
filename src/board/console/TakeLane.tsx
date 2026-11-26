@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import type { TakeClip } from '../../audio/engine'
 import { BEATS_PER_BAR, type Hit } from '../../../shared/board'
 import { useSession } from '../session'
 import { type TakeView, takeMarks, takeView } from '../transport'
-import { beatPosition } from './loops'
+import { beatPosition, clipBar } from './loops'
 
 const UNIT: Record<TakeView['stage'], string> = {
   waiting: '',
@@ -14,15 +15,21 @@ const UNIT: Record<TakeView['stage'], string> = {
  * The readout during a take, in place of the tempo: the bar being recorded (the count during the
  * count-in) large, the beat of the bar as numbers lit like LEDs beside it, and under them, where the
  * phase reads between takes (the record button says it during one), a lane that grows a bar at a
- * time with a playhead and your hits where they will play. Hits and lit beats take `--c`, set by the readout.
+ * time with a playhead, your hits where they will play and your voice clips as bars from where
+ * they were sung to where they end. Hits, clips and lit beats take `--c`, set by the readout.
  * It reads the engine every frame; it re-renders only when the beat or the hits change.
  */
 export function TakeLane() {
   const { engine } = useSession()
   const lane = useRef<HTMLDivElement>(null)
-  const [take, setTake] = useState<{ view: TakeView; hits: readonly Hit[] }>({
+  const [take, setTake] = useState<{
+    view: TakeView
+    hits: readonly Hit[]
+    clips: readonly TakeClip[]
+  }>({
     view: { stage: 'waiting' },
     hits: [],
+    clips: [],
   })
 
   useEffect(() => {
@@ -32,10 +39,12 @@ export function TakeLane() {
       const now = engine.take()
       if (now) {
         const view = takeView(now.beat)
-        const next = `${JSON.stringify(view)}/${now.hits.length}`
+        // Clips to a 32nd, so one being sung redraws as it grows but not every frame.
+        const clips = now.clips.map((c) => `${Math.round(c.start * 8)}-${Math.round(c.end * 8)}`)
+        const next = `${JSON.stringify(view)}/${now.hits.length}/${clips.join()}`
         if (next !== key) {
           key = next
-          setTake({ view, hits: [...now.hits] })
+          setTake({ view, hits: [...now.hits], clips: now.clips })
         }
         if (view.stage === 'recording')
           lane.current?.style.setProperty(
@@ -77,6 +86,9 @@ export function TakeLane() {
         ))}
         {takeMarks(take.hits, bars).map((h, i) => (
           <span key={i} className="console-hit" style={{ left: beatPosition(h.beat, bars) }} />
+        ))}
+        {take.clips.map((c, i) => (
+          <span key={`c${i}`} className="console-clip" style={clipBar(c.start, c.end, bars)} />
         ))}
         {view.stage === 'recording' && <span className="console-head" />}
       </div>

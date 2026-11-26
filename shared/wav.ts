@@ -125,21 +125,29 @@ export function mixDown(channels: readonly Float32Array[]): Float32Array {
 }
 
 /**
- * Trims silence from both ends, keeping a few ms before the first sound. Silence is measured
- * against the sample's peak, so the cut doesn't depend on how loud it was recorded. Returns an
- * empty array when everything is zero.
+ * Where the sound in `samples` starts and ends, as [start, end) indices, keeping a few ms before
+ * the first sound. Silence is measured against the sample's peak, so the cut doesn't depend on how
+ * loud it was recorded. Both are 0 when everything is zero.
  */
-export function trimSilence(samples: Float32Array, sampleRate: number): Float32Array {
+export function soundBounds(samples: Float32Array, sampleRate: number): [number, number] {
   let peak = 0
   for (const s of samples) peak = Math.max(peak, Math.abs(s))
-  if (peak === 0) return new Float32Array(0)
+  if (peak === 0) return [0, 0]
   const floor = peak * SILENCE
   let first = 0
   while (first < samples.length && Math.abs(samples[first]!) < floor) first++
   let last = samples.length - 1
   while (last > first && Math.abs(samples[last]!) < floor) last--
-  const start = Math.max(0, first - Math.round(LEAD_SECONDS * sampleRate))
-  return samples.slice(start, last + 1)
+  return [Math.max(0, first - Math.round(LEAD_SECONDS * sampleRate)), last + 1]
+}
+
+/**
+ * Trims silence from both ends, as `soundBounds` finds them. Returns an empty array when
+ * everything is zero.
+ */
+export function trimSilence(samples: Float32Array, sampleRate: number): Float32Array {
+  const [start, end] = soundBounds(samples, sampleRate)
+  return samples.slice(start, end)
 }
 
 /** Scales the samples so the loudest peak sits at −1 dBFS. */
