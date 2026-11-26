@@ -475,6 +475,41 @@ describe('prepare', () => {
     expect(results[1]).toMatchObject({ ok: false })
   })
 
+  it("refuses a track hitting a sound the jam doesn't list, so its ref is never minted", () => {
+    n = 0
+    const out = prepare(
+      [
+        {
+          op: 'addTrack',
+          ref: 'new:v',
+          track: { name: 'Ghost', bars: 1, hits: [{ soundId: 'u-aaaaaaaaaaaa', beat: 0 }] },
+        },
+        { op: 'setTrack', id: 'new:v', patch: { gain: 0.5 } },
+        { op: 'addTrack', track: { name: 'Kit', bars: 1, hits: [{ soundId: 'kick', beat: 0 }] } },
+        {
+          op: 'addTrack',
+          track: { name: 'Both', bars: 1, hits: [{ padId: 'r0c0', soundId: 'kick', beat: 0 }] },
+        },
+      ],
+      agent,
+      mint,
+      (id) => id === 'u-cliiiiiiiiip',
+    )
+    expect(out[0]).toEqual({
+      issues: [{ message: 'No sound u-aaaaaaaaaaaa', path: ['track', 'hits', 0, 'soundId'] }],
+    })
+    expect(out[1]).toEqual({ issues: [{ message: "Track new:v wasn't added", path: ['id'] }] })
+    expect(out[2]).toHaveProperty('op')
+    expect(out[3]).toEqual({
+      issues: [
+        {
+          message: 'A hit names a pad (padId) or a sound (soundId), not both',
+          path: ['track', 'hits', 0],
+        },
+      ],
+    })
+  })
+
   it('refuses uploads and anything else an agent may not send', () => {
     const out = prepare(
       [{ op: 'addSound', id: 'u-x' }, { op: 'expireSounds' }, { nope: 1 }, null],
