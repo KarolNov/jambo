@@ -268,7 +268,16 @@ export function UploadDialog({
         {prepared && <span className="muted"> · {seconds(prepared.durationMs)}</span>}
         {!recording && !prepared && !error && <span className="muted"> · preparing…</span>}
       </p>
-      {recording && <Recorder onPrepared={setPrepared} disabled={busy} />}
+      {recording && (
+        <Recorder
+          onPrepared={(p) => {
+            // A new take is a new sound: an earlier take this dialog stored isn't it.
+            uploaded.current = undefined
+            setPrepared(p)
+          }}
+          disabled={busy}
+        />
+      )}
       {(!recording || prepared) && (
         <label>
           Name{' '}

@@ -76,8 +76,11 @@ export class VoiceInput {
   private levelListeners = new Set<(level: number) => void>()
   /** The monitor: the preset's chain into this gain, into the speakers. */
   private monitorGain: GainNode
-  private rack?: AudioNode
+  /** The monitored preset's chain, fed from its own input node so all of it can be let go. */
+  private rack?: { input: AudioNode; output: AudioNode }
   private rackPreset?: PresetId
+  /** Counts `monitor` calls, so one overtaken while it built does nothing. */
+  private monitorCalls = 0
 
   /** Opens the microphone into `ctx`, the jam's live context. */
   static async open(ctx: AudioContext): Promise<VoiceInput> {
@@ -86,7 +89,14 @@ export class VoiceInput {
     } catch {
       throw new MicError('unavailable')
     }
-    return new VoiceInput(ctx, await openMic())
+    const stream = await openMic()
+    try {
+      return new VoiceInput(ctx, stream)
+    } catch {
+      // The microphone opened but can't be wired into the context: let go of it.
+      for (const t of stream.getTracks()) t.stop()
+      throw new MicError('unavailable')
+    }
   }
 
   /** The delays this browser reports for this microphone. */
@@ -140,16 +150,27 @@ export class VoiceInput {
 
   /** Hears the voice through `preset` while `on`; off, nothing reaches the speakers. */
   async monitor(on: boolean, preset: PresetId) {
+    const call = ++this.monitorCalls
     if (on && this.rackPreset !== preset) {
-      this.rack?.disconnect()
-      this.rackPreset = preset
-      const rack = await buildRack(this.ctx, preset, this.source)
-      // Another call may have moved on while this one built.
-      if (this.rackPreset !== preset) return rack.disconnect()
+      const input = this.ctx.createGain()
+      this.source.connect(input)
+      const output = await buildRack(this.ctx, preset, input)
+      const rack = { input, output }
+      // A later call has moved on while this one built: it decides, so drop this one entirely.
+      if (call !== this.monitorCalls) return this.dropRack(rack)
+      this.dropRack(this.rack)
       this.rack = rack
-      rack.connect(this.monitorGain)
+      this.rackPreset = preset
+      output.connect(this.monitorGain)
     }
     this.monitorGain.gain.setTargetAtTime(on ? 1 : 0, this.ctx.currentTime, 0.01)
+  }
+
+  private dropRack(rack?: { input: AudioNode; output: AudioNode }) {
+    if (!rack) return
+    this.source.disconnect(rack.input)
+    rack.input.disconnect()
+    rack.output.disconnect()
   }
 
   /** Starts recording from now, dropping anything recorded before. */
@@ -192,7 +213,10 @@ export class VoiceInput {
     this.capture.port.onmessage = null
     this.source.disconnect()
     this.capture.disconnect()
-    this.rack?.disconnect()
+    if (this.rack) {
+      this.rack.output.disconnect()
+      this.rack.input.disconnect()
+    }
     this.monitorGain.disconnect()
     for (const t of this.stream.getTracks()) t.stop()
   }

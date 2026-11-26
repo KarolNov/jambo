@@ -39,8 +39,11 @@ export function Recorder({
   const input = useRef<VoiceInput>(undefined)
   const timer = useRef<number>(undefined)
   const playback = useRef<AudioBufferSourceNode>(undefined)
-  const latest = useRef({ preset, onPrepared })
-  latest.current = { preset, onPrepared }
+  const decoding = useRef(false)
+  // False once the dialog has closed, so a recording still opening lets go of the microphone.
+  const alive = useRef(true)
+  const latest = useRef({ preset, monitor, onPrepared })
+  latest.current = { preset, monitor, onPrepared }
 
   const stopListening = () => {
     playback.current?.stop()
@@ -56,13 +59,14 @@ export function Recorder({
   }
 
   // Let go of the microphone and stop playback if the dialog closes mid-way.
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    alive.current = true
+    return () => {
+      alive.current = false
       release()
       playback.current?.stop()
-    },
-    [],
-  )
+    }
+  }, [])
 
   const stop = async () => {
     const voice = input.current
@@ -95,10 +99,13 @@ export function Recorder({
       const ctx = engine.audioContext
       if (!ctx) throw new MicError('unavailable')
       const voice = await VoiceInput.open(ctx)
+      if (!alive.current) return voice.close()
       input.current = voice
       setLatency(voice.latency)
       voice.onLevel(setLevel)
-      await voice.monitor(monitor, preset)
+      // The switch may have moved while the microphone opened.
+      await voice.monitor(latest.current.monitor, preset)
+      if (!alive.current) return
       voice.start()
       setElapsed(0)
       setPhase('recording')
@@ -117,7 +124,18 @@ export function Recorder({
     const ctx = engine.audioContext
     if (!ctx || !prepared) return
     if (listening) return stopListening()
-    const buffer = await ctx.decodeAudioData(prepared.wav.slice().buffer)
+    if (decoding.current) return
+    decoding.current = true
+    let buffer: AudioBuffer
+    try {
+      buffer = await ctx.decodeAudioData(prepared.wav.slice().buffer)
+    } catch {
+      setError("Couldn't play that recording")
+      return
+    } finally {
+      decoding.current = false
+    }
+    if (!alive.current) return
     const src = ctx.createBufferSource()
     src.buffer = buffer
     src.connect(ctx.destination)

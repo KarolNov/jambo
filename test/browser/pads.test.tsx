@@ -328,11 +328,20 @@ describe('uploading onto pads', () => {
     return requests
   }
 
-  /** Picks a sample file in the open file chooser, then sends the upload dialog with `button`. */
+  /**
+   * Presses Choose a file… in the upload dialog, picks a sample file in the file chooser it opens,
+   * then sends the dialog with `button`.
+   */
   async function chooseFile(button: 'Upload' | 'Replace') {
-    const input = page.elementLocator(document.querySelector('input[type="file"]')!)
-    await userEvent.upload(input, new File([wavFile()], 'vox 2.wav', { type: 'audio/wav' }))
     const dialog = page.getByRole('form', { name: 'Upload a sound' })
+    const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]')!
+    // The chooser opens from within the click; stand in for the browser's own file dialog.
+    const opened = vi.spyOn(fileInput, 'click').mockImplementation(() => {})
+    await userEvent.click(dialog.getByRole('button', { name: 'Choose a file…' }))
+    expect(opened).toHaveBeenCalled()
+    opened.mockRestore()
+    const input = page.elementLocator(fileInput)
+    await userEvent.upload(input, new File([wavFile()], 'vox 2.wav', { type: 'audio/wav' }))
     await userEvent.click(dialog.getByRole('button', { name: button, exact: true }))
     await expect.element(dialog).not.toBeInTheDocument()
   }
