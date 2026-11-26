@@ -123,7 +123,7 @@ The room SHALL give each person and each agent in a jam a name nobody else there
 
 ### Requirement: Sound storage
 
-The room SHALL store each upload's audio outside the board, list it on the board only after the audio is stored, serve it to anyone with the jam's link, and delete it after its listing is removed or the jam goes 90 days with nobody opening it and no agent acting in it. Served files SHALL be cacheable for a day, so a deleted file stops being served within a day. It SHALL refuse bodies over 900,000 bytes, anything other than 10 s or less of mono 16-bit 44.1 kHz WAV, more than 10 writes per minute from one address, more than 120 downloads that miss the edge cache per minute from one address, and uploads while it is deleting the jam's expired audio.
+The room SHALL store each upload's and each clip's audio outside the board, list it on the board only after the audio is stored, serve it to anyone with the jam's link, and delete it after its listing is removed or the jam goes 90 days with nobody opening it and no agent acting in it. It SHALL remove a clip's listing and audio once no readable track has named it for a minute. Served files SHALL be cacheable for a day, so a deleted file stops being served within a day. It SHALL refuse bodies over 900,000 bytes, anything other than 10 s or less of mono 16-bit 44.1 kHz WAV, more than 10 upload writes and more than 30 clip writes per minute from one address, more than 120 downloads that miss the edge cache per minute from one address, and uploads and clips while it is deleting the jam's expired audio.
 
 - **Scenario: Serve**
   - **WHEN** a client requests a listed upload
@@ -134,6 +134,9 @@ The room SHALL store each upload's audio outside the board, list it on the board
 - **Scenario: Too many writes**
   - **WHEN** one address uploads an 11th sound within a minute
   - **THEN** it is refused with "too many requests"
+- **Scenario: Many clips in one take**
+  - **WHEN** one address saves a take with 15 clips within a minute
+  - **THEN** all 15 are stored and listed
 - **Scenario: Too many downloads**
   - **WHEN** one address makes a 121st download that misses the edge cache within a minute
   - **THEN** it is refused with "too many downloads"
@@ -145,6 +148,14 @@ The room SHALL store each upload's audio outside the board, list it on the board
   - **GIVEN** the room is deleting a jam's audio after 90 days unvisited
   - **WHEN** someone uploads a sound to that jam
   - **THEN** it is refused, nothing is stored or listed, and they are told to try again in a moment
+- **Scenario: Track removed**
+  - **GIVEN** a track with two clips no other track names
+  - **WHEN** someone or an agent removes the track
+  - **THEN** a minute later both clips are unlisted and their audio deleted, and their storage is given back
+- **Scenario: Track never added**
+  - **GIVEN** a clip stored for a take whose track was then refused
+  - **WHEN** a minute passes
+  - **THEN** the clip is unlisted and its audio deleted
 
 ### Requirement: Sound budget
 

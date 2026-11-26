@@ -77,11 +77,14 @@ A take's length SHALL round up to whole bars, from 1 to 16 bars. A stop up to 1/
 
 ### Requirement: Empty takes
 
-A take with no hits SHALL be discarded.
+A take with no pad hits and no voice clips SHALL be discarded.
 
 - **Scenario: Nothing played**
-  - **WHEN** someone records and stops without hitting a pad
+  - **WHEN** someone records and stops without hitting a pad or singing
   - **THEN** no track is added
+- **Scenario: Only a voice**
+  - **WHEN** someone records a take, sings one clip and hits no pad
+  - **THEN** a track with that clip is added
 
 ### Requirement: Every take is a track
 
@@ -205,3 +208,20 @@ Sound SHALL start only after a user gesture. Until then the jam SHALL show a "Ta
 - **Scenario: First press**
   - **WHEN** someone opens a jam and presses record
   - **THEN** audio starts and the count-in begins
+
+### Requirement: Sound hits
+
+A track's hit SHALL name either a pad, playing whatever sound the pad holds, or a sound, playing that sound whatever the pads hold. A sound hit SHALL play at its stored beat without the track's snap, then swung by the jam's swing, and SHALL stop at the loop's end. A sound hit on a sound the jam doesn't list, or one not loaded yet, SHALL play nothing. A track's sound knobs SHALL apply to both kinds of hit.
+
+- **Scenario: Pads change, the voice stays**
+  - **GIVEN** a track with a clip hit and a hit on the pad on key `Q`
+  - **WHEN** someone puts the clap on `Q`
+  - **THEN** the track plays the clap where `Q` was hit and the same clip as before
+- **Scenario: Not snapped**
+  - **GIVEN** a track with 1/16 snap and a clip hit at beat 1.06
+  - **WHEN** it plays
+  - **THEN** the clip starts at beat 1.06
+- **Scenario: Cut at the loop's end**
+  - **GIVEN** a one-bar track with a 3-second clip at beat 3 at 100 BPM
+  - **WHEN** the loop comes round
+  - **THEN** the clip stops at the bar line

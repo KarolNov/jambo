@@ -34,7 +34,7 @@
     "shared/agent/record.ts": {
       "distance": 1,
       "via": [],
-      "hash": "55535bf594a1",
+      "hash": "479d13f0357a",
       "whole": false
     },
     "shared/agent/repeat.ts": {
@@ -52,25 +52,25 @@
     "shared/agent/snapshot.ts": {
       "distance": 1,
       "via": [],
-      "hash": "1bb8e3aaec5e",
+      "hash": "befd03939d65",
       "whole": false
     },
     "shared/board/apply.ts": {
       "distance": 1,
       "via": [],
-      "hash": "33b700734b54",
+      "hash": "3eca0b5a0d1f",
       "whole": false
     },
     "shared/board/ops.ts": {
       "distance": 2,
       "via": [],
-      "hash": "d2e65d68810d",
+      "hash": "15183686f8db",
       "whole": false
     },
     "shared/board/schema.ts": {
       "distance": 1,
       "via": [],
-      "hash": "13beadab62e6",
+      "hash": "5e247e43d149",
       "whole": false
     },
     "shared/board/sdk.ts": {
@@ -100,7 +100,7 @@
     "shared/looper.ts": {
       "distance": 2,
       "via": [],
-      "hash": "71acfbb0dc25",
+      "hash": "8c718b44be19",
       "whole": false
     },
     "shared/names.ts": {
@@ -130,13 +130,13 @@
     "shared/sounds.ts": {
       "distance": 1,
       "via": [],
-      "hash": "d0aeb2d77590",
+      "hash": "166166663e0a",
       "whole": false
     },
     "shared/wav.ts": {
       "distance": 1,
       "via": [],
-      "hash": "bd5840f52c3f",
+      "hash": "c6bb017b18f8",
       "whole": false
     },
     "shared/words.ts": {
@@ -154,7 +154,7 @@
     "worker/agent/mcp.ts": {
       "distance": 1,
       "via": [],
-      "hash": "7245c855810a",
+      "hash": "69aaaccd35b8",
       "whole": false
     },
     "worker/agent/roster.ts": {
@@ -373,7 +373,7 @@
       "symbol": "AgentCall",
       "distance": 1,
       "via": [],
-      "hash": "0dfe6d675e02"
+      "hash": "45fa11e8ca5c"
     },
     {
       "file": "shared/agent/record.ts",
@@ -381,6 +381,13 @@
       "distance": 1,
       "via": [],
       "hash": "a1407a88669e"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "Beat",
+      "distance": 1,
+      "via": [],
+      "hash": "0f8e11d0b90b"
     },
     {
       "file": "shared/agent/record.ts",
@@ -429,7 +436,7 @@
       "symbol": "TrackDraft",
       "distance": 1,
       "via": [],
-      "hash": "4208c297dae2"
+      "hash": "4166626f13f7"
     },
     {
       "file": "shared/agent/record.ts",
@@ -464,7 +471,7 @@
       "symbol": "prepare",
       "distance": 1,
       "via": [],
-      "hash": "70840b3e84e5"
+      "hash": "ca42a34e669b"
     },
     {
       "file": "shared/agent/repeat.ts",
@@ -506,7 +513,7 @@
       "symbol": "SnapshotSound",
       "distance": 1,
       "via": [],
-      "hash": "4c9ca54f3703"
+      "hash": "35b86d07635a"
     },
     {
       "file": "shared/agent/snapshot.ts",
@@ -534,7 +541,14 @@
       "symbol": "snapshotOf",
       "distance": 1,
       "via": [],
-      "hash": "4ec025b2ba28"
+      "hash": "a2d229884c5b"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "KIND_LIMITS",
+      "distance": 1,
+      "via": [],
+      "hash": "d6d3389b89c7"
     },
     {
       "file": "shared/board/apply.ts",
@@ -569,7 +583,7 @@
       "symbol": "applyOne",
       "distance": 1,
       "via": [],
-      "hash": "f4f1ace24f7a"
+      "hash": "34569e9cdd11"
     },
     {
       "file": "shared/board/apply.ts",
@@ -580,10 +594,24 @@
     },
     {
       "file": "shared/board/apply.ts",
+      "symbol": "countClips",
+      "distance": 1,
+      "via": [],
+      "hash": "39b850823b9f"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "countKind",
+      "distance": 1,
+      "via": [],
+      "hash": "669afe5a0a69"
+    },
+    {
+      "file": "shared/board/apply.ts",
       "symbol": "countUploads",
       "distance": 1,
       "via": [],
-      "hash": "63bc5390f690"
+      "hash": "b17deaf98836"
     },
     {
       "file": "shared/board/apply.ts",
@@ -601,10 +629,24 @@
     },
     {
       "file": "shared/board/apply.ts",
-      "symbol": "isListedSound",
+      "symbol": "hitSoundId",
       "distance": 1,
       "via": [],
-      "hash": "86529b74d19b"
+      "hash": "a02f078407c9"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "listedKind",
+      "distance": 1,
+      "via": [],
+      "hash": "9a9955e593c8"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "namesSound",
+      "distance": 1,
+      "via": [],
+      "hash": "7ae2a0bd2de4"
     },
     {
       "file": "shared/board/apply.ts",
@@ -615,10 +657,31 @@
     },
     {
       "file": "shared/board/apply.ts",
+      "symbol": "rawHits",
+      "distance": 1,
+      "via": [],
+      "hash": "1aef5d054b7e"
+    },
+    {
+      "file": "shared/board/apply.ts",
       "symbol": "readStartBeat",
       "distance": 1,
       "via": [],
       "hash": "5c7d60535895"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "tracksUsing",
+      "distance": 1,
+      "via": [],
+      "hash": "f4c76079900b"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "unnamedClips",
+      "distance": 1,
+      "via": [],
+      "hash": "2f040ba830dd"
     },
     {
       "file": "shared/board/ops.ts",
@@ -639,7 +702,7 @@
       "symbol": "Op",
       "distance": 2,
       "via": [],
-      "hash": "a43c811a0843"
+      "hash": "a47a64bf5355"
     },
     {
       "file": "shared/board/ops.ts",
@@ -700,14 +763,14 @@
     {
       "file": "shared/board/schema.ts",
       "symbol": "BEATS_PER_BAR",
-      "distance": 2,
+      "distance": 1,
       "via": [],
       "hash": "9f26fde00ec7"
     },
     {
       "file": "shared/board/schema.ts",
       "symbol": "BPM",
-      "distance": 2,
+      "distance": 1,
       "via": [],
       "hash": "dbf903af9d86"
     },
@@ -744,12 +807,12 @@
       "symbol": "Hit",
       "distance": 2,
       "via": [],
-      "hash": "2fc556788ce6"
+      "hash": "08465c6fe99d"
     },
     {
       "file": "shared/board/schema.ts",
       "symbol": "LIMITS",
-      "distance": 2,
+      "distance": 1,
       "via": [],
       "hash": "98bcc35c7209"
     },
@@ -853,6 +916,13 @@
     },
     {
       "file": "shared/board/schema.ts",
+      "symbol": "SOUND_KINDS",
+      "distance": 1,
+      "via": [],
+      "hash": "2ef4cf1d8129"
+    },
+    {
+      "file": "shared/board/schema.ts",
       "symbol": "SOUND_KNOBS",
       "distance": 2,
       "via": [],
@@ -870,7 +940,21 @@
       "symbol": "Sound",
       "distance": 1,
       "via": [],
-      "hash": "62aa4d8899c9"
+      "hash": "678d3dc0068d"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "SoundHit",
+      "distance": 2,
+      "via": [],
+      "hash": "f0343b0dc147"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "SoundKind",
+      "distance": 1,
+      "via": [],
+      "hash": "a9516e044400"
     },
     {
       "file": "shared/board/schema.ts",
@@ -892,6 +976,20 @@
       "distance": 2,
       "via": [],
       "hash": "24a62fa4a615"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "isSoundHit",
+      "distance": 2,
+      "via": [],
+      "hash": "2a8902a24ead"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "kindOf",
+      "distance": 1,
+      "via": [],
+      "hash": "e1c324e58f29"
     },
     {
       "file": "shared/board/schema.ts",
@@ -1203,6 +1301,13 @@
     },
     {
       "file": "shared/sounds.ts",
+      "symbol": "CLIPS",
+      "distance": 1,
+      "via": [],
+      "hash": "5b4fe508ae80"
+    },
+    {
+      "file": "shared/sounds.ts",
       "symbol": "DEFAULT_LAYOUT",
       "distance": 2,
       "via": [],
@@ -1395,7 +1500,7 @@
       "symbol": "INSTRUCTIONS",
       "distance": 1,
       "via": [],
-      "hash": "efd19237084e"
+      "hash": "d1f35b5df5aa"
     },
     {
       "file": "worker/agent/mcp.ts",

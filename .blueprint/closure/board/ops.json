@@ -16,7 +16,7 @@
     "shared/sounds.ts": {
       "distance": 1,
       "via": [],
-      "hash": "d0aeb2d77590",
+      "hash": "166166663e0a",
       "whole": false
     }
   },
@@ -62,6 +62,13 @@
       "distance": 1,
       "via": [],
       "hash": "3cd0939e4130"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "CLIPS",
+      "distance": 1,
+      "via": [],
+      "hash": "5b4fe508ae80"
     },
     {
       "file": "shared/sounds.ts",

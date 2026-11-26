@@ -68,15 +68,15 @@
         "worker/sounds.ts",
         "worker/quota.ts"
       ],
-      "specVersion": "81e2c006adaeeca6",
+      "specVersion": "da5f4e7e4847f671",
       "anchorsFiles": {
         "src/board/doc.ts": "f88a4fbb0525",
-        "worker/board.ts": "19addc59c003",
+        "worker/board.ts": "707644281521",
         "worker/index.ts": "7006ed34cbe2",
         "worker/quota.ts": "fa0709c13df2",
-        "worker/sounds.ts": "548f085c2ba4"
+        "worker/sounds.ts": "16da2bbeb92c"
       },
-      "syncedCommit": "1f5e71f9c088e581ac5ba09e9e7d297d7f11b7e1"
+      "syncedCommit": "b94a8d68dc6195e139c4c4557b17035a5fa57607"
     },
     "board/session": {
       "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
@@ -124,16 +124,16 @@
       "anchors": [
         "shared/board/**"
       ],
-      "specVersion": "561be3d4b79434b9",
+      "specVersion": "820fdb73109e64c0",
       "anchorsFiles": {
-        "shared/board/apply.ts": "33b700734b54",
-        "shared/board/index.ts": "d347bb20b2da",
-        "shared/board/ops.ts": "d2e65d68810d",
-        "shared/board/schema.ts": "13beadab62e6",
+        "shared/board/apply.ts": "3eca0b5a0d1f",
+        "shared/board/index.ts": "1e6e8d003005",
+        "shared/board/ops.ts": "15183686f8db",
+        "shared/board/schema.ts": "5e247e43d149",
         "shared/board/sdk.ts": "a1d2a72c0d18",
         "shared/board/seed.ts": "d5eb014f0cd8"
       },
-      "syncedCommit": "98dbfac5b4a24fd64e3a2f94b10bee72328b3680"
+      "syncedCommit": "b94a8d68dc6195e139c4c4557b17035a5fa57607"
     },
     "audio/looper": {
       "ref": "https://app.notion.com/p/41c43cce21f2816ba415d28e60bf80d5",
@@ -155,38 +155,40 @@
         "!src/audio/master.ts",
         "!src/audio/crusher.worklet.ts"
       ],
-      "specVersion": "d117f6208c83a87f",
+      "specVersion": "729c9d19abed428c",
       "anchorsFiles": {
         "shared/clock.ts": "1dd908e91d40",
-        "shared/looper.ts": "71acfbb0dc25",
+        "shared/looper.ts": "8c718b44be19",
         "src/audio/clock.ts": "c0378e84a7cb",
-        "src/audio/engine.ts": "e3efa7a6c39d",
+        "src/audio/engine.ts": "28de659e9b21",
         "src/audio/knobs.ts": "ea6bb3369d92",
         "src/audio/session.ts": "2e1ec86333d1",
         "src/board/Debug.tsx": "80d7db772bb5",
-        "src/board/console/Deck.tsx": "30738c6c6756",
-        "src/board/console/Mixer.tsx": "cf7df23a124e",
-        "src/board/console/loops.ts": "82c4cf131db7",
-        "src/board/transport.ts": "deccd619446c",
+        "src/board/console/Deck.tsx": "23e1b0706a4b",
+        "src/board/console/Mixer.tsx": "c2d0a0933212",
+        "src/board/console/loops.ts": "140203edb326",
+        "src/board/transport.ts": "897ff66d671f",
         "src/board/useEngineState.ts": "f06f1956d95d",
-        "src/board/useTransport.ts": "85fff8d0f3b4"
+        "src/board/useTransport.ts": "ec04141bcfaf"
       },
-      "syncedCommit": "2808f5c8643b838014641596a44817ea9c739353"
+      "syncedCommit": "b94a8d68dc6195e139c4c4557b17035a5fa57607"
     },
     "board/pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
       "anchors": [
         "src/board/console/Pads.tsx",
         "src/board/Uploads.tsx",
-        "src/board/typing.ts"
+        "src/board/typing.ts",
+        "src/board/listed.ts"
       ],
-      "specVersion": "b4d7412062abcf71",
+      "specVersion": "14416ba0dfbfa611",
       "anchorsFiles": {
-        "src/board/Uploads.tsx": "e14f1254d8b4",
-        "src/board/console/Pads.tsx": "8dd994f0a5ad",
+        "src/board/Uploads.tsx": "ae811a425483",
+        "src/board/console/Pads.tsx": "68fce10f314d",
+        "src/board/listed.ts": "a3920add1dc7",
         "src/board/typing.ts": "9749aa39cc94"
       },
-      "syncedCommit": "2808f5c8643b838014641596a44817ea9c739353"
+      "syncedCommit": "b94a8d68dc6195e139c4c4557b17035a5fa57607"
     },
     "audio/sounds": {
       "ref": "https://app.notion.com/p/41c43cce21f2810f8bb0f1ed9935a67d",
@@ -197,15 +199,15 @@
         "src/audio/upload.ts",
         "src/audio/samples.ts"
       ],
-      "specVersion": "2d77fb76bdacf731",
+      "specVersion": "bfc99b5eb2404304",
       "anchorsFiles": {
-        "shared/sounds.ts": "d0aeb2d77590",
-        "shared/wav.ts": "bd5840f52c3f",
+        "shared/sounds.ts": "166166663e0a",
+        "shared/wav.ts": "c6bb017b18f8",
         "src/audio/samples.ts": "093a12daee1a",
         "src/audio/synth.ts": "513ccb17f064",
-        "src/audio/upload.ts": "9d3467419e28"
+        "src/audio/upload.ts": "4865c1446d58"
       },
-      "syncedCommit": "214976d973c65ef058023ccfa14b9d3c0535a310"
+      "syncedCommit": "b94a8d68dc6195e139c4c4557b17035a5fa57607"
     },
     "audio/master": {
       "ref": "https://app.notion.com/p/42443cce21f281a49ab6dc317ce32d6e",
@@ -231,7 +233,7 @@
         "worker/agent/**",
         "skills/jam/**"
       ],
-      "specVersion": "a11d981d1de444f2",
+      "specVersion": "49251b0e160c2f49",
       "anchorsFiles": {
         "shared/agent/changes.ts": "97c830376248",
         "shared/agent/held.ts": "9809510d02dd",
@@ -239,15 +241,15 @@
         "shared/agent/index.ts": "86ca8890ce20",
         "shared/agent/limits.ts": "48612a348f39",
         "shared/agent/link.ts": "c936b9cdd9bf",
-        "shared/agent/record.ts": "55535bf594a1",
+        "shared/agent/record.ts": "479d13f0357a",
         "shared/agent/repeat.ts": "bf4c81366903",
         "shared/agent/seat.ts": "e8d0659161b8",
-        "shared/agent/snapshot.ts": "1bb8e3aaec5e",
-        "skills/jam/SKILL.md": "0be19c99939c",
-        "worker/agent/mcp.ts": "7245c855810a",
+        "shared/agent/snapshot.ts": "befd03939d65",
+        "skills/jam/SKILL.md": "ed23ca7fe9b0",
+        "worker/agent/mcp.ts": "69aaaccd35b8",
         "worker/agent/roster.ts": "1d797b63f037"
       },
-      "syncedCommit": "1f5e71f9c088e581ac5ba09e9e7d297d7f11b7e1"
+      "syncedCommit": "b94a8d68dc6195e139c4c4557b17035a5fa57607"
     },
     "ui": {
       "ref": "https://app.notion.com/p/41d43cce21f281d291ccec92edb7d20d",
@@ -285,10 +287,31 @@
       "syncedCommit": "1a4e2252cb4ad0c19fb17b5160b92d3ff6a24538"
     },
     "audio/voice": {
-      "ref": null,
+      "ref": "https://app.notion.com/p/42443cce21f28112b7e5f80764bebef9",
       "anchors": [
-        "src/audio/voice/**"
-      ]
+        "src/audio/voice/**",
+        "src/board/Recorder.tsx",
+        "src/board/useSing.ts",
+        "src/board/saveTake.ts"
+      ],
+      "specVersion": "0bf5825676cc3526",
+      "anchorsFiles": {
+        "src/audio/voice/capture.worklet.ts": "52627348e416",
+        "src/audio/voice/dsp/loopback.ts": "6301ded5cadf",
+        "src/audio/voice/dsp/psola.ts": "d1af88c1b82c",
+        "src/audio/voice/dsp/tune.ts": "8854ca4bf3c4",
+        "src/audio/voice/dsp/yin.ts": "a092f75e6955",
+        "src/audio/voice/input.ts": "a8e852fa3ca5",
+        "src/audio/voice/latency.ts": "1c4742cefaf5",
+        "src/audio/voice/pitch.worklet.ts": "cadc146ab99f",
+        "src/audio/voice/prefs.ts": "563b567b5cf6",
+        "src/audio/voice/presets.ts": "f221aa62d25c",
+        "src/audio/voice/render.ts": "a33991742ed8",
+        "src/board/Recorder.tsx": "96831388b0df",
+        "src/board/saveTake.ts": "4036766d45d9",
+        "src/board/useSing.ts": "9890e3f7c8f9"
+      },
+      "syncedCommit": "b94a8d68dc6195e139c4c4557b17035a5fa57607"
     }
   },
   "changes": {
@@ -396,8 +419,17 @@
       "brief": "https://app.notion.com/p/42443cce21f28180ad75d39879942a53",
       "review": "https://app.notion.com/p/42443cce21f2811786aed6eb1a737377",
       "tickets": "https://app.notion.com/p/42443cce21f2811786aed6eb1a737377",
-      "status": "building",
-      "baseCommit": "1e8b0fbdb3cc0f075c7b6c932caf8a2af7b4757e"
+      "status": "applied",
+      "baseCommit": "1e8b0fbdb3cc0f075c7b6c932caf8a2af7b4757e",
+      "branch": "kn/voice-specs",
+      "stack": [
+        "https://github.com/KarolNov/jambo/pull/77",
+        "https://github.com/KarolNov/jambo/pull/78",
+        "https://github.com/KarolNov/jambo/pull/79",
+        "https://github.com/KarolNov/jambo/pull/80",
+        "https://github.com/KarolNov/jambo/pull/81",
+        "https://github.com/KarolNov/jambo/pull/82"
+      ]
     }
   },
   "tests": {
