@@ -201,7 +201,7 @@ test.describe('locked while held', () => {
 
   // @scenario audio/master: Darken everything
   // @scenario board/session: Held by someone else
-  // @scenario audio/master: Kept on reload
+  // @scenario audio/master: Knobs kept on reload
   test('master tone turns for both, and only its holder can move it', async ({ browser }) => {
     const a = await person(browser)
     const b = await person(browser)
@@ -291,7 +291,7 @@ test.describe('locked while held', () => {
   })
 
   // @scenario audio/master: Latched
-  // @scenario audio/master: Kept on reload
+  // @scenario audio/master: Modes kept on reload
   // @scenario board/session: Held by someone else
   test("the touchpad's Filter latches for both, and only its holder can move it", async ({
     browser,

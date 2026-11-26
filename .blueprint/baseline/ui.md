@@ -21,14 +21,14 @@ Every page SHALL come in a light and a dark theme. It SHALL follow the system's 
 
 ### Requirement: Design showcase
 
-The page at `/ds` SHALL show every shared control, each with its states (resting, hover, pressed, focused, disabled, and on/off or value where it has them) and its rules for when to use it, in the current theme. It SHALL have the theme switch and a choice of collaborator colour that repaints the controls.
+The page at `/ds` SHALL show every shared control, each with its states (resting, hover, pressed, focused, disabled, held by someone else, and on/off or value where it has them) and its rules for when to use it, in the current theme. It SHALL have the theme switch and a choice of collaborator colour that repaints the controls.
 
 - **Scenario: Browse the controls**
   - **WHEN** someone opens `/ds`
-  - **THEN** they see the button, icon button, switch, slider, knob, scrub field, select, menu, pad and tabs, each with its states and rules
+  - **THEN** they see the button, icon button, switch, slider, knob, XY pad, scrub field, select, menu, pad and tabs, each with its states and rules
 - **Scenario: Try another colour**
   - **WHEN** someone picks coral on `/ds`
-  - **THEN** the slider's lights, the knob's arc and the focus rings turn coral
+  - **THEN** the slider's lights, the knob's arc, the XY pad's puck and the focus rings turn coral
 
 ### Requirement: Slider
 
@@ -80,16 +80,16 @@ A knob SHALL turn when dragged up or right (increasing) and down or left (decrea
 
 ### Requirement: Someone else moving a control
 
-A slider or knob SHALL be able to show that someone else is moving it: ringed in that person's colour, with their name in its bubble in their colour instead of the value. Whoever is dragging it themselves SHALL still see their own value in the bubble.
+A slider, knob or XY pad SHALL be able to show that someone else is moving it: ringed in that person's colour, with their name in its bubble in their colour instead of the value. While it shows that, it SHALL NOT respond to drags or keys, and SHALL say it is held by that person to screen readers. Whoever is dragging it themselves SHALL still see their own value in the bubble.
 
 - **Scenario: Watch someone turn a knob**
   - **GIVEN** a knob that Misty Yak is turning
   - **WHEN** someone else looks at it
   - **THEN** it is ringed in Misty Yak's colour, its bubble reads "Misty Yak", and its arc follows the value
-- **Scenario: Drag it too**
+- **Scenario: Try to drag it**
   - **GIVEN** a slider that Misty Yak is dragging
-  - **WHEN** someone else drags it as well
-  - **THEN** their bubble shows their own value, and Misty Yak's ring stays
+  - **WHEN** someone else drags it
+  - **THEN** its value doesn't change for them, and Misty Yak's ring stays
 
 ### Requirement: Scrub a number
 
@@ -138,7 +138,7 @@ A pad SHALL show its key moulded into the middle of a raised rubber square, and 
 
 ### Requirement: Tabs
 
-Tabs SHALL show one panel at a time under a row of folder tabs: the selected tab SHALL be part of the panel's card and the others SHALL sit behind it, and selecting a tab SHALL swap them at once. Tabs that don't fit the row SHALL go behind a "+N" tab whose menu lists them and selects the one picked; the selected tab SHALL always show. A click or tap SHALL select a tab; ← and → SHALL move through every tab, shown or not, selecting as they go, wrapping at the ends and skipping disabled tabs; Home and End SHALL jump to the first and last. Screen readers SHALL hear a tab list.
+Tabs SHALL show one panel at a time under a row of folder tabs: the selected tab SHALL be part of the panel's card and the others SHALL sit behind it, and selecting a tab SHALL swap them at once. Tabs that don't fit the row SHALL go behind a "+N" tab whose menu lists them and selects the one picked; the selected tab SHALL always show. A click or tap SHALL select a tab; ← and → SHALL move through every tab, shown or not, selecting as they go, wrapping at the ends and skipping disabled tabs; Home and End SHALL jump to the first and last. Tab SHALL move from the selected tab into the panel: to its first control, or to the panel itself when it has none. Screen readers SHALL hear a tab list.
 
 - **Scenario: Keyboard**
   - **GIVEN** the first tab selected and focused
@@ -154,3 +154,26 @@ Tabs SHALL show one panel at a time under a row of folder tabs: the selected tab
   - **GIVEN** Other, the last tab, selected
   - **WHEN** someone presses →
   - **THEN** Claude is selected
+- **Scenario: Panel of controls**
+  - **GIVEN** the touchpad's Filter tab focused
+  - **WHEN** someone presses Tab
+  - **THEN** focus goes to the Filter pad, not the card around it
+
+### Requirement: XY pad
+
+An XY pad SHALL set two values at once from where it is pressed and dragged inside its square, showing a puck at its position and the lines through it, in its colour. Arrow keys SHALL move the puck a step on each axis, with Shift for ten steps. A live XY pad SHALL apply as it moves, at most once a frame, and leave the puck where it was released. Under someone's own drag the puck SHALL be where they point; any other move (a key, someone else's drag, a reset) SHALL glide it to its new position, so someone else's drag moves smoothly however unevenly their changes arrive, and with reduced motion it SHALL jump. Escape during a drag SHALL return it to where the drag started. A press SHALL give it focus without a focus ring, which SHALL show once one of its own keys is used, not for a key it passes on, such as a pad's. It SHALL announce itself as two sliders, one per axis, with their values.
+
+- **Scenario: Drag the puck**
+  - **WHEN** someone presses the middle of a pad and drags to its top-left corner
+  - **THEN** the puck follows, the values move to the corner's, and the puck stays there when released
+- **Scenario: Move the puck by key**
+  - **WHEN** someone focuses a pad and presses the up arrow
+  - **THEN** Y goes up one step and the puck follows
+- **Scenario: Watch someone move it**
+  - **GIVEN** a live XY pad that Misty Yak is dragging
+  - **WHEN** their moves arrive unevenly
+  - **THEN** the puck glides between them without jumping
+- **Scenario: Play a pad after the XY pad**
+  - **GIVEN** someone just dragged an XY pad
+  - **WHEN** they press Z
+  - **THEN** the Z pad plays and the XY pad shows no focus ring

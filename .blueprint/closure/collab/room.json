@@ -1,6 +1,12 @@
 {
   "mode": "symbol",
   "files": {
+    "shared/agent/held.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "9809510d02dd",
+      "whole": false
+    },
     "shared/agent/identity.ts": {
       "distance": 1,
       "via": [],
@@ -22,7 +28,13 @@
     "shared/agent/record.ts": {
       "distance": 1,
       "via": [],
-      "hash": "c9aff89071cb",
+      "hash": "55535bf594a1",
+      "whole": false
+    },
+    "shared/agent/repeat.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "bf4c81366903",
       "whole": false
     },
     "shared/agent/seat.ts": {
@@ -34,31 +46,31 @@
     "shared/agent/snapshot.ts": {
       "distance": 1,
       "via": [],
-      "hash": "31018f0ae58c",
+      "hash": "bd1f9821221c",
       "whole": false
     },
     "shared/board/apply.ts": {
       "distance": 1,
       "via": [],
-      "hash": "00a8a7c4073c",
+      "hash": "33b700734b54",
       "whole": false
     },
     "shared/board/ops.ts": {
       "distance": 2,
       "via": [],
-      "hash": "ac549660a041",
+      "hash": "d2e65d68810d",
       "whole": false
     },
     "shared/board/schema.ts": {
       "distance": 1,
       "via": [],
-      "hash": "7886b4b9587a",
+      "hash": "13beadab62e6",
       "whole": false
     },
     "shared/board/sdk.ts": {
       "distance": 2,
       "via": [],
-      "hash": "6fafc07c2757",
+      "hash": "a1d2a72c0d18",
       "whole": false
     },
     "shared/board/seed.ts": {
@@ -77,6 +89,12 @@
       "distance": 1,
       "via": [],
       "hash": "c468471135c8",
+      "whole": false
+    },
+    "shared/looper.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "71acfbb0dc25",
       "whole": false
     },
     "shared/names.ts": {
@@ -130,7 +148,7 @@
     "worker/agent/mcp.ts": {
       "distance": 1,
       "via": [],
-      "hash": "d7eb83f64fcc",
+      "hash": "bac93c31b3a3",
       "whole": false
     },
     "worker/agent/roster.ts": {
@@ -141,6 +159,41 @@
     }
   },
   "symbols": [
+    {
+      "file": "shared/agent/held.ts",
+      "symbol": "Holds",
+      "distance": 1,
+      "via": [],
+      "hash": "7b23c362713d"
+    },
+    {
+      "file": "shared/agent/held.ts",
+      "symbol": "heldBy",
+      "distance": 1,
+      "via": [],
+      "hash": "320a01614bbe"
+    },
+    {
+      "file": "shared/agent/held.ts",
+      "symbol": "holdsOf",
+      "distance": 1,
+      "via": [],
+      "hash": "c548ac37e342"
+    },
+    {
+      "file": "shared/agent/held.ts",
+      "symbol": "split",
+      "distance": 1,
+      "via": [],
+      "hash": "6dd82b05daf5"
+    },
+    {
+      "file": "shared/agent/held.ts",
+      "symbol": "withoutHeld",
+      "distance": 1,
+      "via": [],
+      "hash": "91637ed69259"
+    },
     {
       "file": "shared/agent/identity.ts",
       "symbol": "AGENT_AUTHOR_PREFIX",
@@ -196,6 +249,13 @@
       "distance": 2,
       "via": [],
       "hash": "96f6ce6d73cc"
+    },
+    {
+      "file": "shared/agent/identity.ts",
+      "symbol": "isAgentAuthor",
+      "distance": 2,
+      "via": [],
+      "hash": "ed128f9b30e1"
     },
     {
       "file": "shared/agent/identity.ts",
@@ -258,7 +318,7 @@
       "symbol": "AgentCall",
       "distance": 1,
       "via": [],
-      "hash": "7b6dad8b9632"
+      "hash": "0dfe6d675e02"
     },
     {
       "file": "shared/agent/record.ts",
@@ -269,10 +329,24 @@
     },
     {
       "file": "shared/agent/record.ts",
+      "symbol": "FX_HELP",
+      "distance": 1,
+      "via": [],
+      "hash": "1ba4c2a3f0f0"
+    },
+    {
+      "file": "shared/agent/record.ts",
       "symbol": "KNOB_HELP",
       "distance": 1,
       "via": [],
       "hash": "c5e2c4c7d66e"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "MASTER_HELP",
+      "distance": 1,
+      "via": [],
+      "hash": "0dcc712a7f57"
     },
     {
       "file": "shared/agent/record.ts",
@@ -304,6 +378,13 @@
     },
     {
       "file": "shared/agent/record.ts",
+      "symbol": "fxHelp",
+      "distance": 1,
+      "via": [],
+      "hash": "2698c9b5fbd7"
+    },
+    {
+      "file": "shared/agent/record.ts",
       "symbol": "knobDrafts",
       "distance": 1,
       "via": [],
@@ -318,10 +399,24 @@
     },
     {
       "file": "shared/agent/record.ts",
+      "symbol": "masterHelp",
+      "distance": 1,
+      "via": [],
+      "hash": "dff86283f7bb"
+    },
+    {
+      "file": "shared/agent/record.ts",
       "symbol": "prepare",
       "distance": 1,
       "via": [],
       "hash": "70840b3e84e5"
+    },
+    {
+      "file": "shared/agent/repeat.ts",
+      "symbol": "stampRepeats",
+      "distance": 1,
+      "via": [],
+      "hash": "50f15057a453"
     },
     {
       "file": "shared/agent/seat.ts",
@@ -335,7 +430,7 @@
       "symbol": "Snapshot",
       "distance": 1,
       "via": [],
-      "hash": "f99bf8312e1f"
+      "hash": "1a0457893b01"
     },
     {
       "file": "shared/agent/snapshot.ts",
@@ -370,7 +465,7 @@
       "symbol": "snapshotOf",
       "distance": 1,
       "via": [],
-      "hash": "a34cb052eebe"
+      "hash": "14fa04962076"
     },
     {
       "file": "shared/board/apply.ts",
@@ -405,7 +500,14 @@
       "symbol": "applyOne",
       "distance": 1,
       "via": [],
-      "hash": "5fa5be124443"
+      "hash": "f4f1ace24f7a"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "checkMaster",
+      "distance": 1,
+      "via": [],
+      "hash": "2fd318c8c420"
     },
     {
       "file": "shared/board/apply.ts",
@@ -443,6 +545,13 @@
       "hash": "699bab1b6024"
     },
     {
+      "file": "shared/board/apply.ts",
+      "symbol": "readStartBeat",
+      "distance": 1,
+      "via": [],
+      "hash": "5c7d60535895"
+    },
+    {
       "file": "shared/board/ops.ts",
       "symbol": "AssignPad",
       "distance": 2,
@@ -461,7 +570,7 @@
       "symbol": "Op",
       "distance": 2,
       "via": [],
-      "hash": "0f2e35d4b361"
+      "hash": "a43c811a0843"
     },
     {
       "file": "shared/board/ops.ts",
@@ -483,6 +592,20 @@
       "distance": 2,
       "via": [],
       "hash": "ce0cddb26e23"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "SetFx",
+      "distance": 2,
+      "via": [],
+      "hash": "760c698275cd"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "SetMaster",
+      "distance": 2,
+      "via": [],
+      "hash": "769ba3ca27d8"
     },
     {
       "file": "shared/board/ops.ts",
@@ -521,6 +644,34 @@
     },
     {
       "file": "shared/board/schema.ts",
+      "symbol": "CONTROL_KEYS",
+      "distance": 2,
+      "via": [],
+      "hash": "4b3707fb1b4a"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "FX_MODES",
+      "distance": 2,
+      "via": [],
+      "hash": "40470b82cb64"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "FX_MODE_NAMES",
+      "distance": 2,
+      "via": [],
+      "hash": "4aa6e493e197"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "FxMode",
+      "distance": 2,
+      "via": [],
+      "hash": "9566eca9e031"
+    },
+    {
+      "file": "shared/board/schema.ts",
       "symbol": "Hit",
       "distance": 2,
       "via": [],
@@ -532,6 +683,62 @@
       "distance": 2,
       "via": [],
       "hash": "98bcc35c7209"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MASTER_DEFAULTS",
+      "distance": 2,
+      "via": [],
+      "hash": "3a62bf5359ba"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MASTER_KEYS",
+      "distance": 2,
+      "via": [],
+      "hash": "0c43bf63ff5c"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MASTER_KNOBS",
+      "distance": 2,
+      "via": [],
+      "hash": "1e1191470a40"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MASTER_KNOB_NAMES",
+      "distance": 2,
+      "via": [],
+      "hash": "1f11c9618ed8"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "Master",
+      "distance": 2,
+      "via": [],
+      "hash": "ac58eac902be"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MasterKey",
+      "distance": 2,
+      "via": [],
+      "hash": "7ad89be7e6a0"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MasterKnob",
+      "distance": 2,
+      "via": [],
+      "hash": "28833e84bb10"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MasterValues",
+      "distance": 2,
+      "via": [],
+      "hash": "04399310b573"
     },
     {
       "file": "shared/board/schema.ts",
@@ -556,10 +763,17 @@
     },
     {
       "file": "shared/board/schema.ts",
+      "symbol": "REPEAT_START_BEAT_MAX",
+      "distance": 2,
+      "via": [],
+      "hash": "e5874a4942b3"
+    },
+    {
+      "file": "shared/board/schema.ts",
       "symbol": "ROOTS",
       "distance": 1,
       "via": [],
-      "hash": "8dbb9dfa6837"
+      "hash": "ec3f02c1c76c"
     },
     {
       "file": "shared/board/schema.ts",
@@ -605,10 +819,31 @@
     },
     {
       "file": "shared/board/schema.ts",
+      "symbol": "fxAxes",
+      "distance": 2,
+      "via": [],
+      "hash": "24a62fa4a615"
+    },
+    {
+      "file": "shared/board/schema.ts",
       "symbol": "knob",
       "distance": 2,
       "via": [],
       "hash": "01bca25db6c8"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "masterKnob",
+      "distance": 2,
+      "via": [],
+      "hash": "7c605ee22506"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "masterOf",
+      "distance": 2,
+      "via": [],
+      "hash": "03b462f6e360"
     },
     {
       "file": "shared/board/sdk.ts",
@@ -679,6 +914,69 @@
       "distance": 2,
       "via": [],
       "hash": "a5c9ee31de5c"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "REPEAT_SLICES",
+      "distance": 2,
+      "via": [],
+      "hash": "5e82bb9afbec"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "SIXTEENTH",
+      "distance": 2,
+      "via": [],
+      "hash": "5d9a8a55b94c"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "beatSeconds",
+      "distance": 2,
+      "via": [],
+      "hash": "1b750ae7f53d"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "ceilNear",
+      "distance": 2,
+      "via": [],
+      "hash": "75c6e384ff05"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "jamBeat",
+      "distance": 2,
+      "via": [],
+      "hash": "14663a742e99"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "repeatLine",
+      "distance": 2,
+      "via": [],
+      "hash": "a38faff73105"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "repeatSlice",
+      "distance": 2,
+      "via": [],
+      "hash": "bf9c5658da1f"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "repeatStamp",
+      "distance": 2,
+      "via": [],
+      "hash": "9424fb95ff7b"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "repeatZone",
+      "distance": 2,
+      "via": [],
+      "hash": "17a7259cb8e5"
     },
     {
       "file": "shared/names.ts",
@@ -1018,10 +1316,17 @@
     },
     {
       "file": "worker/agent/mcp.ts",
+      "symbol": "FX_LINES",
+      "distance": 1,
+      "via": [],
+      "hash": "8464a94c41af"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
       "symbol": "INSTRUCTIONS",
       "distance": 1,
       "via": [],
-      "hash": "d8baf1dbee47"
+      "hash": "41b0793faa51"
     },
     {
       "file": "worker/agent/mcp.ts",
@@ -1036,6 +1341,13 @@
       "distance": 1,
       "via": [],
       "hash": "4fb3159ed0cf"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "MASTER_LINES",
+      "distance": 1,
+      "via": [],
+      "hash": "ce19cfd68217"
     },
     {
       "file": "worker/agent/mcp.ts",
@@ -1220,7 +1532,7 @@
     "@standard-schema/spec": "1.1.0",
     "@types/node": "22.20.5",
     "agents": "0.33.0",
-    "duratom": "0.1.0",
+    "duratom": "0.2.0",
     "hono": "4.13.19",
     "hono-party": "2.1.0",
     "jotai": "3.0.2",

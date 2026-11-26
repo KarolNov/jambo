@@ -82,12 +82,16 @@ An agent SHALL be in the jam's presence from its first action (`join`, `run` or 
 
 ### Requirement: Reads the jam
 
-`join` SHALL return the jam as it is: tempo, pads, the kit and the jam's uploads, readable tracks, and who's here.
+`join` SHALL return the jam as it is: tempo, pads, the kit and the jam's uploads, readable tracks, the master knobs and touchpad modes, and who's here.
 
 - **Scenario: Read tracks**
   - **GIVEN** a jam with two tracks
   - **WHEN** an agent calls `join`
   - **THEN** it gets both tracks
+- **Scenario: Read the master**
+  - **GIVEN** a jam with Filter latched at x -0.4 and swing at 0.5
+  - **WHEN** an agent calls `join`
+  - **THEN** it gets Filter at x -0.4, y 0 and swing 0.5, with every other master setting at its default
 
 ### Requirement: One run, one change
 
@@ -113,12 +117,19 @@ A track an agent adds SHALL have the agent as its author and the agent's colour,
 
 ### Requirement: Same powers as a person
 
-A run SHALL be able to set the tempo, assign pads, replace a sound, and add, change and remove any track, under the same rules as a person; it SHALL NOT be able to add, remove or expire uploads.
+A run SHALL be able to set the tempo, assign pads, replace a sound, add, change and remove any track, set the master knobs, and set or reset any touchpad mode, under the same rules as a person. It SHALL NOT be able to add, remove or expire uploads. An operation on a control a person is holding right now SHALL be refused with an issue naming them; the run's other operations SHALL still apply.
 
 - **Scenario: Remove someone's track**
   - **GIVEN** a track a person recorded
   - **WHEN** a run removes it
   - **THEN** it is removed for everyone
+- **Scenario: Agent drops the filter**
+  - **WHEN** a run sets Filter to x -0.8, y 0.3
+  - **THEN** everyone hears the mix darken, and Filter stays there until someone moves or resets it
+- **Scenario: Held control**
+  - **GIVEN** Misty Yak dragging master tone
+  - **WHEN** a run sets master tone and swing
+  - **THEN** tone is refused with an issue saying Misty Yak is holding it, and swing changes
 
 ### Requirement: Run limits
 
