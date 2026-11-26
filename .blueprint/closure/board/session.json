@@ -10,19 +10,19 @@
     "shared/board/apply.ts": {
       "distance": 2,
       "via": [],
-      "hash": "33b700734b54",
+      "hash": "3eca0b5a0d1f",
       "whole": false
     },
     "shared/board/ops.ts": {
       "distance": 2,
       "via": [],
-      "hash": "d2e65d68810d",
+      "hash": "15183686f8db",
       "whole": false
     },
     "shared/board/schema.ts": {
       "distance": 1,
       "via": [],
-      "hash": "13beadab62e6",
+      "hash": "5e247e43d149",
       "whole": false
     },
     "shared/board/sdk.ts": {
@@ -46,7 +46,7 @@
     "shared/looper.ts": {
       "distance": 2,
       "via": [],
-      "hash": "71acfbb0dc25",
+      "hash": "8c718b44be19",
       "whole": false
     },
     "shared/names.ts": {
@@ -70,7 +70,7 @@
     "shared/sounds.ts": {
       "distance": 2,
       "via": [],
-      "hash": "d0aeb2d77590",
+      "hash": "166166663e0a",
       "whole": false
     },
     "shared/words.ts": {
@@ -88,7 +88,7 @@
     "src/audio/engine.ts": {
       "distance": 1,
       "via": [],
-      "hash": "e3efa7a6c39d",
+      "hash": "28de659e9b21",
       "whole": false
     },
     "src/audio/knobs.ts": {
@@ -121,16 +121,58 @@
       "hash": "513ccb17f064",
       "whole": false
     },
+    "src/audio/voice/dsp/loopback.ts": {
+      "distance": 3,
+      "via": [],
+      "hash": "6301ded5cadf",
+      "whole": false
+    },
+    "src/audio/voice/dsp/tune.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "8854ca4bf3c4",
+      "whole": false
+    },
+    "src/audio/voice/input.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "a8e852fa3ca5",
+      "whole": false
+    },
+    "src/audio/voice/latency.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "1c4742cefaf5",
+      "whole": false
+    },
+    "src/audio/voice/prefs.ts": {
+      "distance": 3,
+      "via": [],
+      "hash": "563b567b5cf6",
+      "whole": false
+    },
+    "src/audio/voice/presets.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "f221aa62d25c",
+      "whole": false
+    },
     "src/board/connection.ts": {
       "distance": 1,
       "via": [],
       "hash": "b7d5a5fc4e00",
       "whole": false
     },
+    "src/board/console/Master.tsx": {
+      "distance": 1,
+      "via": [],
+      "hash": "b757365e6ca4",
+      "whole": false
+    },
     "src/board/console/loops.ts": {
       "distance": 1,
       "via": [],
-      "hash": "82c4cf131db7",
+      "hash": "140203edb326",
       "whole": false
     },
     "src/board/doc.ts": {
@@ -142,7 +184,7 @@
     "src/board/transport.ts": {
       "distance": 1,
       "via": [],
-      "hash": "deccd619446c",
+      "hash": "897ff66d671f",
       "whole": false
     },
     "src/theme/palette.ts": {
@@ -172,6 +214,13 @@
       "distance": 1,
       "via": [],
       "hash": "ed128f9b30e1"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "KIND_LIMITS",
+      "distance": 2,
+      "via": [],
+      "hash": "d6d3389b89c7"
     },
     {
       "file": "shared/board/apply.ts",
@@ -206,7 +255,7 @@
       "symbol": "applyOne",
       "distance": 2,
       "via": [],
-      "hash": "f4f1ace24f7a"
+      "hash": "34569e9cdd11"
     },
     {
       "file": "shared/board/apply.ts",
@@ -217,10 +266,10 @@
     },
     {
       "file": "shared/board/apply.ts",
-      "symbol": "countUploads",
+      "symbol": "countKind",
       "distance": 2,
       "via": [],
-      "hash": "63bc5390f690"
+      "hash": "669afe5a0a69"
     },
     {
       "file": "shared/board/apply.ts",
@@ -238,10 +287,24 @@
     },
     {
       "file": "shared/board/apply.ts",
-      "symbol": "isListedSound",
+      "symbol": "hitSoundId",
       "distance": 2,
       "via": [],
-      "hash": "86529b74d19b"
+      "hash": "a02f078407c9"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "listedKind",
+      "distance": 2,
+      "via": [],
+      "hash": "9a9955e593c8"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "namesSound",
+      "distance": 2,
+      "via": [],
+      "hash": "7ae2a0bd2de4"
     },
     {
       "file": "shared/board/apply.ts",
@@ -252,10 +315,24 @@
     },
     {
       "file": "shared/board/apply.ts",
+      "symbol": "rawHits",
+      "distance": 2,
+      "via": [],
+      "hash": "1aef5d054b7e"
+    },
+    {
+      "file": "shared/board/apply.ts",
       "symbol": "readStartBeat",
       "distance": 2,
       "via": [],
       "hash": "5c7d60535895"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "tracksUsing",
+      "distance": 2,
+      "via": [],
+      "hash": "f4c76079900b"
     },
     {
       "file": "shared/board/ops.ts",
@@ -276,7 +353,7 @@
       "symbol": "Op",
       "distance": 2,
       "via": [],
-      "hash": "a43c811a0843"
+      "hash": "a47a64bf5355"
     },
     {
       "file": "shared/board/ops.ts",
@@ -381,7 +458,7 @@
       "symbol": "Hit",
       "distance": 1,
       "via": [],
-      "hash": "2fc556788ce6"
+      "hash": "61340eb4c3ef"
     },
     {
       "file": "shared/board/schema.ts",
@@ -490,6 +567,13 @@
     },
     {
       "file": "shared/board/schema.ts",
+      "symbol": "SOUND_KINDS",
+      "distance": 1,
+      "via": [],
+      "hash": "2ef4cf1d8129"
+    },
+    {
+      "file": "shared/board/schema.ts",
       "symbol": "SOUND_KNOBS",
       "distance": 1,
       "via": [],
@@ -507,7 +591,21 @@
       "symbol": "Sound",
       "distance": 1,
       "via": [],
-      "hash": "62aa4d8899c9"
+      "hash": "678d3dc0068d"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "SoundHit",
+      "distance": 2,
+      "via": [],
+      "hash": "f0343b0dc147"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "SoundKind",
+      "distance": 1,
+      "via": [],
+      "hash": "a9516e044400"
     },
     {
       "file": "shared/board/schema.ts",
@@ -529,6 +627,27 @@
       "distance": 1,
       "via": [],
       "hash": "24a62fa4a615"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "fxOn",
+      "distance": 2,
+      "via": [],
+      "hash": "5baa2106cbae"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "isSoundHit",
+      "distance": 2,
+      "via": [],
+      "hash": "2a8902a24ead"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "kindOf",
+      "distance": 1,
+      "via": [],
+      "hash": "e1c324e58f29"
     },
     {
       "file": "shared/board/schema.ts",
@@ -742,6 +861,13 @@
     },
     {
       "file": "shared/looper.ts",
+      "symbol": "Sounding",
+      "distance": 2,
+      "via": [],
+      "hash": "0d4906e9795d"
+    },
+    {
+      "file": "shared/looper.ts",
       "symbol": "barMs",
       "distance": 2,
       "via": [],
@@ -780,14 +906,21 @@
       "symbol": "finishTake",
       "distance": 2,
       "via": [],
-      "hash": "e7c2fea1ae2a"
+      "hash": "66823c942b30"
     },
     {
       "file": "shared/looper.ts",
       "symbol": "hitsInWindow",
       "distance": 2,
       "via": [],
-      "hash": "0be993da4880"
+      "hash": "59a7060197cd"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "jamBeat",
+      "distance": 2,
+      "via": [],
+      "hash": "14663a742e99"
     },
     {
       "file": "shared/looper.ts",
@@ -819,10 +952,24 @@
     },
     {
       "file": "shared/looper.ts",
+      "symbol": "repeatLine",
+      "distance": 2,
+      "via": [],
+      "hash": "a38faff73105"
+    },
+    {
+      "file": "shared/looper.ts",
       "symbol": "repeatSlice",
       "distance": 2,
       "via": [],
       "hash": "bf9c5658da1f"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "repeatStamp",
+      "distance": 2,
+      "via": [],
+      "hash": "9424fb95ff7b"
     },
     {
       "file": "shared/looper.ts",
@@ -833,10 +980,24 @@
     },
     {
       "file": "shared/looper.ts",
+      "symbol": "sungBeat",
+      "distance": 2,
+      "via": [],
+      "hash": "270e49ef697a"
+    },
+    {
+      "file": "shared/looper.ts",
       "symbol": "swingDelay",
       "distance": 2,
       "via": [],
       "hash": "a7c606bfa537"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "takeBars",
+      "distance": 2,
+      "via": [],
+      "hash": "40f20b88933c"
     },
     {
       "file": "shared/looper.ts",
@@ -900,6 +1061,13 @@
       "distance": 1,
       "via": [],
       "hash": "403b8b5de63f"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "CLIPS",
+      "distance": 3,
+      "via": [],
+      "hash": "5b4fe508ae80"
     },
     {
       "file": "shared/sounds.ts",
@@ -1039,7 +1207,14 @@
       "symbol": "Engine",
       "distance": 1,
       "via": [],
-      "hash": "eeffe69cd715"
+      "hash": "a4044c195c4b"
+    },
+    {
+      "file": "src/audio/engine.ts",
+      "symbol": "Hold",
+      "distance": 1,
+      "via": [],
+      "hash": "1b99815c95d0"
     },
     {
       "file": "src/audio/engine.ts",
@@ -1099,6 +1274,20 @@
     },
     {
       "file": "src/audio/engine.ts",
+      "symbol": "SING_TAIL",
+      "distance": 1,
+      "via": [],
+      "hash": "61505256dfbe"
+    },
+    {
+      "file": "src/audio/engine.ts",
+      "symbol": "STOP_TIMEOUT_MS",
+      "distance": 1,
+      "via": [],
+      "hash": "7fdebe8295b2"
+    },
+    {
+      "file": "src/audio/engine.ts",
       "symbol": "Scheduled",
       "distance": 1,
       "via": [],
@@ -1106,10 +1295,38 @@
     },
     {
       "file": "src/audio/engine.ts",
+      "symbol": "SingOptions",
+      "distance": 1,
+      "via": [],
+      "hash": "59126c268a5d"
+    },
+    {
+      "file": "src/audio/engine.ts",
+      "symbol": "SungClip",
+      "distance": 1,
+      "via": [],
+      "hash": "a7d4a2ddeb2b"
+    },
+    {
+      "file": "src/audio/engine.ts",
       "symbol": "TICK_MS",
       "distance": 1,
       "via": [],
       "hash": "8736bc964cf7"
+    },
+    {
+      "file": "src/audio/engine.ts",
+      "symbol": "TakeClip",
+      "distance": 1,
+      "via": [],
+      "hash": "417eae7da52c"
+    },
+    {
+      "file": "src/audio/engine.ts",
+      "symbol": "Target",
+      "distance": 1,
+      "via": [],
+      "hash": "cf12e3ef4385"
     },
     {
       "file": "src/audio/engine.ts",
@@ -1553,6 +1770,384 @@
       "hash": "95b61ccf60a3"
     },
     {
+      "file": "src/audio/voice/dsp/loopback.ts",
+      "symbol": "AGREE",
+      "distance": 3,
+      "via": [],
+      "hash": "2670ba09faa2"
+    },
+    {
+      "file": "src/audio/voice/dsp/loopback.ts",
+      "symbol": "CLICK_HZ",
+      "distance": 3,
+      "via": [],
+      "hash": "3c7e22ee51b1"
+    },
+    {
+      "file": "src/audio/voice/dsp/loopback.ts",
+      "symbol": "CLICK_SECONDS",
+      "distance": 3,
+      "via": [],
+      "hash": "dd70c4043852"
+    },
+    {
+      "file": "src/audio/voice/dsp/loopback.ts",
+      "symbol": "MAX_ROUND_TRIP",
+      "distance": 3,
+      "via": [],
+      "hash": "f7d156156b1e"
+    },
+    {
+      "file": "src/audio/voice/dsp/loopback.ts",
+      "symbol": "MIN_HEARD",
+      "distance": 3,
+      "via": [],
+      "hash": "74f5f80dfdc5"
+    },
+    {
+      "file": "src/audio/voice/dsp/loopback.ts",
+      "symbol": "MIN_MATCH",
+      "distance": 3,
+      "via": [],
+      "hash": "9b329d65ff35"
+    },
+    {
+      "file": "src/audio/voice/dsp/loopback.ts",
+      "symbol": "findClicks",
+      "distance": 3,
+      "via": [],
+      "hash": "82241eeace35"
+    },
+    {
+      "file": "src/audio/voice/dsp/loopback.ts",
+      "symbol": "loopbackClick",
+      "distance": 3,
+      "via": [],
+      "hash": "45c8f605de7e"
+    },
+    {
+      "file": "src/audio/voice/dsp/tune.ts",
+      "symbol": "DEFAULT_KEY",
+      "distance": 3,
+      "via": [],
+      "hash": "67998bd25999"
+    },
+    {
+      "file": "src/audio/voice/dsp/tune.ts",
+      "symbol": "Key",
+      "distance": 2,
+      "via": [],
+      "hash": "f26ba75da6d8"
+    },
+    {
+      "file": "src/audio/voice/dsp/tune.ts",
+      "symbol": "NOTE_NAMES",
+      "distance": 3,
+      "via": [],
+      "hash": "74c4b1fe2671"
+    },
+    {
+      "file": "src/audio/voice/dsp/tune.ts",
+      "symbol": "PitchMode",
+      "distance": 4,
+      "via": [],
+      "hash": "68318ae2b264"
+    },
+    {
+      "file": "src/audio/voice/dsp/tune.ts",
+      "symbol": "PitchOptions",
+      "distance": 4,
+      "via": [],
+      "hash": "20d655abe327"
+    },
+    {
+      "file": "src/audio/voice/dsp/tune.ts",
+      "symbol": "STEPS",
+      "distance": 4,
+      "via": [],
+      "hash": "c486bf749b17"
+    },
+    {
+      "file": "src/audio/voice/dsp/tune.ts",
+      "symbol": "Scale",
+      "distance": 2,
+      "via": [],
+      "hash": "d418ba005919"
+    },
+    {
+      "file": "src/audio/voice/dsp/tune.ts",
+      "symbol": "keyName",
+      "distance": 3,
+      "via": [],
+      "hash": "e51c64a8823a"
+    },
+    {
+      "file": "src/audio/voice/dsp/tune.ts",
+      "symbol": "scaleNotes",
+      "distance": 4,
+      "via": [],
+      "hash": "07a7f54b2aee"
+    },
+    {
+      "file": "src/audio/voice/input.ts",
+      "symbol": "CAPTURE_PROCESSOR",
+      "distance": 2,
+      "via": [],
+      "hash": "f94434f89347"
+    },
+    {
+      "file": "src/audio/voice/input.ts",
+      "symbol": "CLICKS",
+      "distance": 2,
+      "via": [],
+      "hash": "ca862ec494d8"
+    },
+    {
+      "file": "src/audio/voice/input.ts",
+      "symbol": "CLICK_SPACING",
+      "distance": 2,
+      "via": [],
+      "hash": "271a55c401ee"
+    },
+    {
+      "file": "src/audio/voice/input.ts",
+      "symbol": "MAX_SECONDS",
+      "distance": 2,
+      "via": [],
+      "hash": "0f8ca8d340c0"
+    },
+    {
+      "file": "src/audio/voice/input.ts",
+      "symbol": "MIC_MESSAGES",
+      "distance": 2,
+      "via": [],
+      "hash": "aadd02328639"
+    },
+    {
+      "file": "src/audio/voice/input.ts",
+      "symbol": "MicError",
+      "distance": 2,
+      "via": [],
+      "hash": "554c3bad8d95"
+    },
+    {
+      "file": "src/audio/voice/input.ts",
+      "symbol": "MicProblem",
+      "distance": 2,
+      "via": [],
+      "hash": "eedbbacf716d"
+    },
+    {
+      "file": "src/audio/voice/input.ts",
+      "symbol": "VoiceInput",
+      "distance": 2,
+      "via": [],
+      "hash": "7cb89b24bf4e"
+    },
+    {
+      "file": "src/audio/voice/input.ts",
+      "symbol": "loadCapture",
+      "distance": 2,
+      "via": [],
+      "hash": "d2eed5596b40"
+    },
+    {
+      "file": "src/audio/voice/input.ts",
+      "symbol": "loaded",
+      "distance": 2,
+      "via": [],
+      "hash": "825a49957505"
+    },
+    {
+      "file": "src/audio/voice/input.ts",
+      "symbol": "openMic",
+      "distance": 2,
+      "via": [],
+      "hash": "0073b0b99392"
+    },
+    {
+      "file": "src/audio/voice/latency.ts",
+      "symbol": "Latency",
+      "distance": 2,
+      "via": [],
+      "hash": "a1d9796cd684"
+    },
+    {
+      "file": "src/audio/voice/latency.ts",
+      "symbol": "ReportedLatency",
+      "distance": 3,
+      "via": [],
+      "hash": "a3dad47c0614"
+    },
+    {
+      "file": "src/audio/voice/latency.ts",
+      "symbol": "estimateLatency",
+      "distance": 3,
+      "via": [],
+      "hash": "139359290f55"
+    },
+    {
+      "file": "src/audio/voice/latency.ts",
+      "symbol": "readLatency",
+      "distance": 3,
+      "via": [],
+      "hash": "56f0c23a28bc"
+    },
+    {
+      "file": "src/audio/voice/latency.ts",
+      "symbol": "seconds",
+      "distance": 3,
+      "via": [],
+      "hash": "c2472ec5f2f5"
+    },
+    {
+      "file": "src/audio/voice/latency.ts",
+      "symbol": "withMeasured",
+      "distance": 3,
+      "via": [],
+      "hash": "3518a6f10e43"
+    },
+    {
+      "file": "src/audio/voice/prefs.ts",
+      "symbol": "ROUND_TRIP_KEY",
+      "distance": 3,
+      "via": [],
+      "hash": "0b0bfce4f4ef"
+    },
+    {
+      "file": "src/audio/voice/prefs.ts",
+      "symbol": "RoundTripSetup",
+      "distance": 3,
+      "via": [],
+      "hash": "119a46bb6cb4"
+    },
+    {
+      "file": "src/audio/voice/prefs.ts",
+      "symbol": "SAME_ESTIMATE",
+      "distance": 3,
+      "via": [],
+      "hash": "f5739c1f3f56"
+    },
+    {
+      "file": "src/audio/voice/prefs.ts",
+      "symbol": "loadRoundTrip",
+      "distance": 3,
+      "via": [],
+      "hash": "0eb06c7e387c"
+    },
+    {
+      "file": "src/audio/voice/prefs.ts",
+      "symbol": "read",
+      "distance": 3,
+      "via": [],
+      "hash": "683b7ea57946"
+    },
+    {
+      "file": "src/audio/voice/prefs.ts",
+      "symbol": "saveRoundTrip",
+      "distance": 3,
+      "via": [],
+      "hash": "f6660a88267b"
+    },
+    {
+      "file": "src/audio/voice/prefs.ts",
+      "symbol": "write",
+      "distance": 3,
+      "via": [],
+      "hash": "2791b56ebe48"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "CLEAN_LOW_CUT",
+      "distance": 3,
+      "via": [],
+      "hash": "0d5d75e38329"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "CRUSHER_PROCESSOR",
+      "distance": 3,
+      "via": [],
+      "hash": "c9d587fe7ffc"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "PITCH_PROCESSOR",
+      "distance": 3,
+      "via": [],
+      "hash": "7a5cc4fb2b73"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "PRESETS",
+      "distance": 2,
+      "via": [],
+      "hash": "2913fa4b5320"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "PresetId",
+      "distance": 2,
+      "via": [],
+      "hash": "2142017ed69b"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "biquad",
+      "distance": 3,
+      "via": [],
+      "hash": "248b5154de23"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "buildRack",
+      "distance": 3,
+      "via": [],
+      "hash": "e14afef49d54"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "chain",
+      "distance": 3,
+      "via": [],
+      "hash": "35304e164184"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "gain",
+      "distance": 3,
+      "via": [],
+      "hash": "cc5385378ee0"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "loadWorklet",
+      "distance": 3,
+      "via": [],
+      "hash": "b01677b1130d"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "loaded",
+      "distance": 3,
+      "via": [],
+      "hash": "a63891189b2e"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "pitchOptions",
+      "distance": 3,
+      "via": [],
+      "hash": "c29f8e7565db"
+    },
+    {
+      "file": "src/audio/voice/presets.ts",
+      "symbol": "saturate",
+      "distance": 3,
+      "via": [],
+      "hash": "e53908f039b8"
+    },
+    {
       "file": "src/board/connection.ts",
       "symbol": "ConnectionStatus",
       "distance": 1,
@@ -1574,11 +2169,102 @@
       "hash": "867ce7b582aa"
     },
     {
+      "file": "src/board/console/Master.tsx",
+      "symbol": "Master",
+      "distance": 1,
+      "via": [],
+      "hash": "a7ca18086e04"
+    },
+    {
+      "file": "src/board/console/Master.tsx",
+      "symbol": "ModePad",
+      "distance": 1,
+      "via": [],
+      "hash": "3a632850cd94"
+    },
+    {
+      "file": "src/board/console/Master.tsx",
+      "symbol": "TouchpadMode",
+      "distance": 1,
+      "via": [],
+      "hash": "8ed470db05a7"
+    },
+    {
+      "file": "src/board/console/loops.ts",
+      "symbol": "AxisReadout",
+      "distance": 2,
+      "via": [],
+      "hash": "7c84d6f133ee"
+    },
+    {
+      "file": "src/board/console/loops.ts",
+      "symbol": "MASTER_CONSOLE_KNOBS",
+      "distance": 2,
+      "via": [],
+      "hash": "0de96b9e55e3"
+    },
+    {
+      "file": "src/board/console/loops.ts",
+      "symbol": "MASTER_READOUTS",
+      "distance": 2,
+      "via": [],
+      "hash": "25f59be16ca8"
+    },
+    {
+      "file": "src/board/console/loops.ts",
+      "symbol": "REPEAT_NOTES",
+      "distance": 2,
+      "via": [],
+      "hash": "32f599c1bf28"
+    },
+    {
+      "file": "src/board/console/loops.ts",
+      "symbol": "SOUND_READOUTS",
+      "distance": 2,
+      "via": [],
+      "hash": "3afb3c122651"
+    },
+    {
+      "file": "src/board/console/loops.ts",
+      "symbol": "THROW_NOTES",
+      "distance": 2,
+      "via": [],
+      "hash": "46b6b2f4d30f"
+    },
+    {
+      "file": "src/board/console/loops.ts",
+      "symbol": "TOUCHPAD_MODES",
+      "distance": 2,
+      "via": [],
+      "hash": "c35f6d80098b"
+    },
+    {
+      "file": "src/board/console/loops.ts",
+      "symbol": "TOUCHPAD_READOUTS",
+      "distance": 2,
+      "via": [],
+      "hash": "7ebacdd3fe55"
+    },
+    {
       "file": "src/board/console/loops.ts",
       "symbol": "beatPosition",
       "distance": 1,
       "via": [],
       "hash": "6a19fd5d95b9"
+    },
+    {
+      "file": "src/board/console/loops.ts",
+      "symbol": "clipBar",
+      "distance": 1,
+      "via": [],
+      "hash": "314e06490e94"
+    },
+    {
+      "file": "src/board/console/loops.ts",
+      "symbol": "pct",
+      "distance": 2,
+      "via": [],
+      "hash": "dfdbcb260e90"
     },
     {
       "file": "src/board/doc.ts",
@@ -1620,7 +2306,7 @@
       "symbol": "takeMarks",
       "distance": 1,
       "via": [],
-      "hash": "7279be5e7996"
+      "hash": "e9547c32bf24"
     },
     {
       "file": "src/board/transport.ts",

@@ -24,7 +24,7 @@ A jam SHALL have a 4×4 grid of pads, each with a sound and a keyboard key, the 
 
 ### Requirement: Assign a sound
 
-Anyone in the jam SHALL be able to assign any sound from the kit or the jam's uploads to any pad, and the change SHALL reach everyone. The sound menu SHALL list the kit by category, then the jam's uploads, then Upload a sound…. An uploaded sound SHALL carry a dot in its uploader's colour, on its pad and in the menu, saying who uploaded it.
+Anyone in the jam SHALL be able to assign any sound from the kit or the jam's uploads to any pad, and the change SHALL reach everyone. The sound menu SHALL list the kit by category, then the jam's uploads, then Upload a sound…; voice clips SHALL NOT be listed. An uploaded sound SHALL carry a dot in its uploader's colour, on its pad and in the menu, saying who uploaded it.
 
 - **Scenario: Reassign**
   - **WHEN** someone chooses Change sounds, clicks the pad on key `Q` and picks the clap from its menu
@@ -37,6 +37,10 @@ Anyone in the jam SHALL be able to assign any sound from the kit or the jam's up
   - **GIVEN** a pad holding Vox, uploaded by Misty Yak
   - **WHEN** someone points at the dot beside its name
   - **THEN** it says "Uploaded by Misty Yak", or "Uploaded by you" for its uploader; a sound uploaded before names says the uploader's colour
+- **Scenario: Clips stay out of the menu**
+  - **GIVEN** a jam whose tracks hold three voice clips
+  - **WHEN** someone opens a pad's sound menu
+  - **THEN** no clip is listed
 
 ### Requirement: Default layout
 

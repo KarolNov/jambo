@@ -63,12 +63,16 @@ Every client in a jam SHALL load each of the jam's uploads, including ones added
 
 ### Requirement: Remove or replace an upload
 
-An upload SHALL be removable only while no pad uses it. Replacing an upload SHALL put a new file on every pad that used it and then remove it. Replacing SHALL need room for one more upload, so it is unavailable while the jam is full.
+An upload SHALL be removable only while no pad and no track's hit uses it. Replacing an upload SHALL put a new file on every pad and every track hit that used it and then remove it. Replacing SHALL need room for one more upload, so it is unavailable while the jam is full.
 
 - **Scenario: In use**
   - **GIVEN** an upload on the pad on key `W`
   - **WHEN** someone tries to remove it
   - **THEN** it is not removed and they are told which pads use it
+- **Scenario: Used by a track**
+  - **GIVEN** an upload on no pad, named by a hit in the track `Mellow Claude 1`
+  - **WHEN** someone tries to remove it
+  - **THEN** it is not removed and they are told which tracks use it
 - **Scenario: Replace**
   - **GIVEN** an upload on pads `W` and `E`, and a track that hits `W`
   - **WHEN** someone replaces it with another file

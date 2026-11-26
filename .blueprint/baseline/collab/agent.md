@@ -86,7 +86,7 @@ An agent SHALL be in the jam's presence from its first action (`join`, `run`, `u
 
 ### Requirement: Reads the jam
 
-`join` SHALL return the jam as it is: tempo, pads, the kit and the jam's uploads, readable tracks, the master knobs and touchpad modes, each mode as its x and y, and who's here.
+`join` SHALL return the jam as it is: tempo, pads, the kit and the jam's uploads and clips, each sound with its kind, readable tracks with each hit naming a pad or a sound, the master knobs and touchpad modes, each mode as its x and y, and who's here.
 
 - **Scenario: Read tracks**
   - **GIVEN** a jam with two tracks
@@ -96,6 +96,10 @@ An agent SHALL be in the jam's presence from its first action (`join`, `run`, `u
   - **GIVEN** a jam with Filter latched at x -0.4 and swing at 0.5
   - **WHEN** an agent calls `join`
   - **THEN** it gets Filter at x -0.4, y 0 and swing 0.5, with every other master setting at its default
+- **Scenario: Read a voice track**
+  - **GIVEN** a track with a pad hit and a clip hit
+  - **WHEN** an agent calls `join`
+  - **THEN** the track's hits hold one `padId` hit and one `soundId` hit, and the sounds list that clip with kind `clip`
 
 ### Requirement: Listens for changes
 
@@ -130,7 +134,7 @@ A run SHALL be a list of board operations, applied in order to the jam as one ch
 
 ### Requirement: Agent writes carry the agent
 
-A track an agent adds SHALL have the agent as its author and the agent's colour, start unmuted with no effects, and get its id from jambo; the agent SHALL give only its name, bars, hits, level and snap, and optionally its reverb, echo, tone, pitch and pan.
+A track an agent adds SHALL have the agent as its author and the agent's colour, start unmuted with no effects, and get its id from jambo; the agent SHALL give only its name, bars, hits (each naming a pad or a listed sound), level and snap, and optionally its reverb, echo, tone, pitch and pan.
 
 - **Scenario: Posing as someone**
   - **WHEN** a run adds a track giving another person's id as author and their colour
@@ -138,6 +142,10 @@ A track an agent adds SHALL have the agent as its author and the agent's colour,
 - **Scenario: Track with echo**
   - **WHEN** a run adds a track with echo 0.4 and pan 0.5
   - **THEN** the track is added with that echo and pan, and plays them for everyone
+- **Scenario: Reuse a voice**
+  - **GIVEN** a jam with a clip named by one track
+  - **WHEN** a run adds a track with hits naming that clip on beats 0 and 8
+  - **THEN** the track is added and plays the clip twice per loop for everyone
 
 ### Requirement: Same powers as a person
 
