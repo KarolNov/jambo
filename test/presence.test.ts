@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { Awareness } from 'y-protocols/awareness'
+import { describe, expect, it, vi } from 'vitest'
+import { applyAwarenessUpdate, Awareness, encodeAwarenessUpdate } from 'y-protocols/awareness'
 import * as Y from 'yjs'
 import {
   controlKey,
@@ -123,6 +123,34 @@ describe('listHolders', () => {
   it('never lists you, even turning it from another tab', () => {
     expect(listHolders(states([5, { person: me, control: knob }]), self).size).toBe(0)
     expect(listHolders(states([1, { person: me, control: knob }]), self).size).toBe(0)
+  })
+
+  // @scenario board/session: Holder drops
+  it("lets go of a control within about 30 seconds of its holder's connection dropping", () => {
+    vi.useFakeTimers()
+    try {
+      const mine = new Awareness(new Y.Doc())
+      const theirDoc = new Y.Doc()
+      const theirs = new Awareness(theirDoc)
+      theirs.setLocalState({ person: coral, control: knob })
+      applyAwarenessUpdate(mine, encodeAwarenessUpdate(theirs, [theirDoc.clientID]), 'net')
+      const here = { id: me.id, clientID: mine.clientID }
+      expect(listHolders(mine.getStates(), here).get(knob)).toEqual(coral)
+      // Their connection drops: nothing more arrives from them. Awareness reads the clock through
+      // lib0, which holds the real `Date.now`, so age their last update instead of faking the clock.
+      theirs.destroy()
+      const silentFor = (ms: number) => {
+        mine.meta.get(theirDoc.clientID)!.lastUpdated -= ms
+        vi.advanceTimersByTime(3_000) // One run of awareness's timeout check.
+      }
+      silentFor(25_000)
+      expect(listHolders(mine.getStates(), here).get(knob)).toEqual(coral)
+      silentFor(6_000)
+      expect(listHolders(mine.getStates(), here).has(knob)).toBe(false)
+      mine.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   // @scenario board/session: Grab at once

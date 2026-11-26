@@ -106,3 +106,21 @@ An operation on a missing track or pad, or adding a track with an id that alread
 - **Scenario: Remove a missing track**
   - **WHEN** an operation removes a track id the jam does not have
   - **THEN** it is refused and the board is unchanged
+
+### Requirement: Master settings
+
+A board SHALL hold its master settings as one value per control: tone, drive, width and swing, each a number in its range, and filter, throw, lo-fi and repeat, each an X and Y in its range, with repeat also storing the jam beat its slice starts on. One operation SHALL set any of the master knobs, and another SHALL set one pad mode's position. A value out of range, an unknown knob or an unknown mode SHALL be refused and change nothing. Changes to different controls made at the same time SHALL all be kept; of two changes to the same control, the last SHALL win.
+
+- **Scenario: Set the drive**
+  - **WHEN** an operation sets master drive to 0.4
+  - **THEN** drive is 0.4 and the other master settings are unchanged
+- **Scenario: Out of range**
+  - **WHEN** an operation sets Filter to x -1.5
+  - **THEN** it is refused and Filter keeps its position
+- **Scenario: Two controls at once**
+  - **GIVEN** two clients offline
+  - **WHEN** one sets Filter and the other sets Throw, and both reconnect
+  - **THEN** the board holds both changes
+- **Scenario: Lots of moves**
+  - **WHEN** two people drag Filter and Throw back and forth for a minute
+  - **THEN** the board still stores one value per control
