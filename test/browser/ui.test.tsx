@@ -665,7 +665,7 @@ describe('xy pad', () => {
     expect(Number(pad.style.getPropertyValue('--fy'))).toBe(1)
   })
 
-  // @scenario ui: Keys
+  // @scenario ui: Move the puck by key
   it('moves Y up a step on ↑ and X on →, ten with Shift', async () => {
     const onChange = vi.fn()
     await render(
@@ -783,7 +783,7 @@ describe('touchpad', () => {
     expect(session.jam.store.get(masterAtom).throw).toEqual({ x: 0.9, y: 0.8 })
   })
 
-  // @scenario audio/master: Heard together
+  // @scenario audio/master: On the grid for whoever steers
   it("engages Repeat at the slice's next grid line and lets go at the next 1/16, storing that beat", async () => {
     session = makeSession('Groovy Otter')
     await renderJam(<Master />, session)

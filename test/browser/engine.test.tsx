@@ -587,7 +587,23 @@ describe('throw', () => {
     expect(peak(out, 1.75 - 0.005, 1.75 + 0.005)).toBeLessThan(1e-3)
   })
 
-  // @scenario audio/master: Heard together
+  // @scenario audio/master: Two modes at once
+  it('plays the filter and the throw at once, each from its own position', async () => {
+    const quarter = beatSeconds(120)
+    const input = clicks(1.2, 0)
+    const time: [number, (c: MasterChain) => void][] = [[0, (c) => c.throwTime(quarter)]]
+    const echo = async (sound: MasterSound) =>
+      peak((await throughChain(input, input, sound, time))[0], quarter - 0.005, quarter + 0.005)
+    const filter = { x: -1, y: 0 }
+    const thrown = { x: 0.9, y: 0.8 }
+    const both = await echo({ ...DEFAULTS, filter, throw: thrown })
+    // The throw still echoes with the filter down...
+    expect(both).toBeGreaterThan((await echo({ ...DEFAULTS, filter })) + 1e-3)
+    // ...and the filter still darkens what it echoes.
+    expect(both).toBeLessThan((await echo({ ...DEFAULTS, throw: thrown })) / 2)
+  })
+
+  // @scenario audio/master: On the grid for whoever steers
   it("moves the echo's time only at the jam's next 1/16", async () => {
     const bpm = 120
     const audio = await offline({
