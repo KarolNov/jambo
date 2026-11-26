@@ -11,6 +11,7 @@ import {
   isAgentKey,
   jamSlugOf,
   knobHelp,
+  LISTEN,
   masterHelp,
   toKind,
 } from '../../shared/agent'
@@ -43,16 +44,20 @@ const FX_LINES = FX_MODE_NAMES.map((m) => `    ${m}: ${fxHelp(m)}`).join('\n')
  */
 export const INSTRUCTIONS = `jambo is a collaborative music board. Each jam has a link like https://<host>/jam/funky-otter-k7q2; the link (or its slug) is the only key.
 
-Tools: join, run, upload_sound, leave. join, run and upload_sound put you in the jam's "Who's here"; ${AGENT_LIMITS.idleMs / 60_000} minutes without a call takes you out, and leave does it at once. Every tool takes jam (link or slug) and optional agentKey, kind (your type, one word like Claude), name and color (one of ${COLOR_NAMES.join(', ')}). join, run and upload_sound answer agent: { agentKey, id, kind, name, color }; pass agent.agentKey to every later call to stay the same agent, or each call without it joins as a new one. leave answers { jam, left }. A jam seats at most ${AGENT_LIMITS.perJam} agents, ${AGENT_LIMITS.perAddress} from one address; an agent already in it always gets back in with its agentKey. Your name is an adjective and your kind, like "Groovy Claude"; pass the same name and color each time to keep them while free. Coming back with your agentKey after leaving or idling out, you get the kind, name and colour you had (for ${AGENT_LIMITS.awayMs / 86_400_000} days) while free; a kind, name or colour you pass, even while in the jam, replaces them while free.
+Tools: join, listen, run, upload_sound, leave. join, listen, run and upload_sound put you in the jam's "Who's here"; ${AGENT_LIMITS.idleMs / 60_000} minutes without a call takes you out, and leave does it at once. Every tool takes jam (link or slug) and optional agentKey, kind (your type, one word like Claude), name and color (one of ${COLOR_NAMES.join(', ')}). join, listen, run and upload_sound answer agent: { agentKey, id, kind, name, color }; pass agent.agentKey to every later call to stay the same agent, or each call without it joins as a new one. leave answers { jam, left }. A jam seats at most ${AGENT_LIMITS.perJam} agents, ${AGENT_LIMITS.perAddress} from one address; an agent already in it always gets back in with its agentKey. Your name is an adjective and your kind, like "Groovy Claude"; pass the same name and color each time to keep them while free. Coming back with your agentKey after leaving or idling out, you get the kind, name and colour you had (for ${AGENT_LIMITS.awayMs / 86_400_000} days) while free; a kind, name or colour you pass, even while in the jam, replaces them while free.
 
 join returns board, the jam as it is now:
   bpm: tempo (${BPM.min}-${BPM.max})
   pads: [{ id, key, row, col, soundId }]: the 16 pads; tracks hit pads by id
   sounds: [{ id, name, kind: 'kit' | 'upload', category?, by?, durationMs? }]
   tracks: [{ id, name, author, color, bars, hits: [{ padId, beat }], gain, mute, quantize, startBar?, effects, ${KNOB_FIELDS} }]: a missing knob is at its default
-  master: { ${MASTER_KNOB_NAMES.join(', ')}, ${FX_MODE_NAMES.map((m) => (m === 'repeat' ? `${m}: { x, y, startBeat }` : `${m}: { x, y }`)).join(', ')} }: the master stage everyone hears, each at its default (0, and 0/0 for a mode) until someone sets it
+  master: { ${MASTER_KNOB_NAMES.join(', ')}, ${FX_MODE_NAMES.map((m) => `${m}: { x, y }`).join(', ')} }: the master stage everyone hears, each at its default (0, and 0/0 for a mode) until someone sets it
   here: [{ name, kind, color }]: people (kind 'person') and agents
-Others change the jam too: call join again to read it fresh.
+Others change the jam too. To follow along, call listen (it needs your agentKey) instead of join: it waits up to wait seconds (0-${LISTEN.maxWaitMs / 1000}, default ${LISTEN.defaultWaitMs / 1000}) for someone to change the jam, then answers { agent, changes, holding }: only what changed since you last looked, your own runs left out, and who is turning which control right now. A burst of edits, like a knob drag, comes as one answer, and answers come at most every ${LISTEN.minGapMs / 1000} s. changes are, in order:
+  { what: 'tempo', bpm } | { what: 'pad', id, soundId } | { what: 'soundAdded', sound } | { what: 'soundRemoved', id, name }
+  { what: 'trackAdded', track } | { what: 'trackRemoved', id, name } | { what: 'trackChanged', id, name, set: { the changed fields, new values } }
+  { what: 'master', set: { the changed knobs and modes, new values } } | { what: 'joined', who } | { what: 'left', who }
+holding: [{ control, by }], control being track.<trackId>.<field>, master.<knob> or fx.<mode>. changes [] with the same holding means nothing happened in that time. When the jam doesn't remember what you last saw (your first listen, or after a while), listen answers board too, as join does. listen doesn't count toward the call limit.
 
 run takes ops, a JSON array of 1-${AGENT_LIMITS.ops} operations, and summary (1-${AGENT_LIMITS.summaryMax} characters, what the run does). The operations:
   { op: 'setTempo', bpm }: only while the jam has no tracks
@@ -72,7 +77,9 @@ Tracks hit pads, so to use a sound, assign it to a pad and hit that pad. The ope
 
 upload_sound takes soundName and wav (base64 of a mono 16-bit PCM ${UPLOADS.sampleRate} Hz WAV, up to ${UPLOADS.maxSeconds} s; other chunks such as LIST are dropped) and answers { id, sound, agent }; a run can then assign id to a pad. leave takes you out of the jam.
 
-Calls are limited to ${AGENT_CALLS_PER_MINUTE} a minute per address.`
+Calls other than listen are limited to ${AGENT_CALLS_PER_MINUTE} a minute per address.
+
+The jam must be on this server: a link to another host is refused, naming the /mcp to add for it.`
 
 /** Every tool's inputs that say which jam and which agent. */
 const who = {
@@ -121,10 +128,28 @@ async function addressTag(address: string, slug: string): Promise<string> {
   return Array.from(new Uint8Array(digest, 0, 8), (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+/** The host of a full jam URL, lower case; undefined for a path or a bare slug. */
+function hostOf(link: string): string | undefined {
+  try {
+    return new URL(link.trim()).host.toLowerCase() || undefined
+  } catch {
+    return undefined
+  }
+}
+
 /** The jam's slug and the agent's hello, from caller `address`, or a refusal. */
-async function resolve(input: Who, address: string): Promise<{ slug: string; hello: AgentHello }> {
+async function resolve(
+  input: Who,
+  address: string,
+  host: string,
+): Promise<{ slug: string; hello: AgentHello }> {
   const slug = jamSlugOf(input.jam)
   if (!slug) throw new Refusal(`${JSON.stringify(input.jam)} is not a jam link`)
+  const linkHost = hostOf(input.jam)
+  if (linkHost && linkHost !== host)
+    throw new Refusal(
+      `That jam is on ${linkHost}, and this server is ${host}: add https://${linkHost}/mcp to play in it`,
+    )
   if (input.agentKey !== undefined && !isAgentKey(input.agentKey))
     throw new Refusal('That agentKey is not one jambo made: omit it to start fresh')
   let kind: string | undefined
@@ -171,8 +196,11 @@ function fromBase64(text: string): Uint8Array<ArrayBuffer> | { error: string } {
   return bytes
 }
 
-/** Builds the MCP server for one request; `address` is the caller's, for the rate limit. */
-export function jamboMcpServer(env: Env, address: string) {
+/**
+ * Builds the MCP server for one request; `address` is the caller's, for the rate limit, and `host`
+ * is this server's, which jam links must name.
+ */
+export function jamboMcpServer(env: Env, address: string, host: string) {
   const server = new McpServer(
     { name: 'jambo', version: '1.0.0' },
     { instructions: INSTRUCTIONS, capabilities: { tools: {} } },
@@ -180,10 +208,16 @@ export function jamboMcpServer(env: Env, address: string) {
 
   /** Wraps a tool: rate limit, then turns refusals into tool errors. */
   const tool =
-    <I extends Who>(name: string, fn: (input: I) => Promise<ToolResult>) =>
+    <I extends Who>(
+      name: string,
+      fn: (input: I) => Promise<ToolResult>,
+      { limited = true }: { limited?: boolean } = {},
+    ) =>
     async (input: I): Promise<ToolResult> => {
-      const { success } = await env.AGENT_RUNS.limit({ key: address })
-      if (!success) return refuse('too many requests, try again in a minute')
+      if (limited) {
+        const { success } = await env.AGENT_RUNS.limit({ key: address })
+        if (!success) return refuse('too many requests, try again in a minute')
+      }
       try {
         return await fn(input)
       } catch (e) {
@@ -210,11 +244,46 @@ export function jamboMcpServer(env: Env, address: string) {
       inputSchema: z.object(who),
     },
     tool('join', async (input) => {
-      const { slug, hello } = await resolve(input, address)
+      const { slug, hello } = await resolve(input, address, host)
       const joined = await (await room(slug)).agentJoinAndRead(hello)
       if ('error' in joined) return refuse(joined.error)
       return reply({ jam: slug, agent: identity(joined.agent), board: joined.board })
     }),
+  )
+
+  server.registerTool(
+    'listen',
+    {
+      description: `Wait for others to change the jam, then read only what changed since you last looked and who is turning what. Needs your agentKey. Waits up to wait seconds (default ${LISTEN.defaultWaitMs / 1000}); not counted toward the call limit.`,
+      inputSchema: z.object({
+        ...who,
+        wait: z
+          .number()
+          .min(0)
+          .max(LISTEN.maxWaitMs / 1000)
+          .optional()
+          .describe(`Most seconds to wait for a change, 0-${LISTEN.maxWaitMs / 1000}`),
+      }),
+    },
+    // Paced by the room instead: one answer per agent every few seconds at most.
+    tool(
+      'listen',
+      async (input) => {
+        const { slug, hello } = await resolve(input, address, host)
+        if (!hello.key) return refuse('listen needs the agentKey you were given: join first')
+        const waitMs = input.wait === undefined ? LISTEN.defaultWaitMs : input.wait * 1000
+        const heard = await (await room(slug)).agentListen(hello, waitMs)
+        if ('error' in heard) return refuse(heard.error)
+        return reply({
+          jam: slug,
+          agent: identity(heard.agent),
+          changes: heard.changes,
+          holding: heard.holding,
+          ...(heard.board ? { board: heard.board } : {}),
+        })
+      },
+      { limited: false },
+    ),
   )
 
   server.registerTool(
@@ -233,7 +302,7 @@ export function jamboMcpServer(env: Env, address: string) {
       }),
     },
     tool('run', async (input) => {
-      const { slug, hello } = await resolve(input, address)
+      const { slug, hello } = await resolve(input, address, host)
       const result = await (await room(slug)).runAgentOps(hello, input.ops, input.summary)
       if ('error' in result) return refuse(result.error)
       return reply({
@@ -255,7 +324,7 @@ export function jamboMcpServer(env: Env, address: string) {
       }),
     },
     tool('upload_sound', async (input) => {
-      const { slug, hello } = await resolve(input, address)
+      const { slug, hello } = await resolve(input, address, host)
       // Uploads spend the same budget as the browser's: 10 writes a minute per address.
       const { success } = await env.SOUND_WRITES.limit({ key: address })
       if (!success) return refuse('Too many uploads, try again in a minute')
@@ -284,7 +353,7 @@ export function jamboMcpServer(env: Env, address: string) {
       inputSchema: z.object(who),
     },
     tool('leave', async (input) => {
-      const { slug, hello } = await resolve(input, address)
+      const { slug, hello } = await resolve(input, address, host)
       if (!hello.key) return refuse('leave needs the agentKey you were given')
       const left = await (await room(slug)).agentLeave(hello.key)
       return reply({ jam: slug, left })
@@ -297,7 +366,8 @@ export function jamboMcpServer(env: Env, address: string) {
 /** The `/mcp` endpoint: a stateless MCP server, built per request. */
 export function handleMcp(request: Request, env: Env, ctx: ExecutionContext) {
   const address = request.headers.get('CF-Connecting-IP') ?? 'unknown'
-  const handler = createMcpHandler(() => jamboMcpServer(env, address), {
+  const host = new URL(request.url).host.toLowerCase()
+  const handler = createMcpHandler(() => jamboMcpServer(env, address, host), {
     route: '/mcp',
   })
   return handler(request, env, ctx)

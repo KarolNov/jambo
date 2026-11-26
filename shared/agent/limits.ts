@@ -16,6 +16,17 @@ export const AGENT_LIMITS = {
   awayMax: 64,
 } as const
 
+/** How `listen` waits for the jam to change. */
+export const LISTEN = {
+  /** Longest a listen waits for a change, and what it waits when asked for no time. */
+  maxWaitMs: 25_000,
+  defaultWaitMs: 20_000,
+  /** After the first change, how long it keeps collecting, so a knob drag comes as one change. */
+  settleMs: 750,
+  /** Least time between one agent's answers, so listening in a loop stays cheap. */
+  minGapMs: 3_000,
+} as const
+
 /** A run's summary trimmed, or an error message when it is missing or too long. */
 export function checkSummary(value: unknown): { summary: string } | { error: string } {
   const summary = typeof value === 'string' ? value.trim() : ''

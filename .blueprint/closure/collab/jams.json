@@ -1,6 +1,12 @@
 {
   "mode": "symbol",
   "files": {
+    "shared/agent/changes.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "97c830376248",
+      "whole": false
+    },
     "shared/agent/held.ts": {
       "distance": 2,
       "via": [],
@@ -16,7 +22,7 @@
     "shared/agent/limits.ts": {
       "distance": 2,
       "via": [],
-      "hash": "d4559fe10460",
+      "hash": "48612a348f39",
       "whole": false
     },
     "shared/agent/link.ts": {
@@ -46,7 +52,7 @@
     "shared/agent/snapshot.ts": {
       "distance": 2,
       "via": [],
-      "hash": "bd1f9821221c",
+      "hash": "1bb8e3aaec5e",
       "whole": false
     },
     "shared/board/apply.ts": {
@@ -118,7 +124,7 @@
     "worker/agent/mcp.ts": {
       "distance": 1,
       "via": [],
-      "hash": "bac93c31b3a3",
+      "hash": "7245c855810a",
       "whole": false
     },
     "worker/agent/roster.ts": {
@@ -130,7 +136,7 @@
     "worker/board.ts": {
       "distance": 1,
       "via": [],
-      "hash": "9e59c3cf72b2",
+      "hash": "19addc59c003",
       "whole": false
     },
     "worker/quota.ts": {
@@ -147,6 +153,48 @@
     }
   },
   "symbols": [
+    {
+      "file": "shared/agent/changes.ts",
+      "symbol": "Change",
+      "distance": 2,
+      "via": [],
+      "hash": "18152d4286ba"
+    },
+    {
+      "file": "shared/agent/changes.ts",
+      "symbol": "Holding",
+      "distance": 2,
+      "via": [],
+      "hash": "3286ba1b381f"
+    },
+    {
+      "file": "shared/agent/changes.ts",
+      "symbol": "SnapshotTrack",
+      "distance": 2,
+      "via": [],
+      "hash": "0f4b168d2354"
+    },
+    {
+      "file": "shared/agent/changes.ts",
+      "symbol": "changesBetween",
+      "distance": 2,
+      "via": [],
+      "hash": "1fa253bec0c7"
+    },
+    {
+      "file": "shared/agent/changes.ts",
+      "symbol": "holdingOf",
+      "distance": 2,
+      "via": [],
+      "hash": "e0fb1e439928"
+    },
+    {
+      "file": "shared/agent/changes.ts",
+      "symbol": "same",
+      "distance": 2,
+      "via": [],
+      "hash": "c1040ba4cbc1"
+    },
     {
       "file": "shared/agent/held.ts",
       "symbol": "Holds",
@@ -289,6 +337,13 @@
     },
     {
       "file": "shared/agent/limits.ts",
+      "symbol": "LISTEN",
+      "distance": 2,
+      "via": [],
+      "hash": "d550cbea3474"
+    },
+    {
+      "file": "shared/agent/limits.ts",
       "symbol": "checkSummary",
       "distance": 2,
       "via": [],
@@ -418,7 +473,14 @@
       "symbol": "Snapshot",
       "distance": 2,
       "via": [],
-      "hash": "1a0457893b01"
+      "hash": "ce0ad924e595"
+    },
+    {
+      "file": "shared/agent/snapshot.ts",
+      "symbol": "SnapshotMaster",
+      "distance": 2,
+      "via": [],
+      "hash": "71c9ef0dfa04"
     },
     {
       "file": "shared/agent/snapshot.ts",
@@ -433,6 +495,13 @@
       "distance": 2,
       "via": [],
       "hash": "4c9ca54f3703"
+    },
+    {
+      "file": "shared/agent/snapshot.ts",
+      "symbol": "agentMaster",
+      "distance": 2,
+      "via": [],
+      "hash": "7df83885094c"
     },
     {
       "file": "shared/agent/snapshot.ts",
@@ -453,7 +522,7 @@
       "symbol": "snapshotOf",
       "distance": 2,
       "via": [],
-      "hash": "14fa04962076"
+      "hash": "4ec025b2ba28"
     },
     {
       "file": "shared/board/apply.ts",
@@ -1125,7 +1194,7 @@
       "symbol": "INSTRUCTIONS",
       "distance": 1,
       "via": [],
-      "hash": "41b0793faa51"
+      "hash": "efd19237084e"
     },
     {
       "file": "worker/agent/mcp.ts",
@@ -1202,14 +1271,21 @@
       "symbol": "handleMcp",
       "distance": 1,
       "via": [],
-      "hash": "926ac266dd8f"
+      "hash": "3df59b8a3210"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "hostOf",
+      "distance": 1,
+      "via": [],
+      "hash": "a654fe1f4e53"
     },
     {
       "file": "worker/agent/mcp.ts",
       "symbol": "jamboMcpServer",
       "distance": 1,
       "via": [],
-      "hash": "0430c0070b69"
+      "hash": "d2173936dbff"
     },
     {
       "file": "worker/agent/mcp.ts",
@@ -1230,7 +1306,7 @@
       "symbol": "resolve",
       "distance": 1,
       "via": [],
-      "hash": "246fa1761253"
+      "hash": "69cebe580735"
     },
     {
       "file": "worker/agent/mcp.ts",
@@ -1325,6 +1401,13 @@
     },
     {
       "file": "worker/board.ts",
+      "symbol": "AgentListenResult",
+      "distance": 1,
+      "via": [],
+      "hash": "a475d4f718a2"
+    },
+    {
+      "file": "worker/board.ts",
       "symbol": "AgentOpResult",
       "distance": 1,
       "via": [],
@@ -1342,7 +1425,7 @@
       "symbol": "Board",
       "distance": 1,
       "via": [],
-      "hash": "a5f3a8e61fc9"
+      "hash": "19f3958d48ac"
     },
     {
       "file": "worker/board.ts",
@@ -1423,6 +1506,13 @@
     },
     {
       "file": "worker/board.ts",
+      "symbol": "Seen",
+      "distance": 1,
+      "via": [],
+      "hash": "a73b5f7d6f14"
+    },
+    {
+      "file": "worker/board.ts",
       "symbol": "SoundResult",
       "distance": 1,
       "via": [],
@@ -1441,6 +1531,20 @@
       "distance": 1,
       "via": [],
       "hash": "b368ddef0d6b"
+    },
+    {
+      "file": "worker/board.ts",
+      "symbol": "sameHolding",
+      "distance": 1,
+      "via": [],
+      "hash": "18d4e6d18df2"
+    },
+    {
+      "file": "worker/board.ts",
+      "symbol": "sleep",
+      "distance": 1,
+      "via": [],
+      "hash": "5d5e28822f45"
     },
     {
       "file": "worker/board.ts",
