@@ -6,7 +6,12 @@ import {
   ceilNear,
   nextGridLine,
   nextJamBar,
+  jamBeatMs,
   playBeat,
+  repeatLine,
+  repeatSlice,
+  repeatStamp,
+  swingDelay,
   trackStart,
 } from '../shared/looper'
 
@@ -153,5 +158,54 @@ describe('nextGridLine', () => {
     expect(nextGridLine(1, 120, 1)).toBe(500)
     const line = 1_750_000_000_000
     expect(nextGridLine(line, 120)).toBe(line)
+  })
+})
+
+describe('swingDelay', () => {
+  // @scenario audio/master: Swung hats
+  it('delays every off-beat 16th by half a 16th at swing 1, and by less below it', () => {
+    expect([0, 0.25, 0.5, 0.75, 1, 1.25].map((b) => swingDelay(b, 1))).toEqual([
+      0, 0.125, 0, 0.125, 0, 0.125,
+    ])
+    expect(swingDelay(0.75, 0.5)).toBe(0.0625)
+    // At 120 BPM that is 62.5 ms.
+    expect(jamBeatMs(swingDelay(0.25, 1), 120)).toBe(62.5)
+  })
+
+  // @scenario audio/master: Downbeats stay
+  it('leaves beats, eighths, hits between 16ths, and everything at swing 0 where they are', () => {
+    expect(swingDelay(1, 1)).toBe(0)
+    expect(swingDelay(1.5, 1)).toBe(0)
+    expect(swingDelay(0.3, 1)).toBe(0)
+    expect(swingDelay(0.125, 1)).toBe(0)
+    expect(swingDelay(0.25, 0)).toBe(0)
+  })
+})
+
+describe('repeat grid', () => {
+  it('picks a 1/4, 1/8, 1/16 or 1/32 slice in four equal zones of x', () => {
+    expect([0, 0.24, 0.25, 0.5, 0.74, 0.75, 1].map(repeatSlice)).toEqual([
+      1, 1, 0.5, 0.25, 0.25, 0.125, 0.125,
+    ])
+  })
+
+  it("finds the slice's next grid line in jam beats, never finer than a 16th", () => {
+    // 120 BPM: a beat is 500 ms. Room time 1250 ms is jam beat 2.5.
+    expect(repeatLine(1250, 120, 1)).toBe(3)
+    expect(repeatLine(1250, 120, 0.5)).toBe(2.5)
+    expect(repeatLine(1300, 120, 0.125)).toBe(2.75)
+    expect(repeatLine(1300, 120)).toBe(2.75)
+    // A line counts as itself, even at room times since the epoch.
+    const beat = 3_500_000_123.5
+    expect(repeatLine(jamBeatMs(beat, 120), 120, 0.5)).toBe(beat)
+  })
+
+  it('stamps engaging, a new slice zone and letting go, but not a change of level', () => {
+    const now = 1300 // jam beat 2.6 at 120 BPM
+    expect(repeatStamp({ x: 0, y: 0 }, { x: 0.1, y: 1 }, now, 120)).toBe(3)
+    expect(repeatStamp({ x: 0.1, y: 1 }, { x: 0.3, y: 1 }, now, 120)).toBe(3)
+    expect(repeatStamp({ x: 0.1, y: 1 }, { x: 0.2, y: 0.5 }, now, 120)).toBeUndefined()
+    expect(repeatStamp({ x: 0.1, y: 1 }, { x: 0.1, y: 0 }, now, 120)).toBe(2.75)
+    expect(repeatStamp({ x: 0, y: 0 }, { x: 0.9, y: 0 }, now, 120)).toBeUndefined()
   })
 })

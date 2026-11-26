@@ -97,7 +97,7 @@ Each take SHALL become its own track, named after the recorder's name in the jam
 
 ### Requirement: Loop playback
 
-Every unmuted track SHALL play in a loop at its level, on the jam's shared bar grid: everyone in a jam SHALL hear each loop's downbeats within 20 ms of each other. A track's loop SHALL start on the jam bar where its take began and repeat every length. A track someone else adds SHALL start playing right away, from its current point in the loop. A track the listener just recorded SHALL keep looping from where its take started, without a gap.
+Every unmuted track SHALL play in a loop at its level, on the jam's shared bar grid: everyone in a jam SHALL hear each loop's downbeats within 20 ms of each other. A track's loop SHALL start on the jam bar where its take began and repeat every length. A track someone else adds SHALL start playing right away, from its current point in the loop. A track the listener just recorded SHALL keep looping from where its take started, without a gap. While the master's Repeat is on, a loop SHALL play the repeated slice in its place, as audio/master says.
 
 - **Scenario: Same downbeat**
   - **GIVEN** two people in a jam with a one-bar track
@@ -116,7 +116,7 @@ Every unmuted track SHALL play in a loop at its level, on the jam's shared bar g
 
 ### Requirement: Quantize
 
-Each track SHALL play its hits snapped to its grid (off, 1/32, 1/16, 1/8 or 1/4), while keeping the recorded positions. A hit snapped past the loop's end SHALL play at its start.
+Each track SHALL play its hits snapped to its grid (off, 1/32, 1/16, 1/8 or 1/4), then swung by the jam's swing, while keeping the recorded positions. A hit snapped past the loop's end SHALL play at its start.
 
 - **Scenario: Slightly late hit**
   - **GIVEN** a hit recorded at beat 1.06
@@ -144,7 +144,7 @@ Anyone in the jam SHALL be able to mute, set the level (0 to 1.5) of, rename, ch
 
 ### Requirement: Sound knobs
 
-Every track SHALL play through five sound settings: reverb (0 to 1), echo (0 to 1), tone (-1 to 1), pitch (-12 to +12 whole semitones) and pan (-1 to 1), each defaulting to 0, which leaves the sound unchanged. A track without a stored setting SHALL play at that setting's default. Reverb SHALL add a room's reflections; echo SHALL repeat each hit every dotted eighth note at the jam's tempo, fading with each repeat; tone SHALL darken the sound below 0 and thin it above 0; pitch SHALL raise or lower each hit by that many semitones from the track's next hit; pan SHALL move the track between the left speaker (-1) and the right (+1). Pads played live, the count-in and the metronome SHALL stay dry.
+Every track SHALL play through five sound settings: reverb (0 to 1), echo (0 to 1), tone (-1 to 1), pitch (-12 to +12 whole semitones) and pan (-1 to 1), each defaulting to 0, which leaves the sound unchanged. A track without a stored setting SHALL play at that setting's default. Reverb SHALL add a room's reflections; echo SHALL repeat each hit every dotted eighth note at the jam's tempo, fading with each repeat; tone SHALL darken the sound below 0 and thin it above 0; pitch SHALL raise or lower each hit by that many semitones from the track's next hit; pan SHALL move the track between the left speaker (-1) and the right (+1). Pads played live, the count-in and the metronome SHALL stay dry of a track's sound settings.
 
 - **Scenario: Older jam**
   - **GIVEN** a jam whose tracks were recorded before sound knobs existed
