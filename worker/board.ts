@@ -402,7 +402,10 @@ export class Board extends YServer<Env> {
     if ('error' in agent) return agent
     // Controls people hold right now are theirs: those parts of a run are refused.
     const holds = holdsOf(this.document.awareness.getStates().values())
-    const prepared = prepare(calls, { id: agent.id, color: agent.color }).map((p) => {
+    const sounds = this.document.getMap<unknown>(ROOTS.sounds)
+    const prepared = prepare(calls, { id: agent.id, color: agent.color }, undefined, (id) =>
+      sounds.has(id),
+    ).map((p) => {
       if (!('op' in p)) return { issues: p.issues }
       const { op, issues } = withoutHeld(p.op, holds)
       return { op, id: p.id, issues }

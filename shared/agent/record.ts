@@ -22,6 +22,7 @@ import {
   Track,
 } from '../board'
 import type { ColorName } from '../colors'
+import { SOUND_IDS } from '../sounds'
 import { AGENT_AUTHOR_PREFIX } from './identity'
 
 /** What each sound knob does, for agents: its range and default come from `SOUND_KNOBS`. */
@@ -73,6 +74,8 @@ const knobDrafts = Object.fromEntries(
   SOUND_KNOB_NAMES.map((k) => [k, z.number().optional().describe(knobHelp(k))]),
 ) as Record<SoundKnob, z.ZodOptional<z.ZodNumber>>
 
+const Beat = z.number().describe('When, in beats from the loop start: 0 <= beat < bars * 4')
+
 /**
  * The operations an agent may send in a run, as JSON. Only board changes a person can make; never
  * uploads. `addTrack` gives only what an agent decides; the room fills in the rest. The descriptions
@@ -83,12 +86,22 @@ const TrackDraft = z.object({
   bars: z.number().describe('Loop length in bars'),
   hits: z
     .array(
-      z.object({
-        padId: z.string().describe('The pad to hit, like r0c0'),
-        beat: z.number().describe('When, in beats from the loop start: 0 <= beat < bars * 4'),
-      }),
+      z.union(
+        [
+          z
+            .strictObject({ padId: z.string().describe('The pad to hit, like r0c0'), beat: Beat })
+            .describe('Plays whatever sound the pad holds'),
+          z
+            .strictObject({
+              soundId: z.string().describe('A listed sound: kit, upload or clip'),
+              beat: Beat,
+            })
+            .describe('Plays that sound whatever the pads hold, unsnapped, cut at the loop end'),
+        ],
+        { error: 'A hit names a pad (padId) or a sound (soundId), not both' },
+      ),
     )
-    .describe('The hits of the loop'),
+    .describe('The hits of the loop; each names a pad or a sound, not both'),
   gain: z.number().optional().describe('Level 0-1.5, default 1'),
   quantize: z.number().optional().describe('Snap in beats, default 0.25'),
   ...knobDrafts,
@@ -101,8 +114,10 @@ const Ref = z
 
 export const AgentCall = z.discriminatedUnion('op', [
   SetTempo.describe('Only while the jam has no tracks'),
-  AssignPad.describe('Point a pad at a kit sound or an upload'),
-  ReplaceSound.describe('Move every pad on one sound to another'),
+  AssignPad.describe('Point a pad at a kit sound or an upload, not a clip'),
+  ReplaceSound.describe(
+    "Move every pad and every track's sound hit on one sound to another; a clip moved off is lost for good",
+  ),
   z
     .object({
       op: z.literal('addTrack'),
@@ -151,12 +166,15 @@ export interface AgentStamp {
  * Turns a run's operations into board operations with the agent's identity stamped on: an added
  * track's author, colour, mute, effects and id come from the room, whatever the agent sent. Track
  * refs (`new:kicks`, …) resolve to the ids minted here. One entry per call, in order; a call that
- * isn't a board change an agent may make is refused here and never applied.
+ * isn't a board change an agent may make is refused here and never applied. `listed` says whether
+ * the jam lists a sound id (an upload or a clip); a track hitting a sound that is neither listed
+ * nor in the kit is refused here too.
  */
 export function prepare(
   calls: readonly unknown[],
   agent: AgentStamp,
   mint: () => string = () => newId(),
+  listed: (soundId: string) => boolean = () => true,
 ): Prepared[] {
   // A ref's minted id, or null when its addTrack was refused.
   const refs = new Map<string, string | null>()
@@ -211,6 +229,18 @@ export function prepare(
               message: i.message,
               path: ['track', ...i.path],
             })),
+          }
+        }
+        const missing = checked.data.hits.findIndex(
+          (h) => 'soundId' in h && !SOUND_IDS.has(h.soundId) && !listed(h.soundId),
+        )
+        if (missing >= 0) {
+          if (call.ref) refs.set(call.ref, null)
+          const soundId = (checked.data.hits[missing] as { soundId: string }).soundId
+          return {
+            issues: [
+              { message: `No sound ${soundId}`, path: ['track', 'hits', missing, 'soundId'] },
+            ],
           }
         }
         const id = mint()
