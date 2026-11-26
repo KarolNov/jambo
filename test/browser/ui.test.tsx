@@ -243,6 +243,27 @@ describe('tabs', () => {
     await expect.element(page.getByRole('tabpanel')).toHaveTextContent('Add custom connector')
   })
 
+  it('stops Tab on a panel of text, and goes past a panel of controls to its first control', async () => {
+    await render(
+      <Themed>
+        <Tabs
+          label="Panels"
+          tabs={[
+            { id: 'text', label: 'Text', content: <p>Just words</p> },
+            { id: 'controls', label: 'Controls', content: <button type="button">Go</button> },
+          ]}
+        />
+      </Themed>,
+    )
+    const panels = page.getByRole('tablist', { name: 'Panels' })
+    await userEvent.click(panels.getByRole('tab', { name: 'Text' }))
+    await userEvent.keyboard('{Tab}')
+    await expect.element(page.getByRole('tabpanel')).toHaveFocus()
+    await userEvent.click(panels.getByRole('tab', { name: 'Controls' }))
+    await userEvent.keyboard('{Tab}')
+    await expect.element(page.getByRole('button', { name: 'Go' })).toHaveFocus()
+  })
+
   it('shows that a tab behind "+N" is on, on "+N" and in its menu', async () => {
     const { container } = await render(
       <Themed>
@@ -698,6 +719,26 @@ describe('xy pad', () => {
     await userEvent.keyboard('{ArrowUp}')
     expect(onChange).toHaveBeenLastCalledWith(0.03, 0.53)
     expect(container.querySelector('.ui-xy-announce')!.textContent).toBe('Resonance 0.53')
+  })
+
+  it('shows no focus rim after a press until one of its keys is used, not for a key it passes on', async () => {
+    const { container } = await render(
+      <Themed>
+        <Owned start={[0.5, 0.2]} onChange={vi.fn()} />
+      </Themed>,
+    )
+    const pad = container.querySelector<HTMLElement>('.ui-xy')!
+    await commands.mouseDown('.ui-xy-surface')
+    pressed = true
+    await commands.mouseUp()
+    pressed = false
+    await expect.element(cutoff()).toHaveFocus()
+    expect(pad.classList.contains('is-press-focused')).toBe(true)
+    // A key it doesn't use, such as a pad's letter, passes through.
+    await userEvent.keyboard('z')
+    expect(pad.classList.contains('is-press-focused')).toBe(true)
+    await userEvent.keyboard('{ArrowUp}')
+    expect(pad.classList.contains('is-press-focused')).toBe(false)
   })
 
   it('applies a live drag as it moves, and puts it back on Escape', async () => {

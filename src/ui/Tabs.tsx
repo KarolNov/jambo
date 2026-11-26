@@ -12,6 +12,10 @@ import { OptionList, Popover } from './Menu'
 import { visibleTabs } from './tabFit'
 import './ui.css'
 
+/** What can take focus from the keyboard. */
+const FOCUSABLE =
+  'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]'
+
 export interface Tab {
   /** Stable id, unique among the tabs; it is also the value `onChange` reports. */
   id: string
@@ -45,7 +49,8 @@ export type TabsProps = {
  * part of it, labelled in `--ui-c` (else `--accent-2`); the other tabs sit behind the card. Tabs
  * that don't fit go behind a "+N" tab that opens a menu of them (`visibleTabs`); the selected tab
  * always shows. ← → move through every tab, shown or not, and select as they go; Home and End
- * jump to the ends; Tab moves on to "+N", then into the panel. Screen readers hear a tablist.
+ * jump to the ends; Tab moves on to "+N", then into the panel: to its first control, or to the panel
+ * itself when it has none. Screen readers hear a tablist.
  */
 export function Tabs({ tabs, label, value, defaultValue, onChange, className = '' }: TabsProps) {
   const base = useId()
@@ -61,6 +66,7 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
   const strip = useRef<HTMLDivElement>(null)
   const measure = useRef<HTMLDivElement>(null)
   const moreButton = useRef<HTMLButtonElement>(null)
+  const panel = useRef<HTMLDivElement>(null)
   const refs = useRef(new Map<string, HTMLButtonElement>())
   const focusAfter = useRef<string>(undefined)
   const [widths, setWidths] = useState<{ tabs: number[]; more: number; available: number }>()
@@ -93,6 +99,15 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
   // one, lit when a hidden tab's is, so a tab that is on still shows behind it.
   const named = (t: Tab) => (t.dot ? `${t.label}, ${t.dot}` : t.label)
   const dotted = tabs.some((t) => t.dot !== undefined)
+
+  // The panel is a stop for Tab only when nothing in it takes focus, so text can be scrolled and
+  // read from the keyboard; a panel of controls goes straight from the tab to its first control.
+  useLayoutEffect(() => {
+    const el = panel.current
+    if (!el) return
+    if (el.querySelector(FOCUSABLE)) el.removeAttribute('tabindex')
+    else el.tabIndex = 0
+  })
 
   // A key moved to a tab: focus it once it's on screen (it may just have come out of "+N").
   useEffect(() => {
@@ -220,11 +235,11 @@ export function Tabs({ tabs, label, value, defaultValue, onChange, className = '
         </Popover>
       )}
       <div
+        ref={panel}
         className="ui-tabpanel"
         role="tabpanel"
         id={`${base}-panel`}
         aria-labelledby={`${base}-tab-${index}`}
-        tabIndex={0}
       >
         {current?.content}
       </div>

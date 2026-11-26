@@ -2,7 +2,9 @@ import {
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
+  type RefObject,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react'
@@ -55,6 +57,73 @@ const INSET = 14
 type Point = readonly [x: number, y: number]
 const samePoint = (a: Point, b: Point) => a[0] === b[0] && a[1] === b[1]
 
+/** How long the puck takes, roughly, to glide to a position it didn't follow a drag to. */
+const GLIDE_S = 0.07
+
+/**
+ * Puts the puck at `to` (fractions across and up) through `--fx` and `--fy` on `el`: at once
+ * while `instant` (your own drag), else gliding there on a critically damped spring, so a peer's
+ * moves, which arrive unevenly over the network, read as one smooth motion. Each new `to` bends
+ * the glide without a jolt, as the spring keeps its speed.
+ */
+function useGlide(el: RefObject<HTMLElement | null>, to: Point, instant: boolean) {
+  const [tx, ty] = to
+  const target = useRef(to)
+  const shown = useRef<Point>(undefined)
+  const speed = useRef<[number, number]>([0, 0])
+  const frame = useRef(0)
+  useLayoutEffect(() => {
+    target.current = [tx, ty]
+    const node = el.current
+    if (!node) return
+    const write = (p: Point) => {
+      shown.current = p
+      node.style.setProperty('--fx', String(p[0]))
+      node.style.setProperty('--fy', String(p[1]))
+    }
+    const stop = () => {
+      cancelAnimationFrame(frame.current)
+      frame.current = 0
+      speed.current = [0, 0]
+    }
+    if (instant || !shown.current || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      stop()
+      write([tx, ty])
+      return
+    }
+    if (frame.current) return
+    let last: number | undefined
+    const step = (now: number) => {
+      const dt = last === undefined ? 1 / 60 : Math.min(0.1, (now - last) / 1000)
+      last = now
+      const omega = 2 / GLIDE_S
+      const k = omega * dt
+      const decay = 1 / (1 + k + 0.48 * k * k + 0.235 * k * k * k)
+      const goal = target.current
+      const from = shown.current!
+      const v = speed.current
+      const next = [0, 0] as [number, number]
+      let settled = true
+      for (const i of [0, 1] as const) {
+        const gap = from[i] - goal[i]
+        const pull = (v[i] + omega * gap) * dt
+        v[i] = (v[i] - omega * pull) * decay
+        next[i] = goal[i] + (gap + pull) * decay
+        if (Math.abs(next[i] - goal[i]) > 0.0005 || Math.abs(v[i]) > 0.01) settled = false
+      }
+      if (settled) {
+        stop()
+        write(goal)
+        return
+      }
+      write(next)
+      frame.current = requestAnimationFrame(step)
+    }
+    frame.current = requestAnimationFrame(step)
+  }, [el, tx, ty, instant])
+  useEffect(() => () => cancelAnimationFrame(frame.current), [])
+}
+
 /**
  * Which axis each arrow key moves: ← → across, ↑ ↓ up and down, whichever slider has focus.
  * Held together, one of each moves it diagonally.
@@ -70,7 +139,8 @@ const ARROW_AXIS: Partial<Record<string, 0 | 1>> = {
  * A square pad that sets two values at once (`XYPadProps`): press anywhere in it and drag, and the
  * puck follows, with a line through it on each axis in `color`. A drag previews locally and
  * applies once on release; a `live` pad applies as it moves, at most once a frame, and leaves the
- * puck where it is released. Escape mid-drag puts it back where the drag started (and applies
+ * puck where it is released. Any other move (a key, a peer's drag, a reset) glides there
+ * (`useGlide`). Escape mid-drag puts it back where the drag started (and applies
  * that again when live). Arrow keys move it a step on their axis (← → across, ↑ ↓ up and down;
  * held together, one of each moves it diagonally, and a move of the unfocused axis is announced),
  * Shift for ten; Page Up/Down, Home and End move the focused axis. Screen readers hear a group of
@@ -110,6 +180,7 @@ export function XYPad({
   const drag = useRef<{ id: number; el: Element; start: Point; moved: boolean }>(undefined)
   const sender = useRef<LiveDrag<Point>>(undefined)
   const xSlider = useRef<HTMLSpanElement>(null)
+  const root = useRef<HTMLSpanElement>(null)
   // Focused by a press (so its keys work after a drag): no focus rim until a key is used, as a
   // pressed button shows none. The browser counts this focus as visible, so it is tracked here.
   const [pressFocused, setPressFocused] = useState(false)
@@ -231,7 +302,6 @@ export function XYPad({
   }
 
   const onKeyDown = (axis: 0 | 1) => (e: KeyboardEvent) => {
-    setPressFocused(false)
     const isArrow = ARROW_AXIS[e.key] !== undefined
     if (isArrow) arrows.current.add(e.key)
     // Each held arrow moves its own axis; any other key moves the focused one.
@@ -245,8 +315,10 @@ export function XYPad({
       handled = true
       next[moves] = v
     }
+    // A key it doesn't use, such as a pad's, passes through and leaves the rim off.
     if (!handled) return
     e.preventDefault()
+    setPressFocused(false)
     if (locked || dragging) return
     if (samePoint(next, [x, y])) return
     const other = axis === 0 ? 1 : 0
@@ -256,9 +328,8 @@ export function XYPad({
   }
   const onKeyUp = (e: KeyboardEvent) => arrows.current.delete(e.key)
 
+  useGlide(root, [fraction(sx, ax.min, ax.max), fraction(sy, ay.min, ay.max)], dragging)
   const vars = {
-    '--fx': fraction(sx, ax.min, ax.max),
-    '--fy': fraction(sy, ay.min, ay.max),
     '--xy-inset': `${INSET}px`,
     ...heldVars(heldBy),
   } as CSSProperties
@@ -294,6 +365,7 @@ export function XYPad({
 
   return (
     <span
+      ref={root}
       role="group"
       aria-label={label}
       className={`ui-xy ${dragging ? 'is-dragging' : ''} ${heldBy ? 'is-held' : ''} ${disabled ? 'is-disabled' : ''} ${pressFocused ? 'is-press-focused' : ''} ${className}`}
