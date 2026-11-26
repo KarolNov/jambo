@@ -16,6 +16,8 @@ export interface Latency {
   output: number
   /** Both: what monitoring adds, and how late a sung note lands against what the singer heard. */
   roundTrip: number
+  /** Whether `roundTrip` was measured by the loopback test rather than estimated. */
+  measured: boolean
 }
 
 /** A usable number of seconds, else 0: browsers leave some of these out or report nonsense. */
@@ -26,7 +28,17 @@ const seconds = (x: number | undefined) =>
 export function estimateLatency(reported: ReportedLatency): Latency {
   const input = seconds(reported.input)
   const output = seconds(reported.base) + seconds(reported.output)
-  return { input, output, roundTrip: input + output }
+  return { input, output, roundTrip: input + output, measured: false }
+}
+
+/**
+ * `estimate` with the loopback test's `roundTrip`, where it has run: a measurement beats what
+ * the browser reports. The split between input and output keeps the estimate's proportions.
+ */
+export function withMeasured(estimate: Latency, roundTrip: number | undefined): Latency {
+  if (roundTrip === undefined) return estimate
+  const share = estimate.roundTrip > 0 ? estimate.input / estimate.roundTrip : 0.5
+  return { input: roundTrip * share, output: roundTrip * (1 - share), roundTrip, measured: true }
 }
 
 /** Reads what this browser reports for `track` played into `ctx`. */

@@ -8,8 +8,18 @@ import { padsAtom } from '../../src/board/model'
 import type { Session } from '../../src/board/session'
 import { prepareBuffer, UploadError } from '../../src/audio/upload'
 import { MIC_MESSAGES } from '../../src/audio/voice/input'
-import { estimateLatency } from '../../src/audio/voice/latency'
-import { loadMonitor, loadPreset } from '../../src/audio/voice/prefs'
+import { midiOf } from '../../src/audio/voice/dsp/tune'
+import { yin } from '../../src/audio/voice/dsp/yin'
+import { estimateLatency, withMeasured } from '../../src/audio/voice/latency'
+import {
+  loadKey,
+  loadMonitor,
+  loadPreset,
+  loadRoundTrip,
+  saveKey,
+  saveRoundTrip,
+} from '../../src/audio/voice/prefs'
+import { PRESETS } from '../../src/audio/voice/presets'
 import { renderVoice } from '../../src/audio/voice/render'
 import { endSession, makeSession, mockServer, renderJam, SLUG, upload, uploadId } from './jam'
 
@@ -93,12 +103,111 @@ describe('estimateLatency', () => {
       input: 0.01,
       output: 0.025,
       roundTrip: 0.035,
+      measured: false,
     })
     expect(estimateLatency({ base: 0.005, output: Number.NaN, input: -1 })).toEqual({
       input: 0,
       output: 0.005,
       roundTrip: 0.005,
+      measured: false,
     })
+  })
+
+  it('gives way to a measured round trip', () => {
+    const estimate = estimateLatency({ input: 0.01, base: 0.01, output: 0.02 })
+    expect(withMeasured(estimate, undefined)).toBe(estimate)
+    const measured = withMeasured(estimate, 0.12)
+    expect(measured.roundTrip).toBe(0.12)
+    expect(measured.measured).toBe(true)
+    expect(measured.input + measured.output).toBeCloseTo(0.12)
+  })
+})
+
+describe('voice prefs', () => {
+  it('keeps the key and the measured round trip in this browser', () => {
+    expect(loadKey()).toEqual({ root: 0, scale: 'major' })
+    saveKey({ root: 9, scale: 'minor' })
+    expect(loadKey()).toEqual({ root: 9, scale: 'minor' })
+    localStorage.setItem('jambo.voice.key', '{"root":13,"scale":"major"}')
+    expect(loadKey()).toEqual({ root: 0, scale: 'major' })
+
+    const setup = { device: 'mic speakers', estimate: 0.03 }
+    expect(loadRoundTrip()).toBeUndefined()
+    saveRoundTrip(0.12, setup)
+    expect(loadRoundTrip()).toBe(0.12)
+    expect(loadRoundTrip(setup)).toBe(0.12)
+    // On other speakers, or where the browser now estimates a quite different delay, it no
+    // longer counts.
+    expect(loadRoundTrip({ ...setup, device: 'mic headphones' })).toBeUndefined()
+    expect(loadRoundTrip({ ...setup, estimate: 0.2 })).toBeUndefined()
+  })
+})
+
+/** A voice-like tone: a sawtooth's first eight harmonics, after `lead` seconds of silence. */
+function sung(hz: number, seconds: number, rate: number, lead = 0) {
+  const out = new Float32Array(Math.round((seconds + lead) * rate))
+  const from = Math.round(lead * rate)
+  for (let i = from; i < out.length; i++) {
+    const phase = (2 * Math.PI * hz * (i - from)) / rate
+    let x = 0
+    for (let h = 1; h <= 8; h++) x += Math.sin(h * phase) / h
+    out[i] = 0.15 * x
+  }
+  return out
+}
+
+/** The pitch heard in the middle of `buffer`. */
+function heard(buffer: AudioBuffer) {
+  const x = buffer.getChannelData(0)
+  const mid = Math.floor(x.length / 2)
+  return yin(x.subarray(mid - 2048, mid + 2048), buffer.sampleRate)!.hz
+}
+
+describe('voice presets', () => {
+  const rate = 48_000
+
+  it.each(PRESETS.map((p) => p.id))(
+    'renders %s at the upload rate, with the voice in it',
+    async (preset) => {
+      const voice = await renderVoice(sung(220, 0.6, rate), rate, preset)
+      expect(voice.sampleRate).toBe(UPLOADS.sampleRate)
+      expect(voice.length).toBe(Math.round(0.6 * UPLOADS.sampleRate))
+      const middle = voice.getChannelData(0).subarray(8000, 20_000)
+      expect(rms(middle)).toBeGreaterThan(0.02)
+      expect(peak(voice.getChannelData(0))).toBeLessThan(1.5)
+    },
+  )
+
+  // @scenario audio/voice: Auto-tune key: Snap to the scale
+  it('holds an A when hard auto-tune in A minor hears a note between A and B flat', async () => {
+    const voice = await renderVoice(sung(452, 1, rate), rate, 'tune-hard', {
+      root: 9,
+      scale: 'minor',
+    })
+    expect(Math.abs(heard(voice) - 440)).toBeLessThan(2)
+    // Natural gets there too, on a steady note.
+    const natural = await renderVoice(sung(452, 1, rate), rate, 'tune-natural', {
+      root: 9,
+      scale: 'minor',
+    })
+    expect(Math.abs(heard(natural) - 440)).toBeLessThan(2)
+  })
+
+  it('moves the pitch for Chipmunk and Demon', async () => {
+    const from = midiOf(196)
+    const at = async (preset: 'chipmunk' | 'demon') =>
+      midiOf(heard(await renderVoice(sung(196, 0.8, rate), rate, preset)))
+    expect((await at('chipmunk')) - from).toBeCloseTo(9, 0)
+    expect((await at('demon')) - from).toBeCloseTo(-7, 0)
+  })
+
+  it('keeps a shifted voice in time with the take', async () => {
+    const take = sung(220, 0.4, rate, 0.2)
+    for (const preset of ['clean', 'tune-hard', 'chipmunk'] as const) {
+      const x = (await renderVoice(take, rate, preset)).getChannelData(0)
+      const onset = x.findIndex((v) => Math.abs(v) > 0.05) / UPLOADS.sampleRate
+      expect(Math.abs(onset - 0.2)).toBeLessThan(0.015)
+    }
   })
 })
 
@@ -240,6 +349,28 @@ describe('recording a sound', () => {
     await userEvent.click(page.getByRole('button', { name: 'Done' }))
     await userEvent.keyboard('1')
     expect(start).toHaveBeenCalled()
+  })
+
+  it('shows the key for auto-tune, remembers it, and offers the delay test', async () => {
+    mockServer()
+    await renderJam(<Deck slug={SLUG} />, session)
+    await openChangeSounds()
+    await userEvent.click(
+      page
+        .getByRole('region', { name: 'Uploaded sounds' })
+        .getByRole('button', { name: 'Upload a sound…' }),
+    )
+    await userEvent.click(dialog().getByRole('button', { name: 'Record', exact: true }))
+    await expect.element(dialog().getByRole('button', { name: 'Test delay' })).toBeVisible()
+    expect(dialog().getByRole('button', { name: /^Key:/ }).query()).toBeNull()
+
+    await userEvent.click(dialog().getByRole('button', { name: 'Voice preset: Clean' }))
+    await userEvent.click(page.getByRole('option', { name: 'Auto-tune (hard)' }))
+    await userEvent.click(dialog().getByRole('button', { name: 'Key: C major' }))
+    await userEvent.click(page.getByRole('option', { name: 'A minor' }))
+    await expect.element(dialog().getByRole('button', { name: 'Key: A minor' })).toBeVisible()
+    expect(loadPreset()).toBe('tune-hard')
+    expect(loadKey()).toEqual({ root: 9, scale: 'minor' })
   })
 
   // @scenario audio/voice: Monitor

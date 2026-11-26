@@ -751,7 +751,7 @@ describe('sound hits', () => {
     const [r] = apply(doc, [{ op: 'addTrack', id: 't1', track: track({ hits }) }], me)
     expect(r).toEqual({
       ok: false,
-      issues: [{ message: 'No sound u-aaaaaaaaaaaa', path: ['track', 'hits', 1, 'soundId'] }],
+      issues: [{ message: 'No sound u-aaaaaaaaaaaa', path: ['hits', 1, 'soundId'] }],
     })
     expect(tracksOf(doc).has('t1')).toBe(false)
   })
@@ -821,6 +821,19 @@ describe('sound hits', () => {
     const [r] = apply(doc, [{ op: 'removeSound', id: clip }], room)
     expect(r?.ok).toBe(false)
     expect(soundsOf(doc).has(clip)).toBe(true)
+  })
+
+  it("moves an unreadable track's sound hits with a replace, so the old sound can go", () => {
+    const doc = voiced()
+    apply(
+      doc,
+      [{ op: 'addTrack', id: 't1', track: track({ hits: [{ soundId: upload, beat: 0 }] }) }],
+      me,
+    )
+    tracksOf(doc).get('t1')!.set('bars', 99)
+    expect(board(doc, me).replaceSound(upload, other)).toEqual({ ok: true })
+    expect(tracksOf(doc).get('t1')!.get('hits')).toEqual([{ soundId: other, beat: 0 }])
+    expect(apply(doc, [{ op: 'removeSound', id: upload }], room)[0]?.ok).toBe(true)
   })
 
   // @scenario board/ops: A track's sound hits
