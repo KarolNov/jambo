@@ -4,25 +4,25 @@
     "shared/board/apply.ts": {
       "distance": 3,
       "via": [],
-      "hash": "00a8a7c4073c",
+      "hash": "33b700734b54",
       "whole": false
     },
     "shared/board/ops.ts": {
       "distance": 3,
       "via": [],
-      "hash": "ac549660a041",
+      "hash": "d2e65d68810d",
       "whole": false
     },
     "shared/board/schema.ts": {
       "distance": 1,
       "via": [],
-      "hash": "7886b4b9587a",
+      "hash": "13beadab62e6",
       "whole": false
     },
     "shared/board/sdk.ts": {
       "distance": 2,
       "via": [],
-      "hash": "6fafc07c2757",
+      "hash": "a1d2a72c0d18",
       "whole": false
     },
     "shared/clock.ts": {
@@ -40,7 +40,7 @@
     "shared/looper.ts": {
       "distance": 3,
       "via": [],
-      "hash": "7567f1bf8543",
+      "hash": "71acfbb0dc25",
       "whole": false
     },
     "shared/names.ts": {
@@ -76,13 +76,19 @@
     "src/audio/engine.ts": {
       "distance": 2,
       "via": [],
-      "hash": "46a52e76f748",
+      "hash": "e3efa7a6c39d",
       "whole": false
     },
     "src/audio/knobs.ts": {
       "distance": 3,
       "via": [],
-      "hash": "dbbd2773232e",
+      "hash": "ea6bb3369d92",
+      "whole": false
+    },
+    "src/audio/master.ts": {
+      "distance": 3,
+      "via": [],
+      "hash": "3230df69c634",
       "whole": false
     },
     "src/audio/samples.ts": {
@@ -136,7 +142,7 @@
     "src/board/model.ts": {
       "distance": 1,
       "via": [],
-      "hash": "62d108e90ddd",
+      "hash": "e98f88d0c21d",
       "whole": false
     },
     "src/board/seat.ts": {
@@ -162,42 +168,6 @@
       "via": [],
       "hash": "d344ee870e57",
       "whole": true
-    },
-    "src/ui/Menu.tsx": {
-      "distance": 1,
-      "via": [],
-      "hash": "2d9775cf6df9",
-      "whole": false
-    },
-    "src/ui/Pad.tsx": {
-      "distance": 1,
-      "via": [],
-      "hash": "2ec906c70a2d",
-      "whole": false
-    },
-    "src/ui/controls.tsx": {
-      "distance": 1,
-      "via": [],
-      "hash": "68a30002f029",
-      "whole": false
-    },
-    "src/ui/hapticGate.ts": {
-      "distance": 3,
-      "via": [],
-      "hash": "66c140b29280",
-      "whole": false
-    },
-    "src/ui/haptics.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "4a416fa0ba68",
-      "whole": false
-    },
-    "src/ui/listNav.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "5b2ced68cb10",
-      "whole": false
     }
   },
   "symbols": [
@@ -234,7 +204,14 @@
       "symbol": "applyOne",
       "distance": 3,
       "via": [],
-      "hash": "5fa5be124443"
+      "hash": "f4f1ace24f7a"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "checkMaster",
+      "distance": 3,
+      "via": [],
+      "hash": "2fd318c8c420"
     },
     {
       "file": "shared/board/apply.ts",
@@ -272,6 +249,13 @@
       "hash": "699bab1b6024"
     },
     {
+      "file": "shared/board/apply.ts",
+      "symbol": "readStartBeat",
+      "distance": 3,
+      "via": [],
+      "hash": "5c7d60535895"
+    },
+    {
       "file": "shared/board/ops.ts",
       "symbol": "AssignPad",
       "distance": 3,
@@ -290,7 +274,7 @@
       "symbol": "Op",
       "distance": 3,
       "via": [],
-      "hash": "0f2e35d4b361"
+      "hash": "a43c811a0843"
     },
     {
       "file": "shared/board/ops.ts",
@@ -312,6 +296,20 @@
       "distance": 3,
       "via": [],
       "hash": "ce0cddb26e23"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "SetFx",
+      "distance": 3,
+      "via": [],
+      "hash": "760c698275cd"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "SetMaster",
+      "distance": 3,
+      "via": [],
+      "hash": "769ba3ca27d8"
     },
     {
       "file": "shared/board/ops.ts",
@@ -350,6 +348,27 @@
     },
     {
       "file": "shared/board/schema.ts",
+      "symbol": "FX_MODES",
+      "distance": 3,
+      "via": [],
+      "hash": "40470b82cb64"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "FX_MODE_NAMES",
+      "distance": 4,
+      "via": [],
+      "hash": "4aa6e493e197"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "FxMode",
+      "distance": 3,
+      "via": [],
+      "hash": "9566eca9e031"
+    },
+    {
+      "file": "shared/board/schema.ts",
       "symbol": "Hit",
       "distance": 2,
       "via": [],
@@ -361,6 +380,48 @@
       "distance": 2,
       "via": [],
       "hash": "98bcc35c7209"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MASTER_KNOBS",
+      "distance": 3,
+      "via": [],
+      "hash": "1e1191470a40"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MASTER_KNOB_NAMES",
+      "distance": 4,
+      "via": [],
+      "hash": "1f11c9618ed8"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "Master",
+      "distance": 3,
+      "via": [],
+      "hash": "ac58eac902be"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MasterKey",
+      "distance": 3,
+      "via": [],
+      "hash": "7ad89be7e6a0"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MasterKnob",
+      "distance": 3,
+      "via": [],
+      "hash": "28833e84bb10"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MasterValues",
+      "distance": 3,
+      "via": [],
+      "hash": "04399310b573"
     },
     {
       "file": "shared/board/schema.ts",
@@ -385,10 +446,17 @@
     },
     {
       "file": "shared/board/schema.ts",
+      "symbol": "REPEAT_START_BEAT_MAX",
+      "distance": 3,
+      "via": [],
+      "hash": "e5874a4942b3"
+    },
+    {
+      "file": "shared/board/schema.ts",
       "symbol": "ROOTS",
       "distance": 2,
       "via": [],
-      "hash": "8dbb9dfa6837"
+      "hash": "ec3f02c1c76c"
     },
     {
       "file": "shared/board/schema.ts",
@@ -434,10 +502,24 @@
     },
     {
       "file": "shared/board/schema.ts",
+      "symbol": "fxAxes",
+      "distance": 3,
+      "via": [],
+      "hash": "24a62fa4a615"
+    },
+    {
+      "file": "shared/board/schema.ts",
       "symbol": "knob",
       "distance": 2,
       "via": [],
       "hash": "01bca25db6c8"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "masterKnob",
+      "distance": 3,
+      "via": [],
+      "hash": "7c605ee22506"
     },
     {
       "file": "shared/board/schema.ts",
@@ -458,7 +540,7 @@
       "symbol": "board",
       "distance": 2,
       "via": [],
-      "hash": "15dc4cf5c64a"
+      "hash": "6e5040fb62b5"
     },
     {
       "file": "shared/clock.ts",
@@ -609,6 +691,20 @@
     },
     {
       "file": "shared/looper.ts",
+      "symbol": "REPEAT_SLICES",
+      "distance": 3,
+      "via": [],
+      "hash": "5e82bb9afbec"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "SIXTEENTH",
+      "distance": 3,
+      "via": [],
+      "hash": "5d9a8a55b94c"
+    },
+    {
+      "file": "shared/looper.ts",
       "symbol": "STOP_GRACE_BARS",
       "distance": 3,
       "via": [],
@@ -661,7 +757,21 @@
       "symbol": "hitsInWindow",
       "distance": 3,
       "via": [],
-      "hash": "9c8becfdc034"
+      "hash": "0be993da4880"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "jamBeatMs",
+      "distance": 3,
+      "via": [],
+      "hash": "93713a83c603"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "nextGridLine",
+      "distance": 3,
+      "via": [],
+      "hash": "9b36933511d6"
     },
     {
       "file": "shared/looper.ts",
@@ -676,6 +786,27 @@
       "distance": 3,
       "via": [],
       "hash": "d46158615b62"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "repeatSlice",
+      "distance": 3,
+      "via": [],
+      "hash": "bf9c5658da1f"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "repeatZone",
+      "distance": 3,
+      "via": [],
+      "hash": "17a7259cb8e5"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "swingDelay",
+      "distance": 3,
+      "via": [],
+      "hash": "a7c606bfa537"
     },
     {
       "file": "shared/looper.ts",
@@ -896,10 +1027,17 @@
     },
     {
       "file": "src/audio/engine.ts",
+      "symbol": "EDGE_MS",
+      "distance": 2,
+      "via": [],
+      "hash": "409d61243580"
+    },
+    {
+      "file": "src/audio/engine.ts",
       "symbol": "Engine",
       "distance": 2,
       "via": [],
-      "hash": "d65249307d08"
+      "hash": "eeffe69cd715"
     },
     {
       "file": "src/audio/engine.ts",
@@ -927,7 +1065,7 @@
       "symbol": "Playing",
       "distance": 2,
       "via": [],
-      "hash": "1f1ad466360a"
+      "hash": "db489a211fa7"
     },
     {
       "file": "src/audio/engine.ts",
@@ -938,10 +1076,31 @@
     },
     {
       "file": "src/audio/engine.ts",
+      "symbol": "REPEAT_FADE",
+      "distance": 2,
+      "via": [],
+      "hash": "96f447dd3a83"
+    },
+    {
+      "file": "src/audio/engine.ts",
       "symbol": "RecorderState",
       "distance": 2,
       "via": [],
       "hash": "bfc5dc249f2c"
+    },
+    {
+      "file": "src/audio/engine.ts",
+      "symbol": "RepeatSpan",
+      "distance": 2,
+      "via": [],
+      "hash": "07c7ce107918"
+    },
+    {
+      "file": "src/audio/engine.ts",
+      "symbol": "Scheduled",
+      "distance": 2,
+      "via": [],
+      "hash": "4e2f5b0ffd0b"
     },
     {
       "file": "src/audio/engine.ts",
@@ -973,6 +1132,27 @@
     },
     {
       "file": "src/audio/knobs.ts",
+      "symbol": "DRIVE_BEND",
+      "distance": 4,
+      "via": [],
+      "hash": "ab19ecf4dc9f"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "DRIVE_CURVE_POINTS",
+      "distance": 4,
+      "via": [],
+      "hash": "c9d64328a706"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "DRIVE_HEADROOM",
+      "distance": 4,
+      "via": [],
+      "hash": "cdbcb2d7310d"
+    },
+    {
+      "file": "src/audio/knobs.ts",
       "symbol": "ECHO_BEATS",
       "distance": 3,
       "via": [],
@@ -984,6 +1164,34 @@
       "distance": 3,
       "via": [],
       "hash": "1f76e09c3ff6"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "FILTER_PEAK_MAX",
+      "distance": 4,
+      "via": [],
+      "hash": "e3dfb84908b4"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "FILTER_Q_MAX",
+      "distance": 4,
+      "via": [],
+      "hash": "2ed71163ee69"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "FILTER_Q_MIN",
+      "distance": 4,
+      "via": [],
+      "hash": "5d85a6b6072c"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "FILTER_TRIM_FADE",
+      "distance": 4,
+      "via": [],
+      "hash": "b38cb4e70be4"
     },
     {
       "file": "src/audio/knobs.ts",
@@ -1001,6 +1209,34 @@
     },
     {
       "file": "src/audio/knobs.ts",
+      "symbol": "LOFI_BITS_MAX",
+      "distance": 4,
+      "via": [],
+      "hash": "93884ff1aa65"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "LOFI_BITS_MIN",
+      "distance": 4,
+      "via": [],
+      "hash": "caaaaff6fcc0"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "LOFI_RATE_FULL_HZ",
+      "distance": 4,
+      "via": [],
+      "hash": "2c21b8b18def"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "LOFI_RATE_MIN_HZ",
+      "distance": 4,
+      "via": [],
+      "hash": "6ff2afd1cf1e"
+    },
+    {
+      "file": "src/audio/knobs.ts",
       "symbol": "LOWPASS_OPEN_HZ",
       "distance": 3,
       "via": [],
@@ -1012,6 +1248,27 @@
       "distance": 3,
       "via": [],
       "hash": "d63c747b14f4"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "THROW_BEATS",
+      "distance": 3,
+      "via": [],
+      "hash": "ee9e1fdf30b0"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "THROW_FEEDBACK_MAX",
+      "distance": 3,
+      "via": [],
+      "hash": "c82beb48df7a"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "THROW_FEEDBACK_MIN",
+      "distance": 3,
+      "via": [],
+      "hash": "3370a413895f"
     },
     {
       "file": "src/audio/knobs.ts",
@@ -1029,10 +1286,38 @@
     },
     {
       "file": "src/audio/knobs.ts",
+      "symbol": "driveCurve",
+      "distance": 4,
+      "via": [],
+      "hash": "1db23210370d"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "driveGlue",
+      "distance": 4,
+      "via": [],
+      "hash": "a0bb7ac43481"
+    },
+    {
+      "file": "src/audio/knobs.ts",
       "symbol": "echoSeconds",
       "distance": 3,
       "via": [],
       "hash": "37336a12f8e2"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "filterSweep",
+      "distance": 4,
+      "via": [],
+      "hash": "ad9a11231381"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "lofiCrush",
+      "distance": 4,
+      "via": [],
+      "hash": "00f94f823017"
     },
     {
       "file": "src/audio/knobs.ts",
@@ -1050,10 +1335,94 @@
     },
     {
       "file": "src/audio/knobs.ts",
+      "symbol": "throwEcho",
+      "distance": 3,
+      "via": [],
+      "hash": "07a42e52ae67"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "throwZone",
+      "distance": 3,
+      "via": [],
+      "hash": "e17abe3f77ac"
+    },
+    {
+      "file": "src/audio/knobs.ts",
       "symbol": "toneFilter",
       "distance": 3,
       "via": [],
       "hash": "e0306ac37942"
+    },
+    {
+      "file": "src/audio/knobs.ts",
+      "symbol": "widthGains",
+      "distance": 4,
+      "via": [],
+      "hash": "6472aa1e75e7"
+    },
+    {
+      "file": "src/audio/master.ts",
+      "symbol": "CRUSHER_PROCESSOR",
+      "distance": 3,
+      "via": [],
+      "hash": "c9d587fe7ffc"
+    },
+    {
+      "file": "src/audio/master.ts",
+      "symbol": "MASTER_SOUND_DEFAULTS",
+      "distance": 3,
+      "via": [],
+      "hash": "cadff4152d7c"
+    },
+    {
+      "file": "src/audio/master.ts",
+      "symbol": "MasterChain",
+      "distance": 3,
+      "via": [],
+      "hash": "57275acff7f0"
+    },
+    {
+      "file": "src/audio/master.ts",
+      "symbol": "MasterSound",
+      "distance": 3,
+      "via": [],
+      "hash": "efaa99f5b009"
+    },
+    {
+      "file": "src/audio/master.ts",
+      "symbol": "THROW_MAX_SECONDS",
+      "distance": 3,
+      "via": [],
+      "hash": "9f39cb00fec3"
+    },
+    {
+      "file": "src/audio/master.ts",
+      "symbol": "loadCrusher",
+      "distance": 3,
+      "via": [],
+      "hash": "b0282540a09d"
+    },
+    {
+      "file": "src/audio/master.ts",
+      "symbol": "loopLatencies",
+      "distance": 3,
+      "via": [],
+      "hash": "ab4c1e3d28cd"
+    },
+    {
+      "file": "src/audio/master.ts",
+      "symbol": "loopLatency",
+      "distance": 3,
+      "via": [],
+      "hash": "0d6258024586"
+    },
+    {
+      "file": "src/audio/master.ts",
+      "symbol": "measureLoopLatency",
+      "distance": 3,
+      "via": [],
+      "hash": "e43cb056a09d"
     },
     {
       "file": "src/audio/samples.ts",
@@ -1390,167 +1759,6 @@
       "distance": 3,
       "via": [],
       "hash": "b17b42ae21da"
-    },
-    {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "EDGE",
-      "distance": 1,
-      "via": [],
-      "hash": "e230dc0fde6a"
-    },
-    {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "GAP",
-      "distance": 1,
-      "via": [],
-      "hash": "cd71fc46588a"
-    },
-    {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "Group",
-      "distance": 1,
-      "via": [],
-      "hash": "7065845e8a42"
-    },
-    {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "Option",
-      "distance": 1,
-      "via": [],
-      "hash": "fd88558e8d8c"
-    },
-    {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "OptionList",
-      "distance": 1,
-      "via": [],
-      "hash": "718495c23ca2"
-    },
-    {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "Popover",
-      "distance": 1,
-      "via": [],
-      "hash": "8c3004728824"
-    },
-    {
-      "file": "src/ui/Pad.tsx",
-      "symbol": "Pad",
-      "distance": 1,
-      "via": [],
-      "hash": "0429f20732e0"
-    },
-    {
-      "file": "src/ui/Pad.tsx",
-      "symbol": "PadProps",
-      "distance": 1,
-      "via": [],
-      "hash": "4ca70332fe24"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "Button",
-      "distance": 1,
-      "via": [],
-      "hash": "2379e51afaef"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "ButtonProps",
-      "distance": 1,
-      "via": [],
-      "hash": "8d6ead9a466b"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "Size",
-      "distance": 1,
-      "via": [],
-      "hash": "34388801b41c"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "Tone",
-      "distance": 1,
-      "via": [],
-      "hash": "46de0c10991d"
-    },
-    {
-      "file": "src/ui/hapticGate.ts",
-      "symbol": "MIN_GAP_MS",
-      "distance": 3,
-      "via": [],
-      "hash": "39c3161c5f8a"
-    },
-    {
-      "file": "src/ui/hapticGate.ts",
-      "symbol": "tickGate",
-      "distance": 3,
-      "via": [],
-      "hash": "92598940bb29"
-    },
-    {
-      "file": "src/ui/haptics.ts",
-      "symbol": "DURATION",
-      "distance": 2,
-      "via": [],
-      "hash": "eeb21cd651f6"
-    },
-    {
-      "file": "src/ui/haptics.ts",
-      "symbol": "HapticKind",
-      "distance": 2,
-      "via": [],
-      "hash": "1149d785a453"
-    },
-    {
-      "file": "src/ui/haptics.ts",
-      "symbol": "gate",
-      "distance": 2,
-      "via": [],
-      "hash": "aa8aa7c03c7a"
-    },
-    {
-      "file": "src/ui/haptics.ts",
-      "symbol": "haptic",
-      "distance": 2,
-      "via": [],
-      "hash": "148d9a486b84"
-    },
-    {
-      "file": "src/ui/haptics.ts",
-      "symbol": "haptics",
-      "distance": 2,
-      "via": [],
-      "hash": "58b22821fb45"
-    },
-    {
-      "file": "src/ui/listNav.ts",
-      "symbol": "NavOption",
-      "distance": 2,
-      "via": [],
-      "hash": "33a77bae36c6"
-    },
-    {
-      "file": "src/ui/listNav.ts",
-      "symbol": "initialIndex",
-      "distance": 2,
-      "via": [],
-      "hash": "eccaf2a8e7d5"
-    },
-    {
-      "file": "src/ui/listNav.ts",
-      "symbol": "navKey",
-      "distance": 2,
-      "via": [],
-      "hash": "c00776387ce0"
-    },
-    {
-      "file": "src/ui/listNav.ts",
-      "symbol": "stepIndex",
-      "distance": 2,
-      "via": [],
-      "hash": "400c569c3b94"
     }
   ],
   "external": [
@@ -1561,7 +1769,6 @@
     "duratom",
     "jotai",
     "lib0",
-    "web-haptics",
     "y-partyserver",
     "y-protocols",
     "yjs",
@@ -1572,10 +1779,9 @@
     "@types/node": "22.20.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "duratom": "0.1.0",
+    "duratom": "0.2.0",
     "jotai": "3.0.2",
     "lib0": "0.2.120",
-    "web-haptics": "0.0.6",
     "y-partyserver": "2.2.0",
     "y-protocols": "1.0.7",
     "yjs": "13.6.33",

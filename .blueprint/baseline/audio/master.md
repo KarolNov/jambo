@@ -103,7 +103,7 @@ X SHALL lower the mix's sample rate and Y its bit depth, from untouched at 0 to 
 
 ### Requirement: Repeat mode
 
-With Y above 0, Repeat SHALL capture a slice of the loops' pattern, starting at the next grid line of the slice's length, and play that slice's hits over and over in place of what the loops would play. Y SHALL set the repeats' level against the loops, with only repeats at 1. X SHALL pick the slice: a quarter, eighth, sixteenth or thirty-second note, in four equal zones from left to right. Moving X to another zone SHALL capture a new slice at the next grid line. Setting Y to 0 SHALL return the loops to playing as they were, at the next 1/16. Every client SHALL repeat the same hits.
+With Y above 0, Repeat SHALL capture a slice of the loops' pattern, starting at the next grid line of the slice's length (the next 1/16 for a 1/32 slice), and play that slice's hits over and over in place of what the loops would play. Y SHALL set the repeats' level against the loops, with only repeats at 1. X SHALL pick the slice: a quarter, eighth, sixteenth or thirty-second note, in four equal zones from left to right. Moving X to another zone SHALL capture a new slice at the next grid line. Setting Y to 0 SHALL return the loops to playing as they were, at the next 1/16. Every client SHALL repeat the same hits.
 
 - **Scenario: Stutter a beat**
   - **GIVEN** a one-bar loop playing
@@ -115,7 +115,7 @@ With Y above 0, Repeat SHALL capture a slice of the loops' pattern, starting at 
 
 ### Requirement: Heard together
 
-Turning Repeat on or off, changing its slice, and changing Throw's echo time SHALL take effect at the next 1/16 note of the jam's grid, for everyone, including whoever is steering. Every other master change SHALL take effect at once for whoever makes it, and as soon as it reaches them for everyone else.
+Turning Repeat on or off, changing its slice, and changing Throw's echo time SHALL take effect on the jam's grid, for everyone, including whoever is steering: Repeat engaging or changing slice at the next line of its slice (never finer than a 1/16), and Repeat letting go and Throw's echo time at the next 1/16. Every other master change SHALL take effect at once for whoever makes it, and as soon as it reaches them for everyone else.
 
 - **Scenario: Same stutter**
   - **GIVEN** two people in a jam
@@ -123,4 +123,4 @@ Turning Repeat on or off, changing its slice, and changing Throw's echo time SHA
   - **THEN** both hear the first repeat start on the same 1/16, within 20 ms of each other
 - **Scenario: On the grid for whoever steers**
   - **WHEN** someone moves Throw's echo time or engages Repeat
-  - **THEN** they hear it from the next 1/16 line too, not at once
+  - **THEN** they hear it from the same grid line as everyone else, not at once
