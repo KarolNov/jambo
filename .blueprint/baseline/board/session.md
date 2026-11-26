@@ -103,7 +103,7 @@ The board SHALL list everyone connected to the jam and every agent present, one 
 
 ### Requirement: Who's turning a control
 
-While someone drags a loop's level or one of its sound knobs, everyone else in the jam SHALL see that control ringed in their colour with their name beside it, until they let go, cancel, or the control goes away. It SHALL NOT stop anyone else from moving the control, and someone's other tabs SHALL NOT show them as turning it.
+While someone holds a live control (a loop's level, one of its sound knobs, a master knob, or a touchpad mode), everyone else in the jam SHALL see that control ringed in their colour with their name beside it, and SHALL NOT be able to move it, by pointer or by keyboard, until they let go, cancel, or the control goes away. If two people start holding the same control at the same moment, one SHALL keep it and the other's drag SHALL end, showing the holder's value. Someone's other tabs SHALL NOT show them as holding it. A hold SHALL end for everyone within about 30 seconds of its holder's connection dropping.
 
 - **Scenario: Someone turns the reverb**
   - **GIVEN** two people in a jam with a loop's Effects strip open
@@ -111,11 +111,22 @@ While someone drags a loop's level or one of its sound knobs, everyone else in t
   - **THEN** the other person sees that knob ringed in Misty Yak's colour with Misty Yak's name above it, and its value moving
 - **Scenario: Let go**
   - **WHEN** Misty Yak lets go, presses Escape, or closes the strip mid-drag
-  - **THEN** the ring and name disappear for everyone
-- **Scenario: Both at once**
+  - **THEN** the ring and name disappear for everyone, and anyone can move the knob again
+- **Scenario: Held by someone else**
   - **GIVEN** Misty Yak dragging a loop's level
-  - **WHEN** someone else drags it too
-  - **THEN** they can, and they see Misty Yak's ring while they do
+  - **WHEN** someone else tries to drag it or press an arrow key on it
+  - **THEN** it doesn't move for them, and they see Misty Yak's ring and name
+- **Scenario: Different controls**
+  - **GIVEN** Misty Yak holding the touchpad's Filter
+  - **WHEN** someone else switches their touchpad to Throw
+  - **THEN** they can drag Throw
+- **Scenario: Grab at once**
+  - **WHEN** two people start dragging the same free knob within the same moment
+  - **THEN** within a second only one of them is turning it, and the other's knob shows that person's ring and value
+- **Scenario: Holder drops**
+  - **GIVEN** Misty Yak holding master tone
+  - **WHEN** Misty Yak's connection drops
+  - **THEN** within about 30 seconds anyone can turn master tone again
 
 ### Requirement: Agent work marked
 
