@@ -233,13 +233,31 @@ function symbolEdges(sym, fromFile) {
     if (!stmt) continue;
     const name = statementName(stmt);
     const key = `S:${place.rel}#${name}`;
+    // A node is every top-level statement of that name in the file (`const Pad` and
+    // `type Pad` alike), whichever symbol led here: a property inside one of them reaches
+    // only that statement, and the walk keeps the first edge it meets per key, so taking
+    // just the statements this symbol declares would make the hash depend on walk order.
     if (!byStmt.has(key)) {
-      byStmt.set(key, { kind: "symbol", key, file: place.file, rel: place.rel, name, stmts: [] });
+      byStmt.set(key, { kind: "symbol", key, file: place.file, rel: place.rel, name,
+                        stmts: namedStatements(sf, name) });
     }
-    const edge = byStmt.get(key);
-    if (!edge.stmts.includes(stmt)) edge.stmts.push(stmt);
   }
   return [...out, ...byStmt.values()];
+}
+
+const namedCache = new Map();
+function namedStatements(sf, name) {
+  let byName = namedCache.get(sf);
+  if (!byName) {
+    byName = new Map();
+    for (const stmt of sf.statements) {
+      const n = statementName(stmt);
+      if (!byName.has(n)) byName.set(n, []);
+      byName.get(n).push(stmt);
+    }
+    namedCache.set(sf, byName);
+  }
+  return byName.get(name) ?? [];
 }
 
 // What one import or re-export declaration in `sf` depends on.
