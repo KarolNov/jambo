@@ -53,6 +53,12 @@ const RELEASE_MS = 100
 const EDGE_MS = 1e-3
 /** How long a repeat fades out at its slice's end, in seconds, so the cut doesn't click. */
 const REPEAT_FADE = 0.004
+/**
+ * How long a voice clip keeps recording after Sing is let go, on top of the microphone's own
+ * delay, in seconds: the last note rings on as people let go, and what was sung just before
+ * reaches the context only after that delay. Trailing silence is trimmed before the clip is kept.
+ */
+export const SING_TAIL = 0.25
 
 /**
  * A stretch of beat repeat, from jam beat `at` until the next one's: off, or repeating the loops'
@@ -231,6 +237,8 @@ export class Engine {
     []
   /** The last clip's capture: the next one waits for it, since they share the microphone. */
   private lastClip: Promise<unknown> = Promise.resolve()
+  /** Ends the last clip's tail early, so a new Sing pressed during it starts at once. */
+  private cutTail?: () => void
   /** While it is on, the metronome clicks every beat of a take. */
   metronome = loadMetronome()
   private listeners = new Set<() => void>()
@@ -672,8 +680,9 @@ export class Engine {
   }
 
   /**
-   * Starts a voice clip, from now until `singEnd`, while a take is recording: the take's first one
-   * opens the microphone (and asks for it the first time). Throws a `MicError` when the microphone
+   * Starts a voice clip, from now until `singEnd` and its tail, while a take is recording. The
+   * microphone opens with the take (`warmVoice`); if it isn't open yet, this opens it, asking the
+   * first time. Throws a `MicError` when the microphone
    * can't be had. Does nothing between takes, or while a clip is already being sung.
    */
   async sing(options: SingOptions): Promise<void> {
@@ -690,7 +699,9 @@ export class Engine {
         if (this.voice === opening) this.voice = undefined
       })
       voice = await opening
-      // Clips share the microphone: the last one must have finished before this one starts.
+      // Clips share the microphone: the last one must have finished before this one starts, so a
+      // new press ends its tail.
+      this.cutTail?.()
       await this.lastClip
     } catch (e) {
       if (this.hold === hold) this.hold = undefined
@@ -707,16 +718,20 @@ export class Engine {
   }
 
   /**
-   * Opens the microphone ahead of the take's first Sing, so that one starts at once. Call it only
-   * when the microphone is already allowed: it never asks. Does nothing between takes.
+   * Opens the microphone as a take starts, so its first Sing starts at once rather than losing its
+   * first moments to the microphone starting up; the browser asks for it here the first time. It
+   * closes when the take ends. Resolves once it is open; rejects with a `MicError` when it can't be
+   * had, after which Sing tries again. Does nothing between takes or once it is open.
    */
-  warmVoice() {
+  async warmVoice(): Promise<void> {
     const ctx = this.audioContext
-    if (!ctx || this.recorder.phase === 'idle' || this.voice) return
+    if (!ctx || this.recorder.phase === 'idle') return
+    if (this.voice) return void (await this.voice)
     const opening = (this.voice = VoiceInput.open(ctx))
     opening.catch(() => {
       if (this.voice === opening) this.voice = undefined
     })
+    await opening
   }
 
   /** Whether a Sing hold is in progress. */
@@ -737,6 +752,7 @@ export class Engine {
     const bpm = this.bpm
     const done = opening.then(async (voice): Promise<SungClip | undefined> => {
       void voice.monitor(false, hold.preset, hold.key)
+      await this.tail(voice.latency.input + SING_TAIL)
       const samples = await voice.stop()
       const at = voice.startedAt
       const shift = this.shift
@@ -751,6 +767,19 @@ export class Engine {
     })
     this.lastClip = done.catch(() => undefined)
     this.clips.push({ mark, done })
+  }
+
+  /** Waits `seconds`, unless the next Sing cuts it short. */
+  private tail(seconds: number): Promise<void> {
+    return new Promise((resolve) => {
+      const end = () => {
+        clearTimeout(timer)
+        if (this.cutTail === end) this.cutTail = undefined
+        resolve()
+      }
+      const timer = setTimeout(end, seconds * 1000)
+      this.cutTail = end
+    })
   }
 
   /** Hands over the take's clips as they finish capturing, then lets go of the microphone. */

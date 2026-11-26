@@ -21,20 +21,10 @@ const SING_MIC: Record<MicProblem, string> = {
   unavailable: "This browser can't record from a microphone here.",
 }
 
-/** Whether this site may already use the microphone, so opening it won't ask. */
-async function micAllowed(): Promise<boolean> {
-  try {
-    const status = await navigator.permissions.query({ name: 'microphone' as PermissionName })
-    return status.state === 'granted'
-  } catch {
-    return false
-  }
-}
-
 /**
  * Sing into a take: hold M (except while typing) or the Sing button to record a voice clip, from
- * press to release, through the voice preset picked here. Enabled only while a take is recording
- * and the jam has room for another clip.
+ * press to just after release, through the voice preset picked here. Enabled only while a take is
+ * recording and the jam has room for another clip. The microphone opens as each take starts.
  */
 export function useSing(phase: RecorderState['phase']) {
   const { engine } = useSession()
@@ -93,18 +83,12 @@ export function useSing(phase: RecorderState['phase']) {
     }
   })
 
-  // Where the microphone is already allowed, it opens with the take, so the first Sing starts at
-  // once instead of losing its first moments to the microphone starting up.
+  // The microphone opens as each take starts, asking the first time, so the first Sing starts at
+  // once instead of losing its first moments to the microphone starting up. If it can't be had,
+  // nothing is said yet: Sing tries again when pressed, and says why then.
   const starting = phase === 'waiting' || phase === 'count-in'
   useEffect(() => {
-    if (!starting || full) return
-    let cancelled = false
-    void micAllowed().then((ok) => {
-      if (ok && !cancelled) engine.warmVoice()
-    })
-    return () => {
-      cancelled = true
-    }
+    if (starting && !full) engine.warmVoice().catch(() => undefined)
   }, [starting, full, engine])
 
   // A new take starts without the last one's error.

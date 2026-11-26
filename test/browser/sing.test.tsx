@@ -3,6 +3,7 @@ import { page, userEvent } from 'vitest/browser'
 import { apply, isSoundHit, type Sound } from '../../shared/board'
 import { CLIPS, UPLOAD_HEADERS, UPLOADS } from '../../shared/sounds'
 import { parseUploadWav } from '../../shared/wav'
+import { SING_TAIL } from '../../src/audio/engine'
 import { Deck } from '../../src/board/console/Deck'
 import { tracksAtom } from '../../src/board/model'
 import { clipName, lostMessage } from '../../src/board/saveTake'
@@ -156,7 +157,8 @@ describe('sing into a take', () => {
     expect(posted[0]!.name).toBe(clipName(track!.name, 1))
     const info = parseUploadWav(posted[0]!.wav)
     expect(info).toMatchObject({ sampleRate: UPLOADS.sampleRate, channels: 1 })
-    expect((info as { durationMs: number }).durationMs).toBeGreaterThan(300)
+    // Held 600 ms, and it keeps recording a moment after the release, so the last note isn't cut.
+    expect((info as { durationMs: number }).durationMs).toBeGreaterThan(600 + SING_TAIL * 800)
     // The microphone is let go with the take.
     await expect.poll(mic.live).toBe(false)
   })
@@ -211,6 +213,39 @@ describe('sing into a take', () => {
     await userEvent.click(page.getByRole('button', { name: 'Stop' }))
     await expect.poll(() => tracks().length).toBe(1)
     expect(tracks()[0]!.hits).toHaveLength(1)
+  })
+})
+
+describe('the microphone', () => {
+  it('is asked for as the take starts, before any Sing, and once for the whole take', async () => {
+    const mic = toneMic()
+    clipRoom()
+    agreeClock(session)
+    await renderJam(<Deck slug={SLUG} />, session)
+    await userEvent.click(record())
+    await expect.poll(mic.asked).toBe(1)
+    expect(session.engine.state.phase).not.toBe('recording')
+    await expect.poll(() => session.engine.state.phase, { timeout: 8000 }).toBe('recording')
+    await holdM(200)
+    await wait(SING_TAIL * 1000 + 200)
+    await holdM(200)
+    expect(mic.asked()).toBe(1)
+    await userEvent.click(page.getByRole('button', { name: 'Stop' }))
+    await expect.poll(mic.live).toBe(false)
+  })
+
+  it('says the microphone is blocked when Sing is pressed, and pad hits still record', async () => {
+    vi.spyOn(navigator.mediaDevices, 'getUserMedia').mockRejectedValue(
+      new DOMException('Denied', 'NotAllowedError'),
+    )
+    clipRoom()
+    await startTake()
+    await userEvent.keyboard('{m>}')
+    await expect.element(page.getByRole('alert')).toHaveTextContent(/microphone is blocked/)
+    await userEvent.keyboard('{/m}')
+    await userEvent.keyboard('1')
+    await userEvent.click(page.getByRole('button', { name: 'Stop' }))
+    await expect.poll(() => tracks().length).toBe(1)
   })
 })
 
