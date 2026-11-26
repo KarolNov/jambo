@@ -1,7 +1,18 @@
 import { isMap } from 'duratom'
 import { read } from 'duratom/core'
 import type * as Y from 'yjs'
-import { BPM, type Master, masterOf, Meta, Pad, ROOTS, SHAPES, Sound, Track } from '../board'
+import {
+  BPM,
+  kindOf,
+  type Master,
+  masterOf,
+  Meta,
+  Pad,
+  ROOTS,
+  SHAPES,
+  Sound,
+  Track,
+} from '../board'
 import type { ColorName } from '../colors'
 import { padKeyOrder, SOUNDS } from '../sounds'
 
@@ -15,7 +26,8 @@ export interface SnapshotPresence {
 export interface SnapshotSound {
   id: string
   name: string
-  kind: 'kit' | 'upload'
+  /** A clip is a voice clip: only tracks' sound hits play it, never a pad. */
+  kind: 'kit' | 'upload' | 'clip'
   /** Kit sounds: drums, percussion, tonal or fx. */
   category?: string
   /** Uploads: the uploader's name, when known. */
@@ -70,7 +82,7 @@ export function snapshotOf(doc: Y.Doc, here: readonly SnapshotPresence[]): Snaps
     .map(([id, s]): SnapshotSound => ({
       id,
       name: s.name,
-      kind: 'upload',
+      kind: kindOf(s),
       ...(s.authorName ? { by: s.authorName } : {}),
       durationMs: s.durationMs,
     }))

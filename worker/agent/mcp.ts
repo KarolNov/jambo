@@ -49,8 +49,8 @@ Tools: join, listen, run, upload_sound, leave. join, listen, run and upload_soun
 join returns board, the jam as it is now:
   bpm: tempo (${BPM.min}-${BPM.max})
   pads: [{ id, key, row, col, soundId }]: the 16 pads; tracks hit pads by id
-  sounds: [{ id, name, kind: 'kit' | 'upload', category?, by?, durationMs? }]
-  tracks: [{ id, name, author, color, bars, hits: [{ padId, beat }], gain, mute, quantize, startBar?, effects, ${KNOB_FIELDS} }]: a missing knob is at its default
+  sounds: [{ id, name, kind: 'kit' | 'upload' | 'clip', category?, by?, durationMs? }]
+  tracks: [{ id, name, author, color, bars, hits: [{ padId, beat } | { soundId, beat }], gain, mute, quantize, startBar?, effects, ${KNOB_FIELDS} }]: a missing knob is at its default
   master: { ${MASTER_KNOB_NAMES.join(', ')}, ${FX_MODE_NAMES.map((m) => `${m}: { x, y }`).join(', ')} }: the master stage everyone hears, each at its default (0, and 0/0 for a mode) until someone sets it
   here: [{ name, kind, color }]: people (kind 'person') and agents
 Others change the jam too. To follow along, call listen (it needs your agentKey) instead of join: it waits up to wait seconds (0-${LISTEN.maxWaitMs / 1000}, default ${LISTEN.defaultWaitMs / 1000}) for someone to change the jam, then answers { agent, changes, holding }: only what changed since you last looked, your own runs left out, and who is turning which control right now. A burst of edits, like a knob drag, comes as one answer, and answers come at most every ${LISTEN.minGapMs / 1000} s. changes are, in order:
@@ -61,7 +61,7 @@ holding: [{ control, by }], control being track.<trackId>.<field>, master.<knob>
 
 run takes ops, a JSON array of 1-${AGENT_LIMITS.ops} operations, and summary (1-${AGENT_LIMITS.summaryMax} characters, what the run does). The operations:
   { op: 'setTempo', bpm }: only while the jam has no tracks
-  { op: 'assignPad', padId, soundId }: a kit sound id or an upload id
+  { op: 'assignPad', padId, soundId }: a kit sound id or an upload id (not a clip: clips play only from a track's sound hits)
   { op: 'replaceSound', from, to }: moves every pad on one sound to another
   { op: 'addTrack', ref?, track: { name, bars, hits, gain?, quantize?, ${KNOB_FIELDS} } }: bars 1-${LIMITS.bars}; hits [{ padId, beat }] with 0 <= beat < bars * 4 (beats, 4 per bar), 1-${LIMITS.hitsPerTrack} of them; gain 0-1.5 (default 1); quantize one of ${QUANTIZE.join(', ')} beats (default 0.25). The track is yours: author and colour are set for you. ref, like "new:kicks", lets later operations in the same run use the track as an id. A jam holds ${LIMITS.tracks} tracks.
   { op: 'setTrack', id, patch: { name?, gain?, mute?, quantize?, ${KNOB_FIELDS} } }

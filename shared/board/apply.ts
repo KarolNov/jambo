@@ -192,7 +192,7 @@ function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
       for (let i = 0; i < hits.length; i++) {
         const hit = hits[i]!
         if (isSoundHit(hit) && !SOUND_IDS.has(hit.soundId) && !kind(hit.soundId))
-          return fail(`No sound ${hit.soundId}`, ['track', 'hits', i, 'soundId'])
+          return fail(`No sound ${hit.soundId}`, ['hits', i, 'soundId'])
       }
       return fromResult(create(Track, SHAPES.track, tracks, op.id, op.track))
     }
@@ -258,7 +258,14 @@ function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
         const node = tracks.get(trackId)
         if (!isMap(node)) continue
         const current = read(Track, SHAPES.track, node)
-        if (!current || current.issues) continue
+        if (!current || current.issues) {
+          // An unreadable track is hidden, so nothing else could free the sound: move its raw hits.
+          const moved = rawHits(node).map((h) =>
+            namesSound(h, op.from) ? { ...(h as object), soundId: op.to } : h,
+          )
+          node.set('hits', moved)
+          continue
+        }
         const hits = current.value.hits.map((h) =>
           isSoundHit(h) && h.soundId === op.from ? { soundId: op.to, beat: h.beat } : h,
         )
