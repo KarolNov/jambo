@@ -1,6 +1,12 @@
 {
   "mode": "symbol",
   "files": {
+    "shared/agent/held.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "9809510d02dd",
+      "whole": false
+    },
     "shared/agent/identity.ts": {
       "distance": 2,
       "via": [],
@@ -22,7 +28,13 @@
     "shared/agent/record.ts": {
       "distance": 2,
       "via": [],
-      "hash": "c9aff89071cb",
+      "hash": "55535bf594a1",
+      "whole": false
+    },
+    "shared/agent/repeat.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "bf4c81366903",
       "whole": false
     },
     "shared/agent/seat.ts": {
@@ -34,31 +46,31 @@
     "shared/agent/snapshot.ts": {
       "distance": 2,
       "via": [],
-      "hash": "31018f0ae58c",
+      "hash": "bd1f9821221c",
       "whole": false
     },
     "shared/board/apply.ts": {
       "distance": 2,
       "via": [],
-      "hash": "00a8a7c4073c",
+      "hash": "33b700734b54",
       "whole": false
     },
     "shared/board/ops.ts": {
       "distance": 2,
       "via": [],
-      "hash": "ac549660a041",
+      "hash": "d2e65d68810d",
       "whole": false
     },
     "shared/board/schema.ts": {
-      "distance": 1,
+      "distance": 2,
       "via": [],
-      "hash": "7886b4b9587a",
+      "hash": "13beadab62e6",
       "whole": false
     },
     "shared/board/sdk.ts": {
       "distance": 3,
       "via": [],
-      "hash": "6fafc07c2757",
+      "hash": "a1d2a72c0d18",
       "whole": false
     },
     "shared/board/seed.ts": {
@@ -73,6 +85,12 @@
       "hash": "1dd908e91d40",
       "whole": false
     },
+    "shared/looper.ts": {
+      "distance": 3,
+      "via": [],
+      "hash": "71acfbb0dc25",
+      "whole": false
+    },
     "shared/sounds.ts": {
       "distance": 2,
       "via": [],
@@ -83,216 +101,6 @@
       "distance": 2,
       "via": [],
       "hash": "bd5840f52c3f",
-      "whole": false
-    },
-    "src/audio/clock.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "c0378e84a7cb",
-      "whole": false
-    },
-    "src/audio/engine.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "46a52e76f748",
-      "whole": false
-    },
-    "src/audio/knobs.ts": {
-      "distance": 3,
-      "via": [],
-      "hash": "dbbd2773232e",
-      "whole": false
-    },
-    "src/audio/samples.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "093a12daee1a",
-      "whole": false
-    },
-    "src/audio/session.ts": {
-      "distance": 3,
-      "via": [],
-      "hash": "2e1ec86333d1",
-      "whole": false
-    },
-    "src/audio/synth.ts": {
-      "distance": 3,
-      "via": [],
-      "hash": "513ccb17f064",
-      "whole": false
-    },
-    "src/audio/upload.ts": {
-      "distance": 6,
-      "via": [],
-      "hash": "9d3467419e28",
-      "whole": false
-    },
-    "src/board/Debug.tsx": {
-      "distance": 3,
-      "via": [],
-      "hash": "80d7db772bb5",
-      "whole": false
-    },
-    "src/board/Jam.tsx": {
-      "distance": 1,
-      "via": [],
-      "hash": "6e3d6d073966",
-      "whole": false
-    },
-    "src/board/Uploads.tsx": {
-      "distance": 5,
-      "via": [],
-      "hash": "e14f1254d8b4",
-      "whole": false
-    },
-    "src/board/colors.ts": {
-      "distance": 3,
-      "via": [],
-      "hash": "d21c9da0a9fa",
-      "whole": false
-    },
-    "src/board/connection.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "b7d5a5fc4e00",
-      "whole": false
-    },
-    "src/board/console/AiMark.tsx": {
-      "distance": 4,
-      "via": [],
-      "hash": "a01ab3b0aaee",
-      "whole": false
-    },
-    "src/board/console/Console.tsx": {
-      "distance": 2,
-      "via": [],
-      "hash": "f38c1a5735ac",
-      "whole": false
-    },
-    "src/board/console/Deck.tsx": {
-      "distance": 3,
-      "via": [],
-      "hash": "30738c6c6756",
-      "whole": false
-    },
-    "src/board/console/Header.tsx": {
-      "distance": 3,
-      "via": [],
-      "hash": "c9cf7c94ae96",
-      "whole": false
-    },
-    "src/board/console/Mixer.tsx": {
-      "distance": 3,
-      "via": [],
-      "hash": "cf7df23a124e",
-      "whole": false
-    },
-    "src/board/console/Pads.tsx": {
-      "distance": 3,
-      "via": [],
-      "hash": "8dd994f0a5ad",
-      "whole": false
-    },
-    "src/board/console/TakeLane.tsx": {
-      "distance": 4,
-      "via": [],
-      "hash": "4b9d6eb3c34c",
-      "whole": false
-    },
-    "src/board/console/loops.ts": {
-      "distance": 4,
-      "via": [],
-      "hash": "42ef8492a4ca",
-      "whole": false
-    },
-    "src/board/console/people.ts": {
-      "distance": 4,
-      "via": [],
-      "hash": "c947df332ba9",
-      "whole": false
-    },
-    "src/board/console/share.ts": {
-      "distance": 4,
-      "via": [],
-      "hash": "41845818fcbf",
-      "whole": false
-    },
-    "src/board/doc.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "f88a4fbb0525",
-      "whole": false
-    },
-    "src/board/identity.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "d1d2eaa5cab9",
-      "whole": false
-    },
-    "src/board/model.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "62d108e90ddd",
-      "whole": false
-    },
-    "src/board/presence.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "7e5ca7e98a09",
-      "whole": false
-    },
-    "src/board/seat.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "efa33b9e925b",
-      "whole": false
-    },
-    "src/board/session.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "74ea6cbdbb7f",
-      "whole": false
-    },
-    "src/board/transport.ts": {
-      "distance": 5,
-      "via": [],
-      "hash": "deccd619446c",
-      "whole": false
-    },
-    "src/board/typing.ts": {
-      "distance": 5,
-      "via": [],
-      "hash": "9749aa39cc94",
-      "whole": false
-    },
-    "src/board/useEngineState.ts": {
-      "distance": 5,
-      "via": [],
-      "hash": "f06f1956d95d",
-      "whole": false
-    },
-    "src/board/useTransport.ts": {
-      "distance": 4,
-      "via": [],
-      "hash": "85fff8d0f3b4",
-      "whole": false
-    },
-    "src/ds/Showcase.tsx": {
-      "distance": 1,
-      "via": [],
-      "hash": "ac8e134e3886",
-      "whole": true
-    },
-    "src/ds/catalogue.tsx": {
-      "distance": 2,
-      "via": [],
-      "hash": "ca7f50aa3ed4",
-      "whole": false
-    },
-    "src/theme/ThemeToggle.tsx": {
-      "distance": 1,
-      "via": [],
-      "hash": "d9f25bb631c3",
       "whole": false
     },
     "src/theme/palette.ts": {
@@ -307,76 +115,10 @@
       "hash": "d344ee870e57",
       "whole": true
     },
-    "src/ui/Menu.tsx": {
-      "distance": 2,
-      "via": [],
-      "hash": "2d9775cf6df9",
-      "whole": false
-    },
-    "src/ui/Pad.tsx": {
-      "distance": 3,
-      "via": [],
-      "hash": "2ec906c70a2d",
-      "whole": false
-    },
-    "src/ui/Tabs.tsx": {
-      "distance": 1,
-      "via": [],
-      "hash": "b1309b5f7c14",
-      "whole": false
-    },
-    "src/ui/controls.tsx": {
-      "distance": 1,
-      "via": [],
-      "hash": "68a30002f029",
-      "whole": false
-    },
-    "src/ui/fader.ts": {
-      "distance": 4,
-      "via": [],
-      "hash": "b6a4197f3ee7",
-      "whole": false
-    },
-    "src/ui/hapticGate.ts": {
-      "distance": 4,
-      "via": [],
-      "hash": "66c140b29280",
-      "whole": false
-    },
-    "src/ui/haptics.ts": {
-      "distance": 3,
-      "via": [],
-      "hash": "4a416fa0ba68",
-      "whole": false
-    },
-    "src/ui/listNav.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "5b2ced68cb10",
-      "whole": false
-    },
-    "src/ui/scrub.ts": {
-      "distance": 4,
-      "via": [],
-      "hash": "2ae745b3622b",
-      "whole": false
-    },
-    "src/ui/scrubSteps.ts": {
-      "distance": 4,
-      "via": [],
-      "hash": "51776600539b",
-      "whole": false
-    },
-    "src/ui/tabFit.ts": {
-      "distance": 2,
-      "via": [],
-      "hash": "9c71b760a6cb",
-      "whole": false
-    },
     "worker/agent/mcp.ts": {
       "distance": 1,
       "via": [],
-      "hash": "d7eb83f64fcc",
+      "hash": "bac93c31b3a3",
       "whole": false
     },
     "worker/agent/roster.ts": {
@@ -388,7 +130,7 @@
     "worker/board.ts": {
       "distance": 1,
       "via": [],
-      "hash": "2eb8e95bb633",
+      "hash": "9e59c3cf72b2",
       "whole": false
     },
     "worker/quota.ts": {
@@ -405,6 +147,41 @@
     }
   },
   "symbols": [
+    {
+      "file": "shared/agent/held.ts",
+      "symbol": "Holds",
+      "distance": 2,
+      "via": [],
+      "hash": "7b23c362713d"
+    },
+    {
+      "file": "shared/agent/held.ts",
+      "symbol": "heldBy",
+      "distance": 2,
+      "via": [],
+      "hash": "320a01614bbe"
+    },
+    {
+      "file": "shared/agent/held.ts",
+      "symbol": "holdsOf",
+      "distance": 2,
+      "via": [],
+      "hash": "c548ac37e342"
+    },
+    {
+      "file": "shared/agent/held.ts",
+      "symbol": "split",
+      "distance": 2,
+      "via": [],
+      "hash": "6dd82b05daf5"
+    },
+    {
+      "file": "shared/agent/held.ts",
+      "symbol": "withoutHeld",
+      "distance": 2,
+      "via": [],
+      "hash": "91637ed69259"
+    },
     {
       "file": "shared/agent/identity.ts",
       "symbol": "AGENT_AUTHOR_PREFIX",
@@ -464,7 +241,7 @@
     {
       "file": "shared/agent/identity.ts",
       "symbol": "isAgentAuthor",
-      "distance": 5,
+      "distance": 3,
       "via": [],
       "hash": "ed128f9b30e1"
     },
@@ -529,7 +306,7 @@
       "symbol": "AgentCall",
       "distance": 2,
       "via": [],
-      "hash": "7b6dad8b9632"
+      "hash": "0dfe6d675e02"
     },
     {
       "file": "shared/agent/record.ts",
@@ -540,10 +317,24 @@
     },
     {
       "file": "shared/agent/record.ts",
+      "symbol": "FX_HELP",
+      "distance": 2,
+      "via": [],
+      "hash": "1ba4c2a3f0f0"
+    },
+    {
+      "file": "shared/agent/record.ts",
       "symbol": "KNOB_HELP",
       "distance": 2,
       "via": [],
       "hash": "c5e2c4c7d66e"
+    },
+    {
+      "file": "shared/agent/record.ts",
+      "symbol": "MASTER_HELP",
+      "distance": 2,
+      "via": [],
+      "hash": "0dcc712a7f57"
     },
     {
       "file": "shared/agent/record.ts",
@@ -575,6 +366,13 @@
     },
     {
       "file": "shared/agent/record.ts",
+      "symbol": "fxHelp",
+      "distance": 2,
+      "via": [],
+      "hash": "2698c9b5fbd7"
+    },
+    {
+      "file": "shared/agent/record.ts",
       "symbol": "knobDrafts",
       "distance": 2,
       "via": [],
@@ -589,10 +387,24 @@
     },
     {
       "file": "shared/agent/record.ts",
+      "symbol": "masterHelp",
+      "distance": 2,
+      "via": [],
+      "hash": "dff86283f7bb"
+    },
+    {
+      "file": "shared/agent/record.ts",
       "symbol": "prepare",
       "distance": 2,
       "via": [],
       "hash": "70840b3e84e5"
+    },
+    {
+      "file": "shared/agent/repeat.ts",
+      "symbol": "stampRepeats",
+      "distance": 2,
+      "via": [],
+      "hash": "50f15057a453"
     },
     {
       "file": "shared/agent/seat.ts",
@@ -606,7 +418,7 @@
       "symbol": "Snapshot",
       "distance": 2,
       "via": [],
-      "hash": "f99bf8312e1f"
+      "hash": "1a0457893b01"
     },
     {
       "file": "shared/agent/snapshot.ts",
@@ -641,7 +453,7 @@
       "symbol": "snapshotOf",
       "distance": 2,
       "via": [],
-      "hash": "a34cb052eebe"
+      "hash": "14fa04962076"
     },
     {
       "file": "shared/board/apply.ts",
@@ -676,7 +488,14 @@
       "symbol": "applyOne",
       "distance": 2,
       "via": [],
-      "hash": "5fa5be124443"
+      "hash": "f4f1ace24f7a"
+    },
+    {
+      "file": "shared/board/apply.ts",
+      "symbol": "checkMaster",
+      "distance": 2,
+      "via": [],
+      "hash": "2fd318c8c420"
     },
     {
       "file": "shared/board/apply.ts",
@@ -714,6 +533,13 @@
       "hash": "699bab1b6024"
     },
     {
+      "file": "shared/board/apply.ts",
+      "symbol": "readStartBeat",
+      "distance": 2,
+      "via": [],
+      "hash": "5c7d60535895"
+    },
+    {
       "file": "shared/board/ops.ts",
       "symbol": "AssignPad",
       "distance": 3,
@@ -732,7 +558,7 @@
       "symbol": "Op",
       "distance": 3,
       "via": [],
-      "hash": "0f2e35d4b361"
+      "hash": "a43c811a0843"
     },
     {
       "file": "shared/board/ops.ts",
@@ -754,6 +580,20 @@
       "distance": 3,
       "via": [],
       "hash": "ce0cddb26e23"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "SetFx",
+      "distance": 3,
+      "via": [],
+      "hash": "760c698275cd"
+    },
+    {
+      "file": "shared/board/ops.ts",
+      "symbol": "SetMaster",
+      "distance": 3,
+      "via": [],
+      "hash": "769ba3ca27d8"
     },
     {
       "file": "shared/board/ops.ts",
@@ -779,7 +619,7 @@
     {
       "file": "shared/board/schema.ts",
       "symbol": "BEATS_PER_BAR",
-      "distance": 1,
+      "distance": 3,
       "via": [],
       "hash": "9f26fde00ec7"
     },
@@ -792,17 +632,101 @@
     },
     {
       "file": "shared/board/schema.ts",
+      "symbol": "CONTROL_KEYS",
+      "distance": 3,
+      "via": [],
+      "hash": "4b3707fb1b4a"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "FX_MODES",
+      "distance": 2,
+      "via": [],
+      "hash": "40470b82cb64"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "FX_MODE_NAMES",
+      "distance": 2,
+      "via": [],
+      "hash": "4aa6e493e197"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "FxMode",
+      "distance": 2,
+      "via": [],
+      "hash": "9566eca9e031"
+    },
+    {
+      "file": "shared/board/schema.ts",
       "symbol": "Hit",
-      "distance": 1,
+      "distance": 3,
       "via": [],
       "hash": "2fc556788ce6"
     },
     {
       "file": "shared/board/schema.ts",
       "symbol": "LIMITS",
-      "distance": 1,
+      "distance": 2,
       "via": [],
       "hash": "98bcc35c7209"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MASTER_DEFAULTS",
+      "distance": 3,
+      "via": [],
+      "hash": "3a62bf5359ba"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MASTER_KEYS",
+      "distance": 3,
+      "via": [],
+      "hash": "0c43bf63ff5c"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MASTER_KNOBS",
+      "distance": 2,
+      "via": [],
+      "hash": "1e1191470a40"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MASTER_KNOB_NAMES",
+      "distance": 2,
+      "via": [],
+      "hash": "1f11c9618ed8"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "Master",
+      "distance": 3,
+      "via": [],
+      "hash": "ac58eac902be"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MasterKey",
+      "distance": 3,
+      "via": [],
+      "hash": "7ad89be7e6a0"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MasterKnob",
+      "distance": 2,
+      "via": [],
+      "hash": "28833e84bb10"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "MasterValues",
+      "distance": 3,
+      "via": [],
+      "hash": "04399310b573"
     },
     {
       "file": "shared/board/schema.ts",
@@ -821,16 +745,23 @@
     {
       "file": "shared/board/schema.ts",
       "symbol": "QUANTIZE",
-      "distance": 1,
+      "distance": 2,
       "via": [],
       "hash": "c0d897392396"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "REPEAT_START_BEAT_MAX",
+      "distance": 3,
+      "via": [],
+      "hash": "e5874a4942b3"
     },
     {
       "file": "shared/board/schema.ts",
       "symbol": "ROOTS",
       "distance": 2,
       "via": [],
-      "hash": "8dbb9dfa6837"
+      "hash": "ec3f02c1c76c"
     },
     {
       "file": "shared/board/schema.ts",
@@ -842,7 +773,7 @@
     {
       "file": "shared/board/schema.ts",
       "symbol": "SOUND_KNOBS",
-      "distance": 1,
+      "distance": 2,
       "via": [],
       "hash": "85fcaf923783"
     },
@@ -863,44 +794,44 @@
     {
       "file": "shared/board/schema.ts",
       "symbol": "SoundKnob",
-      "distance": 1,
+      "distance": 2,
       "via": [],
       "hash": "8038d1e95395"
     },
     {
       "file": "shared/board/schema.ts",
       "symbol": "Track",
-      "distance": 1,
+      "distance": 3,
       "via": [],
       "hash": "075bfd6b43e0"
     },
     {
       "file": "shared/board/schema.ts",
+      "symbol": "fxAxes",
+      "distance": 3,
+      "via": [],
+      "hash": "24a62fa4a615"
+    },
+    {
+      "file": "shared/board/schema.ts",
       "symbol": "knob",
-      "distance": 1,
+      "distance": 3,
       "via": [],
       "hash": "01bca25db6c8"
     },
     {
       "file": "shared/board/schema.ts",
-      "symbol": "soundOf",
+      "symbol": "masterKnob",
       "distance": 3,
       "via": [],
-      "hash": "94a76470dcfd"
+      "hash": "7c605ee22506"
     },
     {
-      "file": "shared/board/sdk.ts",
-      "symbol": "Board",
+      "file": "shared/board/schema.ts",
+      "symbol": "masterOf",
       "distance": 3,
       "via": [],
-      "hash": "641f753ecb1d"
-    },
-    {
-      "file": "shared/board/sdk.ts",
-      "symbol": "board",
-      "distance": 3,
-      "via": [],
-      "hash": "15dc4cf5c64a"
+      "hash": "03b462f6e360"
     },
     {
       "file": "shared/board/sdk.ts",
@@ -925,80 +856,10 @@
     },
     {
       "file": "shared/clock.ts",
-      "symbol": "ClockSample",
-      "distance": 3,
-      "via": [],
-      "hash": "b163b5023fa2"
-    },
-    {
-      "file": "shared/clock.ts",
-      "symbol": "OFFSET_THRESHOLD_MS",
-      "distance": 3,
-      "via": [],
-      "hash": "3f7f2bec2b49"
-    },
-    {
-      "file": "shared/clock.ts",
-      "symbol": "SAMPLE_WINDOW",
-      "distance": 3,
-      "via": [],
-      "hash": "c3b58863ec8a"
-    },
-    {
-      "file": "shared/clock.ts",
-      "symbol": "SHIFT_THRESHOLD_MS",
-      "distance": 3,
-      "via": [],
-      "hash": "b1b4e4c65053"
-    },
-    {
-      "file": "shared/clock.ts",
-      "symbol": "audioShift",
-      "distance": 3,
-      "via": [],
-      "hash": "636a2f1b544e"
-    },
-    {
-      "file": "shared/clock.ts",
-      "symbol": "audioToRoom",
-      "distance": 3,
-      "via": [],
-      "hash": "78f23a82ab8b"
-    },
-    {
-      "file": "shared/clock.ts",
-      "symbol": "bestSample",
-      "distance": 3,
-      "via": [],
-      "hash": "c441681efe73"
-    },
-    {
-      "file": "shared/clock.ts",
-      "symbol": "heardAt",
-      "distance": 3,
-      "via": [],
-      "hash": "5922ff852fe4"
-    },
-    {
-      "file": "shared/clock.ts",
-      "symbol": "nextOffset",
-      "distance": 3,
-      "via": [],
-      "hash": "692d06cd17be"
-    },
-    {
-      "file": "shared/clock.ts",
       "symbol": "parseClockMessage",
       "distance": 2,
       "via": [],
       "hash": "ebde597e0d1b"
-    },
-    {
-      "file": "shared/clock.ts",
-      "symbol": "ping",
-      "distance": 3,
-      "via": [],
-      "hash": "2948cfd23e85"
     },
     {
       "file": "shared/clock.ts",
@@ -1008,18 +869,67 @@
       "hash": "a0d2d03ba853"
     },
     {
-      "file": "shared/clock.ts",
-      "symbol": "roomToAudio",
+      "file": "shared/looper.ts",
+      "symbol": "REPEAT_SLICES",
       "distance": 3,
       "via": [],
-      "hash": "7b905a699505"
+      "hash": "5e82bb9afbec"
     },
     {
-      "file": "shared/clock.ts",
-      "symbol": "sampleFrom",
+      "file": "shared/looper.ts",
+      "symbol": "SIXTEENTH",
       "distance": 3,
       "via": [],
-      "hash": "4f2b1ec9979e"
+      "hash": "5d9a8a55b94c"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "beatSeconds",
+      "distance": 3,
+      "via": [],
+      "hash": "1b750ae7f53d"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "ceilNear",
+      "distance": 3,
+      "via": [],
+      "hash": "75c6e384ff05"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "jamBeat",
+      "distance": 3,
+      "via": [],
+      "hash": "14663a742e99"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "repeatLine",
+      "distance": 3,
+      "via": [],
+      "hash": "a38faff73105"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "repeatSlice",
+      "distance": 3,
+      "via": [],
+      "hash": "bf9c5658da1f"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "repeatStamp",
+      "distance": 3,
+      "via": [],
+      "hash": "9424fb95ff7b"
+    },
+    {
+      "file": "shared/looper.ts",
+      "symbol": "repeatZone",
+      "distance": 3,
+      "via": [],
+      "hash": "17a7259cb8e5"
     },
     {
       "file": "shared/sounds.ts",
@@ -1134,13 +1044,6 @@
       "hash": "d307fe71ce61"
     },
     {
-      "file": "shared/sounds.ts",
-      "symbol": "soundName",
-      "distance": 5,
-      "via": [],
-      "hash": "9c8159a71b99"
-    },
-    {
       "file": "shared/wav.ts",
       "symbol": "HEADER_BYTES",
       "distance": 2,
@@ -1167,1392 +1070,6 @@
       "distance": 2,
       "via": [],
       "hash": "be60b4706c34"
-    },
-    {
-      "file": "src/audio/clock.ts",
-      "symbol": "BURST",
-      "distance": 2,
-      "via": [],
-      "hash": "8e56855bd243"
-    },
-    {
-      "file": "src/audio/clock.ts",
-      "symbol": "BURST_GAP_MS",
-      "distance": 2,
-      "via": [],
-      "hash": "a887f67dde1f"
-    },
-    {
-      "file": "src/audio/clock.ts",
-      "symbol": "EVERY_MS",
-      "distance": 2,
-      "via": [],
-      "hash": "de5090d30521"
-    },
-    {
-      "file": "src/audio/clock.ts",
-      "symbol": "JamClock",
-      "distance": 2,
-      "via": [],
-      "hash": "9c8c26e90884"
-    },
-    {
-      "file": "src/audio/clock.ts",
-      "symbol": "clientNow",
-      "distance": 2,
-      "via": [],
-      "hash": "2baa2cad2aa6"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "Chain",
-      "distance": 2,
-      "via": [],
-      "hash": "192b03be8c24"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "ContextFactory",
-      "distance": 2,
-      "via": [],
-      "hash": "6dba1a128fbd"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "Engine",
-      "distance": 2,
-      "via": [],
-      "hash": "d65249307d08"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "LOOKAHEAD",
-      "distance": 2,
-      "via": [],
-      "hash": "d5d19a9c0663"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "METRONOME_KEY",
-      "distance": 2,
-      "via": [],
-      "hash": "1711770ff1f1"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "PadHit",
-      "distance": 2,
-      "via": [],
-      "hash": "5f78e43ba2b0"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "Playing",
-      "distance": 2,
-      "via": [],
-      "hash": "1f1ad466360a"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "RELEASE_MS",
-      "distance": 2,
-      "via": [],
-      "hash": "922060244c0a"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "RecorderState",
-      "distance": 2,
-      "via": [],
-      "hash": "bfc5dc249f2c"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "TICK_MS",
-      "distance": 2,
-      "via": [],
-      "hash": "8736bc964cf7"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "isLive",
-      "distance": 2,
-      "via": [],
-      "hash": "1ed82cc7c43b"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "liveContext",
-      "distance": 2,
-      "via": [],
-      "hash": "4fb497634053"
-    },
-    {
-      "file": "src/audio/engine.ts",
-      "symbol": "loadMetronome",
-      "distance": 2,
-      "via": [],
-      "hash": "0939eed99fab"
-    },
-    {
-      "file": "src/audio/knobs.ts",
-      "symbol": "ECHO_BEATS",
-      "distance": 3,
-      "via": [],
-      "hash": "f19412f6e736"
-    },
-    {
-      "file": "src/audio/knobs.ts",
-      "symbol": "ECHO_FEEDBACK",
-      "distance": 3,
-      "via": [],
-      "hash": "1f76e09c3ff6"
-    },
-    {
-      "file": "src/audio/knobs.ts",
-      "symbol": "HIGHPASS_OPEN_HZ",
-      "distance": 3,
-      "via": [],
-      "hash": "9bbfb915d315"
-    },
-    {
-      "file": "src/audio/knobs.ts",
-      "symbol": "KNOB_RAMP",
-      "distance": 3,
-      "via": [],
-      "hash": "1a935a80c0dd"
-    },
-    {
-      "file": "src/audio/knobs.ts",
-      "symbol": "LOWPASS_OPEN_HZ",
-      "distance": 3,
-      "via": [],
-      "hash": "cbde2f315e8e"
-    },
-    {
-      "file": "src/audio/knobs.ts",
-      "symbol": "REVERB_SECONDS",
-      "distance": 3,
-      "via": [],
-      "hash": "d63c747b14f4"
-    },
-    {
-      "file": "src/audio/knobs.ts",
-      "symbol": "TONE_HIGH_HZ",
-      "distance": 3,
-      "via": [],
-      "hash": "029d48a80d80"
-    },
-    {
-      "file": "src/audio/knobs.ts",
-      "symbol": "TONE_LOW_HZ",
-      "distance": 3,
-      "via": [],
-      "hash": "a872daffafe4"
-    },
-    {
-      "file": "src/audio/knobs.ts",
-      "symbol": "echoSeconds",
-      "distance": 3,
-      "via": [],
-      "hash": "37336a12f8e2"
-    },
-    {
-      "file": "src/audio/knobs.ts",
-      "symbol": "pitchRate",
-      "distance": 3,
-      "via": [],
-      "hash": "191a88074f54"
-    },
-    {
-      "file": "src/audio/knobs.ts",
-      "symbol": "reverbImpulse",
-      "distance": 3,
-      "via": [],
-      "hash": "dc9c89e01e43"
-    },
-    {
-      "file": "src/audio/knobs.ts",
-      "symbol": "toneFilter",
-      "distance": 3,
-      "via": [],
-      "hash": "e0306ac37942"
-    },
-    {
-      "file": "src/audio/samples.ts",
-      "symbol": "CONCURRENCY",
-      "distance": 2,
-      "via": [],
-      "hash": "9094f013d59b"
-    },
-    {
-      "file": "src/audio/samples.ts",
-      "symbol": "Entry",
-      "distance": 2,
-      "via": [],
-      "hash": "056c93dcf0ce"
-    },
-    {
-      "file": "src/audio/samples.ts",
-      "symbol": "RECOVER_MS",
-      "distance": 2,
-      "via": [],
-      "hash": "8305359d6cc7"
-    },
-    {
-      "file": "src/audio/samples.ts",
-      "symbol": "RETRY_MS",
-      "distance": 2,
-      "via": [],
-      "hash": "bd8b499e95b4"
-    },
-    {
-      "file": "src/audio/samples.ts",
-      "symbol": "SampleLoader",
-      "distance": 2,
-      "via": [],
-      "hash": "8c94b1d16439"
-    },
-    {
-      "file": "src/audio/samples.ts",
-      "symbol": "SampleState",
-      "distance": 2,
-      "via": [],
-      "hash": "69ae5d5de7c9"
-    },
-    {
-      "file": "src/audio/samples.ts",
-      "symbol": "soundUrl",
-      "distance": 2,
-      "via": [],
-      "hash": "e46da2da808f"
-    },
-    {
-      "file": "src/audio/session.ts",
-      "symbol": "keepAwake",
-      "distance": 3,
-      "via": [],
-      "hash": "24e570720a04"
-    },
-    {
-      "file": "src/audio/session.ts",
-      "symbol": "preferPlayback",
-      "distance": 3,
-      "via": [],
-      "hash": "76c4ea30ad11"
-    },
-    {
-      "file": "src/audio/synth.ts",
-      "symbol": "RECIPES",
-      "distance": 3,
-      "via": [],
-      "hash": "cc632093624a"
-    },
-    {
-      "file": "src/audio/synth.ts",
-      "symbol": "Recipe",
-      "distance": 3,
-      "via": [],
-      "hash": "72ba0c4dbb97"
-    },
-    {
-      "file": "src/audio/synth.ts",
-      "symbol": "click",
-      "distance": 3,
-      "via": [],
-      "hash": "16c46af20f21"
-    },
-    {
-      "file": "src/audio/synth.ts",
-      "symbol": "env",
-      "distance": 3,
-      "via": [],
-      "hash": "91cbac03612f"
-    },
-    {
-      "file": "src/audio/synth.ts",
-      "symbol": "hiss",
-      "distance": 3,
-      "via": [],
-      "hash": "842c45706eb8"
-    },
-    {
-      "file": "src/audio/synth.ts",
-      "symbol": "noise",
-      "distance": 3,
-      "via": [],
-      "hash": "dd4808e7dd5b"
-    },
-    {
-      "file": "src/audio/synth.ts",
-      "symbol": "note",
-      "distance": 3,
-      "via": [],
-      "hash": "6f711a9c9b06"
-    },
-    {
-      "file": "src/audio/synth.ts",
-      "symbol": "renderKit",
-      "distance": 3,
-      "via": [],
-      "hash": "ed4ba3850173"
-    },
-    {
-      "file": "src/audio/synth.ts",
-      "symbol": "tone",
-      "distance": 3,
-      "via": [],
-      "hash": "95b61ccf60a3"
-    },
-    {
-      "file": "src/audio/upload.ts",
-      "symbol": "Prepared",
-      "distance": 6,
-      "via": [],
-      "hash": "c699cc127903"
-    },
-    {
-      "file": "src/audio/upload.ts",
-      "symbol": "UploadError",
-      "distance": 6,
-      "via": [],
-      "hash": "a3eb8866ac4a"
-    },
-    {
-      "file": "src/audio/upload.ts",
-      "symbol": "defaultName",
-      "distance": 6,
-      "via": [],
-      "hash": "0165d640ae51"
-    },
-    {
-      "file": "src/audio/upload.ts",
-      "symbol": "failure",
-      "distance": 6,
-      "via": [],
-      "hash": "9d4bc62d5f55"
-    },
-    {
-      "file": "src/audio/upload.ts",
-      "symbol": "prepareSample",
-      "distance": 6,
-      "via": [],
-      "hash": "05151a386c75"
-    },
-    {
-      "file": "src/audio/upload.ts",
-      "symbol": "removeSound",
-      "distance": 6,
-      "via": [],
-      "hash": "85fe341cece4"
-    },
-    {
-      "file": "src/audio/upload.ts",
-      "symbol": "uploadSound",
-      "distance": 6,
-      "via": [],
-      "hash": "54deb398811b"
-    },
-    {
-      "file": "src/audio/upload.ts",
-      "symbol": "wellFormed",
-      "distance": 6,
-      "via": [],
-      "hash": "0fa03f61a5b5"
-    },
-    {
-      "file": "src/board/Debug.tsx",
-      "symbol": "Debug",
-      "distance": 3,
-      "via": [],
-      "hash": "dc751a8f710c"
-    },
-    {
-      "file": "src/board/Jam.tsx",
-      "symbol": "EngineFeed",
-      "distance": 1,
-      "via": [],
-      "hash": "5f107ed74d9f"
-    },
-    {
-      "file": "src/board/Jam.tsx",
-      "symbol": "Jam",
-      "distance": 1,
-      "via": [],
-      "hash": "c2511f35b9a1"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "PausedNotice",
-      "distance": 5,
-      "via": [],
-      "hash": "2f606b14abda"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "UploadDialog",
-      "distance": 5,
-      "via": [],
-      "hash": "eeb48b249251"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "UploadStatus",
-      "distance": 5,
-      "via": [],
-      "hash": "79cf3440cfe9"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "UploadTarget",
-      "distance": 5,
-      "via": [],
-      "hash": "327c9f5c0934"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "UploadsList",
-      "distance": 5,
-      "via": [],
-      "hash": "9ff959f9b941"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "budget",
-      "distance": 5,
-      "via": [],
-      "hash": "33c983cd4c3a"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "budgetListeners",
-      "distance": 5,
-      "via": [],
-      "hash": "cbe10c6e412a"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "listed",
-      "distance": 5,
-      "via": [],
-      "hash": "919ddd1e0fa3"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "padKeysBySound",
-      "distance": 5,
-      "via": [],
-      "hash": "61b3ca704a95"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "refreshBudget",
-      "distance": 5,
-      "via": [],
-      "hash": "38a3b438b0fe"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "removeWhenFree",
-      "distance": 5,
-      "via": [],
-      "hash": "595838013d50"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "seconds",
-      "distance": 5,
-      "via": [],
-      "hash": "e0b5e7df3888"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "useBudget",
-      "distance": 5,
-      "via": [],
-      "hash": "4aae778d11eb"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "useFilePicker",
-      "distance": 5,
-      "via": [],
-      "hash": "d829a0d3ed10"
-    },
-    {
-      "file": "src/board/Uploads.tsx",
-      "symbol": "useSampleState",
-      "distance": 5,
-      "via": [],
-      "hash": "5abac63ada23"
-    },
-    {
-      "file": "src/board/colors.ts",
-      "symbol": "swatch",
-      "distance": 3,
-      "via": [],
-      "hash": "c6975e2d80e9"
-    },
-    {
-      "file": "src/board/colors.ts",
-      "symbol": "useSwatch",
-      "distance": 3,
-      "via": [],
-      "hash": "bb231600e760"
-    },
-    {
-      "file": "src/board/connection.ts",
-      "symbol": "ConnectionStatus",
-      "distance": 2,
-      "via": [],
-      "hash": "32b6d02ef63f"
-    },
-    {
-      "file": "src/board/connection.ts",
-      "symbol": "SocketStatus",
-      "distance": 3,
-      "via": [],
-      "hash": "59314ce412fb"
-    },
-    {
-      "file": "src/board/connection.ts",
-      "symbol": "connectionStatus",
-      "distance": 3,
-      "via": [],
-      "hash": "867ce7b582aa"
-    },
-    {
-      "file": "src/board/console/AiMark.tsx",
-      "symbol": "AiMark",
-      "distance": 4,
-      "via": [],
-      "hash": "7ce9c4bd2fe7"
-    },
-    {
-      "file": "src/board/console/Console.tsx",
-      "symbol": "Console",
-      "distance": 2,
-      "via": [],
-      "hash": "0d19596f3e70"
-    },
-    {
-      "file": "src/board/console/Console.tsx",
-      "symbol": "DEBUG",
-      "distance": 2,
-      "via": [],
-      "hash": "37653a8847a4"
-    },
-    {
-      "file": "src/board/console/Console.tsx",
-      "symbol": "useYourColor",
-      "distance": 2,
-      "via": [],
-      "hash": "f63bb7059d5c"
-    },
-    {
-      "file": "src/board/console/Deck.tsx",
-      "symbol": "Deck",
-      "distance": 3,
-      "via": [],
-      "hash": "26aedd70a38b"
-    },
-    {
-      "file": "src/board/console/Deck.tsx",
-      "symbol": "PHASE",
-      "distance": 3,
-      "via": [],
-      "hash": "ff5f054fa45f"
-    },
-    {
-      "file": "src/board/console/Deck.tsx",
-      "symbol": "RECORD_LABEL",
-      "distance": 3,
-      "via": [],
-      "hash": "39d6fe335d98"
-    },
-    {
-      "file": "src/board/console/Deck.tsx",
-      "symbol": "Readout",
-      "distance": 3,
-      "via": [],
-      "hash": "e7fffff1b6a1"
-    },
-    {
-      "file": "src/board/console/Deck.tsx",
-      "symbol": "TEMPO_LOCKED",
-      "distance": 3,
-      "via": [],
-      "hash": "d0ffb0a55bd9"
-    },
-    {
-      "file": "src/board/console/Deck.tsx",
-      "symbol": "TIP_MS",
-      "distance": 3,
-      "via": [],
-      "hash": "e6474c404211"
-    },
-    {
-      "file": "src/board/console/Deck.tsx",
-      "symbol": "Transport",
-      "distance": 3,
-      "via": [],
-      "hash": "61a87a7fe655"
-    },
-    {
-      "file": "src/board/console/Deck.tsx",
-      "symbol": "useTip",
-      "distance": 3,
-      "via": [],
-      "hash": "e06657f64fc8"
-    },
-    {
-      "file": "src/board/console/Header.tsx",
-      "symbol": "Header",
-      "distance": 3,
-      "via": [],
-      "hash": "53034a37a46f"
-    },
-    {
-      "file": "src/board/console/Header.tsx",
-      "symbol": "People",
-      "distance": 3,
-      "via": [],
-      "hash": "3c8861550553"
-    },
-    {
-      "file": "src/board/console/Header.tsx",
-      "symbol": "STATUS",
-      "distance": 3,
-      "via": [],
-      "hash": "8e90778d0171"
-    },
-    {
-      "file": "src/board/console/Header.tsx",
-      "symbol": "ShareButton",
-      "distance": 3,
-      "via": [],
-      "hash": "a6f20a3192c6"
-    },
-    {
-      "file": "src/board/console/Header.tsx",
-      "symbol": "TIPS",
-      "distance": 3,
-      "via": [],
-      "hash": "5a0526080f5c"
-    },
-    {
-      "file": "src/board/console/Mixer.tsx",
-      "symbol": "Channel",
-      "distance": 3,
-      "via": [],
-      "hash": "cf69f744d762"
-    },
-    {
-      "file": "src/board/console/Mixer.tsx",
-      "symbol": "EffectsStrip",
-      "distance": 3,
-      "via": [],
-      "hash": "d6f3d87e6c5f"
-    },
-    {
-      "file": "src/board/console/Mixer.tsx",
-      "symbol": "LEVEL_MARKS",
-      "distance": 3,
-      "via": [],
-      "hash": "2450aba89c65"
-    },
-    {
-      "file": "src/board/console/Mixer.tsx",
-      "symbol": "Mixer",
-      "distance": 3,
-      "via": [],
-      "hash": "e6bd1c58c70e"
-    },
-    {
-      "file": "src/board/console/Mixer.tsx",
-      "symbol": "SNAP_GROUPS",
-      "distance": 3,
-      "via": [],
-      "hash": "29e32898c993"
-    },
-    {
-      "file": "src/board/console/Mixer.tsx",
-      "symbol": "Shared",
-      "distance": 3,
-      "via": [],
-      "hash": "ce2e36afd965"
-    },
-    {
-      "file": "src/board/console/Mixer.tsx",
-      "symbol": "openStripsAtom",
-      "distance": 3,
-      "via": [],
-      "hash": "8cf68092552f"
-    },
-    {
-      "file": "src/board/console/Mixer.tsx",
-      "symbol": "percent",
-      "distance": 3,
-      "via": [],
-      "hash": "0ddd1f8769a1"
-    },
-    {
-      "file": "src/board/console/Mixer.tsx",
-      "symbol": "usePlayhead",
-      "distance": 3,
-      "via": [],
-      "hash": "a3d771014e14"
-    },
-    {
-      "file": "src/board/console/Pads.tsx",
-      "symbol": "CATEGORIES",
-      "distance": 4,
-      "via": [],
-      "hash": "803018686971"
-    },
-    {
-      "file": "src/board/console/Pads.tsx",
-      "symbol": "ConsolePad",
-      "distance": 4,
-      "via": [],
-      "hash": "315eeec610db"
-    },
-    {
-      "file": "src/board/console/Pads.tsx",
-      "symbol": "GLOW_MS",
-      "distance": 4,
-      "via": [],
-      "hash": "531fdcaec92a"
-    },
-    {
-      "file": "src/board/console/Pads.tsx",
-      "symbol": "PRESS_MS",
-      "distance": 4,
-      "via": [],
-      "hash": "0ecc1435510e"
-    },
-    {
-      "file": "src/board/console/Pads.tsx",
-      "symbol": "PadGrid",
-      "distance": 4,
-      "via": [],
-      "hash": "e03ecc577976"
-    },
-    {
-      "file": "src/board/console/Pads.tsx",
-      "symbol": "SoundEditor",
-      "distance": 4,
-      "via": [],
-      "hash": "3152a61dec22"
-    },
-    {
-      "file": "src/board/console/Pads.tsx",
-      "symbol": "UPLOAD_OPTION",
-      "distance": 4,
-      "via": [],
-      "hash": "11b74592c154"
-    },
-    {
-      "file": "src/board/console/Pads.tsx",
-      "symbol": "Unlock",
-      "distance": 3,
-      "via": [],
-      "hash": "d980e27c0463"
-    },
-    {
-      "file": "src/board/console/Pads.tsx",
-      "symbol": "useSoundGroups",
-      "distance": 4,
-      "via": [],
-      "hash": "d9f7ae7bc6df"
-    },
-    {
-      "file": "src/board/console/Pads.tsx",
-      "symbol": "useUploader",
-      "distance": 4,
-      "via": [],
-      "hash": "76af1c19afe4"
-    },
-    {
-      "file": "src/board/console/TakeLane.tsx",
-      "symbol": "TakeLane",
-      "distance": 4,
-      "via": [],
-      "hash": "553fd4bfb4b0"
-    },
-    {
-      "file": "src/board/console/TakeLane.tsx",
-      "symbol": "UNIT",
-      "distance": 4,
-      "via": [],
-      "hash": "e3a8547f294f"
-    },
-    {
-      "file": "src/board/console/loops.ts",
-      "symbol": "SNAP_LABEL",
-      "distance": 4,
-      "via": [],
-      "hash": "12004e1aed37"
-    },
-    {
-      "file": "src/board/console/loops.ts",
-      "symbol": "SNAP_OPTIONS",
-      "distance": 4,
-      "via": [],
-      "hash": "3d0a96860962"
-    },
-    {
-      "file": "src/board/console/loops.ts",
-      "symbol": "SOUND_READOUTS",
-      "distance": 4,
-      "via": [],
-      "hash": "3afb3c122651"
-    },
-    {
-      "file": "src/board/console/loops.ts",
-      "symbol": "beatPosition",
-      "distance": 4,
-      "via": [],
-      "hash": "6a19fd5d95b9"
-    },
-    {
-      "file": "src/board/console/loops.ts",
-      "symbol": "loopSummary",
-      "distance": 4,
-      "via": [],
-      "hash": "0b2c9fdc2adf"
-    },
-    {
-      "file": "src/board/console/loops.ts",
-      "symbol": "pct",
-      "distance": 4,
-      "via": [],
-      "hash": "dfdbcb260e90"
-    },
-    {
-      "file": "src/board/console/loops.ts",
-      "symbol": "plural",
-      "distance": 4,
-      "via": [],
-      "hash": "db712539d454"
-    },
-    {
-      "file": "src/board/console/loops.ts",
-      "symbol": "snapLabel",
-      "distance": 4,
-      "via": [],
-      "hash": "59c91d5e1470"
-    },
-    {
-      "file": "src/board/console/loops.ts",
-      "symbol": "soundChanged",
-      "distance": 4,
-      "via": [],
-      "hash": "a80523bd4442"
-    },
-    {
-      "file": "src/board/console/people.ts",
-      "symbol": "NAMED_PEOPLE",
-      "distance": 4,
-      "via": [],
-      "hash": "805db4c79a83"
-    },
-    {
-      "file": "src/board/console/people.ts",
-      "symbol": "byAgent",
-      "distance": 4,
-      "via": [],
-      "hash": "f17dacf92de3"
-    },
-    {
-      "file": "src/board/console/people.ts",
-      "symbol": "namesPeople",
-      "distance": 4,
-      "via": [],
-      "hash": "56f25b869494"
-    },
-    {
-      "file": "src/board/console/people.ts",
-      "symbol": "personName",
-      "distance": 4,
-      "via": [],
-      "hash": "7fe121646b9e"
-    },
-    {
-      "file": "src/board/console/people.ts",
-      "symbol": "uploadedBy",
-      "distance": 5,
-      "via": [],
-      "hash": "8a344b0ccca4"
-    },
-    {
-      "file": "src/board/console/share.ts",
-      "symbol": "ShareDeps",
-      "distance": 4,
-      "via": [],
-      "hash": "4a4f71e89399"
-    },
-    {
-      "file": "src/board/console/share.ts",
-      "symbol": "ShareResult",
-      "distance": 4,
-      "via": [],
-      "hash": "da20d644ca8d"
-    },
-    {
-      "file": "src/board/console/share.ts",
-      "symbol": "jamLink",
-      "distance": 4,
-      "via": [],
-      "hash": "6fe4b356c7f3"
-    },
-    {
-      "file": "src/board/console/share.ts",
-      "symbol": "shareLink",
-      "distance": 4,
-      "via": [],
-      "hash": "aefda6ac1c43"
-    },
-    {
-      "file": "src/board/doc.ts",
-      "symbol": "JamSession",
-      "distance": 2,
-      "via": [],
-      "hash": "5d100964dfca"
-    },
-    {
-      "file": "src/board/doc.ts",
-      "symbol": "onStatus",
-      "distance": 2,
-      "via": [],
-      "hash": "ea9e7bc2d513"
-    },
-    {
-      "file": "src/board/doc.ts",
-      "symbol": "openJam",
-      "distance": 2,
-      "via": [],
-      "hash": "8f45c270127c"
-    },
-    {
-      "file": "src/board/identity.ts",
-      "symbol": "Identity",
-      "distance": 2,
-      "via": [],
-      "hash": "9bdc262cb7c7"
-    },
-    {
-      "file": "src/board/identity.ts",
-      "symbol": "KEY",
-      "distance": 2,
-      "via": [],
-      "hash": "960fe79142ef"
-    },
-    {
-      "file": "src/board/identity.ts",
-      "symbol": "identity",
-      "distance": 2,
-      "via": [],
-      "hash": "29ad581b06c0"
-    },
-    {
-      "file": "src/board/identity.ts",
-      "symbol": "remember",
-      "distance": 2,
-      "via": [],
-      "hash": "1f3985edd426"
-    },
-    {
-      "file": "src/board/model.ts",
-      "symbol": "bpmAtom",
-      "distance": 2,
-      "via": [],
-      "hash": "7d95e9d42b1f"
-    },
-    {
-      "file": "src/board/model.ts",
-      "symbol": "meta",
-      "distance": 2,
-      "via": [],
-      "hash": "705b2a59d86f"
-    },
-    {
-      "file": "src/board/model.ts",
-      "symbol": "pads",
-      "distance": 2,
-      "via": [],
-      "hash": "bef239b0720c"
-    },
-    {
-      "file": "src/board/model.ts",
-      "symbol": "padsAtom",
-      "distance": 2,
-      "via": [],
-      "hash": "9edf21b98c64"
-    },
-    {
-      "file": "src/board/model.ts",
-      "symbol": "sounds",
-      "distance": 2,
-      "via": [],
-      "hash": "0f09c97a95af"
-    },
-    {
-      "file": "src/board/model.ts",
-      "symbol": "soundsAtom",
-      "distance": 2,
-      "via": [],
-      "hash": "6e9d2dfab08d"
-    },
-    {
-      "file": "src/board/model.ts",
-      "symbol": "tracks",
-      "distance": 2,
-      "via": [],
-      "hash": "78c92402377f"
-    },
-    {
-      "file": "src/board/model.ts",
-      "symbol": "tracksAtom",
-      "distance": 2,
-      "via": [],
-      "hash": "a0cd63c1a055"
-    },
-    {
-      "file": "src/board/presence.ts",
-      "symbol": "Person",
-      "distance": 4,
-      "via": [],
-      "hash": "c884b6ab752e"
-    },
-    {
-      "file": "src/board/presence.ts",
-      "symbol": "controlKey",
-      "distance": 4,
-      "via": [],
-      "hash": "865edfb03627"
-    },
-    {
-      "file": "src/board/presence.ts",
-      "symbol": "holdControl",
-      "distance": 4,
-      "via": [],
-      "hash": "967ffb8e8daa"
-    },
-    {
-      "file": "src/board/presence.ts",
-      "symbol": "joinPresence",
-      "distance": 2,
-      "via": [],
-      "hash": "e2061452533f"
-    },
-    {
-      "file": "src/board/presence.ts",
-      "symbol": "listHolders",
-      "distance": 4,
-      "via": [],
-      "hash": "5fbee1b9b7a5"
-    },
-    {
-      "file": "src/board/presence.ts",
-      "symbol": "listPeople",
-      "distance": 4,
-      "via": [],
-      "hash": "1340a87db2fa"
-    },
-    {
-      "file": "src/board/presence.ts",
-      "symbol": "sameHolder",
-      "distance": 4,
-      "via": [],
-      "hash": "2abe71fa4e57"
-    },
-    {
-      "file": "src/board/presence.ts",
-      "symbol": "sameHolders",
-      "distance": 4,
-      "via": [],
-      "hash": "efac5a52144a"
-    },
-    {
-      "file": "src/board/presence.ts",
-      "symbol": "toAgent",
-      "distance": 4,
-      "via": [],
-      "hash": "95175cb4f1bb"
-    },
-    {
-      "file": "src/board/presence.ts",
-      "symbol": "toPerson",
-      "distance": 4,
-      "via": [],
-      "hash": "30bd0ec1e52d"
-    },
-    {
-      "file": "src/board/presence.ts",
-      "symbol": "useHolders",
-      "distance": 4,
-      "via": [],
-      "hash": "891dac6eb9e3"
-    },
-    {
-      "file": "src/board/presence.ts",
-      "symbol": "usePeople",
-      "distance": 4,
-      "via": [],
-      "hash": "cf8a61f0d7b1"
-    },
-    {
-      "file": "src/board/seat.ts",
-      "symbol": "Me",
-      "distance": 2,
-      "via": [],
-      "hash": "ae5148c5491e"
-    },
-    {
-      "file": "src/board/seat.ts",
-      "symbol": "Seating",
-      "distance": 2,
-      "via": [],
-      "hash": "0ce2954ac89a"
-    },
-    {
-      "file": "src/board/seat.ts",
-      "symbol": "takeSeat",
-      "distance": 2,
-      "via": [],
-      "hash": "ce6fbc4f651f"
-    },
-    {
-      "file": "src/board/seat.ts",
-      "symbol": "useSeat",
-      "distance": 4,
-      "via": [],
-      "hash": "ab9ffe9b61f9"
-    },
-    {
-      "file": "src/board/session.ts",
-      "symbol": "Session",
-      "distance": 2,
-      "via": [],
-      "hash": "a3d210a35ad3"
-    },
-    {
-      "file": "src/board/session.ts",
-      "symbol": "SessionContext",
-      "distance": 2,
-      "via": [],
-      "hash": "88925dbf8b35"
-    },
-    {
-      "file": "src/board/session.ts",
-      "symbol": "makeBoard",
-      "distance": 2,
-      "via": [],
-      "hash": "f879ef863258"
-    },
-    {
-      "file": "src/board/session.ts",
-      "symbol": "useSession",
-      "distance": 3,
-      "via": [],
-      "hash": "636eeaf06715"
-    },
-    {
-      "file": "src/board/transport.ts",
-      "symbol": "TAKE_QUANTIZE",
-      "distance": 5,
-      "via": [],
-      "hash": "9dfdf3affafa"
-    },
-    {
-      "file": "src/board/transport.ts",
-      "symbol": "TEMPO_RANGE",
-      "distance": 5,
-      "via": [],
-      "hash": "b17ea1055da4"
-    },
-    {
-      "file": "src/board/transport.ts",
-      "symbol": "TakeView",
-      "distance": 5,
-      "via": [],
-      "hash": "ab31ecbc5403"
-    },
-    {
-      "file": "src/board/transport.ts",
-      "symbol": "takeMarks",
-      "distance": 5,
-      "via": [],
-      "hash": "7279be5e7996"
-    },
-    {
-      "file": "src/board/transport.ts",
-      "symbol": "takeName",
-      "distance": 5,
-      "via": [],
-      "hash": "837339d3dd00"
-    },
-    {
-      "file": "src/board/transport.ts",
-      "symbol": "takeView",
-      "distance": 5,
-      "via": [],
-      "hash": "9e820fa5e11e"
-    },
-    {
-      "file": "src/board/transport.ts",
-      "symbol": "tempoFor",
-      "distance": 5,
-      "via": [],
-      "hash": "b10fbbe1302a"
-    },
-    {
-      "file": "src/board/typing.ts",
-      "symbol": "isTyping",
-      "distance": 5,
-      "via": [],
-      "hash": "dcba7ad15d0d"
-    },
-    {
-      "file": "src/board/useEngineState.ts",
-      "symbol": "useRecorderState",
-      "distance": 5,
-      "via": [],
-      "hash": "c2bb12800994"
-    },
-    {
-      "file": "src/board/useTransport.ts",
-      "symbol": "useTransport",
-      "distance": 4,
-      "via": [],
-      "hash": "ed1697bdafae"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "CATALOGUE",
-      "distance": 2,
-      "via": [],
-      "hash": "d50de27102de"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "Entry",
-      "distance": 2,
-      "via": [],
-      "hash": "864e99157507"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "KnobDemo",
-      "distance": 2,
-      "via": [],
-      "hash": "d8d4a8561d41"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "OptionListDemo",
-      "distance": 2,
-      "via": [],
-      "hash": "e763ee8441f4"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "PopoverDemo",
-      "distance": 2,
-      "via": [],
-      "hash": "3c845249cdf0"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "RangeDemo",
-      "distance": 2,
-      "via": [],
-      "hash": "af48766ddc3b"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "SOUNDS",
-      "distance": 2,
-      "via": [],
-      "hash": "3f54f413f699"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "ScrubDemo",
-      "distance": 2,
-      "via": [],
-      "hash": "461164b4535a"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "SelectDemo",
-      "distance": 2,
-      "via": [],
-      "hash": "323961787015"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "SwitchDemo",
-      "distance": 2,
-      "via": [],
-      "hash": "dbcb86a66443"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "TAB_DEMO",
-      "distance": 2,
-      "via": [],
-      "hash": "9a3a4af09f14"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "level",
-      "distance": 2,
-      "via": [],
-      "hash": "dbdb9a5751a2"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "percent",
-      "distance": 2,
-      "via": [],
-      "hash": "0ddd1f8769a1"
-    },
-    {
-      "file": "src/ds/catalogue.tsx",
-      "symbol": "usePeer",
-      "distance": 2,
-      "via": [],
-      "hash": "9988fa645aa5"
-    },
-    {
-      "file": "src/theme/ThemeToggle.tsx",
-      "symbol": "Moon",
-      "distance": 1,
-      "via": [],
-      "hash": "a2734639b32c"
-    },
-    {
-      "file": "src/theme/ThemeToggle.tsx",
-      "symbol": "Sun",
-      "distance": 1,
-      "via": [],
-      "hash": "48beeb995eab"
-    },
-    {
-      "file": "src/theme/ThemeToggle.tsx",
-      "symbol": "ThemeToggle",
-      "distance": 1,
-      "via": [],
-      "hash": "4a4354091350"
-    },
-    {
-      "file": "src/theme/palette.ts",
-      "symbol": "SWATCHES",
-      "distance": 2,
-      "via": [],
-      "hash": "aec9e0612c0d"
     },
     {
       "file": "src/theme/palette.ts",
@@ -2590,468 +1107,6 @@
       "hash": "b17b42ae21da"
     },
     {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "EDGE",
-      "distance": 2,
-      "via": [],
-      "hash": "e230dc0fde6a"
-    },
-    {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "GAP",
-      "distance": 2,
-      "via": [],
-      "hash": "cd71fc46588a"
-    },
-    {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "Group",
-      "distance": 2,
-      "via": [],
-      "hash": "7065845e8a42"
-    },
-    {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "Option",
-      "distance": 2,
-      "via": [],
-      "hash": "fd88558e8d8c"
-    },
-    {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "OptionList",
-      "distance": 2,
-      "via": [],
-      "hash": "718495c23ca2"
-    },
-    {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "Popover",
-      "distance": 2,
-      "via": [],
-      "hash": "8c3004728824"
-    },
-    {
-      "file": "src/ui/Menu.tsx",
-      "symbol": "Select",
-      "distance": 2,
-      "via": [],
-      "hash": "91744337fdde"
-    },
-    {
-      "file": "src/ui/Pad.tsx",
-      "symbol": "Pad",
-      "distance": 3,
-      "via": [],
-      "hash": "0429f20732e0"
-    },
-    {
-      "file": "src/ui/Pad.tsx",
-      "symbol": "PadProps",
-      "distance": 3,
-      "via": [],
-      "hash": "4ca70332fe24"
-    },
-    {
-      "file": "src/ui/Tabs.tsx",
-      "symbol": "Tab",
-      "distance": 1,
-      "via": [],
-      "hash": "0e3eddfa4a17"
-    },
-    {
-      "file": "src/ui/Tabs.tsx",
-      "symbol": "Tabs",
-      "distance": 1,
-      "via": [],
-      "hash": "998f59c8ae63"
-    },
-    {
-      "file": "src/ui/Tabs.tsx",
-      "symbol": "TabsProps",
-      "distance": 1,
-      "via": [],
-      "hash": "2c1c57c0a083"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "Button",
-      "distance": 1,
-      "via": [],
-      "hash": "2379e51afaef"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "ButtonProps",
-      "distance": 1,
-      "via": [],
-      "hash": "8d6ead9a466b"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "Holder",
-      "distance": 3,
-      "via": [],
-      "hash": "b63332ceaf57"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "IconButton",
-      "distance": 3,
-      "via": [],
-      "hash": "66534cae8a1a"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "Knob",
-      "distance": 3,
-      "via": [],
-      "hash": "fedd5a2e10f0"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "KnobProps",
-      "distance": 3,
-      "via": [],
-      "hash": "592f057690a2"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "PAGE_STEPS",
-      "distance": 3,
-      "via": [],
-      "hash": "0117f77dd659"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "Range",
-      "distance": 3,
-      "via": [],
-      "hash": "fb243a321218"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "RangeProps",
-      "distance": 3,
-      "via": [],
-      "hash": "2bb117ef9f8b"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "ScrubField",
-      "distance": 3,
-      "via": [],
-      "hash": "8902c7f14583"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "ScrubFieldProps",
-      "distance": 3,
-      "via": [],
-      "hash": "5eaa3ba1a927"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "SharedProps",
-      "distance": 3,
-      "via": [],
-      "hash": "8b0fc5ae8026"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "Size",
-      "distance": 1,
-      "via": [],
-      "hash": "34388801b41c"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "Switch",
-      "distance": 2,
-      "via": [],
-      "hash": "2d35e4eaa822"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "SwitchProps",
-      "distance": 2,
-      "via": [],
-      "hash": "ecb9bf27f641"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "Tone",
-      "distance": 1,
-      "via": [],
-      "hash": "46de0c10991d"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "bubbleText",
-      "distance": 3,
-      "via": [],
-      "hash": "4a97028e4ec0"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "heldVars",
-      "distance": 3,
-      "via": [],
-      "hash": "8e8af208c014"
-    },
-    {
-      "file": "src/ui/controls.tsx",
-      "symbol": "useDragReport",
-      "distance": 3,
-      "via": [],
-      "hash": "6d73ca08961e"
-    },
-    {
-      "file": "src/ui/fader.ts",
-      "symbol": "DETENT_RANGE",
-      "distance": 4,
-      "via": [],
-      "hash": "596c59bfb095"
-    },
-    {
-      "file": "src/ui/fader.ts",
-      "symbol": "LEDS",
-      "distance": 4,
-      "via": [],
-      "hash": "5a43aadd79cb"
-    },
-    {
-      "file": "src/ui/fader.ts",
-      "symbol": "fraction",
-      "distance": 4,
-      "via": [],
-      "hash": "a5f309904497"
-    },
-    {
-      "file": "src/ui/fader.ts",
-      "symbol": "litFraction",
-      "distance": 4,
-      "via": [],
-      "hash": "b64f714a27e2"
-    },
-    {
-      "file": "src/ui/fader.ts",
-      "symbol": "notch",
-      "distance": 4,
-      "via": [],
-      "hash": "bf474724af54"
-    },
-    {
-      "file": "src/ui/fader.ts",
-      "symbol": "notchCount",
-      "distance": 4,
-      "via": [],
-      "hash": "2caf8510f39e"
-    },
-    {
-      "file": "src/ui/fader.ts",
-      "symbol": "snap",
-      "distance": 4,
-      "via": [],
-      "hash": "0f7a64069c39"
-    },
-    {
-      "file": "src/ui/fader.ts",
-      "symbol": "stepBy",
-      "distance": 5,
-      "via": [],
-      "hash": "2f125cedfea2"
-    },
-    {
-      "file": "src/ui/hapticGate.ts",
-      "symbol": "MIN_GAP_MS",
-      "distance": 4,
-      "via": [],
-      "hash": "39c3161c5f8a"
-    },
-    {
-      "file": "src/ui/hapticGate.ts",
-      "symbol": "tickGate",
-      "distance": 4,
-      "via": [],
-      "hash": "92598940bb29"
-    },
-    {
-      "file": "src/ui/haptics.ts",
-      "symbol": "DURATION",
-      "distance": 3,
-      "via": [],
-      "hash": "eeb21cd651f6"
-    },
-    {
-      "file": "src/ui/haptics.ts",
-      "symbol": "HapticKind",
-      "distance": 3,
-      "via": [],
-      "hash": "1149d785a453"
-    },
-    {
-      "file": "src/ui/haptics.ts",
-      "symbol": "gate",
-      "distance": 3,
-      "via": [],
-      "hash": "aa8aa7c03c7a"
-    },
-    {
-      "file": "src/ui/haptics.ts",
-      "symbol": "haptic",
-      "distance": 3,
-      "via": [],
-      "hash": "148d9a486b84"
-    },
-    {
-      "file": "src/ui/haptics.ts",
-      "symbol": "haptics",
-      "distance": 3,
-      "via": [],
-      "hash": "58b22821fb45"
-    },
-    {
-      "file": "src/ui/listNav.ts",
-      "symbol": "NavOption",
-      "distance": 2,
-      "via": [],
-      "hash": "33a77bae36c6"
-    },
-    {
-      "file": "src/ui/listNav.ts",
-      "symbol": "initialIndex",
-      "distance": 3,
-      "via": [],
-      "hash": "eccaf2a8e7d5"
-    },
-    {
-      "file": "src/ui/listNav.ts",
-      "symbol": "navKey",
-      "distance": 3,
-      "via": [],
-      "hash": "c00776387ce0"
-    },
-    {
-      "file": "src/ui/listNav.ts",
-      "symbol": "stepIndex",
-      "distance": 2,
-      "via": [],
-      "hash": "400c569c3b94"
-    },
-    {
-      "file": "src/ui/scrub.ts",
-      "symbol": "ANIMATION_FRAMES",
-      "distance": 4,
-      "via": [],
-      "hash": "1c90b8993248"
-    },
-    {
-      "file": "src/ui/scrub.ts",
-      "symbol": "Drag",
-      "distance": 4,
-      "via": [],
-      "hash": "6ad3abf01994"
-    },
-    {
-      "file": "src/ui/scrub.ts",
-      "symbol": "ScrubAxis",
-      "distance": 4,
-      "via": [],
-      "hash": "4f1ecca8dcd8"
-    },
-    {
-      "file": "src/ui/scrub.ts",
-      "symbol": "ScrubOptions",
-      "distance": 4,
-      "via": [],
-      "hash": "858a5a9cf9e2"
-    },
-    {
-      "file": "src/ui/scrub.ts",
-      "symbol": "useScrub",
-      "distance": 4,
-      "via": [],
-      "hash": "b5eceba58631"
-    },
-    {
-      "file": "src/ui/scrubSteps.ts",
-      "symbol": "Frames",
-      "distance": 4,
-      "via": [],
-      "hash": "e4eb235eda58"
-    },
-    {
-      "file": "src/ui/scrubSteps.ts",
-      "symbol": "LiveDrag",
-      "distance": 4,
-      "via": [],
-      "hash": "146ddbdd6eb1"
-    },
-    {
-      "file": "src/ui/scrubSteps.ts",
-      "symbol": "SHIFT_STEPS",
-      "distance": 4,
-      "via": [],
-      "hash": "5ae09a1fd594"
-    },
-    {
-      "file": "src/ui/scrubSteps.ts",
-      "symbol": "SLIDER_KEYS",
-      "distance": 4,
-      "via": [],
-      "hash": "635085f33ef9"
-    },
-    {
-      "file": "src/ui/scrubSteps.ts",
-      "symbol": "ScrubAnchor",
-      "distance": 5,
-      "via": [],
-      "hash": "acd729652a02"
-    },
-    {
-      "file": "src/ui/scrubSteps.ts",
-      "symbol": "ScrubRange",
-      "distance": 4,
-      "via": [],
-      "hash": "523eda3e8873"
-    },
-    {
-      "file": "src/ui/scrubSteps.ts",
-      "symbol": "keyValue",
-      "distance": 4,
-      "via": [],
-      "hash": "8204f006a2e7"
-    },
-    {
-      "file": "src/ui/scrubSteps.ts",
-      "symbol": "liveDrag",
-      "distance": 4,
-      "via": [],
-      "hash": "7100668c453b"
-    },
-    {
-      "file": "src/ui/scrubSteps.ts",
-      "symbol": "scrubMove",
-      "distance": 5,
-      "via": [],
-      "hash": "be824ee26795"
-    },
-    {
-      "file": "src/ui/tabFit.ts",
-      "symbol": "TAB_GAP",
-      "distance": 2,
-      "via": [],
-      "hash": "dbeb85c0a621"
-    },
-    {
-      "file": "src/ui/tabFit.ts",
-      "symbol": "visibleTabs",
-      "distance": 2,
-      "via": [],
-      "hash": "8053a63182af"
-    },
-    {
       "file": "worker/agent/mcp.ts",
       "symbol": "AGENT_CALLS_PER_MINUTE",
       "distance": 1,
@@ -3060,10 +1115,17 @@
     },
     {
       "file": "worker/agent/mcp.ts",
+      "symbol": "FX_LINES",
+      "distance": 1,
+      "via": [],
+      "hash": "8464a94c41af"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
       "symbol": "INSTRUCTIONS",
       "distance": 1,
       "via": [],
-      "hash": "d8baf1dbee47"
+      "hash": "41b0793faa51"
     },
     {
       "file": "worker/agent/mcp.ts",
@@ -3078,6 +1140,13 @@
       "distance": 1,
       "via": [],
       "hash": "4fb3159ed0cf"
+    },
+    {
+      "file": "worker/agent/mcp.ts",
+      "symbol": "MASTER_LINES",
+      "distance": 1,
+      "via": [],
+      "hash": "ce19cfd68217"
     },
     {
       "file": "worker/agent/mcp.ts",
@@ -3273,7 +1342,7 @@
       "symbol": "Board",
       "distance": 1,
       "via": [],
-      "hash": "1607baf12fbf"
+      "hash": "a5f3a8e61fc9"
     },
     {
       "file": "worker/board.ts",
@@ -3461,10 +1530,8 @@
     "duratom",
     "hono",
     "hono-party",
-    "jotai",
     "lib0",
     "partyserver",
-    "web-haptics",
     "y-partyserver",
     "y-protocols",
     "yjs",
@@ -3477,13 +1544,11 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "agents": "0.33.0",
-    "duratom": "0.1.0",
+    "duratom": "0.2.0",
     "hono": "4.13.19",
     "hono-party": "2.1.0",
-    "jotai": "3.0.2",
     "lib0": "0.2.120",
     "partyserver": "0.5.10",
-    "web-haptics": "0.0.6",
     "y-partyserver": "2.2.0",
     "y-protocols": "1.0.7",
     "yjs": "13.6.33",
