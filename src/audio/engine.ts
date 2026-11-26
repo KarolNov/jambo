@@ -59,6 +59,8 @@ const REPEAT_FADE = 0.004
  * reaches the context only after that delay. Trailing silence is trimmed before the clip is kept.
  */
 export const SING_TAIL = 0.25
+/** How long a voice clip waits for the microphone to hand over what it captured, in ms. */
+const STOP_TIMEOUT_MS = 5_000
 
 /**
  * A stretch of beat repeat, from jam beat `at` until the next one's: off, or repeating the loops'
@@ -753,7 +755,12 @@ export class Engine {
     const done = opening.then(async (voice): Promise<SungClip | undefined> => {
       void voice.monitor(false, hold.preset, hold.key)
       await this.tail(voice.latency.input + SING_TAIL)
-      const samples = await voice.stop()
+      // A suspended context never answers the stop: the clip is lost rather than the take.
+      const samples = await Promise.race([
+        voice.stop(),
+        new Promise<undefined>((r) => setTimeout(r, STOP_TIMEOUT_MS)),
+      ])
+      if (!samples) return undefined
       const at = voice.startedAt
       const shift = this.shift
       if (at === undefined || shift === undefined || samples.length === 0) return undefined
