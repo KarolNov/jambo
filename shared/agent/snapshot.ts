@@ -24,6 +24,12 @@ export interface SnapshotSound {
 }
 
 /**
+ * The master as an agent reads it: repeat without its startBeat, which the jam stamps on
+ * every repeat change and an agent can't set.
+ */
+export type SnapshotMaster = Omit<Master, 'repeat'> & { repeat: { x: number; y: number } }
+
+/**
  * The jam as plain data, as an agent reads it when it joins. Unreadable
  * nodes are left out, as the UI leaves them out.
  */
@@ -33,7 +39,7 @@ export interface Snapshot {
   sounds: SnapshotSound[]
   tracks: ({ id: string } & Track)[]
   /** The master knobs and touchpad modes, each at its default until someone sets it. */
-  master: Master
+  master: SnapshotMaster
   here: SnapshotPresence[]
 }
 
@@ -48,6 +54,10 @@ function readAll<T>(map: Y.Map<unknown>, schema: Parameters<typeof read>[0], sha
 }
 
 const byId = ([a]: [string, unknown], [b]: [string, unknown]) => (a < b ? -1 : a > b ? 1 : 0)
+
+function agentMaster({ repeat, ...rest }: Master): SnapshotMaster {
+  return { ...rest, repeat: { x: repeat.x, y: repeat.y } }
+}
 
 /** The snapshot of board `doc`, with `here` being who is in the jam right now. */
 export function snapshotOf(doc: Y.Doc, here: readonly SnapshotPresence[]): Snapshot {
@@ -78,7 +88,7 @@ export function snapshotOf(doc: Y.Doc, here: readonly SnapshotPresence[]): Snaps
     pads,
     sounds: [...kit, ...uploads],
     tracks,
-    master: masterOf(doc.getArray(ROOTS.master)),
+    master: agentMaster(masterOf(doc.getArray(ROOTS.master))),
     here: here.map((p) => ({ ...p })),
   }
 }

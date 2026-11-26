@@ -1,6 +1,5 @@
-import type { Master } from '../board'
 import type { Holds } from './held'
-import type { Snapshot, SnapshotPresence, SnapshotSound } from './snapshot'
+import type { Snapshot, SnapshotMaster, SnapshotPresence, SnapshotSound } from './snapshot'
 
 type SnapshotTrack = Snapshot['tracks'][number]
 
@@ -16,7 +15,7 @@ export type Change =
   | { what: 'trackAdded'; track: SnapshotTrack }
   | { what: 'trackRemoved'; id: string; name: string }
   | { what: 'trackChanged'; id: string; name: string; set: Partial<SnapshotTrack> }
-  | { what: 'master'; set: Partial<Master> }
+  | { what: 'master'; set: Partial<SnapshotMaster> }
   | { what: 'joined'; who: SnapshotPresence }
   | { what: 'left'; who: SnapshotPresence }
 
@@ -69,9 +68,10 @@ export function changesBetween(before: Snapshot, after: Snapshot): Change[] {
     if (!tracksAfter.has(t.id)) out.push({ what: 'trackRemoved', id: t.id, name: t.name })
 
   const master: Record<string, unknown> = {}
-  for (const key of Object.keys(after.master) as (keyof Master)[])
+  for (const key of Object.keys(after.master) as (keyof SnapshotMaster)[])
     if (!same(before.master[key], after.master[key])) master[key] = after.master[key]
-  if (Object.keys(master).length > 0) out.push({ what: 'master', set: master as Partial<Master> })
+  if (Object.keys(master).length > 0)
+    out.push({ what: 'master', set: master as Partial<SnapshotMaster> })
 
   const key = (p: SnapshotPresence) => `${p.kind}\n${p.name}`
   const hereBefore = new Set(before.here.map(key))

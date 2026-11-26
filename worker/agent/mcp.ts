@@ -51,7 +51,7 @@ join returns board, the jam as it is now:
   pads: [{ id, key, row, col, soundId }]: the 16 pads; tracks hit pads by id
   sounds: [{ id, name, kind: 'kit' | 'upload', category?, by?, durationMs? }]
   tracks: [{ id, name, author, color, bars, hits: [{ padId, beat }], gain, mute, quantize, startBar?, effects, ${KNOB_FIELDS} }]: a missing knob is at its default
-  master: { ${MASTER_KNOB_NAMES.join(', ')}, ${FX_MODE_NAMES.map((m) => (m === 'repeat' ? `${m}: { x, y, startBeat }` : `${m}: { x, y }`)).join(', ')} }: the master stage everyone hears, each at its default (0, and 0/0 for a mode) until someone sets it
+  master: { ${MASTER_KNOB_NAMES.join(', ')}, ${FX_MODE_NAMES.map((m) => `${m}: { x, y }`).join(', ')} }: the master stage everyone hears, each at its default (0, and 0/0 for a mode) until someone sets it
   here: [{ name, kind, color }]: people (kind 'person') and agents
 Others change the jam too. To follow along, call listen (it needs your agentKey) instead of join: it waits up to wait seconds (0-${LISTEN.maxWaitMs / 1000}, default ${LISTEN.defaultWaitMs / 1000}) for someone to change the jam, then answers { agent, changes, holding }: only what changed since you last looked, your own runs left out, and who is turning which control right now. A burst of edits, like a knob drag, comes as one answer, and answers come at most every ${LISTEN.minGapMs / 1000} s. changes are, in order:
   { what: 'tempo', bpm } | { what: 'pad', id, soundId } | { what: 'soundAdded', sound } | { what: 'soundRemoved', id, name }

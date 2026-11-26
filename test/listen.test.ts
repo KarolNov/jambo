@@ -125,6 +125,21 @@ describe('listen over MCP', () => {
     person.close()
   })
 
+  it("tells repeat's x and y, without the beat the jam stamps it with", async () => {
+    const slug = 'funky-otter-mw06'
+    const person = await connectBoard(slug)
+    const ip = newAddress()
+    const joined = await call('join', { jam: slug }, ip)
+    expect(joined.body.board.master.repeat).toEqual({ x: 0, y: 0 })
+    const heard = call('listen', { jam: slug, agentKey: joined.body.agent.agentKey, wait: 10 }, ip)
+    await new Promise((r) => setTimeout(r, 200))
+    apply(person.doc, [{ op: 'setFx', mode: 'repeat', x: 0.5, y: 1, startBeat: 12 }], PERSON)
+    expect((await heard).body.changes).toEqual([
+      { what: 'master', set: { repeat: { x: 0.5, y: 1 } } },
+    ])
+    person.close()
+  })
+
   it('says who is turning what, and answers nothing changed when nothing did', async () => {
     const slug = 'funky-otter-mw02'
     const person = await connectBoard(slug)

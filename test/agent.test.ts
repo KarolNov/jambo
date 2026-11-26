@@ -143,11 +143,14 @@ describe('snapshot', () => {
     expect(snap.tracks.map((t) => t.name)).toEqual(['One', 'Two'])
     expect(snap.tracks[0]).toMatchObject({ id: 't1', author: 'p1', bars: 1 })
     expect(snap.here).toEqual(here)
-    expect(snap.master).toEqual(MASTER_DEFAULTS)
+    expect(snap.master).toEqual(AGENT_MASTER)
     // Plain data: survives a JSON round trip unchanged.
     expect(JSON.parse(JSON.stringify(snap))).toEqual(snap)
   })
 })
+
+/** The master as agents read it: repeat leaves out the beat the jam stamps it with. */
+const AGENT_MASTER = { ...MASTER_DEFAULTS, repeat: { x: 0, y: 0 } }
 
 describe('snapshot of the master', () => {
   // @scenario collab/agent: Read the master
@@ -159,11 +162,17 @@ describe('snapshot of the master', () => {
       [
         { op: 'setFx', mode: 'filter', x: -0.4, y: 0 },
         { op: 'setMaster', set: { swing: 0.5 } },
+        { op: 'setFx', mode: 'repeat', x: 0.2, y: 1, startBeat: 8 },
       ],
       SYSTEM,
     )
     const { master } = snapshotOf(doc, [])
-    expect(master).toEqual({ ...MASTER_DEFAULTS, filter: { x: -0.4, y: 0 }, swing: 0.5 })
+    expect(master).toEqual({
+      ...AGENT_MASTER,
+      filter: { x: -0.4, y: 0 },
+      swing: 0.5,
+      repeat: { x: 0.2, y: 1 },
+    })
     expect(JSON.parse(JSON.stringify(master))).toEqual(master)
   })
 })
