@@ -13,6 +13,7 @@ import {
   refreshBudget,
   UploadDialog,
   UploadsList,
+  type UploadSource,
   type UploadTarget,
   useBudget,
   useFilePicker,
@@ -227,15 +228,24 @@ function ConsolePad({
  */
 export function SoundEditor({ slug, editing }: { slug: string; editing: boolean }) {
   const sounds = useAtomValue(soundsAtom)
-  const [pending, setPending] = useState<{ file: File; target: UploadTarget }>()
-  // Where the next picked file goes. A ref, so the picker opens within the click (Safari needs that).
-  const target = useRef<UploadTarget>({ kind: 'list' })
-  const picker = useFilePicker((file) => setPending({ file, target: target.current }))
-  const pick = (t: UploadTarget) => {
-    // One upload at a time: a new pick would unmount a dialog whose upload is still running.
-    if (pending) return
-    target.current = t
-    picker.open()
+  // The open upload dialog: where its sound goes, and where the sound comes from once chosen.
+  // `id` keys the dialog, so each opening (and each choice of source) starts it afresh.
+  const [pending, setPending] = useState<{
+    id: number
+    target: UploadTarget
+    source?: UploadSource
+  }>()
+  const opened = useRef(0)
+  const picker = useFilePicker((file) =>
+    setPending((p) => ({
+      id: p?.id ?? ++opened.current,
+      target: p?.target ?? { kind: 'list' },
+      source: { kind: 'file', file },
+    })),
+  )
+  // One upload at a time: a new pick would unmount a dialog whose upload is still running.
+  const pick = (target: UploadTarget) => {
+    if (!pending) setPending({ id: ++opened.current, target })
   }
   // Check the app's sound budget on opening the jam and on each switch into Change sounds.
   useEffect(() => {
@@ -250,10 +260,12 @@ export function SoundEditor({ slug, editing }: { slug: string; editing: boolean 
       {picker.element}
       {pending && (
         <UploadDialog
-          key={pending.file.name + pending.file.lastModified}
+          key={`${pending.id}-${pending.source?.kind ?? 'choose'}-${pending.source?.kind === 'file' ? pending.source.file.name + pending.source.file.lastModified : ''}`}
           slug={slug}
-          file={pending.file}
+          source={pending.source}
           target={pending.target}
+          onChooseFile={picker.open}
+          onRecord={() => setPending((p) => p && { ...p, source: { kind: 'record' } })}
           onClose={() => setPending(undefined)}
         />
       )}

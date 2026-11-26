@@ -28,7 +28,14 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        launchOptions: { args: ['--autoplay-policy=no-user-gesture-required'] },
+        launchOptions: {
+          args: [
+            '--autoplay-policy=no-user-gesture-required',
+            // A fake microphone (a steady beep) for recording a voice; tests grant it per context.
+            '--use-fake-device-for-media-stream',
+            '--use-fake-ui-for-media-stream',
+          ],
+        },
       },
     },
   ],
