@@ -6,7 +6,7 @@ Let an AI agent with a jam's link take part in the jam over MCP: be seen there, 
 
 ### Requirement: MCP endpoint
 
-jambo SHALL serve an MCP server at `/mcp` offering the tools `join`, `run`, `upload_sound` and `leave`, each taking a jam link or slug, with no sign-in. A malformed jam SHALL be refused.
+jambo SHALL serve an MCP server at `/mcp` offering the tools `join`, `run`, `upload_sound`, `listen` and `leave`, each taking a jam link or slug, with no sign-in. A malformed jam SHALL be refused. A link to a jam on another host SHALL be refused, naming the MCP server to add for it.
 
 - **Scenario: Link as key**
   - **GIVEN** an agent connected to `/mcp`
@@ -15,6 +15,10 @@ jambo SHALL serve an MCP server at `/mcp` offering the tools `join`, `run`, `upl
 - **Scenario: Bad jam**
   - **WHEN** an agent calls `join` with `not a jam`
   - **THEN** it is refused and no jam changes
+- **Scenario: Link on another host**
+  - **GIVEN** an agent connected to the MCP server on `jambo.test`
+  - **WHEN** it calls `join` with a jam link on `jambo.example`
+  - **THEN** it is refused with a message to add `https://jambo.example/mcp`, and no jam changes
 
 ### Requirement: Describes itself
 
@@ -66,7 +70,7 @@ An agent that comes back with its key after it left or idled out SHALL be seated
 
 ### Requirement: Presence follows activity
 
-An agent SHALL be in the jam's presence from its first action (`join`, `run` or `upload_sound`) until it calls `leave` or goes 5 minutes without an action; each action SHALL renew it.
+An agent SHALL be in the jam's presence from its first action (`join`, `run`, `upload_sound` or `listen`) until it calls `leave` or goes 5 minutes without an action; each action SHALL renew it.
 
 - **Scenario: Auto join**
   - **GIVEN** an agent not in the jam
@@ -82,7 +86,7 @@ An agent SHALL be in the jam's presence from its first action (`join`, `run` or 
 
 ### Requirement: Reads the jam
 
-`join` SHALL return the jam as it is: tempo, pads, the kit and the jam's uploads, readable tracks, the master knobs and touchpad modes, and who's here.
+`join` SHALL return the jam as it is: tempo, pads, the kit and the jam's uploads, readable tracks, the master knobs and touchpad modes, each mode as its x and y, and who's here.
 
 - **Scenario: Read tracks**
   - **GIVEN** a jam with two tracks
@@ -92,6 +96,26 @@ An agent SHALL be in the jam's presence from its first action (`join`, `run` or 
   - **GIVEN** a jam with Filter latched at x -0.4 and swing at 0.5
   - **WHEN** an agent calls `join`
   - **THEN** it gets Filter at x -0.4, y 0 and swing 0.5, with every other master setting at its default
+
+### Requirement: Listens for changes
+
+`listen` SHALL need the agent's key, and SHALL wait up to 25 seconds (20 by default) for the jam to change. It SHALL then answer what changed since that agent last looked, leaving out what its own runs changed: the tempo, pads, sounds added or removed, tracks added, removed or changed (with only the changed fields), master settings, and who joined or left. It SHALL also answer who is holding which control right now. Once something changes, it SHALL wait about three quarters of a second for more before answering, and SHALL never answer sooner than 3 seconds after its last answer to that agent. With no record of what the agent last saw, it SHALL answer the board too.
+
+- **Scenario: Hear a person**
+  - **GIVEN** an agent that set swing and is listening
+  - **WHEN** a person sets drive to 0.6
+  - **THEN** listen answers master drive 0.6, without the swing
+- **Scenario: Someone holding**
+  - **GIVEN** Misty Yak dragging master tone
+  - **WHEN** an agent listens
+  - **THEN** it hears that Misty Yak is holding `master.tone`
+- **Scenario: Quiet jam**
+  - **WHEN** nothing changes during the whole wait
+  - **THEN** listen answers no changes, with who is holding what
+- **Scenario: No record**
+  - **GIVEN** an agent whose last look the jam doesn't remember
+  - **WHEN** it listens
+  - **THEN** it gets the board too
 
 ### Requirement: One run, one change
 
@@ -153,11 +177,15 @@ A jam SHALL seat at most 8 agents, and at most 3 from one client address; a new 
 
 ### Requirement: Agent rate limit
 
-Tool calls SHALL be refused once one client address makes more than 20 in a minute.
+Tool calls other than `listen` SHALL be refused once one client address makes more than 20 in a minute.
 
 - **Scenario: 21st call**
   - **WHEN** one address makes a 21st tool call within a minute
   - **THEN** it is refused with "too many requests" and nothing changes
+- **Scenario: Listen past the limit**
+  - **GIVEN** an address that made 21 calls within a minute
+  - **WHEN** its agent calls `listen`
+  - **THEN** it gets an answer
 
 ### Requirement: Agent uploads
 

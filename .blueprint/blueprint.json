@@ -57,7 +57,7 @@
         "src/about/about.css": "9fa4c0fbea95",
         "worker/index.ts": "7006ed34cbe2"
       },
-      "syncedCommit": "2808f5c8643b838014641596a44817ea9c739353"
+      "syncedCommit": "1f5e71f9c088e581ac5ba09e9e7d297d7f11b7e1"
     },
     "collab/room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
@@ -71,12 +71,12 @@
       "specVersion": "81e2c006adaeeca6",
       "anchorsFiles": {
         "src/board/doc.ts": "f88a4fbb0525",
-        "worker/board.ts": "9e59c3cf72b2",
+        "worker/board.ts": "19addc59c003",
         "worker/index.ts": "7006ed34cbe2",
         "worker/quota.ts": "fa0709c13df2",
         "worker/sounds.ts": "548f085c2ba4"
       },
-      "syncedCommit": "2808f5c8643b838014641596a44817ea9c739353"
+      "syncedCommit": "1f5e71f9c088e581ac5ba09e9e7d297d7f11b7e1"
     },
     "board/session": {
       "ref": "https://app.notion.com/p/41c43cce21f2816d95bed22e84e21ac1",
@@ -230,22 +230,23 @@
         "worker/agent/**",
         "skills/jam/**"
       ],
-      "specVersion": "69fcc02e26d69da6",
+      "specVersion": "a11d981d1de444f2",
       "anchorsFiles": {
+        "shared/agent/changes.ts": "97c830376248",
         "shared/agent/held.ts": "9809510d02dd",
         "shared/agent/identity.ts": "7255c8e36b80",
-        "shared/agent/index.ts": "88603e9753e3",
-        "shared/agent/limits.ts": "d4559fe10460",
+        "shared/agent/index.ts": "86ca8890ce20",
+        "shared/agent/limits.ts": "48612a348f39",
         "shared/agent/link.ts": "c936b9cdd9bf",
         "shared/agent/record.ts": "55535bf594a1",
         "shared/agent/repeat.ts": "bf4c81366903",
         "shared/agent/seat.ts": "e8d0659161b8",
-        "shared/agent/snapshot.ts": "bd1f9821221c",
-        "skills/jam/SKILL.md": "c2d96da301b5",
-        "worker/agent/mcp.ts": "bac93c31b3a3",
+        "shared/agent/snapshot.ts": "1bb8e3aaec5e",
+        "skills/jam/SKILL.md": "0be19c99939c",
+        "worker/agent/mcp.ts": "7245c855810a",
         "worker/agent/roster.ts": "1d797b63f037"
       },
-      "syncedCommit": "98dbfac5b4a24fd64e3a2f94b10bee72328b3680"
+      "syncedCommit": "1f5e71f9c088e581ac5ba09e9e7d297d7f11b7e1"
     },
     "ui": {
       "ref": "https://app.notion.com/p/41d43cce21f281d291ccec92edb7d20d",
