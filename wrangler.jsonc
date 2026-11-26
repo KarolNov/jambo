@@ -33,6 +33,7 @@
     { "name": "SOUND_WRITES", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
     { "name": "SOUND_READS", "namespace_id": "1003", "simple": { "limit": 120, "period": 60 } },
     { "name": "AGENT_RUNS", "namespace_id": "1005", "simple": { "limit": 20, "period": 60 } },
+    { "name": "CLIP_WRITES", "namespace_id": "1007", "simple": { "limit": 30, "period": 60 } },
   ],
   "observability": { "enabled": true },
   // Pull-request previews (Workers Builds runs `wrangler preview`). Each preview gets its own
@@ -50,6 +51,7 @@
       { "name": "SOUND_WRITES", "namespace_id": "1002", "simple": { "limit": 10, "period": 60 } },
       { "name": "SOUND_READS", "namespace_id": "1004", "simple": { "limit": 120, "period": 60 } },
       { "name": "AGENT_RUNS", "namespace_id": "1006", "simple": { "limit": 20, "period": 60 } },
+      { "name": "CLIP_WRITES", "namespace_id": "1008", "simple": { "limit": 30, "period": 60 } },
     ],
     "observability": { "enabled": true },
   },

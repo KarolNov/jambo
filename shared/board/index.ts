@@ -1,4 +1,4 @@
-export { apply, countClips, countUploads, type Origin } from './apply'
+export { apply, countClips, countUploads, type Origin, unnamedClips } from './apply'
 export {
   AssignPad,
   type Issue,
