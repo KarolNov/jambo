@@ -42,6 +42,14 @@ export const UPLOADS = {
   maxFileBytes: 20 * 1024 * 1024,
 } as const
 
+/**
+ * Limits for voice clips sung into takes: their own count, apart from `UPLOADS.perJam`, with the
+ * same length, byte and format caps as uploads.
+ */
+export const CLIPS = {
+  perJam: 64,
+} as const
+
 /** Header names for an upload's details, sent with the WAV as the request body. */
 export const UPLOAD_HEADERS = {
   name: 'X-Sound-Name',

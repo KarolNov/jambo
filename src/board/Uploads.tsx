@@ -1,6 +1,6 @@
 import { useAtomValue } from 'jotai'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import type { Pad } from '../../shared/board'
+import { isSoundHit, type Pad, type Track } from '../../shared/board'
 import {
   padKeyOrder,
   PAUSED_MESSAGES,
@@ -16,7 +16,7 @@ import {
   UploadError,
   uploadSound,
 } from '../audio/upload'
-import { padsAtom, soundsAtom } from './model'
+import { padsAtom, soundsAtom, tracksAtom, uploadsAtom } from './model'
 import type { JamSession } from './doc'
 import { Recorder } from './Recorder'
 import { useSession } from './session'
@@ -90,6 +90,16 @@ export function padKeysBySound(pads: Map<string, Pad>): Map<string, string[]> {
   const out = new Map<string, string[]>()
   const sorted = [...pads.values()].sort((a, b) => padKeyOrder(a.key) - padKeyOrder(b.key))
   for (const p of sorted) out.set(p.soundId, [...(out.get(p.soundId) ?? []), p.key.toUpperCase()])
+  return out
+}
+
+/** The names of the tracks whose sound hits name each sound. */
+export function trackNamesBySound(tracks: Map<string, Track>): Map<string, string[]> {
+  const out = new Map<string, string[]>()
+  for (const t of tracks.values()) {
+    const ids = new Set(t.hits.flatMap((h) => (isSoundHit(h) ? [h.soundId] : [])))
+    for (const id of ids) out.set(id, [...(out.get(id) ?? []), t.name])
+  }
   return out
 }
 
@@ -167,7 +177,7 @@ export function UploadDialog({
   onClose: () => void
 }) {
   const { engine, board, jam, me } = useSession()
-  const sounds = useAtomValue(soundsAtom)
+  const sounds = useAtomValue(uploadsAtom)
   const [prepared, setPrepared] = useState<Prepared>()
   const [name, setName] = useState(() =>
     source?.kind === 'file' ? defaultName(source.file.name) : RECORDING_NAME,
@@ -314,9 +324,10 @@ export function UploadsList({
   /** An upload dialog is open: finish or cancel it before picking another file. */
   uploading: boolean
 }) {
-  const sounds = useAtomValue(soundsAtom)
+  const sounds = useAtomValue(uploadsAtom)
   const pads = useAtomValue(padsAtom)
   const onPads = padKeysBySound(pads)
+  const inTracksBySound = trackNamesBySound(useAtomValue(tracksAtom))
   const [error, setError] = useState<string>()
   const [removing, setRemoving] = useState<ReadonlySet<string>>(new Set())
   const paused = useBudget().uploads !== 'open'
@@ -364,6 +375,7 @@ export function UploadsList({
       <ul>
         {[...sounds].map(([id, s]) => {
           const keys = onPads.get(id) ?? []
+          const inTracks = inTracksBySound.get(id) ?? []
           return (
             <li key={id}>
               <span className="upload-name">{s.name}</span>
@@ -382,11 +394,13 @@ export function UploadsList({
                 <button
                   type="button"
                   className="link"
-                  disabled={keys.length > 0 || removing.has(id)}
+                  disabled={keys.length > 0 || inTracks.length > 0 || removing.has(id)}
                   title={
                     keys.length > 0
                       ? `On ${keys.length === 1 ? 'pad' : 'pads'} ${keys.join(', ')}: change ${keys.length === 1 ? 'it' : 'them'} first`
-                      : undefined
+                      : inTracks.length > 0
+                        ? `In ${inTracks.length === 1 ? 'track' : 'tracks'} ${inTracks.join(', ')}: replace it or remove ${inTracks.length === 1 ? 'that track' : 'those tracks'} first`
+                        : undefined
                   }
                   onClick={() => void remove(id)}
                 >

@@ -18,6 +18,7 @@ import {
   nextGridLine,
   nextJamBar,
   repeatSlice,
+  type Sounding,
   swingDelay,
   trackStart,
 } from '../../shared/looper'
@@ -82,6 +83,9 @@ export type RecorderState =
       /** The jam bar the take begins on (`recordStart`'s bar). */
       recordBar: number
     }
+
+/** What a hit plays: a pad, or a sound by id. */
+type Target = { padId: string } | { soundId: string }
 
 /** A pad sounding: played live by this client, or by a loop (`trackId`). */
 export interface PadHit {
@@ -509,6 +513,11 @@ export class Engine {
     }
   }
 
+  /** The sound a hit plays: a sound hit's own, or whatever its pad holds now. */
+  private soundOf(hit: Target): string | undefined {
+    return 'soundId' in hit ? hit.soundId : this.pads.get(hit.padId)
+  }
+
   /** The buffer a sound plays, once it has loaded. */
   private bufferOf(soundId: string | undefined) {
     return soundId ? (this.buffers.get(soundId) ?? this.samples.get(soundId)) : undefined
@@ -742,34 +751,42 @@ export class Engine {
       hitsInWindow(p.track, origin, bpm, (a - EDGE_MS) / 1000, (b - EDGE_MS) / 1000)
     const swung = (h: { time: number; beat: number }) =>
       h.time * 1000 + swingDelay(h.beat, this.swing) * beatMs
-    /** Plays a hit on the grid at `gridMs`, sounding at `atMs`; a repeat is gated (room ms). */
+    /**
+     * Plays a hit on the grid at `gridMs`, sounding at `atMs`; it is cut at `untilMs` (a repeat's
+     * slice end, a sound hit's loop end) and a repeat's tail starts `skipMs` in (room ms).
+     */
     const sound = (
-      padId: string,
+      hit: Target,
       gridMs: number,
       atMs: number,
       level: number,
-      gate?: { skipMs: number; untilMs: number },
+      gate?: { skipMs: number; untilMs?: number },
     ) => {
       if (level <= 0) return
+      const untilMs = gate?.untilMs
+      if (untilMs !== undefined && atMs >= untilMs) return
       const at = Math.max(ctx.currentTime, roomToAudio(atMs, shift))
-      const source = this.play(
-        this.pads.get(padId),
-        at,
-        chain.filter,
-        rate,
-        level,
-        gate && { offset: (gate.skipMs / 1000) * rate, until: roomToAudio(gate.untilMs, shift) },
-      )
+      const source = this.play(this.soundOf(hit), at, chain.filter, rate, level, {
+        offset: ((gate?.skipMs ?? 0) / 1000) * rate,
+        until: untilMs === undefined ? undefined : roomToAudio(untilMs, shift),
+      })
       if (!source) return
-      // A tail picked up mid-sound isn't a new hit, so it doesn't light its pad.
-      const timer = gate?.skipMs ? undefined : this.announceAt({ padId, trackId: p.id }, at)
+      // A tail picked up mid-sound isn't a new hit, so it doesn't light its pad; a sound hit has
+      // no pad to light.
+      const timer =
+        gate?.skipMs || !('padId' in hit)
+          ? undefined
+          : this.announceAt({ padId: hit.padId, trackId: p.id }, at)
       this.scheduled.push({ grid: gridMs, at, source, timer })
     }
+    /** A grid hit's own cut: a sound hit stops at its loop's end. */
+    const ownCut = (h: Sounding) =>
+      'until' in h ? { skipMs: 0, untilMs: h.until * 1000 } : undefined
     // How far back a sound may have started and still be ringing: the longest of this loop's.
     const ringMs = () => {
       let longest = 0
       for (const h of p.track.hits) {
-        const buffer = this.bufferOf(this.pads.get(h.padId))
+        const buffer = this.bufferOf(this.soundOf(h))
         if (buffer) longest = Math.max(longest, buffer.duration)
       }
       return (longest / rate) * 1000
@@ -783,7 +800,7 @@ export class Engine {
       const b = next ? Math.min(to, jamBeatMs(next.at, bpm)) : to
       if (b <= a) continue
       const level = span?.slice === undefined ? 0 : span.level
-      for (const h of grid(a, b)) sound(h.padId, h.time * 1000, swung(h), 1 - level)
+      for (const h of grid(a, b)) sound(h, h.time * 1000, swung(h), 1 - level, ownCut(h))
       if (span?.slice !== undefined && level > 0) {
         const start = jamBeatMs(span.start, bpm)
         const length = span.slice * beatMs
@@ -792,16 +809,20 @@ export class Engine {
         // where it had got to. Each repeat plays it again and is cut where the slice ends, so
         // repeats never pile up, and a slice between hits still holds the tails ringing there.
         const ring = ringMs()
-        const slice: { padId: string; offset: number; skipMs: number }[] = []
+        // `cutMs`: a sound hit's loop end, from the slice's start; each repeat cuts it there too.
+        const slice: { hit: Target; offset: number; skipMs: number; cutMs?: number }[] = []
         for (const h of grid(start - ring, start + length)) {
           const at = swung(h)
-          const buffer = this.bufferOf(this.pads.get(h.padId))
-          const ends = at + (buffer ? (buffer.duration / rate) * 1000 : 0)
+          const buffer = this.bufferOf(this.soundOf(h))
+          const rings = at + (buffer ? (buffer.duration / rate) * 1000 : 0)
+          // A sound hit was cut at its loop's end, so nothing of it rings past there.
+          const ends = 'until' in h ? Math.min(rings, h.until * 1000) : rings
           if (at >= start + length || (at < start && ends <= start)) continue
           slice.push({
-            padId: h.padId,
+            hit: h,
             offset: Math.max(0, at - start),
             skipMs: Math.max(0, start - at),
+            ...('until' in h ? { cutMs: h.until * 1000 - start } : {}),
           })
         }
         for (let k = Math.max(0, Math.floor((a - start) / length)); start + k * length < b; k++)
@@ -810,8 +831,10 @@ export class Engine {
             if (k === 0 && h.skipMs > 0) continue
             const at = start + k * length + h.offset
             if (at < a - EDGE_MS || at >= b - EDGE_MS) continue
-            const untilMs = start + (k + 1) * length
-            sound(h.padId, at, at, level, { skipMs: h.skipMs, untilMs })
+            const sliceEnd = start + (k + 1) * length
+            const untilMs =
+              h.cutMs === undefined ? sliceEnd : Math.min(sliceEnd, start + k * length + h.cutMs)
+            sound(h.hit, at, at, level, { skipMs: h.skipMs, untilMs })
           }
       }
       a = b

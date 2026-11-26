@@ -18,6 +18,13 @@ import {
 const h = (beat: number, padId = 'r0c0') => ({ padId, beat })
 
 describe('finishTake', () => {
+  it('keeps sound hits as sound hits, moved onto the first beat like pad hits', () => {
+    expect(finishTake([{ soundId: 'u-abcdefgh2345', beat: -0.1 }, h(1)], 4)).toEqual({
+      bars: 1,
+      hits: [{ soundId: 'u-abcdefgh2345', beat: 0 }, h(1)],
+    })
+  })
+
   // @scenario audio/looper: Stop mid-bar
   it('rounds a take stopped mid-bar up to whole bars', () => {
     expect(finishTake([h(0)], 2.3 * 4)?.bars).toBe(3)
@@ -74,6 +81,29 @@ describe('hitsInWindow', () => {
     const a = hitsInWindow(track, 10, 120, 10, 11)
     const b = hitsInWindow(track, 10, 120, 11, 12)
     expect([...a, ...b].map((x) => x.time)).toEqual([10, 11])
+  })
+
+  // @scenario audio/looper: Not snapped
+  it('plays a sound hit at its stored beat, unsnapped, while pad hits snap', () => {
+    const t = {
+      bars: 1,
+      hits: [h(1.06), { soundId: 'u-abcdefgh2345', beat: 1.06 }],
+      quantize: 0.25,
+    }
+    const [pad, clip] = hitsInWindow(t, 0, 120, 0, 2).sort((a, b) => a.beat - b.beat)
+    expect(pad).toEqual({ padId: 'r0c0', time: 0.5, beat: 1 })
+    expect(clip).toMatchObject({ soundId: 'u-abcdefgh2345', beat: 1.06 })
+    expect(clip!.time).toBeCloseTo(0.53)
+  })
+
+  // @scenario audio/looper: Cut at the loop's end
+  it("cuts a sound hit at its cycle's end", () => {
+    const t = { bars: 1, hits: [{ soundId: 'clap', beat: 3 }], quantize: 0.25 }
+    // 100 bpm: a bar is 2.4 s; the track starts at 10 s.
+    expect(hitsInWindow(t, 10, 100, 10, 15)).toEqual([
+      { soundId: 'clap', until: 12.4, time: 11.8, beat: 3 },
+      { soundId: 'clap', until: 14.8, time: 14.2, beat: 3 },
+    ])
   })
 
   it('plays a one-bar track twice per loop of a two-bar track', () => {
