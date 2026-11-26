@@ -1,5 +1,6 @@
-import { Hono } from 'hono'
+import { type Context, Hono } from 'hono'
 import { getServerByName } from 'partyserver'
+import type { SoundKind } from '../shared/board'
 import { isJamSlug } from '../shared/slug'
 import { toName } from '../shared/names'
 import { isUploadId, PAUSED_MESSAGES, UPLOAD_HEADERS, UPLOADS } from '../shared/sounds'
@@ -25,10 +26,13 @@ sounds.use('/:slug/*', async (c, next) => {
   await next()
 })
 
-/** One budget per client address: `SOUND_WRITES` for uploads and removals, `SOUND_READS` for R2 reads. */
+/**
+ * One budget per client address: `SOUND_WRITES` for uploads and removals, `CLIP_WRITES` for voice
+ * clips (a take can hold many), `SOUND_READS` for R2 reads.
+ */
 async function overLimit(
   c: { env: Env; req: { header(name: string): string | undefined } },
-  limiter: 'SOUND_WRITES' | 'SOUND_READS' = 'SOUND_WRITES',
+  limiter: 'SOUND_WRITES' | 'CLIP_WRITES' | 'SOUND_READS' = 'SOUND_WRITES',
 ) {
   const key = c.req.header('CF-Connecting-IP') ?? 'unknown'
   const { success } = await c.env[limiter].limit({ key })
@@ -60,8 +64,16 @@ async function readCapped(body: ReadableStream<Uint8Array> | null, max: number) 
   }
 }
 
-sounds.post('/:slug/sounds', async (c) => {
-  if (await overLimit(c)) return c.json({ error: 'Too many uploads, try again in a minute' }, 429)
+/**
+ * Stores the request's WAV as a sound of `kind`. Uploads and clips differ only in their rate
+ * limit and their count on the board; both are then served and removed under `/sounds/:id`.
+ */
+async function postSound(c: Context<AppEnv, '/:slug/sounds' | '/:slug/clips'>, kind: SoundKind) {
+  const limiter = kind === 'clip' ? 'CLIP_WRITES' : 'SOUND_WRITES'
+  if (await overLimit(c, limiter)) {
+    const what = kind === 'clip' ? 'voice clips' : 'uploads'
+    return c.json({ error: `Too many ${what}, try again in a minute` }, 429)
+  }
   const declared = Number(c.req.header('Content-Length') ?? 0)
   if (declared > UPLOADS.maxBytes) return c.json({ error: 'The file is too big' }, 413)
   const wav = await readCapped(c.req.raw.body, UPLOADS.maxBytes)
@@ -80,10 +92,16 @@ sounds.post('/:slug/sounds', async (c) => {
     author: header(UPLOAD_HEADERS.author),
     authorName: toName(header(UPLOAD_HEADERS.authorName)),
     color: header(UPLOAD_HEADERS.color),
+    kind,
   })
   if (!result.ok) return c.json({ error: result.error }, result.status)
   return c.json({ id: result.id, sound: result.sound }, 201)
-})
+}
+
+sounds.post('/:slug/sounds', (c) => postSound(c, 'upload'))
+
+/** A voice clip sung into a take: the same file and headers as an upload. */
+sounds.post('/:slug/clips', (c) => postSound(c, 'clip'))
 
 sounds.get('/:slug/sounds/:id', async (c) => {
   const id = c.req.param('id')

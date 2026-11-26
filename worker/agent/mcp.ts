@@ -61,7 +61,7 @@ holding: [{ control, by }], control being track.<trackId>.<field>, master.<knob>
 
 run takes ops, a JSON array of 1-${AGENT_LIMITS.ops} operations, and summary (1-${AGENT_LIMITS.summaryMax} characters, what the run does). The operations:
   { op: 'setTempo', bpm }: only while the jam has no tracks
-  { op: 'assignPad', padId, soundId }: a kit sound id or an upload id, not a clip
+  { op: 'assignPad', padId, soundId }: a kit sound id or an upload id (not a clip: clips play only from a track's sound hits)
   { op: 'replaceSound', from, to }: moves every pad and every track's sound hit on one sound to another; to is a kit sound or an upload
   { op: 'addTrack', ref?, track: { name, bars, hits, gain?, quantize?, ${KNOB_FIELDS} } }: bars 1-${LIMITS.bars}; hits [{ padId, beat } | { soundId, beat }] with 0 <= beat < bars * 4 (beats, 4 per bar), 1-${LIMITS.hitsPerTrack} of them; gain 0-1.5 (default 1); quantize one of ${QUANTIZE.join(', ')} beats (default 0.25). The track is yours: author and colour are set for you. ref, like "new:kicks", lets later operations in the same run use the track as an id. A jam holds ${LIMITS.tracks} tracks.
   { op: 'setTrack', id, patch: { name?, gain?, mute?, quantize?, ${KNOB_FIELDS} } }

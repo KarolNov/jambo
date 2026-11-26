@@ -809,7 +809,8 @@ export class Engine {
         // where it had got to. Each repeat plays it again and is cut where the slice ends, so
         // repeats never pile up, and a slice between hits still holds the tails ringing there.
         const ring = ringMs()
-        const slice: { hit: Target; offset: number; skipMs: number }[] = []
+        // `cutMs`: a sound hit's loop end, from the slice's start; each repeat cuts it there too.
+        const slice: { hit: Target; offset: number; skipMs: number; cutMs?: number }[] = []
         for (const h of grid(start - ring, start + length)) {
           const at = swung(h)
           const buffer = this.bufferOf(this.soundOf(h))
@@ -821,6 +822,7 @@ export class Engine {
             hit: h,
             offset: Math.max(0, at - start),
             skipMs: Math.max(0, start - at),
+            ...('until' in h ? { cutMs: h.until * 1000 - start } : {}),
           })
         }
         for (let k = Math.max(0, Math.floor((a - start) / length)); start + k * length < b; k++)
@@ -829,7 +831,9 @@ export class Engine {
             if (k === 0 && h.skipMs > 0) continue
             const at = start + k * length + h.offset
             if (at < a - EDGE_MS || at >= b - EDGE_MS) continue
-            const untilMs = start + (k + 1) * length
+            const sliceEnd = start + (k + 1) * length
+            const untilMs =
+              h.cutMs === undefined ? sliceEnd : Math.min(sliceEnd, start + k * length + h.cutMs)
             sound(h.hit, at, at, level, { skipMs: h.skipMs, untilMs })
           }
       }

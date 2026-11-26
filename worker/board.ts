@@ -20,12 +20,25 @@ import {
   stampRepeats,
   withoutHeld,
 } from '../shared/agent'
-import { apply, countUploads, ROOTS, Sound, type Origin } from '../shared/board'
+import {
+  apply,
+  BEATS_PER_BAR,
+  BPM,
+  countClips,
+  countUploads,
+  kindOf,
+  LIMITS,
+  ROOTS,
+  Sound,
+  type SoundKind,
+  type Origin,
+  unnamedClips,
+} from '../shared/board'
 import { seedBoard } from '../shared/board/seed'
 import { parseClockMessage, pong } from '../shared/clock'
 import type { ColorName } from '../shared/colors'
 import { assignSeat, parseSeatMessage, type Seat, seated } from '../shared/seats'
-import { newUploadId, PAUSED_MESSAGES, UPLOADS } from '../shared/sounds'
+import { CLIPS, newUploadId, PAUSED_MESSAGES, UPLOADS } from '../shared/sounds'
 import { parseUploadWav } from '../shared/wav'
 import { type AgentHello, type AgentView, type PresentAgent, Roster, toView } from './agent/roster'
 import { quota } from './quota'
@@ -50,6 +63,19 @@ const EXPIRED_KEY = 'soundsExpired'
  */
 const ISSUED_PREFIX = 'issued:'
 const EXPIRING_MESSAGE = 'This jam’s old sounds are being cleared, try again in a moment'
+/**
+ * Clips nothing names, with when each was first seen that way, so their grace survives the room
+ * being evicted.
+ */
+const ORPHANS_KEY = 'orphanClips'
+/**
+ * How long a clip may go unnamed by any track before the room frees it: the longest take (every
+ * bar at the slowest tempo), since its track is added only once the take ends, plus a minute for
+ * uploads and the track to land.
+ */
+export const ORPHAN_CLIP_MS = (LIMITS.bars * BEATS_PER_BAR * 60_000) / BPM.min + 60_000
+/** How long the room lets edits settle before checking for orphan clips. */
+const ORPHAN_WATCH_MS = 1000
 
 const DAY_MS = 24 * 60 * 60 * 1000
 /** A jam's uploaded audio is deleted after this long with nobody connecting. */
@@ -117,6 +143,8 @@ export interface UploadInput {
   /** The uploader's name in the jam; older clients send none. */
   authorName?: string
   color: string
+  /** A voice clip sung into a take, held to `CLIPS.perJam`; an upload when missing. */
+  kind?: SoundKind
 }
 
 /**
@@ -144,6 +172,8 @@ export class Board extends YServer<Env> {
   private readonly seen = new Map<string, Seen>()
   /** Listens waiting for the jam to change. */
   private readonly wakers = new Set<() => void>()
+  /** Clips nothing names, and since when (ms); mirrored in storage under ORPHANS_KEY. */
+  private orphans = new Map<string, number>()
 
   override async onLoad() {
     const saved = await this.ctx.storage.get<Uint8Array>(SNAPSHOT_KEY)
@@ -155,6 +185,23 @@ export class Board extends YServer<Env> {
     }
     this.document.on('update', wake)
     this.document.awareness.on('change', wake)
+    this.orphans = new Map(
+      Object.entries((await this.ctx.storage.get<Record<string, number>>(ORPHANS_KEY)) ?? {}),
+    )
+    // Once per settled burst of edits, not per update: knob drags send many.
+    let watching = false
+    const watch = () => {
+      if (watching) return
+      watching = true
+      this.ctx.waitUntil(
+        sleep(ORPHAN_WATCH_MS).then(() => {
+          watching = false
+          return this.watchOrphans()
+        }),
+      )
+    }
+    this.document.getMap(ROOTS.tracks).observeDeep(watch)
+    this.document.getMap(ROOTS.sounds).observeDeep(watch)
     await this.roster.load()
     this.publishAgents()
     if (await this.ctx.storage.get(EXPIRED_KEY)) {
@@ -162,6 +209,7 @@ export class Board extends YServer<Env> {
       await this.onSave()
       await this.ctx.storage.delete(EXPIRED_KEY)
     }
+    await this.watchOrphans()
   }
 
   // Called a moment after edits, and when the last client leaves.
@@ -440,7 +488,8 @@ export class Board extends YServer<Env> {
   }
 
   /**
-   * Sets the one alarm to whichever comes first: the jam's audio expiring, or an agent idling out.
+   * Sets the one alarm to whichever comes first: the jam's audio expiring, an agent idling out, or
+   * an orphan clip's minute running out.
    */
   private async schedule() {
     let retainUntil = await this.ctx.storage.get<number>(RETAIN_KEY)
@@ -454,7 +503,9 @@ export class Board extends YServer<Env> {
       await this.ctx.storage.put(ALARM_V2_KEY, true)
     }
     const agentDue = this.roster.nextExpiry()
-    const candidates = [retainUntil, agentDue].filter((t): t is number => t !== undefined)
+    const candidates = [retainUntil, agentDue, this.orphansDue()].filter(
+      (t): t is number => t !== undefined,
+    )
     const current = await this.ctx.storage.getAlarm()
     if (candidates.length === 0) {
       if (current !== null) await this.ctx.storage.deleteAlarm()
@@ -465,8 +516,10 @@ export class Board extends YServer<Env> {
   }
 
   /**
-   * Stores an uploaded WAV and lists it on the board. The file must already be what the browser
-   * makes of an upload (see `parseUploadWav`); the room never decodes audio.
+   * Stores an uploaded WAV and lists it on the board, as an upload or, with `kind: 'clip'`, as a
+   * voice clip held to its own count. The file must already be what the browser makes of an upload
+   * (see `parseUploadWav`); the room never decodes audio. A clip no track names yet is freed after
+   * `ORPHAN_CLIP_MS`, so its track must be added within that.
    */
   async uploadSound(input: UploadInput): Promise<SoundResult<{ id: string; sound: Sound }>> {
     const info = parseUploadWav(new Uint8Array(input.wav))
@@ -479,11 +532,15 @@ export class Board extends YServer<Env> {
       durationMs: info.durationMs,
       bytes: input.wav.byteLength,
       createdAt: Date.now(),
+      ...(input.kind === 'clip' ? { kind: 'clip' } : {}),
     })
     if (!parsed.success)
       return { ok: false, status: 400, error: parsed.error.issues[0]?.message ?? 'Invalid sound' }
     const sounds = this.document.getMap<unknown>(ROOTS.sounds)
-    if (countUploads(this.document) >= UPLOADS.perJam)
+    if (kindOf(parsed.data) === 'clip') {
+      if (countClips(this.document) >= CLIPS.perJam)
+        return { ok: false, status: 409, error: `This jam already has ${CLIPS.perJam} voice clips` }
+    } else if (countUploads(this.document) >= UPLOADS.perJam)
       return { ok: false, status: 409, error: `This jam already has ${UPLOADS.perJam} sounds` }
     if (this.expiring) return { ok: false, status: 503, error: EXPIRING_MESSAGE }
 
@@ -525,7 +582,7 @@ export class Board extends YServer<Env> {
     return { ok: true, id, sound: parsed.data }
   }
 
-  /** Unlists an upload no pad uses, then deletes its audio. */
+  /** Unlists an upload or clip no pad or track names, then deletes its audio. */
   async removeSound(id: string): Promise<SoundResult> {
     if (!this.document.getMap<unknown>(ROOTS.sounds).has(id))
       return { ok: false, status: 404, error: 'No such sound' }
@@ -549,6 +606,58 @@ export class Board extends YServer<Env> {
     await quota(this.env).release(bytes)
   }
 
+  /** When the first orphan clip's grace runs out, if any clip is unnamed. */
+  private orphansDue(): number | undefined {
+    if (this.orphans.size === 0) return undefined
+    return Math.min(...this.orphans.values()) + ORPHAN_CLIP_MS
+  }
+
+  /**
+   * After a change to the tracks or sounds: notes clips that just lost their last track,
+   * forgets ones named again or gone, and sets the alarm for when the first must go.
+   */
+  private async watchOrphans() {
+    const now = Date.now()
+    const unnamed = unnamedClips(this.document)
+    let changed = false
+    for (const id of this.orphans.keys()) {
+      if (!unnamed.has(id)) {
+        this.orphans.delete(id)
+        changed = true
+      }
+    }
+    for (const id of unnamed) {
+      if (!this.orphans.has(id)) {
+        this.orphans.set(id, now)
+        changed = true
+      }
+    }
+    if (!changed) return
+    if (this.orphans.size > 0)
+      await this.ctx.storage.put(ORPHANS_KEY, Object.fromEntries(this.orphans))
+    else await this.ctx.storage.delete(ORPHANS_KEY)
+    await this.schedule()
+  }
+
+  /**
+   * Frees every clip no readable track has named for `ORPHAN_CLIP_MS`: unlists it, deletes its
+   * audio and gives its bytes back, as removing it would. A clip a pad or an unreadable track still
+   * names is refused by `removeSound` and stays, to be tried again on the next change.
+   */
+  private async freeOrphans() {
+    const now = Date.now()
+    let freed = false
+    for (const [id, since] of [...this.orphans]) {
+      if (since + ORPHAN_CLIP_MS > now) continue
+      if (!unnamedClips(this.document).has(id)) continue
+      const result = await this.removeSound(id)
+      if (result.ok) freed = true
+      else this.orphans.delete(id)
+    }
+    if (freed) await this.onSave()
+    await this.watchOrphans()
+  }
+
   /**
    * Pushes retention a full period ahead. Skips the write while it is less than a day short of
    * that, so a busy jam doesn't write on every connection.
@@ -562,22 +671,38 @@ export class Board extends YServer<Env> {
     await this.schedule()
   }
 
-  /** The one alarm: agents idling out, and retention when it is due. */
+  /** The one alarm: agents idling out, orphan clips, and retention when it is due. */
   override async alarm() {
     await this.roster.load()
     const agentDue = this.roster.nextExpiry()
     const v2 = await this.ctx.storage.get(ALARM_V2_KEY)
     const retainUntil = await this.ctx.storage.get<number>(RETAIN_KEY)
+    // Orphans are known without loading the doc (freeing them needs it); kept in memory so the
+    // `schedule` below still sets the alarm for them.
+    if (!this.loaded)
+      this.orphans = new Map(
+        Object.entries((await this.ctx.storage.get<Record<string, number>>(ORPHANS_KEY)) ?? {}),
+      )
+    const orphansDue = this.orphansDue()
     // Retention runs once it is due, or when it is what the alarm was set for (it comes before any
-    // agent idles out); alarms set before agents were all retention.
+    // agent idles out or orphan clip is due); alarms set before agents were all retention.
     const forRetention = v2
       ? retainUntil !== undefined &&
-        (retainUntil <= Date.now() || agentDue === undefined || retainUntil <= agentDue)
+        (retainUntil <= Date.now() ||
+          [agentDue, orphansDue].every((t) => t === undefined || retainUntil <= t))
       : true
     if (await this.roster.expire()) this.publishAgents()
+    if (orphansDue !== undefined && orphansDue <= Date.now()) {
+      // Loads the doc (onLoad) the way a request would.
+      if (!this.loaded) await super.alarm()
+      await this.freeOrphans()
+    }
     if (forRetention) await this.retain()
     await this.schedule()
   }
+
+  /** `super.alarm()` loads the room and then calls this; the work is all in `alarm`. */
+  override onAlarm() {}
 
   /**
    * Retention: with nobody here, people or agents, deletes the jam's audio and unlists its
