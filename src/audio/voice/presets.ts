@@ -119,8 +119,9 @@ function chain(input: AudioNode, ...nodes: AudioNode[]): AudioNode {
 
 /**
  * Builds `preset`'s chain in `ctx` from `input`, and returns its output for the caller to
- * connect. Async, as a preset may need to load a worklet into `ctx` first. Every preset starts
- * with Clean's low cut; the auto-tune presets tune to `key`.
+ * connect. Async, as a preset may need to load a worklet into `ctx` first. Every preset but
+ * Radio and Lofi starts with Clean's low cut (those two cut higher); the auto-tune presets tune
+ * to `key`.
  */
 export async function buildRack(
   ctx: BaseAudioContext,
@@ -128,7 +129,7 @@ export async function buildRack(
   input: AudioNode,
   key: Key = DEFAULT_KEY,
 ): Promise<AudioNode> {
-  const lowCut = biquad(ctx, 'highpass', CLEAN_LOW_CUT)
+  const lowCut = () => biquad(ctx, 'highpass', CLEAN_LOW_CUT)
   const options = pitchOptions(preset, key)
   if (options) {
     await loadWorklet(ctx, pitchUrl)
@@ -140,7 +141,7 @@ export async function buildRack(
       channelCountMode: 'explicit',
       processorOptions: options,
     })
-    const out = chain(input, lowCut, pitch)
+    const out = chain(input, lowCut(), pitch)
     if (preset === 'demon') {
       return chain(out, biquad(ctx, 'lowshelf', 250, Math.SQRT1_2, 5), saturate(ctx, 1.5))
     }
@@ -148,7 +149,7 @@ export async function buildRack(
   }
   switch (preset) {
     case 'clean':
-      return chain(input, lowCut)
+      return chain(input, lowCut())
     // A small speaker down a phone line: only the middle of the voice, pushed into its edges.
     case 'radio':
       return chain(
@@ -180,6 +181,6 @@ export async function buildRack(
       )
     }
     default:
-      return chain(input, lowCut)
+      return chain(input, lowCut())
   }
 }

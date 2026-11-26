@@ -131,9 +131,15 @@ describe('voice prefs', () => {
     localStorage.setItem('jambo.voice.key', '{"root":13,"scale":"major"}')
     expect(loadKey()).toEqual({ root: 0, scale: 'major' })
 
+    const setup = { device: 'mic speakers', estimate: 0.03 }
     expect(loadRoundTrip()).toBeUndefined()
-    saveRoundTrip(0.12)
+    saveRoundTrip(0.12, setup)
     expect(loadRoundTrip()).toBe(0.12)
+    expect(loadRoundTrip(setup)).toBe(0.12)
+    // On other speakers, or where the browser now estimates a quite different delay, it no
+    // longer counts.
+    expect(loadRoundTrip({ ...setup, device: 'mic headphones' })).toBeUndefined()
+    expect(loadRoundTrip({ ...setup, estimate: 0.2 })).toBeUndefined()
   })
 })
 

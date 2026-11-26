@@ -17,9 +17,12 @@ class Pitch extends AudioWorkletProcessor {
   private readonly voice: VoicePitch
   /** Fed while the input is disconnected, so what is still in the shifter plays out. */
   private silence = new Float32Array(128)
-  /** Frames still to play out once the input goes, before the node may be let go. */
-  private tail = 0
   private readonly tailFrames = Math.ceil(pitchDelay(sampleRate) * sampleRate) + 128
+  /**
+   * Frames still to play out once the input goes, before the node may be let go. Starts full, so
+   * a first block with no input yet doesn't end the node before it has been fed.
+   */
+  private tail = this.tailFrames
 
   constructor(options: { processorOptions: PitchOptions }) {
     super()

@@ -190,7 +190,8 @@ export function Recorder({
   const toggleMonitor = (on: boolean) => {
     setMonitor(on)
     saveMonitor(on)
-    void input.current?.monitor(on, preset, key)
+    // The delay test keeps the monitor silent: it would feed the speakers back into the mic.
+    if (phase !== 'testing') void input.current?.monitor(on, preset, key)
   }
 
   /** The loopback test: opens the microphone just for it, plays clicks, listens for them. */
@@ -224,6 +225,8 @@ export function Recorder({
 
   const recording = phase === 'recording'
   const busy = phase === 'opening' || phase === 'rendering' || phase === 'testing'
+  // Once the microphone has opened, only a measurement made on this setup counts.
+  const measured = latency ? (latency.measured ? latency.roundTrip : undefined) : roundTrip
   const delayMs = (latency?.roundTrip ?? roundTrip ?? 0) * 1000
   const heardLate = Math.round(
     delayMs + rackDelay(preset, engine.audioContext?.sampleRate ?? 48_000) * 1000,
@@ -250,7 +253,12 @@ export function Recorder({
             )}
           </>
         )}
-        <Switch variant="slide" checked={monitor} onChange={toggleMonitor} disabled={disabled}>
+        <Switch
+          variant="slide"
+          checked={monitor}
+          onChange={toggleMonitor}
+          disabled={disabled || phase === 'testing'}
+        >
           Monitor
         </Switch>
       </div>
@@ -264,14 +272,14 @@ export function Recorder({
         <span className="muted">
           {phase === 'testing'
             ? 'Listening for clicks: keep the speakers on and the room quiet…'
-            : roundTrip !== undefined
-              ? `Delay: ${Math.round(roundTrip * 1000)} ms, measured.`
+            : measured !== undefined
+              ? `Delay: ${Math.round(measured * 1000)} ms, measured.`
               : latency && latency.roundTrip > 0
                 ? `Delay: about ${Math.round(latency.roundTrip * 1000)} ms, estimated.`
                 : 'Delay: estimated from your browser.'}
         </span>
         <Button onClick={() => void testDelay()} disabled={recording || busy || disabled}>
-          {roundTrip !== undefined ? 'Test again' : 'Test delay'}
+          {measured !== undefined ? 'Test again' : 'Test delay'}
         </Button>
       </div>
       <div className="voice-take">

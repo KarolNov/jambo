@@ -3,7 +3,7 @@ import captureUrl from './capture.worklet.ts?worker&url'
 import { findClicks, loopbackClick, MAX_ROUND_TRIP } from './dsp/loopback'
 import { DEFAULT_KEY, type Key, keyName } from './dsp/tune'
 import { estimateLatency, type Latency, readLatency, withMeasured } from './latency'
-import { loadRoundTrip, saveRoundTrip } from './prefs'
+import { loadRoundTrip, type RoundTripSetup, saveRoundTrip } from './prefs'
 import { buildRack, type PresetId } from './presets'
 
 /** The name `capture.worklet.ts` registers its processor under. */
@@ -91,6 +91,10 @@ export class VoiceInput {
   private startFrame?: number
   /** Counts `monitor` calls, so one overtaken while it built does nothing. */
   private monitorCalls = 0
+  /** Ends a loopback test in progress early, when the input closes. */
+  private cancelTest?: () => void
+  /** The microphone and speakers this input uses, which a measured round trip belongs to. */
+  private readonly setup: RoundTripSetup
 
   /** Opens the microphone into `ctx`, the jam's live context. */
   static async open(ctx: AudioContext): Promise<VoiceInput> {
@@ -131,10 +135,14 @@ export class VoiceInput {
     this.monitorGain = ctx.createGain()
     this.monitorGain.gain.value = 0
     this.monitorGain.connect(ctx.destination)
-    this.latency = withMeasured(
-      estimateLatency(readLatency(ctx, stream.getAudioTracks()[0])),
-      loadRoundTrip(),
-    )
+    const track = stream.getAudioTracks()[0]
+    const estimate = estimateLatency(readLatency(ctx, track))
+    const sinkId = (ctx as { sinkId?: unknown }).sinkId
+    this.setup = {
+      device: `${track?.getSettings().deviceId ?? ''} ${typeof sinkId === 'string' ? sinkId : ''}`,
+      estimate: estimate.roundTrip,
+    }
+    this.latency = withMeasured(estimate, loadRoundTrip(this.setup))
     this.capture.port.onmessage = (
       e: MessageEvent<{ started?: number; samples?: Float32Array; level?: number; stopped?: true }>,
     ) => {
@@ -226,36 +234,56 @@ export class VoiceInput {
   async measureRoundTrip(): Promise<number | undefined> {
     const ctx = this.ctx
     const rate = ctx.sampleRate
-    const monitorLevel = this.monitorGain.gain.value
-    this.monitorGain.gain.cancelScheduledValues(ctx.currentTime)
-    this.monitorGain.gain.value = 0
+    const gain = this.monitorGain.gain
+    const monitorLevel = gain.value
+    gain.cancelScheduledValues(ctx.currentTime)
+    gain.value = 0
     const click = ctx.createBuffer(1, loopbackClick(rate).length, rate)
     click.copyToChannel(loopbackClick(rate) as Float32Array<ArrayBuffer>, 0)
     const level = ctx.createGain()
     level.gain.value = 0.5
     level.connect(ctx.destination)
-    this.start()
-    const first = ctx.currentTime + 0.3
-    const emits: number[] = []
-    for (let i = 0; i < CLICKS; i++) {
-      const when = first + i * CLICK_SPACING
-      const src = ctx.createBufferSource()
-      src.buffer = click
-      src.connect(level)
-      src.start(when)
-      emits.push(Math.round(when * rate))
+    const sources: AudioBufferSourceNode[] = []
+    let cancelled = false
+    try {
+      this.start()
+      const first = ctx.currentTime + 0.3
+      const emits: number[] = []
+      for (let i = 0; i < CLICKS; i++) {
+        const when = first + i * CLICK_SPACING
+        const src = ctx.createBufferSource()
+        src.buffer = click
+        src.connect(level)
+        src.start(when)
+        sources.push(src)
+        emits.push(Math.round(when * rate))
+      }
+      const listen = first + (CLICKS - 1) * CLICK_SPACING + MAX_ROUND_TRIP + 0.1 - ctx.currentTime
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, listen * 1000)
+        this.cancelTest = () => {
+          cancelled = true
+          clearTimeout(timer)
+          resolve()
+        }
+      })
+      if (cancelled) return undefined
+      const recording = await this.stop()
+      if (this.startFrame === undefined) return undefined
+      const roundTrip = findClicks(recording, rate, this.startFrame, emits)
+      if (roundTrip === undefined) return undefined
+      saveRoundTrip(roundTrip, this.setup)
+      this.latency = withMeasured(this.latency, roundTrip)
+      return roundTrip
+    } finally {
+      this.cancelTest = undefined
+      for (const src of sources) src.stop()
+      level.disconnect()
+      if (!cancelled) {
+        gain.cancelScheduledValues(ctx.currentTime)
+        gain.value = monitorLevel
+      }
     }
-    const listen = first + (CLICKS - 1) * CLICK_SPACING + MAX_ROUND_TRIP + 0.1 - ctx.currentTime
-    await new Promise((r) => setTimeout(r, listen * 1000))
-    const recording = await this.stop()
-    level.disconnect()
-    this.monitorGain.gain.value = monitorLevel
-    if (this.startFrame === undefined) return undefined
-    const roundTrip = findClicks(recording, rate, this.startFrame, emits)
-    if (roundTrip === undefined) return undefined
-    saveRoundTrip(roundTrip)
-    this.latency = withMeasured(this.latency, roundTrip)
-    return roundTrip
   }
 
   private take(samples: Float32Array) {
@@ -268,6 +296,7 @@ export class VoiceInput {
 
   /** Lets go of the microphone and disconnects everything. */
   close() {
+    this.cancelTest?.()
     this.stopped?.()
     this.levelListeners.clear()
     this.capture.port.onmessage = null

@@ -42,24 +42,39 @@ export function findClicks(
   let clickEnergy = 0
   for (const c of click) clickEnergy += c * c
   const span = Math.round(MAX_ROUND_TRIP * rate)
+  const length = click.length
+  // Running energy of the recording, so any window's is a subtraction.
+  const energies = new Float64Array(recording.length + 1)
+  for (let i = 0; i < recording.length; i++) energies[i + 1] = energies[i]! + recording[i]! ** 2
+  /** How well the window at `at` matches the click, -1 to 1; -1 where it is silent. */
+  const matchAt = (at: number) => {
+    const energy = energies[at + length]! - energies[at]!
+    if (energy <= 1e-12) return -1
+    let dot = 0
+    for (let i = 0; i < length; i++) dot += recording[at + i]! * click[i]!
+    return dot / Math.sqrt(energy * clickEnergy)
+  }
+  // A first pass every eighth of the click's period still lands within 23° of its peak (over 0.9
+  // of the match) for a fraction of the cost; an exact pass around the best then finds it.
+  const step = Math.max(1, Math.floor(rate / CLICK_HZ / 8))
   const delays: number[] = []
   for (const emit of emits) {
     const from = emit - start
-    if (from < 0) continue
+    const last = Math.min(span, recording.length - length - from)
+    if (from < 0 || last < 0) continue
+    let coarse = 0
+    let coarseMatch = -Infinity
+    for (let lag = 0; lag <= last; lag += step) {
+      const match = matchAt(from + lag)
+      if (match > coarseMatch) {
+        coarseMatch = match
+        coarse = lag
+      }
+    }
     let best = -1
     let bestMatch = MIN_MATCH
-    // A running sum of the window's energy, for the normalisation.
-    let energy = 0
-    for (let i = 0; i < click.length; i++) energy += (recording[from + i] ?? 0) ** 2
-    for (let lag = 0; lag <= span && from + lag + click.length <= recording.length; lag++) {
-      const at = from + lag
-      if (lag > 0) {
-        energy += (recording[at + click.length - 1] ?? 0) ** 2 - (recording[at - 1] ?? 0) ** 2
-      }
-      if (energy <= 1e-12) continue
-      let dot = 0
-      for (let i = 0; i < click.length; i++) dot += recording[at + i]! * click[i]!
-      const match = dot / Math.sqrt(energy * clickEnergy)
+    for (let lag = Math.max(0, coarse - step); lag <= Math.min(last, coarse + step); lag++) {
+      const match = matchAt(from + lag)
       if (match > bestMatch) {
         bestMatch = match
         best = lag
