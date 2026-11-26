@@ -2,10 +2,10 @@ import { evictDurableObject, runDurableObjectAlarm, runInDurableObject } from 'c
 import { env, exports } from 'cloudflare:workers'
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
-import { apply, type Origin, ROOTS, type Sound } from '../shared/board'
-import { isUploadId, newUploadId, UPLOAD_HEADERS, UPLOADS } from '../shared/sounds'
+import { apply, type Origin, ROOTS, type Sound, type Track } from '../shared/board'
+import { CLIPS, isUploadId, newUploadId, UPLOAD_HEADERS, UPLOADS } from '../shared/sounds'
 import { encodeWav } from '../shared/wav'
-import { SOUND_RETENTION_MS, soundKey } from '../worker/board'
+import { ORPHAN_CLIP_MS, SOUND_RETENTION_MS, soundKey } from '../worker/board'
 import { getServerByName } from 'partyserver'
 import { connectBoard, until } from './client'
 
@@ -30,9 +30,15 @@ const wav = (seconds = 0.5) =>
 
 function upload(
   slug: string,
-  opts: { body?: BodyInit; name?: string; ip?: string; headers?: Record<string, string> } = {},
+  opts: {
+    body?: BodyInit
+    name?: string
+    ip?: string
+    headers?: Record<string, string>
+    path?: 'sounds' | 'clips'
+  } = {},
 ) {
-  return fetchApp(`/api/jams/${slug}/sounds`, {
+  return fetchApp(`/api/jams/${slug}/${opts.path ?? 'sounds'}`, {
     method: 'POST',
     body: opts.body ?? wav(),
     headers: {
@@ -306,5 +312,193 @@ describe('retention', () => {
     expect(await env.SOUND_FILES.head(soundKey(slug, id))).not.toBeNull()
     await until(() => soundsOf(client.doc).has(id))
     client.close()
+  })
+})
+
+const clip = (slug: string, opts: Parameters<typeof upload>[1] = {}) =>
+  upload(slug, { name: 'Teal 1 · voice 1', ...opts, path: 'clips' })
+
+const ME: Origin = { kind: 'user', id: 'me' }
+
+const voiceTrack = (soundIds: string[]): Track => ({
+  name: 'Teal 1',
+  author: 'me',
+  color: 'teal',
+  bars: 1,
+  hits: [{ padId: 'r0c0', beat: 0 }, ...soundIds.map((soundId, i) => ({ soundId, beat: i + 1 }))],
+  gain: 1,
+  mute: false,
+  quantize: 0.25,
+  effects: [],
+})
+
+/** Makes every clip the room counts as unnamed look unnamed for over a minute already. */
+const backdateOrphans = (slug: string) =>
+  runInDurableObject(env.Board.getByName(slug), (instance) => {
+    const orphans = (instance as unknown as { orphans: Map<string, number> }).orphans
+    for (const id of orphans.keys()) orphans.set(id, Date.now() - ORPHAN_CLIP_MS - 1)
+    return [...orphans.keys()]
+  })
+
+const issued = (slug: string, id: string) =>
+  runInDurableObject(env.Board.getByName(slug), (_i, state) =>
+    state.storage.get<number>(`issued:${id}`),
+  )
+
+describe('voice clips', () => {
+  it('stores a clip as its own kind, served like any upload', async () => {
+    const slug = 'funky-otter-ck01'
+    const client = await connectBoard(slug)
+    const res = await clip(slug)
+    expect(res.status).toBe(201)
+    const { id, sound } = (await res.json()) as { id: string; sound: Sound }
+    expect(isUploadId(id)).toBe(true)
+    expect(sound).toMatchObject({ kind: 'clip', name: 'Teal 1 · voice 1', durationMs: 500 })
+    await until(() => soundsOf(client.doc).get(id)?.get('kind') === 'clip')
+    expect((await fetchApp(`/api/jams/${slug}/clips`)).status).toBe(404)
+    const file = await fetchApp(`/api/jams/${slug}/sounds/${id}`)
+    expect(file.status).toBe(200)
+    expect(new Uint8Array(await file.arrayBuffer())).toEqual(wav())
+    client.close()
+  })
+
+  it('refuses a clip that is not a WAV of the upload format', async () => {
+    const slug = 'funky-otter-ck02'
+    const res = await clip(slug, { body: encodeWav(new Float32Array(100), 48_000) })
+    expect(res.status).toBe(400)
+    expect((await env.SOUND_FILES.list({ prefix: `jams/${slug}/` })).objects).toEqual([])
+    expect((await clip(slug, { body: new Uint8Array(UPLOADS.maxBytes + 1) })).status).toBe(413)
+  })
+
+  // @scenario board/ops: Uploads don't fill clips
+  it(`counts clips apart from uploads, and refuses the ${CLIPS.perJam + 1}th clip`, async () => {
+    const slug = 'funky-otter-ck03'
+    const first = await upload(slug)
+    const { sound } = (await first.json()) as { sound: Sound }
+    // Listed in the room directly: that many real uploads outlast the test timeout on CI.
+    await runInDurableObject(env.Board.getByName(slug), (instance) => {
+      const doc = (instance as unknown as { document: Y.Doc }).document
+      const add = (s: Sound) => apply(doc, [{ op: 'addSound', id: newUploadId(), sound: s }], ROOM)
+      for (let i = 1; i < UPLOADS.perJam; i++) expect(add(sound)[0]?.ok).toBe(true)
+      for (let i = 0; i < 10; i++) expect(add({ ...sound, kind: 'clip' })[0]?.ok).toBe(true)
+    })
+    expect((await upload(slug)).status).toBe(409)
+    expect((await clip(slug)).status).toBe(201)
+
+    await runInDurableObject(env.Board.getByName(slug), (instance) => {
+      const doc = (instance as unknown as { document: Y.Doc }).document
+      for (let i = 11; i < CLIPS.perJam; i++) {
+        const [r] = apply(
+          doc,
+          [{ op: 'addSound', id: newUploadId(), sound: { ...sound, kind: 'clip' } }],
+          ROOM,
+        )
+        expect(r?.ok).toBe(true)
+      }
+    })
+    const res = await clip(slug)
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual({ error: `This jam already has ${CLIPS.perJam} voice clips` })
+  })
+
+  // @scenario collab/room: Many clips in one take
+  it('allows 30 clip writes a minute from one address, apart from upload writes', async () => {
+    const minute = () => Math.floor(Date.now() / 60_000)
+    for (let attempt = 0; ; attempt++) {
+      const ip = newAddress()
+      const start = minute()
+      // A take's worth at once, then up to the limit, then one over it.
+      const take = await Promise.all(
+        Array.from({ length: 15 }, () => clip('funky-otter-ck04', { ip })),
+      )
+      const rest = await Promise.all(
+        Array.from({ length: 15 }, () => clip('funky-otter-ck04', { ip })),
+      )
+      const over = await clip('funky-otter-ck04', { ip })
+      const uploaded = await upload('funky-otter-ck04', { ip })
+      if (minute() !== start && attempt === 0) continue
+      expect([...take, ...rest].map((r) => r.status)).toEqual(Array(30).fill(201))
+      expect(over.status).toBe(429)
+      expect(uploaded.status).toBe(201)
+      return
+    }
+  })
+
+  // @scenario collab/room: Track removed
+  it('frees clips a minute after the track naming them is removed', async () => {
+    const slug = 'funky-otter-ck05'
+    const client = await connectBoard(slug)
+    const ids: string[] = []
+    for (let i = 0; i < 3; i++) ids.push(((await (await clip(slug)).json()) as { id: string }).id)
+    const [a, b, kept] = ids as [string, string, string]
+    await until(() => ids.every((id) => soundsOf(client.doc).has(id)))
+    const added = apply(
+      client.doc,
+      [
+        { op: 'addTrack', id: 't1', track: voiceTrack([a, b]) },
+        { op: 'addTrack', id: 't2', track: voiceTrack([kept]) },
+      ],
+      ME,
+    )
+    expect(added.every((r) => r.ok)).toBe(true)
+    // Named by tracks: nothing is unnamed, so nothing is freed.
+    await until(async () => (await backdateOrphans(slug)).length === 0)
+    const stub = env.Board.getByName(slug)
+
+    expect(apply(client.doc, [{ op: 'removeTrack', id: 't1' }], ME)[0]?.ok).toBe(true)
+    await until(async () => (await backdateOrphans(slug)).length === 2)
+    expect(await runDurableObjectAlarm(stub)).toBe(true)
+    await until(() => !soundsOf(client.doc).has(a) && !soundsOf(client.doc).has(b))
+    for (const id of [a, b]) {
+      expect(await env.SOUND_FILES.head(soundKey(slug, id))).toBeNull()
+      expect(await issued(slug, id)).toBe(0)
+    }
+    expect(soundsOf(client.doc).has(kept)).toBe(true)
+    expect(await env.SOUND_FILES.head(soundKey(slug, kept))).not.toBeNull()
+    expect(await issued(slug, kept)).toBeGreaterThan(0)
+    client.close()
+  })
+
+  it('keeps a clip whose minute has not run out', async () => {
+    const slug = 'funky-otter-ck06'
+    const client = await connectBoard(slug)
+    const { id } = (await (await clip(slug)).json()) as { id: string }
+    await until(() => soundsOf(client.doc).has(id))
+    const stub = env.Board.getByName(slug)
+    const alarm = await runInDurableObject(stub, (_i, state) => state.storage.getAlarm())
+    expect(alarm).toBeLessThanOrEqual(Date.now() + ORPHAN_CLIP_MS)
+    expect(await runDurableObjectAlarm(stub)).toBe(true)
+    expect(soundsOf(client.doc).has(id)).toBe(true)
+    expect(await env.SOUND_FILES.head(soundKey(slug, id))).not.toBeNull()
+    // The track lands in time: the clip is named and stays.
+    apply(client.doc, [{ op: 'addTrack', id: 't1', track: voiceTrack([id]) }], ME)
+    await until(async () => (await backdateOrphans(slug)).length === 0)
+    client.close()
+  })
+
+  // @scenario collab/room: Track never added
+  it('frees a clip whose track was never added, even after the room was evicted', async () => {
+    const slug = 'funky-otter-ck07'
+    const client = await connectBoard(slug)
+    const { id } = (await (await clip(slug)).json()) as { id: string }
+    await until(() => soundsOf(client.doc).has(id))
+    client.close()
+    const stub = env.Board.getByName(slug)
+    await until(async () =>
+      runInDurableObject(stub, (instance) => [...instance.getConnections()].length === 0),
+    )
+    await runInDurableObject(stub, (instance) => instance.onSave())
+    // A minute passes with the room asleep: the stored times are all it has.
+    await runInDurableObject(stub, (_i, state) =>
+      state.storage.put('orphanClips', { [id]: Date.now() - ORPHAN_CLIP_MS - 1 }),
+    )
+    await evictDurableObject(stub)
+    expect(await runDurableObjectAlarm(stub)).toBe(true)
+    expect(await env.SOUND_FILES.head(soundKey(slug, id))).toBeNull()
+    expect(await issued(slug, id)).toBe(0)
+
+    const back = await connectBoard(slug)
+    expect(soundsOf(back.doc).has(id)).toBe(false)
+    back.close()
   })
 })
