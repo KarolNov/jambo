@@ -200,6 +200,11 @@ export class Engine {
     return !!this.ctx
   }
 
+  /** The live context once audio has started, for the voice service to capture and monitor in. */
+  get audioContext(): AudioContext | undefined {
+    return this.ctx && isLive(this.ctx) ? this.ctx : undefined
+  }
+
   /** Whether this client has agreed its clock with the jam; recording waits for it. */
   get synced() {
     return this.clock.synced

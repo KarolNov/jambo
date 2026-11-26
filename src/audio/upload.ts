@@ -34,24 +34,50 @@ export const defaultName = (fileName: string) =>
     .replace(/[\uD800-\uDBFF]$/, '') || 'Sound'
 
 /**
- * Turns a picked file into what the room stores: decoded and resampled to the upload rate, mixed
- * down to mono, trimmed of silence at both ends, levelled to −1 dBFS, as 16-bit WAV.
+ * Turns a picked file into what the room stores: decoded and resampled to the upload rate, then
+ * `prepareBuffer`'s trim, level and WAV.
  */
 export async function prepareSample(file: Blob): Promise<Prepared> {
   if (file.size > UPLOADS.maxFileBytes) throw new UploadError('That file is too big (over 20 MB)')
-  const rate = UPLOADS.sampleRate
   let decoded: AudioBuffer
   try {
     // An offline context at the upload rate decodes straight to that rate.
-    decoded = await new OfflineAudioContext(1, 1, rate).decodeAudioData(await file.arrayBuffer())
+    decoded = await new OfflineAudioContext(1, 1, UPLOADS.sampleRate).decodeAudioData(
+      await file.arrayBuffer(),
+    )
   } catch {
     throw new UploadError("That isn't a sound file this browser can read")
   }
-  const channels = Array.from({ length: decoded.numberOfChannels }, (_, i) =>
-    decoded.getChannelData(i),
-  )
+  return prepareBuffer(decoded, 'file')
+}
+
+/** `buffer` at the upload rate: as it is when it already is, else resampled by an offline render. */
+async function atUploadRate(buffer: AudioBuffer): Promise<AudioBuffer> {
+  const rate = UPLOADS.sampleRate
+  if (buffer.sampleRate === rate) return buffer
+  const frames = Math.max(1, Math.round((buffer.length * rate) / buffer.sampleRate))
+  const ctx = new OfflineAudioContext(buffer.numberOfChannels, frames, rate)
+  const src = ctx.createBufferSource()
+  src.buffer = buffer
+  src.connect(ctx.destination)
+  src.start()
+  return ctx.startRendering()
+}
+
+/**
+ * Turns decoded or rendered audio (a picked file, a voice recording) into what the room stores:
+ * at the upload rate, mixed down to mono, trimmed of silence at both ends, levelled to −1 dBFS,
+ * as 16-bit WAV. `what` names it in the errors.
+ */
+export async function prepareBuffer(
+  buffer: AudioBuffer,
+  what: 'file' | 'recording' = 'file',
+): Promise<Prepared> {
+  const rate = UPLOADS.sampleRate
+  const audio = await atUploadRate(buffer)
+  const channels = Array.from({ length: audio.numberOfChannels }, (_, i) => audio.getChannelData(i))
   const trimmed = trimSilence(mixDown(channels), rate)
-  if (trimmed.length === 0) throw new UploadError('That file is silent')
+  if (trimmed.length === 0) throw new UploadError(`That ${what} is silent`)
   const seconds = trimmed.length / rate
   if (seconds > UPLOADS.maxSeconds)
     throw new UploadError(

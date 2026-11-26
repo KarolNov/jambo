@@ -171,6 +171,45 @@
   color: var(--accent);
 }
 
+/* Recording a voice in the upload dialog */
+:root[data-theme] .console-sounds .voice-recorder {
+  display: grid;
+  gap: 12px;
+}
+:root[data-theme] .console-sounds .voice-settings,
+:root[data-theme] .console-sounds .voice-take {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+:root[data-theme] .console-sounds .voice-preset {
+  font-weight: 700;
+}
+:root[data-theme] .console-sounds .voice-hint {
+  margin: 0;
+}
+/* The input level: a well that lights from the left */
+:root[data-theme] .console-sounds .voice-meter {
+  flex: 1;
+  min-width: 80px;
+  max-width: 200px;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: var(--inset-sm);
+}
+:root[data-theme] .console-sounds .voice-meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent-2);
+  transform-origin: left;
+}
+:root[data-theme] .console-sounds .voice-time {
+  font-variant-numeric: tabular-nums;
+}
+
 /* The upload dialog and uploads list use plain buttons: give them the soft look here, at zero
    specificity so ui-kit controls keep theirs. */
 :where(.console-sounds) button {

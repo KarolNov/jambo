@@ -18,6 +18,7 @@ import {
 } from '../audio/upload'
 import { padsAtom, soundsAtom } from './model'
 import type { JamSession } from './doc'
+import { Recorder } from './Recorder'
 import { useSession } from './session'
 
 /** Where a new upload goes once it is listed: onto a pad, in place of another upload, or nowhere. */
@@ -25,6 +26,12 @@ export type UploadTarget =
   | { kind: 'pad'; padId: string }
   | { kind: 'replace'; soundId: string }
   | { kind: 'list' }
+
+/** Where the dialog's sound comes from: a picked file, the microphone, or not chosen yet. */
+export type UploadSource = { kind: 'file'; file: File } | { kind: 'record' }
+
+/** The name a recording starts with. */
+const RECORDING_NAME = 'Voice'
 
 let budget: Budget = { uploads: 'open', reads: 'open' }
 const budgetListeners = new Set<() => void>()
@@ -138,30 +145,41 @@ async function removeWhenFree(slug: string, id: string) {
 }
 
 /**
- * Prepares a picked file, lets the person name it, uploads it, and puts it where it was asked
- * for. Shown inline under the pads while it runs.
+ * Gets a sound for the jam, lets the person name it, uploads it, and puts it where it was asked
+ * for. It opens on the choice of a file or a recording; a picked file is prepared at once, and a
+ * recording once it stops. Shown inline under the pads while it runs.
  */
 export function UploadDialog({
   slug,
-  file,
+  source,
   target,
+  onChooseFile,
+  onRecord,
   onClose,
 }: {
   slug: string
-  file: File
+  /** Undefined until the person picks a file or Record. */
+  source?: UploadSource
   target: UploadTarget
+  /** Opens the file picker: call it within the click. */
+  onChooseFile: () => void
+  onRecord: () => void
   onClose: () => void
 }) {
   const { engine, board, jam, me } = useSession()
   const sounds = useAtomValue(soundsAtom)
   const [prepared, setPrepared] = useState<Prepared>()
-  const [name, setName] = useState(() => defaultName(file.name))
+  const [name, setName] = useState(() =>
+    source?.kind === 'file' ? defaultName(source.file.name) : RECORDING_NAME,
+  )
   const [error, setError] = useState<string>()
   const [busy, setBusy] = useState(false)
   // The upload this dialog already stored, so trying again after a later step fails doesn't store it twice.
   const uploaded = useRef<string>(undefined)
 
+  const file = source?.kind === 'file' ? source.file : undefined
   useEffect(() => {
+    if (!file) return
     let live = true
     prepareSample(file).then(
       (p) => live && setPrepared(p),
@@ -204,23 +222,10 @@ export function UploadDialog({
     }
   }
 
-  return (
-    <form className="upload-dialog" onSubmit={submit} aria-label="Upload a sound">
-      <p className="upload-title">
-        {replacing ? `Replace ${replacing.name}` : 'Upload a sound'}
-        {prepared && <span className="muted"> · {seconds(prepared.durationMs)}</span>}
-        {!prepared && !error && <span className="muted"> · preparing…</span>}
-      </p>
-      <label>
-        Name{' '}
-        <input
-          value={name}
-          maxLength={40}
-          onChange={(e) => setName(e.target.value)}
-          disabled={busy}
-          autoFocus
-        />
-      </label>
+  const title = replacing ? `Replace ${replacing.name}` : 'Upload a sound'
+  const blocked = full || (paused && !uploaded.current)
+  const notices = (
+    <>
       {full && <p className="message">This jam already has {UPLOADS.perJam} sounds</p>}
       {error && (
         <p className="message" role="alert">
@@ -228,12 +233,58 @@ export function UploadDialog({
         </p>
       )}
       {!error && <PausedNotice />}
+    </>
+  )
+
+  if (!source)
+    return (
+      <form
+        className="upload-dialog"
+        aria-label="Upload a sound"
+        onSubmit={(e) => e.preventDefault()}
+      >
+        <p className="upload-title">{title}</p>
+        <p className="muted">Choose a sound file, or record your voice.</p>
+        {notices}
+        <div className="upload-actions">
+          <button type="button" onClick={onChooseFile} disabled={blocked}>
+            Choose a file…
+          </button>
+          <button type="button" onClick={onRecord} disabled={blocked}>
+            Record
+          </button>
+          <button type="button" className="link" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    )
+
+  const recording = source.kind === 'record'
+  return (
+    <form className="upload-dialog" onSubmit={submit} aria-label="Upload a sound">
+      <p className="upload-title">
+        {title}
+        {prepared && <span className="muted"> · {seconds(prepared.durationMs)}</span>}
+        {!recording && !prepared && !error && <span className="muted"> · preparing…</span>}
+      </p>
+      {recording && <Recorder onPrepared={setPrepared} disabled={busy} />}
+      {(!recording || prepared) && (
+        <label>
+          Name{' '}
+          <input
+            value={name}
+            maxLength={40}
+            onChange={(e) => setName(e.target.value)}
+            disabled={busy}
+            autoFocus={!recording}
+          />
+        </label>
+      )}
+      {notices}
       <div className="upload-actions">
-        <button
-          type="submit"
-          disabled={!prepared || busy || full || (paused && !uploaded.current) || !name.trim()}
-        >
-          {busy ? 'Uploading…' : replacing ? 'Replace' : 'Upload'}
+        <button type="submit" disabled={!prepared || busy || blocked || !name.trim()}>
+          {busy ? 'Uploading…' : replacing ? 'Replace' : recording ? 'Keep' : 'Upload'}
         </button>
         <button type="button" className="link" onClick={onClose} disabled={busy}>
           Cancel
