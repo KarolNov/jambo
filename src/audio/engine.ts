@@ -19,7 +19,9 @@ import {
   nextJamBar,
   repeatSlice,
   type Sounding,
+  sungBeat,
   swingDelay,
+  takeBars,
   trackStart,
 } from '../../shared/looper'
 import type { JamClock } from './clock'
@@ -36,6 +38,9 @@ import { MASTER_SOUND_DEFAULTS, MasterChain, type MasterSound } from './master'
 import type { SampleLoader } from './samples'
 import { click, renderKit } from './synth'
 import { keepAwake, preferPlayback } from './session'
+import type { Key } from './voice/dsp/tune'
+import { MAX_SECONDS, VoiceInput } from './voice/input'
+import type { PresetId } from './voice/presets'
 
 const LOOKAHEAD = 0.12 // seconds of audio scheduled ahead
 const TICK_MS = 25
@@ -48,6 +53,12 @@ const RELEASE_MS = 100
 const EDGE_MS = 1e-3
 /** How long a repeat fades out at its slice's end, in seconds, so the cut doesn't click. */
 const REPEAT_FADE = 0.004
+/**
+ * How long a voice clip keeps recording after Sing is let go, on top of the microphone's own
+ * delay, in seconds: the last note rings on as people let go, and what was sung just before
+ * reaches the context only after that delay. Trailing silence is trimmed before the clip is kept.
+ */
+export const SING_TAIL = 0.25
 
 /**
  * A stretch of beat repeat, from jam beat `at` until the next one's: off, or repeating the loops'
@@ -83,6 +94,39 @@ export type RecorderState =
       /** The jam bar the take begins on (`recordStart`'s bar). */
       recordBar: number
     }
+
+/** A voice clip in the take so far, in take beats; `end` grows while it is still being sung. */
+export interface TakeClip {
+  start: number
+  end: number
+}
+
+/**
+ * A voice clip as sung, before it is rendered and stored: the raw microphone at `rate`, the take
+ * beat its first sample was sung on (latency-corrected, never quantized), and the preset and key
+ * it renders through.
+ */
+export interface SungClip {
+  samples: Float32Array
+  rate: number
+  beat: number
+  preset: PresetId
+  key: Key
+}
+
+/** How a Sing hold records: through which preset and key, and whether the singer monitors it. */
+export interface SingOptions {
+  preset: PresetId
+  key: Key
+  monitor: boolean
+}
+
+/** A Sing hold in progress: what it records through, and its clip once the microphone runs. */
+interface Hold extends SingOptions {
+  take: number
+  recordStart: number
+  mark?: { start: number; end?: number }
+}
 
 /** What a hit plays: a pad, or a sound by id. */
 type Target = { padId: string } | { soundId: string }
@@ -182,6 +226,19 @@ export class Engine {
   private takeBpm?: number
   private recorder: RecorderState = { phase: 'idle' }
   private takeHits: Hit[] = []
+  /** Counts takes, so a Sing hold that outlives its take does nothing. */
+  private takeCount = 0
+  /** The microphone, opened by the take's first Sing and closed when the take ends. */
+  private voice?: Promise<VoiceInput>
+  /** The Sing hold in progress, if any. */
+  private hold?: Hold
+  /** The take's clips: their marks for the lane, and each one's capture once its hold ends. */
+  private clips: { mark: { start: number; end?: number }; done: Promise<SungClip | undefined> }[] =
+    []
+  /** The last clip's capture: the next one waits for it, since they share the microphone. */
+  private lastClip: Promise<unknown> = Promise.resolve()
+  /** Ends the last clip's tail early, so a new Sing pressed during it starts at once. */
+  private cutTail?: () => void
   /** While it is on, the metronome clicks every beat of a take. */
   metronome = loadMetronome()
   private listeners = new Set<() => void>()
@@ -272,6 +329,7 @@ export class Engine {
     this.hitTimers.clear()
     this.hitListeners.clear()
     this.unsubscribeClock()
+    this.closeVoice()
     this.samples.dispose()
     if (this.ctx && isLive(this.ctx)) void this.ctx.close()
   }
@@ -574,6 +632,7 @@ export class Engine {
     const earliest = Math.max(this.scheduledUntil, audioToRoom(ctx.currentTime + 0.05, this.shift!))
     const countBar = nextJamBar(earliest, this.bpm)
     this.takeHits = []
+    this.takeCount++
     this.recorder = {
       phase: 'waiting',
       countStart: barStart(countBar, this.bpm),
@@ -585,23 +644,166 @@ export class Engine {
   }
 
   /**
-   * Ends the take. Returns the new track's bars, hits and jam start bar, or null when it is empty
-   * or stopped before recording began. The caller adds the track and claims it with `claim`.
+   * Ends the take, and a clip still being sung with it. Returns the new track's bars, pad hits, jam
+   * start bar and tempo, and, when anything was sung, its voice clips once they finish
+   * capturing; or null when it has neither hits nor clips or was stopped before recording began. The
+   * caller stores the clips, adds the track and claims it with `claim`.
    */
-  stop(): { bars: number; hits: Hit[]; startBar: number } | null {
+  stop(): {
+    bars: number
+    hits: Hit[]
+    startBar: number
+    bpm: number
+    clips?: Promise<SungClip[]>
+  } | null {
     const rec = this.recorder
+    this.singEnd()
+    const clips = this.endClips()
     this.recorder = { phase: 'idle' }
     this.emit()
     const now = this.heardNow()
     if (rec.phase === 'idle' || now === undefined) return null
     const elapsedBeats = (now - rec.recordStart) / (barMs(this.bpm) / BEATS_PER_BAR)
-    const take = elapsedBeats > 0 ? finishTake(this.takeHits, elapsedBeats) : null
+    const sang = clips.count > 0
+    const take =
+      elapsedBeats <= 0
+        ? null
+        : (finishTake(this.takeHits, elapsedBeats) ??
+          (sang ? { bars: takeBars(elapsedBeats), hits: [] } : null))
+    const bpm = this.bpm
     this.takeBpm = this.bpm
     // A tempo change that arrived during the take applies now.
     this.bpm = this.boardBpm
     this.syncEcho()
     this.syncThrow()
-    return take && { ...take, startBar: rec.recordBar }
+    return take && { ...take, startBar: rec.recordBar, bpm, ...(sang ? { clips: clips.done } : {}) }
+  }
+
+  /**
+   * Starts a voice clip, from now until `singEnd` and its tail, while a take is recording. The
+   * microphone opens with the take (`warmVoice`); if it isn't open yet, this opens it, asking the
+   * first time. Throws a `MicError` when the microphone
+   * can't be had. Does nothing between takes, or while a clip is already being sung.
+   */
+  async sing(options: SingOptions): Promise<void> {
+    const ctx = this.audioContext
+    const rec = this.recorder
+    if (!ctx || rec.phase !== 'recording' || this.hold) return
+    const hold: Hold = { ...options, take: this.takeCount, recordStart: rec.recordStart }
+    this.hold = hold
+    this.emit()
+    let voice: VoiceInput
+    try {
+      const opening = (this.voice ??= VoiceInput.open(ctx))
+      opening.catch(() => {
+        if (this.voice === opening) this.voice = undefined
+      })
+      voice = await opening
+      // Clips share the microphone: the last one must have finished before this one starts, so a
+      // new press ends its tail.
+      this.cutTail?.()
+      await this.lastClip
+    } catch (e) {
+      if (this.hold === hold) this.hold = undefined
+      this.emit()
+      throw e
+    }
+    // Let go, or the take ended, while the microphone opened.
+    if (this.hold !== hold || hold.take !== this.takeCount) return
+    void voice.monitor(hold.monitor, hold.preset, hold.key)
+    voice.start()
+    const start = this.take()?.beat ?? 0
+    hold.mark = { start }
+    this.emit()
+  }
+
+  /**
+   * Opens the microphone as a take starts, so its first Sing starts at once rather than losing its
+   * first moments to the microphone starting up; the browser asks for it here the first time. It
+   * closes when the take ends. Resolves once it is open; rejects with a `MicError` when it can't be
+   * had, after which Sing tries again. Does nothing between takes or once it is open.
+   */
+  async warmVoice(): Promise<void> {
+    const ctx = this.audioContext
+    if (!ctx || this.recorder.phase === 'idle') return
+    if (this.voice) return void (await this.voice)
+    const opening = (this.voice = VoiceInput.open(ctx))
+    opening.catch(() => {
+      if (this.voice === opening) this.voice = undefined
+    })
+    await opening
+  }
+
+  /** Whether a Sing hold is in progress. */
+  get singing() {
+    return this.hold !== undefined
+  }
+
+  /** Ends the clip being sung, if any. */
+  singEnd() {
+    const hold = this.hold
+    if (!hold) return
+    this.hold = undefined
+    this.emit()
+    const opening = this.voice
+    const mark = hold.mark
+    if (!opening || !mark) return
+    mark.end = this.take()?.beat ?? mark.start
+    const bpm = this.bpm
+    const done = opening.then(async (voice): Promise<SungClip | undefined> => {
+      void voice.monitor(false, hold.preset, hold.key)
+      await this.tail(voice.latency.input + SING_TAIL)
+      const samples = await voice.stop()
+      const at = voice.startedAt
+      const shift = this.shift
+      if (at === undefined || shift === undefined || samples.length === 0) return undefined
+      const beat = sungBeat(at, voice.latency.roundTrip, shift, hold.recordStart, bpm)
+      // The lane moves the clip to where it was sung, as long as it was captured.
+      mark.start = beat
+      mark.end = beat + samples.length / voice.sampleRate / beatSeconds(bpm)
+      this.emit()
+      const { preset, key } = hold
+      return { samples, rate: voice.sampleRate, beat, preset, key }
+    })
+    this.lastClip = done.catch(() => undefined)
+    this.clips.push({ mark, done })
+  }
+
+  /** Waits `seconds`, unless the next Sing cuts it short. */
+  private tail(seconds: number): Promise<void> {
+    return new Promise((resolve) => {
+      const end = () => {
+        clearTimeout(timer)
+        if (this.cutTail === end) this.cutTail = undefined
+        resolve()
+      }
+      const timer = setTimeout(end, seconds * 1000)
+      this.cutTail = end
+    })
+  }
+
+  /** Hands over the take's clips as they finish capturing, then lets go of the microphone. */
+  private endClips(): { count: number; done: Promise<SungClip[]> } {
+    const clips = this.clips
+    this.clips = []
+    const done = Promise.all(clips.map((c) => c.done.catch(() => undefined))).then((sung) =>
+      sung.filter((c) => c !== undefined),
+    )
+    const opening = this.voice
+    this.voice = undefined
+    void done.finally(
+      () =>
+        void opening?.then(
+          (v) => v.close(),
+          () => undefined,
+        ),
+    )
+    return { count: clips.length, done }
+  }
+
+  private closeVoice() {
+    this.hold = undefined
+    void this.endClips()
   }
 
   /** Turns the metronome on or off; remembered in this browser. */
@@ -633,13 +835,23 @@ export class Engine {
 
   /**
    * The take so far, as heard: `beat` counts from its first beat (negative before it, during the
-   * count-in) and `hits` are those played so far, unsnapped. Undefined between takes.
+   * count-in), `hits` are those played so far, unsnapped, and `clips` the voice clips sung so far,
+   * the one being sung ending now (at most `MAX_SECONDS` long). Undefined between takes.
    */
-  take(): { beat: number; hits: readonly Hit[] } | undefined {
+  take(): { beat: number; hits: readonly Hit[]; clips: TakeClip[] } | undefined {
     const rec = this.recorder
     const now = this.heardNow()
     if (rec.phase === 'idle' || now === undefined) return undefined
-    return { beat: (now - rec.recordStart) / (beatSeconds(this.bpm) * 1000), hits: this.takeHits }
+    const beatMs = beatSeconds(this.bpm) * 1000
+    const beat = (now - rec.recordStart) / beatMs
+    const longest = (MAX_SECONDS * 1000) / beatMs
+    const marks = this.clips.map((c) => c.mark)
+    if (this.hold?.mark) marks.push(this.hold.mark)
+    const clips = marks.map((m) => ({
+      start: m.start,
+      end: Math.min(m.start + longest, m.end ?? beat),
+    }))
+    return { beat, hits: this.takeHits, clips }
   }
 
   /** For the `?debug` readout: the next downbeat, in room ms. */

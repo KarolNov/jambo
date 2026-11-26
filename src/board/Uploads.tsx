@@ -18,6 +18,7 @@ import {
 } from '../audio/upload'
 import { padsAtom, soundsAtom, tracksAtom, uploadsAtom } from './model'
 import type { JamSession } from './doc'
+import { listed } from './listed'
 import { Recorder } from './Recorder'
 import { useSession } from './session'
 
@@ -122,23 +123,6 @@ export function useFilePicker(onFile: (file: File) => void) {
     />
   )
   return { element, open: () => input.current?.click() }
-}
-
-/** Resolves once the board lists `id` as a readable sound, so pads can be assigned to it. */
-function listed(store: JamSession['store'], id: string, timeout = 10_000): Promise<void> {
-  if (store.get(soundsAtom).has(id)) return Promise.resolve()
-  return new Promise((resolve, reject) => {
-    const stop = store.sub(soundsAtom, () => {
-      if (!store.get(soundsAtom).has(id)) return
-      stop()
-      clearTimeout(timer)
-      resolve()
-    })
-    const timer = setTimeout(() => {
-      stop()
-      reject(new UploadError('The upload is stored but has not reached this board yet'))
-    }, timeout)
-  })
 }
 
 /** Removes an upload, waiting briefly for pad changes made here to reach the room first. */

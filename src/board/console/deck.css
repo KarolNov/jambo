@@ -205,3 +205,34 @@
     font-size: 11px;
   }
 }
+
+/* Sing: held while a take records; the preset it sings through beside it. */
+:root[data-theme] .console-sing {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+:root[data-theme] .console-sing-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+:root[data-theme] .console-sing-button {
+  flex: 1;
+  /* A hold on touch neither scrolls nor selects. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+:root[data-theme] .console-sing-button[aria-pressed='true'] {
+  color: var(--accent);
+}
+:root[data-theme] .console-sing .console-hint {
+  margin: 0;
+  text-align: left;
+}
+:root[data-theme] .console-take-lane .console-clip {
+  top: 5px;
+  bottom: 5px;
+}

@@ -2,6 +2,7 @@ import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai'
 import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react'
 import {
   BEATS_PER_BAR,
+  isSoundHit,
   SOUND_KNOB_NAMES,
   SOUND_KNOBS,
   soundOf,
@@ -9,11 +10,18 @@ import {
 } from '../../../shared/board'
 import { Button, type Holder, IconButton, Knob, Range, Select } from '../../ui'
 import { useSwatch } from '../colors'
-import { tracksAtom } from '../model'
+import { bpmAtom, soundsAtom, tracksAtom } from '../model'
 import { controlKey, holdControl, type Person, useHolders } from '../presence'
 import { useSession } from '../session'
 import { AiMark } from './AiMark'
-import { beatPosition, loopSummary, SNAP_OPTIONS, SOUND_READOUTS, soundChanged } from './loops'
+import {
+  beatPosition,
+  clipBar,
+  loopSummary,
+  SNAP_OPTIONS,
+  SOUND_READOUTS,
+  soundChanged,
+} from './loops'
 import { byAgent, personName } from './people'
 import './mixer.css'
 
@@ -77,6 +85,8 @@ function Channel({
   const row = useRef<HTMLLIElement>(null)
   usePlayhead(id, row)
   const swatch = useSwatch()
+  const sounds = useAtomValue(soundsAtom)
+  const bpm = useAtomValue(bpmAtom)
   const [openStrips, setOpenStrips] = useAtom(openStripsAtom)
   const open = openStrips.has(id)
   const toggle = () =>
@@ -142,13 +152,23 @@ function Channel({
             style={{ left: beatPosition(b, track.bars) }}
           />
         ))}
-        {track.hits.map((h, i) => (
-          <span
-            key={i}
-            className="console-hit"
-            style={{ left: beatPosition(h.beat, track.bars) }}
-          />
-        ))}
+        {track.hits.map((h, i) => {
+          // A sound hit shows how long it sounds, when the jam lists its sound.
+          const ms = isSoundHit(h) ? sounds.get(h.soundId)?.durationMs : undefined
+          return ms === undefined ? (
+            <span
+              key={i}
+              className="console-hit"
+              style={{ left: beatPosition(h.beat, track.bars) }}
+            />
+          ) : (
+            <span
+              key={i}
+              className="console-clip"
+              style={clipBar(h.beat, h.beat + ms / (60_000 / bpm), track.bars)}
+            />
+          )
+        })}
         <span className="console-head" />
       </div>
       <Range

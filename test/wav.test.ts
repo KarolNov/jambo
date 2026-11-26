@@ -7,6 +7,7 @@ import {
   normalise,
   parseUploadWav,
   PEAK,
+  soundBounds,
   trimSilence,
 } from '../shared/wav'
 
@@ -93,6 +94,14 @@ describe('sample preparation', () => {
     expect(trimmed.length).toBeGreaterThan(sound.length - 10)
     expect(trimmed.length).toBeLessThanOrEqual(sound.length + lead)
     expect(trimSilence(silence, RATE).length).toBe(0)
+  })
+
+  it('says where the kept sound starts, so a trimmed clip can stay in time', () => {
+    const lead = Math.round(LEAD_SECONDS * RATE)
+    const padded = new Float32Array(RATE)
+    padded.fill(0.5, 4410, 8820)
+    expect(soundBounds(padded, RATE)).toEqual([4410 - lead, 8820])
+    expect(soundBounds(new Float32Array(10), RATE)).toEqual([0, 0])
   })
 
   it('trims relative to the peak, so a quiet recording keeps its tail', () => {

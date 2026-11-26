@@ -296,3 +296,14 @@
     gap: 12px;
   }
 }
+/* A voice clip on a lane: a bar from where it starts to where it ends. */
+:root[data-theme] .console-clip {
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  min-width: 5px;
+  margin-left: -2px;
+  border-radius: 3px;
+  background: var(--c);
+  opacity: 0.7;
+}
