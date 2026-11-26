@@ -4,7 +4,7 @@
     "shared/board/schema.ts": {
       "distance": 1,
       "via": [],
-      "hash": "7886b4b9587a",
+      "hash": "5e247e43d149",
       "whole": false
     },
     "shared/colors.ts": {
@@ -29,10 +29,17 @@
   "symbols": [
     {
       "file": "shared/board/schema.ts",
+      "symbol": "SOUND_KINDS",
+      "distance": 1,
+      "via": [],
+      "hash": "2ef4cf1d8129"
+    },
+    {
+      "file": "shared/board/schema.ts",
       "symbol": "Sound",
       "distance": 1,
       "via": [],
-      "hash": "62aa4d8899c9"
+      "hash": "678d3dc0068d"
     },
     {
       "file": "shared/colors.ts",

@@ -4,13 +4,13 @@
     "shared/board/ops.ts": {
       "distance": 1,
       "via": [],
-      "hash": "d2e65d68810d",
+      "hash": "15183686f8db",
       "whole": false
     },
     "shared/board/schema.ts": {
       "distance": 1,
       "via": [],
-      "hash": "13beadab62e6",
+      "hash": "5e247e43d149",
       "whole": false
     },
     "shared/board/sdk.ts": {
@@ -28,7 +28,7 @@
     "shared/looper.ts": {
       "distance": 1,
       "via": [],
-      "hash": "71acfbb0dc25",
+      "hash": "8c718b44be19",
       "whole": false
     },
     "shared/names.ts": {
@@ -52,13 +52,13 @@
     "shared/sounds.ts": {
       "distance": 1,
       "via": [],
-      "hash": "d0aeb2d77590",
+      "hash": "166166663e0a",
       "whole": false
     },
     "shared/wav.ts": {
       "distance": 1,
       "via": [],
-      "hash": "bd5840f52c3f",
+      "hash": "c6bb017b18f8",
       "whole": false
     },
     "shared/words.ts": {
@@ -88,7 +88,7 @@
       "symbol": "Op",
       "distance": 1,
       "via": [],
-      "hash": "a43c811a0843"
+      "hash": "a47a64bf5355"
     },
     {
       "file": "shared/board/ops.ts",
@@ -186,7 +186,7 @@
       "symbol": "Hit",
       "distance": 1,
       "via": [],
-      "hash": "2fc556788ce6"
+      "hash": "61340eb4c3ef"
     },
     {
       "file": "shared/board/schema.ts",
@@ -295,6 +295,13 @@
     },
     {
       "file": "shared/board/schema.ts",
+      "symbol": "SOUND_KINDS",
+      "distance": 1,
+      "via": [],
+      "hash": "2ef4cf1d8129"
+    },
+    {
+      "file": "shared/board/schema.ts",
       "symbol": "SOUND_KNOBS",
       "distance": 1,
       "via": [],
@@ -312,7 +319,14 @@
       "symbol": "Sound",
       "distance": 1,
       "via": [],
-      "hash": "62aa4d8899c9"
+      "hash": "678d3dc0068d"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "SoundKind",
+      "distance": 1,
+      "via": [],
+      "hash": "a9516e044400"
     },
     {
       "file": "shared/board/schema.ts",
@@ -334,6 +348,13 @@
       "distance": 1,
       "via": [],
       "hash": "24a62fa4a615"
+    },
+    {
+      "file": "shared/board/schema.ts",
+      "symbol": "kindOf",
+      "distance": 1,
+      "via": [],
+      "hash": "e1c324e58f29"
     },
     {
       "file": "shared/board/schema.ts",
@@ -586,6 +607,13 @@
       "distance": 1,
       "via": [],
       "hash": "af505427631f"
+    },
+    {
+      "file": "shared/sounds.ts",
+      "symbol": "SOUND_IDS",
+      "distance": 1,
+      "via": [],
+      "hash": "1c260188164a"
     },
     {
       "file": "shared/sounds.ts",

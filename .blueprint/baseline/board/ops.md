@@ -36,7 +36,7 @@ A tempo change SHALL be refused while the jam has tracks. Only tracks that pass 
 
 ### Requirement: Track limits
 
-A jam SHALL hold at most 32 readable tracks. A track SHALL have 1 to 16 bars, 1 to 512 hits that all fall inside its loop, a name of 1 to 40 characters after trimming, a level from 0 to 1.5, a snap of off, 1/32, 1/16, 1/8 or 1/4, no effects, and optionally a reverb and an echo from 0 to 1, a tone and a pan from -1 to 1, and a pitch of a whole number of semitones from -12 to 12.
+A jam SHALL hold at most 32 readable tracks. A track SHALL have 1 to 16 bars, 1 to 512 hits that all fall inside its loop, each naming a pad or a sound from the kit or the jam's listed uploads and clips, a name of 1 to 40 characters after trimming, a level from 0 to 1.5, a snap of off, 1/32, 1/16, 1/8 or 1/4, no effects, and optionally a reverb and an echo from 0 to 1, a tone and a pan from -1 to 1, and a pitch of a whole number of semitones from -12 to 12.
 
 - **Scenario: Hit outside the loop**
   - **WHEN** an operation adds a one-bar track with a hit on beat 4
@@ -48,10 +48,13 @@ A jam SHALL hold at most 32 readable tracks. A track SHALL have 1 to 16 bars, 1 
 - **Scenario: Pitch out of range**
   - **WHEN** an operation sets a track's pitch to 13, or to 2.5
   - **THEN** it is refused and the track keeps its pitch
+- **Scenario: Hit on an unlisted sound**
+  - **WHEN** an operation adds a track with a hit naming the sound `u-aaaaaaaaaaaa`, which the jam doesn't list
+  - **THEN** it is refused and no track is added
 
 ### Requirement: Pad sounds from the kit or uploads
 
-Assigning a sound SHALL need an existing pad and a sound from the kit or one of the jam's listed uploads.
+Assigning a sound SHALL need an existing pad and a sound from the kit or one of the jam's listed uploads. A clip SHALL NOT be assignable to a pad.
 
 - **Scenario: Unknown sound**
   - **WHEN** an operation assigns the sound `kik` to a pad
@@ -60,37 +63,53 @@ Assigning a sound SHALL need an existing pad and a sound from the kit or one of 
   - **GIVEN** a jam listing the upload `u-abc123def456`
   - **WHEN** an operation assigns it to a pad
   - **THEN** the pad's sound changes
+- **Scenario: Clip on a pad**
+  - **GIVEN** a jam listing a clip
+  - **WHEN** an operation assigns it to a pad
+  - **THEN** it is refused and the pad keeps its sound
 
 ### Requirement: Upload list
 
-Only the room SHALL add, remove or expire uploads; the same operations from anyone else SHALL be refused. Adding an upload SHALL need a new upload-form id and room in the jam (at most 32). Removing one SHALL be refused while any pad names it, including a pad that does not pass the schema. Expiring SHALL remove every upload from the list.
+Only the room SHALL add, remove or expire uploads and clips; the same operations from anyone else SHALL be refused. Adding one SHALL need a new upload-form id and room in the jam: at most 32 uploads and, separately, at most 64 clips. Removing one SHALL be refused while any pad or any track's hit names it, including a pad or track that does not pass the schema. Expiring SHALL remove every upload and clip from the list.
 
 - **Scenario: Remove in use**
   - **GIVEN** an upload on one pad
   - **WHEN** an operation removes it
   - **THEN** it is refused and the upload stays
+- **Scenario: Remove a clip a track names**
+  - **GIVEN** a clip named by a hit in one track
+  - **WHEN** an operation removes it
+  - **THEN** it is refused and the clip stays
 - **Scenario: Kit id**
   - **WHEN** an operation adds an upload with the id `kick`
   - **THEN** it is refused
 - **Scenario: Not the room**
   - **WHEN** a client, not the room, applies an operation that adds an upload
   - **THEN** it is refused and the upload list is unchanged
+- **Scenario: Uploads don't fill clips**
+  - **GIVEN** a jam with 32 uploads and 10 clips
+  - **WHEN** the room adds a clip
+  - **THEN** it is listed
 
 ### Requirement: Replace a sound
 
-Moving every pad from one sound to another SHALL be one operation. The new sound SHALL be from the kit or one of the jam's listed uploads; otherwise the operation SHALL be refused and no pad SHALL change.
+Moving every pad and every track hit from one sound to another SHALL be one operation. The new sound SHALL be from the kit or one of the jam's listed uploads; otherwise the operation SHALL be refused and nothing SHALL change.
 
 - **Scenario: Two pads**
   - **GIVEN** an upload on two pads
   - **WHEN** an operation replaces it with the clap
   - **THEN** both pads change to the clap in one change, and the other pads keep their sounds
+- **Scenario: A track's sound hits**
+  - **GIVEN** an upload named by two hits in one track and on no pad
+  - **WHEN** an operation replaces it with another upload
+  - **THEN** both hits name the new upload, and the track's other hits are unchanged
 - **Scenario: Replace with an unknown sound**
   - **WHEN** an operation replaces a sound with one the jam does not list, even one no pad uses
   - **THEN** it is refused
 
 ### Requirement: Editable track fields
 
-After a track is added, only its name, level, mute, snap, reverb, echo, tone, pitch and pan SHALL be changeable; its bars, hits, author and colour SHALL stay as recorded.
+After a track is added, only its name, level, mute, snap, reverb, echo, tone, pitch and pan SHALL be changeable; its bars, hits, author and colour SHALL stay as recorded, except that replacing a sound moves the hits that name it.
 
 - **Scenario: Mute and rename**
   - **WHEN** an operation sets a track's mute and name

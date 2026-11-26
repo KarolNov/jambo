@@ -7,7 +7,7 @@ import { Deck } from '../../src/board/console/Deck'
 import { padsAtom } from '../../src/board/model'
 import type { Session } from '../../src/board/session'
 import { prepareBuffer, UploadError } from '../../src/audio/upload'
-import { MIC_MESSAGES } from '../../src/audio/voice/input'
+import { MIC_MESSAGES, VoiceInput } from '../../src/audio/voice/input'
 import { midiOf } from '../../src/audio/voice/dsp/tune'
 import { yin } from '../../src/audio/voice/dsp/yin'
 import { estimateLatency, withMeasured } from '../../src/audio/voice/latency'
@@ -28,6 +28,20 @@ function tone(seconds: number, rate: number, hz = 440, gain = 0.3) {
   const out = new Float32Array(Math.round(seconds * rate))
   for (let i = 0; i < out.length; i++) out[i] = gain * Math.sin((2 * Math.PI * hz * i) / rate)
   return out
+}
+
+/** The power of `x` at `hz` (Goertzel), for telling one partial from another. */
+function powerAt(x: Float32Array, rate: number, hz: number) {
+  const w = (2 * Math.PI * hz) / rate
+  const c = 2 * Math.cos(w)
+  let s1 = 0
+  let s2 = 0
+  for (const v of x) {
+    const s0 = v + c * s1 - s2
+    s2 = s1
+    s1 = s0
+  }
+  return s1 * s1 + s2 * s2 - c * s1 * s2
 }
 
 const rms = (x: Float32Array) => Math.sqrt(x.reduce((s, v) => s + v * v, 0) / x.length)
@@ -178,7 +192,7 @@ describe('voice presets', () => {
     },
   )
 
-  // @scenario audio/voice: Auto-tune key: Snap to the scale
+  // @scenario audio/voice: Snap to the scale
   it('holds an A when hard auto-tune in A minor hears a note between A and B flat', async () => {
     const voice = await renderVoice(sung(452, 1, rate), rate, 'tune-hard', {
       root: 9,
@@ -373,7 +387,73 @@ describe('recording a sound', () => {
     expect(loadKey()).toEqual({ root: 9, scale: 'minor' })
   })
 
-  // @scenario audio/voice: Monitor
+  // @scenario audio/voice: Robot voice
+  it('keeps a Robot recording with the robot in the saved sound', async () => {
+    const id = uploadId(21)
+    let posted: Uint8Array | undefined
+    mockServer((url, init) => {
+      if (!url.endsWith(`/api/jams/${SLUG}/sounds`) || init?.method !== 'POST') return undefined
+      return new Response(init.body).arrayBuffer().then((body) => {
+        posted = new Uint8Array(body)
+        const sound: Sound = upload({ name: 'Hello', author: session.me.id })
+        apply(session.jam.doc, [{ op: 'addSound', id, sound }], room)
+        return Response.json({ id, sound }, { status: 201 })
+      })
+    })
+    toneMic()
+    await renderJam(<Deck slug={SLUG} />, session)
+    await openChangeSounds()
+    await userEvent.click(
+      page
+        .getByRole('region', { name: 'Uploaded sounds' })
+        .getByRole('button', { name: 'Upload a sound…' }),
+    )
+    await userEvent.click(dialog().getByRole('button', { name: 'Record', exact: true }))
+    await userEvent.click(dialog().getByRole('button', { name: 'Voice preset: Clean' }))
+    await userEvent.click(page.getByRole('option', { name: 'Robot' }))
+    await userEvent.click(dialog().getByRole('button', { name: 'Record', exact: true }))
+    await new Promise((r) => setTimeout(r, 800))
+    await userEvent.click(dialog().getByRole('button', { name: 'Stop' }))
+    await userEvent.fill(dialog().getByRole('textbox', { name: 'Name' }), 'Hello')
+    await userEvent.click(dialog().getByRole('button', { name: 'Keep' }))
+    await expect.element(dialog()).not.toBeInTheDocument()
+
+    // The 440 Hz voice comes back ring-modulated (sidebands 70 Hz either side), in the WAV
+    // itself, so there is nothing to switch off at playback.
+    const x = samplesOf(posted!)
+    const rate = UPLOADS.sampleRate
+    expect(powerAt(x, rate, 510) / powerAt(x, rate, 440)).toBeGreaterThan(0.1)
+    expect(powerAt(x, rate, 370) / powerAt(x, rate, 440)).toBeGreaterThan(0.1)
+  })
+
+  // @scenario audio/voice: Hear the preset
+  it('monitors through the chosen preset, as the kept recording is rendered', async () => {
+    toneMic()
+    const ctx = new AudioContext()
+    await ctx.resume()
+    // Listen to what reaches the speakers.
+    const tap = ctx.createAnalyser()
+    tap.fftSize = 8192
+    tap.connect(ctx.destination)
+    Object.defineProperty(ctx, 'destination', { value: tap })
+    const input = await VoiceInput.open(ctx)
+    try {
+      await input.monitor(true, 'chipmunk')
+      await new Promise((r) => setTimeout(r, 600))
+      const live = new Float32Array(tap.fftSize)
+      tap.getFloatTimeDomainData(live)
+      const monitored = midiOf(yin(live, ctx.sampleRate)!.hz)
+      const saved = midiOf(
+        heard(await renderVoice(tone(1, ctx.sampleRate), ctx.sampleRate, 'chipmunk')),
+      )
+      expect(monitored - midiOf(440)).toBeCloseTo(9, 0)
+      expect(Math.abs(monitored - saved)).toBeLessThan(0.5)
+    } finally {
+      input.close()
+      await ctx.close()
+    }
+  })
+
   it('remembers the monitor setting and advises headphones', async () => {
     mockServer()
     await renderJam(<Deck slug={SLUG} />, session)
