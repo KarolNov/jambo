@@ -57,7 +57,7 @@
         "src/about/about.css": "9fa4c0fbea95",
         "worker/index.ts": "7006ed34cbe2"
       },
-      "syncedCommit": "1f5e71f9c088e581ac5ba09e9e7d297d7f11b7e1"
+      "syncedCommit": "ca1f3e644456744767bf5b034ac30e2d3c75a00c"
     },
     "collab/room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
@@ -103,21 +103,21 @@
         "src/board/console/AiMark.tsx": "a01ab3b0aaee",
         "src/board/console/Console.tsx": "321019385264",
         "src/board/console/Header.tsx": "c9cf7c94ae96",
-        "src/board/console/TakeLane.tsx": "4b9d6eb3c34c",
+        "src/board/console/TakeLane.tsx": "460df8972407",
         "src/board/console/console.css": "fb666aae1697",
-        "src/board/console/deck.css": "45c06b8bc645",
+        "src/board/console/deck.css": "a7082d3a254a",
         "src/board/console/header.css": "71283a0a4c5f",
-        "src/board/console/mixer.css": "0007f8afdcc4",
-        "src/board/console/pads.css": "a921d00fc2cf",
+        "src/board/console/mixer.css": "d2b77f84cdc5",
+        "src/board/console/pads.css": "13c5b8b86032",
         "src/board/console/people.ts": "c947df332ba9",
         "src/board/console/share.ts": "41845818fcbf",
         "src/board/identity.ts": "d1d2eaa5cab9",
-        "src/board/model.ts": "e98f88d0c21d",
+        "src/board/model.ts": "d41145329b90",
         "src/board/presence.ts": "66422070af94",
         "src/board/seat.ts": "efa33b9e925b",
         "src/board/session.ts": "74ea6cbdbb7f"
       },
-      "syncedCommit": "98dbfac5b4a24fd64e3a2f94b10bee72328b3680"
+      "syncedCommit": "ca1f3e644456744767bf5b034ac30e2d3c75a00c"
     },
     "board/ops": {
       "ref": "https://app.notion.com/p/41c43cce21f281c98ac9c1d474fdc949",
@@ -224,7 +224,7 @@
         "src/board/console/Master.tsx": "b757365e6ca4",
         "src/board/console/master.css": "101fab5087ed"
       },
-      "syncedCommit": "2808f5c8643b838014641596a44817ea9c739353"
+      "syncedCommit": "ca1f3e644456744767bf5b034ac30e2d3c75a00c"
     },
     "collab/agent": {
       "ref": "https://app.notion.com/p/41d43cce21f2814bbbb8ef7ccde6b7e2",
