@@ -1,4 +1,4 @@
-import { BEATS_PER_BAR, LIMITS, type Hit, type Track } from './board/schema'
+import { BEATS_PER_BAR, isSoundHit, LIMITS, type Hit, type Track } from './board/schema'
 
 /** Seconds per beat and per bar at `bpm`. */
 export const beatSeconds = (bpm: number) => 60 / bpm
@@ -30,7 +30,10 @@ export function finishTake(
   const length = bars * BEATS_PER_BAR
   const kept = hits
     .filter((h) => h.beat >= -EARLY_HIT_BEATS && h.beat < length)
-    .map((h) => ({ padId: h.padId, beat: Math.max(0, h.beat) }))
+    .map((h): Hit => {
+      const beat = Math.max(0, h.beat)
+      return isSoundHit(h) ? { soundId: h.soundId, beat } : { padId: h.padId, beat }
+    })
     .slice(0, LIMITS.hitsPerTrack)
   return kept.length ? { bars, hits: kept } : null
 }
@@ -43,9 +46,19 @@ export function playBeat(beat: number, quantize: number, lengthBeats: number): n
 }
 
 /**
+ * A loop hit due to sound: what it plays (a pad or a sound), when (`time`), and the beat it sounds
+ * on within its loop. A sound hit also has `until`, its loop cycle's end, where it is cut.
+ */
+export type Sounding = ({ padId: string } | { soundId: string; until: number }) & {
+  time: number
+  beat: number
+}
+
+/**
  * The hits of a looping track that sound in the time window [from, to), as audio times, each with
- * the beat it sounds on within its loop. The track's first cycle starts at `startAt`; nothing
- * sounds before it.
+ * the beat it sounds on within its loop. Pad hits snap to the track's quantize; sound hits keep
+ * their stored beat and are cut at the end of their cycle. The track's first cycle starts at
+ * `startAt`; nothing sounds before it.
  */
 export function hitsInWindow(
   track: Pick<Track, 'bars' | 'hits' | 'quantize'>,
@@ -53,10 +66,10 @@ export function hitsInWindow(
   bpm: number,
   from: number,
   to: number,
-): { padId: string; time: number; beat: number }[] {
+): Sounding[] {
   const beat = beatSeconds(bpm)
   const loop = track.bars * BEATS_PER_BAR * beat
-  const out: { padId: string; time: number; beat: number }[] = []
+  const out: Sounding[] = []
   const start = Math.max(from, startAt)
   if (to <= start) return out
   const firstCycle = Math.floor((start - startAt) / loop)
@@ -64,9 +77,15 @@ export function hitsInWindow(
   for (let k = firstCycle; k <= lastCycle; k++) {
     const cycleStart = startAt + k * loop
     for (const hit of track.hits) {
-      const at = playBeat(hit.beat, track.quantize, track.bars * BEATS_PER_BAR)
+      const sound = isSoundHit(hit)
+      const at = playBeat(hit.beat, sound ? 0 : track.quantize, track.bars * BEATS_PER_BAR)
       const time = cycleStart + at * beat
-      if (time >= start && time < to) out.push({ padId: hit.padId, time, beat: at })
+      if (time < start || time >= to) continue
+      out.push(
+        sound
+          ? { soundId: hit.soundId, until: cycleStart + loop, time, beat: at }
+          : { padId: hit.padId, time, beat: at },
+      )
     }
   }
   return out.sort((a, b) => a.time - b.time)

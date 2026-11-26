@@ -1,9 +1,11 @@
 import { isMap } from 'duratom'
 import { create, read, readKey, write, writeKey } from 'duratom/core'
 import * as Y from 'yjs'
-import { isUploadId, padKeyOrder, SOUND_IDS, UPLOADS } from '../sounds'
+import { CLIPS, isUploadId, padKeyOrder, SOUND_IDS, UPLOADS } from '../sounds'
 import { type Issue, Op, type OpResult } from './ops'
 import {
+  isSoundHit,
+  kindOf,
   LIMITS,
   type MasterKey,
   MasterValues,
@@ -12,6 +14,7 @@ import {
   ROOTS,
   SHAPES,
   Sound,
+  type SoundKind,
   Track,
 } from './schema'
 
@@ -49,18 +52,30 @@ export function apply(doc: Y.Doc, ops: readonly unknown[], origin: Origin): OpRe
   return results
 }
 
-const isListedSound = (sounds: Y.Map<unknown>, id: string) => {
+/** The kind of the readable sound listed as `id`, or undefined when none is. */
+const listedKind = (sounds: Y.Map<unknown>, id: string): SoundKind | undefined => {
   const node = sounds.get(id)
   const s = isMap(node) ? read(Sound, SHAPES.sound, node) : undefined
-  return !!s && !s.issues
+  return s && !s.issues ? kindOf(s.value) : undefined
 }
 
-/** How many uploads a jam lists: the count `addSound` holds to `UPLOADS.perJam`. */
-export function countUploads(doc: Y.Doc): number {
+const countKind = (doc: Y.Doc, kind: SoundKind) => {
   const sounds = doc.getMap<unknown>(ROOTS.sounds)
   let n = 0
-  sounds.forEach((_, id) => isListedSound(sounds, id) && n++)
+  sounds.forEach((_, id) => listedKind(sounds, id) === kind && n++)
   return n
+}
+
+/** How many uploads a jam lists, clips aside: the count `addSound` holds to `UPLOADS.perJam`. */
+export const countUploads = (doc: Y.Doc): number => countKind(doc, 'upload')
+
+/** How many voice clips a jam lists: the count `addSound` holds to `CLIPS.perJam`. */
+export const countClips = (doc: Y.Doc): number => countKind(doc, 'clip')
+
+/** Each kind's limit, and what `addSound` says when a jam is full of it. */
+const KIND_LIMITS: Record<SoundKind, { max: number; full: string }> = {
+  upload: { max: UPLOADS.perJam, full: `A jam holds at most ${UPLOADS.perJam} uploads` },
+  clip: { max: CLIPS.perJam, full: `A jam holds at most ${CLIPS.perJam} voice clips` },
 }
 
 /** The beat repeat's slice starts on, or 0 while repeat is unset or unreadable. */
@@ -94,6 +109,29 @@ function padsUsing(pads: Y.Map<unknown>, soundId: string): [string, string][] {
   return out.sort(([, a], [, b]) => padKeyOrder(a) - padKeyOrder(b))
 }
 
+/** The raw hits of a track node, whatever else about it is unreadable. */
+const rawHits = (node: Y.Map<unknown>): unknown[] => {
+  const hits = node.get('hits')
+  return Array.isArray(hits) ? hits : []
+}
+
+const namesSound = (hit: unknown, soundId: string) =>
+  typeof hit === 'object' && hit !== null && (hit as { soundId?: unknown }).soundId === soundId
+
+/**
+ * Tracks with a hit naming `soundId`, readable or not, as [track id, name] in id order (creation
+ * order). Reads the raw hits, so a track that fails its schema still counts as using the sound.
+ */
+function tracksUsing(tracks: Y.Map<unknown>, soundId: string): [string, string][] {
+  const out: [string, string][] = []
+  tracks.forEach((node, id) => {
+    if (!isMap(node) || !rawHits(node).some((h) => namesSound(h, soundId))) return
+    const name = node.get('name')
+    out.push([id, typeof name === 'string' && name.trim() ? name.trim() : id])
+  })
+  return out.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+}
+
 function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
   const parsed = Op.safeParse(raw)
   if (!parsed.success) {
@@ -109,8 +147,16 @@ function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
   const pads = doc.getMap<unknown>(ROOTS.pads)
   const tracks = doc.getMap<unknown>(ROOTS.tracks)
   const sounds = doc.getMap<unknown>(ROOTS.sounds)
-  const isListed = (id: string) => isListedSound(sounds, id)
-  const uploadCount = () => countUploads(doc)
+  const kind = (id: string) => listedKind(sounds, id)
+  /** Whether a pad may hold `id`: a kit sound or a listed upload, never a clip. */
+  const padSound = (id: string) => SOUND_IDS.has(id) || kind(id) === 'upload'
+  /** Why a pad can't hold `id`, or undefined when it can. */
+  const notPadSound = (id: string) =>
+    padSound(id)
+      ? undefined
+      : kind(id) === 'clip'
+        ? `Sound ${id} is a voice clip; clips can't go on pads`
+        : `No sound ${id}`
   // Only readable tracks count: the UI can't see or remove the rest.
   const trackCount = () => {
     let n = 0
@@ -129,8 +175,8 @@ function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
     case 'assignPad': {
       const node = pads.get(op.padId)
       if (!isMap(node)) return fail(`No pad ${op.padId}`, ['padId'])
-      if (!SOUND_IDS.has(op.soundId) && !isListed(op.soundId))
-        return fail(`No sound ${op.soundId}`, ['soundId'])
+      const refused = notPadSound(op.soundId)
+      if (refused) return fail(refused, ['soundId'])
       const current = read(Pad, SHAPES.pad, node)
       if (!current || current.issues) return fail(`Pad ${op.padId} is unreadable`, ['padId'])
       return fromResult(write(Pad, SHAPES.pad, node, { ...current.value, soundId: op.soundId }))
@@ -138,6 +184,16 @@ function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
     case 'addTrack': {
       if (tracks.has(op.id)) return fail(`Track ${op.id} already exists`, ['id'])
       if (trackCount() >= LIMITS.tracks) return fail(`A jam holds at most ${LIMITS.tracks} tracks`)
+      // Shape first, so the sound check below reads well-formed hits.
+      const shaped = Track.safeParse(op.track)
+      if (!shaped.success) return fromResult({ issues: shaped.error.issues })
+      // A sound hit may name any sound the jam can play: the kit, an upload or a clip.
+      const hits = shaped.data.hits
+      for (let i = 0; i < hits.length; i++) {
+        const hit = hits[i]!
+        if (isSoundHit(hit) && !SOUND_IDS.has(hit.soundId) && !kind(hit.soundId))
+          return fail(`No sound ${hit.soundId}`, ['track', 'hits', i, 'soundId'])
+      }
       return fromResult(create(Track, SHAPES.track, tracks, op.id, op.track))
     }
     case 'setTrack': {
@@ -157,8 +213,10 @@ function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
     case 'addSound': {
       if (!isUploadId(op.id)) return fail(`${op.id} is not an upload id`, ['id'])
       if (sounds.has(op.id)) return fail(`Sound ${op.id} already exists`, ['id'])
-      if (uploadCount() >= UPLOADS.perJam)
-        return fail(`A jam holds at most ${UPLOADS.perJam} uploads`)
+      // An unknown kind fails the schema below; until then it counts as an upload.
+      const k: SoundKind =
+        (op.sound as Partial<Sound> | undefined)?.kind === 'clip' ? 'clip' : 'upload'
+      if (countKind(doc, k) >= KIND_LIMITS[k].max) return fail(KIND_LIMITS[k].full)
       return fromResult(create(Sound, SHAPES.sound, sounds, op.id, op.sound))
     }
     case 'removeSound': {
@@ -170,6 +228,13 @@ function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
           ['id'],
         )
       }
+      const names = tracksUsing(tracks, op.id).map(([, name]) => name)
+      if (names.length > 0) {
+        return fail(
+          `Sound ${op.id} is in ${names.length === 1 ? 'track' : 'tracks'} ${names.join(', ')}`,
+          ['id'],
+        )
+      }
       sounds.delete(op.id)
       return { ok: true }
     }
@@ -178,13 +243,26 @@ function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {
       return { ok: true }
     }
     case 'replaceSound': {
-      if (!SOUND_IDS.has(op.to) && !isListed(op.to)) return fail(`No sound ${op.to}`, ['to'])
+      const refused = notPadSound(op.to)
+      if (refused) return fail(refused, ['to'])
       for (const [padId] of padsUsing(pads, op.from)) {
         const node = pads.get(padId)
         if (!isMap(node)) continue
         const current = read(Pad, SHAPES.pad, node)
         if (!current || current.issues) continue
         const written = write(Pad, SHAPES.pad, node, { ...current.value, soundId: op.to })
+        if (written.issues) return fromResult(written)
+      }
+      // Sound hits follow too: the one way a track's hits change after it is added.
+      for (const [trackId] of tracksUsing(tracks, op.from)) {
+        const node = tracks.get(trackId)
+        if (!isMap(node)) continue
+        const current = read(Track, SHAPES.track, node)
+        if (!current || current.issues) continue
+        const hits = current.value.hits.map((h) =>
+          isSoundHit(h) && h.soundId === op.from ? { soundId: op.to, beat: h.beat } : h,
+        )
+        const written = write(Track, SHAPES.track, node, { ...current.value, hits })
         if (written.issues) return fromResult(written)
       }
       return { ok: true }

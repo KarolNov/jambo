@@ -64,12 +64,20 @@ export const Pad = z.object({
 })
 export type Pad = z.infer<typeof Pad>
 
-/** One pad hit in a track: which pad, and when, in beats from the track's start. */
-export const Hit = z.object({
-  padId: z.string().min(1).max(32),
-  beat: z.number().min(0),
-})
+/**
+ * One hit in a track, when it sounds in beats from the track's start, and what it plays: a pad
+ * (`padId`), whatever sound the pad holds; or a sound (`soundId`), that sound whatever the pads
+ * hold. Exactly one of the two.
+ */
+export const Hit = z.union([
+  z.strictObject({ padId: z.string().min(1).max(32), beat: z.number().min(0) }),
+  z.strictObject({ soundId: z.string().min(1).max(64), beat: z.number().min(0) }),
+])
 export type Hit = z.infer<typeof Hit>
+export type SoundHit = Extract<Hit, { soundId: string }>
+
+/** Whether a hit names a sound rather than a pad. */
+export const isSoundHit = (hit: Hit): hit is SoundHit => 'soundId' in hit
 
 /** One loop track, in the root map `tracks` keyed by a time-sortable id. */
 export const Track = z
@@ -107,10 +115,20 @@ export const Track = z
 export type Track = z.infer<typeof Track>
 
 /**
- * A sound someone uploaded to the jam, in the root map `sounds` keyed by its upload id. Only
- * details live here; the audio is stored by the room and fetched by id.
+ * What a listed sound is: an `upload`, which pads can take and the upload list shows, or a
+ * `clip`, a voice clip sung into a take, which only tracks' sound hits play. A sound listed before
+ * kinds has none and is an upload.
+ */
+export const SOUND_KINDS = ['upload', 'clip'] as const
+export type SoundKind = (typeof SOUND_KINDS)[number]
+
+/**
+ * A sound someone uploaded or sang into the jam, in the root map `sounds` keyed by its upload id.
+ * Only details live here; the audio is stored by the room and fetched by id.
  */
 export const Sound = z.object({
+  /** Missing means `upload`: see `kindOf`. */
+  kind: z.enum(SOUND_KINDS).optional(),
   name: z.string().trim().min(1, 'A sound needs a name').max(40, 'Keep names under 40 characters'),
   author: z.string().min(1).max(64),
   /** The uploader's name at upload time; sounds uploaded before names have none. */
@@ -126,6 +144,9 @@ export const Sound = z.object({
   createdAt: z.number().int().min(0),
 })
 export type Sound = z.infer<typeof Sound>
+
+/** A listed sound's kind; one listed before kinds is an upload. */
+export const kindOf = (sound: Pick<Sound, 'kind'>): SoundKind => sound.kind ?? 'upload'
 
 /** Which fields of each node are shared types. Tracks' hits are a plain value, written once. */
 export const SHAPES = {

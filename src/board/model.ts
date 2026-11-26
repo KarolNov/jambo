@@ -8,6 +8,7 @@ import {
   Pad,
   ROOTS,
   SHAPES,
+  kindOf,
   Sound,
   Track,
 } from '../../shared/board'
@@ -49,7 +50,7 @@ export const tracksAtom = atom((get) => {
   return out
 })
 
-/** Every readable upload of the jam by id, oldest first. */
+/** Every readable sound the jam lists by id, uploads and voice clips, oldest first. */
 export const soundsAtom = atom((get) => {
   const out: [string, Sound][] = []
   for (const id of get(sounds.ids)) {
@@ -58,3 +59,11 @@ export const soundsAtom = atom((get) => {
   }
   return new Map(out.sort(([, a], [, b]) => a.createdAt - b.createdAt))
 })
+
+/**
+ * Every readable upload of the jam by id, oldest first: what pads can take and the upload list
+ * shows. Voice clips are left out; only tracks' sound hits play them.
+ */
+export const uploadsAtom = atom(
+  (get) => new Map([...get(soundsAtom)].filter(([, s]) => kindOf(s) === 'upload')),
+)

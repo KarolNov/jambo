@@ -5,6 +5,8 @@ import {
   apply,
   board,
   CONTROL_KEYS,
+  countClips,
+  countUploads,
   FX_MODES,
   fxOn,
   LIMITS,
@@ -22,10 +24,10 @@ import {
   Track,
   type Op,
 } from '../shared/board'
-import { isUploadId, newUploadId, SOUNDS, UPLOADS } from '../shared/sounds'
+import { CLIPS, isUploadId, newUploadId, SOUNDS, UPLOADS } from '../shared/sounds'
 import { docAtom } from 'duratom'
 import { createStore } from 'jotai'
-import { masterAtom, tracksAtom } from '../src/board/model'
+import { masterAtom, soundsAtom, tracksAtom, uploadsAtom } from '../src/board/model'
 
 const me = { kind: 'user', id: 'me' } as const
 
@@ -613,6 +615,254 @@ describe('uploaded sounds', () => {
     const [r] = apply(doc, [{ op: 'removeSound', id }], room)
     expect(r?.ok).toBe(false)
     expect(soundsOf(doc).has(id)).toBe(true)
+  })
+})
+
+/** The nth upload-form id: distinct for n below 1024. */
+const nthId = (n: number) => {
+  const b32 = 'abcdefghijklmnopqrstuvwxyz234567'
+  return `u-${'a'.repeat(10)}${b32[n >> 5]}${b32[n & 31]}`
+}
+
+describe('voice clips', () => {
+  const clip = 'u-clipclipclip'
+  const upload = 'u-abcdefgh2345'
+  const withClip = () => {
+    const doc = seededDoc()
+    apply(
+      doc,
+      [
+        { op: 'addSound', id: clip, sound: sound({ kind: 'clip', name: 'Teal 1 · voice 1' }) },
+        { op: 'addSound', id: upload, sound: sound() },
+      ],
+      room,
+    )
+    return doc
+  }
+
+  it('lists a clip as its own kind, and reads a sound without a kind as an upload', () => {
+    const doc = withClip()
+    expect(v(read(Sound, SHAPES.sound, soundsOf(doc).get(clip)))?.kind).toBe('clip')
+    expect(countClips(doc)).toBe(1)
+    expect(countUploads(doc)).toBe(1)
+    const [r] = apply(
+      doc,
+      [{ op: 'addSound', id: 'u-bbbbbbbbbbbb', sound: { ...sound(), kind: 'loop' } }],
+      room,
+    )
+    expect(r?.ok).toBe(false)
+  })
+
+  // @scenario board/ops: Uploads don't fill clips
+  it(`holds ${CLIPS.perJam} clips apart from the ${UPLOADS.perJam} uploads`, () => {
+    const doc = seededDoc()
+    const uploads: Op[] = Array.from({ length: UPLOADS.perJam }, (_, i) => ({
+      op: 'addSound',
+      id: nthId(i),
+      sound: sound(),
+    }))
+    const clips: Op[] = Array.from({ length: CLIPS.perJam + 1 }, (_, i) => ({
+      op: 'addSound',
+      id: nthId(100 + i),
+      sound: sound({ kind: 'clip' }),
+    }))
+    expect(apply(doc, uploads, room).every((r) => r.ok)).toBe(true)
+    const results = apply(doc, clips, room)
+    expect(results.filter((r) => r.ok)).toHaveLength(CLIPS.perJam)
+    expect(results.at(-1)).toEqual({
+      ok: false,
+      issues: [{ message: `A jam holds at most ${CLIPS.perJam} voice clips` }],
+    })
+    // Clips don't fill the uploads either.
+    const [more] = apply(doc, [{ op: 'addSound', id: nthId(900), sound: sound() }], room)
+    expect(more?.ok).toBe(false)
+    expect(countUploads(doc)).toBe(UPLOADS.perJam)
+  })
+
+  // @scenario board/ops: Clip on a pad
+  it('refuses a clip on a pad, or as what a replace moves pads to', () => {
+    const doc = withClip()
+    const results = apply(
+      doc,
+      [
+        { op: 'assignPad', padId: 'r0c0', soundId: clip },
+        { op: 'replaceSound', from: 'kick', to: clip },
+      ],
+      me,
+    )
+    expect(results[0]).toEqual({
+      ok: false,
+      issues: [
+        { message: `Sound ${clip} is a voice clip; clips can't go on pads`, path: ['soundId'] },
+      ],
+    })
+    expect(results[1]?.ok).toBe(false)
+    expect(padSound(doc, 'r0c0')).toBe('kick')
+  })
+
+  // @scenario board/pads: Clips stay out of the menu
+  it('keeps clips out of the uploads the pad menu and upload list show', () => {
+    const doc = withClip()
+    const store = createStore()
+    store.set(docAtom, doc)
+    expect([...store.get(soundsAtom).keys()].sort()).toEqual([clip, upload].sort())
+    expect([...store.get(uploadsAtom).keys()]).toEqual([upload])
+  })
+})
+
+describe('sound hits', () => {
+  const clip = 'u-clipclipclip'
+  const upload = 'u-abcdefgh2345'
+  const other = 'u-bbbbbbbbbbbb'
+  const voiced = () => {
+    const doc = seededDoc()
+    apply(
+      doc,
+      [
+        { op: 'addSound', id: clip, sound: sound({ kind: 'clip' }) },
+        { op: 'addSound', id: upload, sound: sound() },
+        { op: 'addSound', id: other, sound: sound({ name: 'Vox 2' }) },
+      ],
+      room,
+    )
+    return doc
+  }
+
+  it('adds a track whose hits name pads and sounds: the kit, an upload or a clip', () => {
+    const doc = voiced()
+    const hits = [
+      { padId: 'r0c0', beat: 0 },
+      { soundId: 'clap', beat: 1 },
+      { soundId: upload, beat: 2 },
+      { soundId: clip, beat: 3.06 },
+    ]
+    const [r] = apply(doc, [{ op: 'addTrack', id: 't1', track: track({ hits }) }], me)
+    expect(r).toEqual({ ok: true })
+    expect(v(readTrack(doc, 't1'))?.hits).toEqual(hits)
+  })
+
+  // @scenario board/ops: Hit on an unlisted sound
+  it('refuses a track with a hit on a sound the jam does not list', () => {
+    const doc = voiced()
+    const hits = [
+      { padId: 'r0c0', beat: 0 },
+      { soundId: 'u-aaaaaaaaaaaa', beat: 1 },
+    ]
+    const [r] = apply(doc, [{ op: 'addTrack', id: 't1', track: track({ hits }) }], me)
+    expect(r).toEqual({
+      ok: false,
+      issues: [{ message: 'No sound u-aaaaaaaaaaaa', path: ['track', 'hits', 1, 'soundId'] }],
+    })
+    expect(tracksOf(doc).has('t1')).toBe(false)
+  })
+
+  it('refuses a hit naming both a pad and a sound, or neither, and one outside the loop', () => {
+    const doc = voiced()
+    const bad = [
+      [{ padId: 'r0c0', soundId: 'clap', beat: 0 }],
+      [{ beat: 0 }],
+      [{ soundId: clip, beat: 4 }],
+    ]
+    const results = apply(
+      doc,
+      bad.map((hits, i) => ({ op: 'addTrack', id: `t${i}`, track: track({ hits } as never) })),
+      me,
+    )
+    expect(results.map((r) => r.ok)).toEqual([false, false, false])
+    expect(tracksOf(doc).size).toBe(0)
+  })
+
+  // @scenario board/ops: Remove a clip a track names
+  // @scenario audio/sounds: Used by a track
+  it('refuses to remove a sound a track hit names, naming the tracks', () => {
+    const doc = voiced()
+    apply(
+      doc,
+      [
+        {
+          op: 'addTrack',
+          id: 't1',
+          track: track({ name: 'Mellow Claude 1', hits: [{ soundId: upload, beat: 0 }] }),
+        },
+        { op: 'addTrack', id: 't2', track: track({ hits: [{ soundId: clip, beat: 0 }] }) },
+      ],
+      me,
+    )
+    const results = apply(
+      doc,
+      [
+        { op: 'removeSound', id: upload },
+        { op: 'removeSound', id: clip },
+      ],
+      room,
+    )
+    expect(results).toEqual([
+      {
+        ok: false,
+        issues: [{ message: `Sound ${upload} is in track Mellow Claude 1`, path: ['id'] }],
+      },
+      { ok: false, issues: [{ message: `Sound ${clip} is in track Teal 1`, path: ['id'] }] },
+    ])
+    expect(soundsOf(doc).has(upload) && soundsOf(doc).has(clip)).toBe(true)
+    // Once the track is gone, the clip can go too.
+    apply(doc, [{ op: 'removeTrack', id: 't2' }], me)
+    expect(apply(doc, [{ op: 'removeSound', id: clip }], room)[0]?.ok).toBe(true)
+  })
+
+  it('refuses to remove a sound an unreadable track still names', () => {
+    const doc = voiced()
+    apply(
+      doc,
+      [{ op: 'addTrack', id: 't1', track: track({ hits: [{ soundId: clip, beat: 0 }] }) }],
+      me,
+    )
+    tracksOf(doc).get('t1')!.set('bars', 99)
+    expect(readTrack(doc, 't1')?.issues).toBeDefined()
+    const [r] = apply(doc, [{ op: 'removeSound', id: clip }], room)
+    expect(r?.ok).toBe(false)
+    expect(soundsOf(doc).has(clip)).toBe(true)
+  })
+
+  // @scenario board/ops: A track's sound hits
+  it("moves a track's sound hits with a replace, leaving its other hits", () => {
+    const doc = voiced()
+    const hits = [
+      { soundId: upload, beat: 0 },
+      { padId: 'r0c0', beat: 1 },
+      { soundId: clip, beat: 2 },
+      { soundId: upload, beat: 3 },
+    ]
+    apply(doc, [{ op: 'addTrack', id: 't1', track: track({ hits }) }], me)
+    let changes = 0
+    doc.on('afterTransaction', () => changes++)
+    expect(board(doc, me).replaceSound(upload, other)).toEqual({ ok: true })
+    expect(changes).toBe(1)
+    expect(v(readTrack(doc, 't1'))?.hits).toEqual([
+      { soundId: other, beat: 0 },
+      { padId: 'r0c0', beat: 1 },
+      { soundId: clip, beat: 2 },
+      { soundId: other, beat: 3 },
+    ])
+    // Nothing names the old upload any more, so it can go.
+    expect(apply(doc, [{ op: 'removeSound', id: upload }], room)[0]?.ok).toBe(true)
+  })
+
+  it('keeps hits out of the fields a patch can change', () => {
+    const doc = voiced()
+    const hits = [{ soundId: clip, beat: 0 }]
+    apply(doc, [{ op: 'addTrack', id: 't1', track: track({ hits }) }], me)
+    apply(
+      doc,
+      [
+        {
+          op: 'setTrack',
+          id: 't1',
+          patch: { hits: [{ soundId: upload, beat: 0 }] } as never,
+        },
+      ],
+      me,
+    )
+    expect(v(readTrack(doc, 't1'))?.hits).toEqual(hits)
   })
 })
 

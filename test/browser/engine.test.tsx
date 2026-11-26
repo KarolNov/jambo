@@ -973,3 +973,66 @@ describe('swing and repeat', () => {
     ])
   })
 })
+
+describe('sound hits', () => {
+  // @scenario audio/looper: Pads change, the voice stays
+  it('plays the sound a hit names, whatever the pads hold', async () => {
+    const bar = barMs(100) / 1000
+    const [named] = await render(
+      await offline({
+        seconds: bar,
+        sound: 'kick',
+        tracks: [track({ hits: [{ soundId: 'snare', beat: 1 }] })],
+      }),
+    )
+    const [onPad] = await render(
+      await offline({
+        seconds: bar,
+        sound: 'snare',
+        tracks: [track({ hits: [{ padId: PAD, beat: 1 }] })],
+      }),
+    )
+    expect(peak(named)).toBeGreaterThan(0.1)
+    expect(named).toEqual(onPad)
+  })
+
+  it('plays nothing for a sound the jam does not list', async () => {
+    const bar = barMs(100) / 1000
+    const [left] = await render(
+      await offline({
+        seconds: bar,
+        tracks: [track({ hits: [{ soundId: 'u-aaaaaaaaaaaa', beat: 0 }] })],
+        metronome: false,
+      }),
+    )
+    expect(peak(left)).toBe(0)
+  })
+
+  // @scenario audio/looper: Cut at the loop's end
+  it("cuts a sound hit at its loop's end, while a pad hit rings on", async () => {
+    // At 240 BPM a bar is 1 s; a hit at beat 3.9 starts 25 ms before the bar line.
+    const bpm = 240
+    const hit = 3.9
+    const [cut] = await render(
+      await offline({
+        seconds: 1.5,
+        bpm,
+        tracks: [track({ hits: [{ soundId: 'bass-c', beat: hit }] })],
+        metronome: false,
+      }),
+    )
+    const [rings] = await render(
+      await offline({
+        seconds: 1.5,
+        bpm,
+        sound: 'bass-c',
+        tracks: [track({ hits: [{ padId: PAD, beat: hit }] })],
+        metronome: false,
+      }),
+    )
+    const start = hit * beatSeconds(bpm)
+    expect(peak(cut, start, 1)).toBeGreaterThan(0.05)
+    expect(peak(cut, 1.001, 1.5)).toBeLessThan(1e-4)
+    expect(peak(rings, 1.001, 1.5)).toBeGreaterThan(0.05)
+  })
+})

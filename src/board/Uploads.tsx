@@ -16,7 +16,7 @@ import {
   UploadError,
   uploadSound,
 } from '../audio/upload'
-import { padsAtom, soundsAtom } from './model'
+import { padsAtom, soundsAtom, uploadsAtom } from './model'
 import type { JamSession } from './doc'
 import { Recorder } from './Recorder'
 import { useSession } from './session'
@@ -167,7 +167,7 @@ export function UploadDialog({
   onClose: () => void
 }) {
   const { engine, board, jam, me } = useSession()
-  const sounds = useAtomValue(soundsAtom)
+  const sounds = useAtomValue(uploadsAtom)
   const [prepared, setPrepared] = useState<Prepared>()
   const [name, setName] = useState(() =>
     source?.kind === 'file' ? defaultName(source.file.name) : RECORDING_NAME,
@@ -314,7 +314,7 @@ export function UploadsList({
   /** An upload dialog is open: finish or cancel it before picking another file. */
   uploading: boolean
 }) {
-  const sounds = useAtomValue(soundsAtom)
+  const sounds = useAtomValue(uploadsAtom)
   const pads = useAtomValue(padsAtom)
   const onPads = padKeysBySound(pads)
   const [error, setError] = useState<string>()

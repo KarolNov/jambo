@@ -29,7 +29,10 @@ export const AssignPad = z.object({
 })
 export const SetTrack = z.object({ op: z.literal('setTrack'), id: z.string(), patch: TrackPatch })
 export const RemoveTrack = z.object({ op: z.literal('removeTrack'), id: z.string() })
-/** Moves every pad on sound `from` to sound `to`. Tracks follow, since they hit pads. */
+/**
+ * Moves every pad and every track's sound hit on sound `from` to sound `to`, which must be one a
+ * pad can hold (the kit or a listed upload). Pad hits follow their pads.
+ */
 export const ReplaceSound = z.object({
   op: z.literal('replaceSound'),
   from: z.string(),
@@ -59,11 +62,14 @@ export const Op = z.discriminatedUnion('op', [
   z.object({ op: z.literal('addTrack'), id: z.string().min(1).max(64), track: z.custom<Track>() }),
   SetTrack,
   RemoveTrack,
-  /** Lists an upload whose audio the room has stored. Only the room applies it. */
+  /**
+   * Lists an upload or voice clip (by `sound.kind`) whose audio the room has stored, within its
+   * kind's limit. Only the room applies it.
+   */
   z.object({ op: z.literal('addSound'), id: z.string(), sound: z.custom<Sound>() }),
-  /** Unlists an upload no pad uses. Only the room applies it, then deletes the audio. */
+  /** Unlists a sound no pad and no track's hit names. Only the room applies it, then deletes the audio. */
   z.object({ op: z.literal('removeSound'), id: z.string() }),
-  /** Unlists every upload, whatever uses it: the room's retention, after it deleted the audio. */
+  /** Unlists every upload and clip, whatever uses it: the room's retention, after it deleted the audio. */
   z.object({ op: z.literal('expireSounds') }),
   ReplaceSound,
   SetMaster,

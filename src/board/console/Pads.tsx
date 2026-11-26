@@ -4,7 +4,7 @@ import type { ColorName } from '../../../shared/colors'
 import { SOUND_IDS, SOUNDS, soundName } from '../../../shared/sounds'
 import { Button, type Group, OptionList, Pad, type PadProps, Popover } from '../../ui'
 import { useSwatch } from '../colors'
-import { padsAtom, soundsAtom, tracksAtom } from '../model'
+import { padsAtom, uploadsAtom, tracksAtom } from '../model'
 import { isTyping } from '../typing'
 import { useSession } from '../session'
 import { uploadedBy } from './people'
@@ -40,7 +40,7 @@ function useUploader(): (sound: {
 
 /** Every sound a pad can take: the kit by category, the jam's uploads, then "Upload a sound…". */
 function useSoundGroups(canUpload: boolean): Group[] {
-  const sounds = useAtomValue(soundsAtom)
+  const sounds = useAtomValue(uploadsAtom)
   const uploadsOpen = useBudget().uploads === 'open'
   const uploader = useUploader()
   const swatch = useSwatch()
@@ -88,7 +88,7 @@ function PadGrid({
 }) {
   const { engine, me, board } = useSession()
   const pads = useAtomValue(padsAtom)
-  const sounds = useAtomValue(soundsAtom)
+  const sounds = useAtomValue(uploadsAtom)
   const tracks = useAtomValue(tracksAtom)
   const swatch = useSwatch()
   const els = useRef(new Map<string, HTMLButtonElement>())
@@ -206,7 +206,7 @@ function ConsolePad({
   soundId,
   ...rest
 }: Omit<PadProps, 'name' | 'dot' | 'status' | 'lit' | 'tint'> & { soundId: string }) {
-  const sounds = useAtomValue(soundsAtom)
+  const sounds = useAtomValue(uploadsAtom)
   const upload = sounds.get(soundId)
   const state = useSampleState(soundId)
   const uploader = useUploader()
@@ -227,7 +227,7 @@ function ConsolePad({
  * `editing` is owned by the deck so it can place the toggle.
  */
 export function SoundEditor({ slug, editing }: { slug: string; editing: boolean }) {
-  const sounds = useAtomValue(soundsAtom)
+  const sounds = useAtomValue(uploadsAtom)
   // The open upload dialog: where its sound goes, and where the sound comes from once chosen.
   // `id` keys the dialog, so each opening (and each choice of source) starts it afresh.
   const [pending, setPending] = useState<{

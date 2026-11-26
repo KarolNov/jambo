@@ -1,5 +1,5 @@
 /** The transport's rules, kept apart from React so they can be tested. */
-import { BEATS_PER_BAR, BPM, type Hit, LIMITS } from '../../shared/board'
+import { BEATS_PER_BAR, BPM, type Hit, isSoundHit, LIMITS } from '../../shared/board'
 import { EARLY_HIT_BEATS } from '../../shared/looper'
 
 /**
@@ -58,16 +58,18 @@ export function takeView(beat: number): TakeView {
 }
 
 /**
- * Where a take's hits will play on a lane of `bars`, in beats: snapped as the new track will be,
- * a hit just before the first beat on it, and the hits past the lane left out.
+ * Where a take's hits will play on a lane of `bars`, in beats: pad hits snapped as the new track
+ * will be (sound hits never are), a hit just before the first beat on it, and the hits past the
+ * lane left out.
  */
-export function takeMarks(hits: readonly Hit[], bars: number): { padId: string; beat: number }[] {
+export function takeMarks(hits: readonly Hit[], bars: number): Hit[] {
   const length = bars * BEATS_PER_BAR
   return hits
     .filter((h) => h.beat >= -EARLY_HIT_BEATS)
-    .map((h) => ({
-      padId: h.padId,
-      beat: Math.max(0, Math.round(h.beat / TAKE_QUANTIZE) * TAKE_QUANTIZE),
-    }))
+    .map((h): Hit => {
+      if (isSoundHit(h)) return { soundId: h.soundId, beat: Math.max(0, h.beat) }
+      const beat = Math.max(0, Math.round(h.beat / TAKE_QUANTIZE) * TAKE_QUANTIZE)
+      return { padId: h.padId, beat }
+    })
     .filter((h) => h.beat < length)
 }
