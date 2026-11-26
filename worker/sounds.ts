@@ -70,8 +70,10 @@ async function readCapped(body: ReadableStream<Uint8Array> | null, max: number) 
  */
 async function postSound(c: Context<AppEnv, '/:slug/sounds' | '/:slug/clips'>, kind: SoundKind) {
   const limiter = kind === 'clip' ? 'CLIP_WRITES' : 'SOUND_WRITES'
-  if (await overLimit(c, limiter))
-    return c.json({ error: 'Too many uploads, try again in a minute' }, 429)
+  if (await overLimit(c, limiter)) {
+    const what = kind === 'clip' ? 'voice clips' : 'uploads'
+    return c.json({ error: `Too many ${what}, try again in a minute` }, 429)
+  }
   const declared = Number(c.req.header('Content-Length') ?? 0)
   if (declared > UPLOADS.maxBytes) return c.json({ error: 'The file is too big' }, 413)
   const wav = await readCapped(c.req.raw.body, UPLOADS.maxBytes)

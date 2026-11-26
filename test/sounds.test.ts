@@ -340,6 +340,15 @@ const backdateOrphans = (slug: string) =>
     return [...orphans.keys()]
   })
 
+/** Waits for the room to note `id` as unnamed: it checks once edits settle. */
+const noted = (slug: string, id: string) =>
+  until(async () =>
+    runInDurableObject(env.Board.getByName(slug), async (_i, state) => {
+      const stored = await state.storage.get<Record<string, number>>('orphanClips')
+      return stored?.[id] !== undefined
+    }),
+  )
+
 const issued = (slug: string, id: string) =>
   runInDurableObject(env.Board.getByName(slug), (_i, state) =>
     state.storage.get<number>(`issued:${id}`),
@@ -459,11 +468,12 @@ describe('voice clips', () => {
     client.close()
   })
 
-  it('keeps a clip whose minute has not run out', async () => {
+  it('keeps a clip whose grace has not run out', async () => {
     const slug = 'funky-otter-ck06'
     const client = await connectBoard(slug)
     const { id } = (await (await clip(slug)).json()) as { id: string }
     await until(() => soundsOf(client.doc).has(id))
+    await noted(slug, id)
     const stub = env.Board.getByName(slug)
     const alarm = await runInDurableObject(stub, (_i, state) => state.storage.getAlarm())
     expect(alarm).toBeLessThanOrEqual(Date.now() + ORPHAN_CLIP_MS)
@@ -482,13 +492,14 @@ describe('voice clips', () => {
     const client = await connectBoard(slug)
     const { id } = (await (await clip(slug)).json()) as { id: string }
     await until(() => soundsOf(client.doc).has(id))
+    await noted(slug, id)
     client.close()
     const stub = env.Board.getByName(slug)
     await until(async () =>
       runInDurableObject(stub, (instance) => [...instance.getConnections()].length === 0),
     )
     await runInDurableObject(stub, (instance) => instance.onSave())
-    // A minute passes with the room asleep: the stored times are all it has.
+    // The grace passes with the room asleep: the stored times are all it has.
     await runInDurableObject(stub, (_i, state) =>
       state.storage.put('orphanClips', { [id]: Date.now() - ORPHAN_CLIP_MS - 1 }),
     )

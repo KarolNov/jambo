@@ -115,8 +115,11 @@ const rawHits = (node: Y.Map<unknown>): unknown[] => {
   return Array.isArray(hits) ? hits : []
 }
 
-const namesSound = (hit: unknown, soundId: string) =>
-  typeof hit === 'object' && hit !== null && (hit as { soundId?: unknown }).soundId === soundId
+/** The raw `soundId` of a hit, whatever else about it is unreadable. */
+const hitSoundId = (hit: unknown): unknown =>
+  typeof hit === 'object' && hit !== null ? (hit as { soundId?: unknown }).soundId : undefined
+
+const namesSound = (hit: unknown, soundId: string) => hitSoundId(hit) === soundId
 
 /**
  * Tracks with a hit naming `soundId`, readable or not, as [track id, name] in id order (creation
@@ -130,6 +133,29 @@ function tracksUsing(tracks: Y.Map<unknown>, soundId: string): [string, string][
     out.push([id, typeof name === 'string' && name.trim() ? name.trim() : id])
   })
   return out.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+}
+
+/**
+ * Listed clips that no pad or track names, read raw the way `padsUsing` and `tracksUsing` read
+ * them for `removeSound`, so `removeSound` would remove each one.
+ */
+export function unnamedClips(doc: Y.Doc): Set<string> {
+  const sounds = doc.getMap<unknown>(ROOTS.sounds)
+  const clips = new Set<string>()
+  sounds.forEach((_, id) => listedKind(sounds, id) === 'clip' && clips.add(id))
+  if (clips.size === 0) return clips
+  doc.getMap<unknown>(ROOTS.tracks).forEach((node) => {
+    if (!isMap(node)) return
+    for (const hit of rawHits(node)) {
+      const id = hitSoundId(hit)
+      if (typeof id === 'string') clips.delete(id)
+    }
+  })
+  doc.getMap<unknown>(ROOTS.pads).forEach((node) => {
+    const id = isMap(node) ? node.get('soundId') : undefined
+    if (typeof id === 'string') clips.delete(id)
+  })
+  return clips
 }
 
 function applyOne(doc: Y.Doc, raw: unknown, origin: Origin): OpResult {

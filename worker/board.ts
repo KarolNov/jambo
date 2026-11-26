@@ -1,5 +1,3 @@
-import { isMap } from 'duratom'
-import { read } from 'duratom/core'
 import * as encoding from 'lib0/encoding'
 import type { Connection, ConnectionContext } from 'partyserver'
 import * as awarenessProtocol from 'y-protocols/awareness'
@@ -24,14 +22,17 @@ import {
 } from '../shared/agent'
 import {
   apply,
+  BEATS_PER_BAR,
+  BPM,
   countClips,
   countUploads,
   kindOf,
+  LIMITS,
   ROOTS,
-  SHAPES,
   Sound,
   type SoundKind,
   type Origin,
+  unnamedClips,
 } from '../shared/board'
 import { seedBoard } from '../shared/board/seed'
 import { parseClockMessage, pong } from '../shared/clock'
@@ -63,12 +64,18 @@ const EXPIRED_KEY = 'soundsExpired'
 const ISSUED_PREFIX = 'issued:'
 const EXPIRING_MESSAGE = 'This jam’s old sounds are being cleared, try again in a moment'
 /**
- * Clips nothing names, with when each was first seen that way, so a minute's grace
- * survives the room being evicted.
+ * Clips nothing names, with when each was first seen that way, so their grace survives the room
+ * being evicted.
  */
 const ORPHANS_KEY = 'orphanClips'
-/** How long a clip may go unnamed by any readable track before the room frees it. */
-export const ORPHAN_CLIP_MS = 60_000
+/**
+ * How long a clip may go unnamed by any track before the room frees it: the longest take (every
+ * bar at the slowest tempo), since its track is added only once the take ends, plus a minute for
+ * uploads and the track to land.
+ */
+export const ORPHAN_CLIP_MS = (LIMITS.bars * BEATS_PER_BAR * 60_000) / BPM.min + 60_000
+/** How long the room lets edits settle before checking for orphan clips. */
+const ORPHAN_WATCH_MS = 1000
 
 const DAY_MS = 24 * 60 * 60 * 1000
 /** A jam's uploaded audio is deleted after this long with nobody connecting. */
@@ -181,7 +188,18 @@ export class Board extends YServer<Env> {
     this.orphans = new Map(
       Object.entries((await this.ctx.storage.get<Record<string, number>>(ORPHANS_KEY)) ?? {}),
     )
-    const watch = () => this.ctx.waitUntil(this.watchOrphans())
+    // Once per settled burst of edits, not per update: knob drags send many.
+    let watching = false
+    const watch = () => {
+      if (watching) return
+      watching = true
+      this.ctx.waitUntil(
+        sleep(ORPHAN_WATCH_MS).then(() => {
+          watching = false
+          return this.watchOrphans()
+        }),
+      )
+    }
     this.document.getMap(ROOTS.tracks).observeDeep(watch)
     this.document.getMap(ROOTS.sounds).observeDeep(watch)
     await this.roster.load()
@@ -588,32 +606,7 @@ export class Board extends YServer<Env> {
     await quota(this.env).release(bytes)
   }
 
-  /**
-   * Listed clips that nothing names: no track's hit and no pad, read raw like `removeSound` reads
-   * them, so every clip here is one it will remove. Clips can't go on pads and an unreadable track
-   * is rare, so this is in practice "no readable track names it".
-   */
-  private unnamedClips(): Set<string> {
-    const clips = new Set<string>()
-    this.document.getMap<unknown>(ROOTS.sounds).forEach((node, id) => {
-      const s = isMap(node) ? read(Sound, SHAPES.sound, node) : undefined
-      if (s && !s.issues && kindOf(s.value) === 'clip') clips.add(id)
-    })
-    if (clips.size === 0) return clips
-    const named = (v: unknown) => typeof v === 'string' && clips.delete(v)
-    this.document.getMap<unknown>(ROOTS.tracks).forEach((node) => {
-      const hits = isMap(node) ? node.get('hits') : undefined
-      if (Array.isArray(hits))
-        for (const h of hits)
-          if (typeof h === 'object' && h !== null) named((h as { soundId?: unknown }).soundId)
-    })
-    this.document.getMap<unknown>(ROOTS.pads).forEach((node) => {
-      if (isMap(node)) named(node.get('soundId'))
-    })
-    return clips
-  }
-
-  /** When the first orphan clip's minute runs out, if any clip is unnamed. */
+  /** When the first orphan clip's grace runs out, if any clip is unnamed. */
   private orphansDue(): number | undefined {
     if (this.orphans.size === 0) return undefined
     return Math.min(...this.orphans.values()) + ORPHAN_CLIP_MS
@@ -625,7 +618,7 @@ export class Board extends YServer<Env> {
    */
   private async watchOrphans() {
     const now = Date.now()
-    const unnamed = this.unnamedClips()
+    const unnamed = unnamedClips(this.document)
     let changed = false
     for (const id of this.orphans.keys()) {
       if (!unnamed.has(id)) {
@@ -656,7 +649,7 @@ export class Board extends YServer<Env> {
     let freed = false
     for (const [id, since] of [...this.orphans]) {
       if (since + ORPHAN_CLIP_MS > now) continue
-      if (!this.unnamedClips().has(id)) continue
+      if (!unnamedClips(this.document).has(id)) continue
       const result = await this.removeSound(id)
       if (result.ok) freed = true
       else this.orphans.delete(id)
@@ -684,13 +677,13 @@ export class Board extends YServer<Env> {
     const agentDue = this.roster.nextExpiry()
     const v2 = await this.ctx.storage.get(ALARM_V2_KEY)
     const retainUntil = await this.ctx.storage.get<number>(RETAIN_KEY)
-    // Orphans are known without loading the doc; freeing them needs it.
-    const orphansDue = this.loaded
-      ? this.orphansDue()
-      : await this.ctx.storage
-          .get<Record<string, number>>(ORPHANS_KEY)
-          .then((o) => (o && Object.keys(o).length > 0 ? Math.min(...Object.values(o)) : undefined))
-          .then((since) => (since === undefined ? undefined : since + ORPHAN_CLIP_MS))
+    // Orphans are known without loading the doc (freeing them needs it); kept in memory so the
+    // `schedule` below still sets the alarm for them.
+    if (!this.loaded)
+      this.orphans = new Map(
+        Object.entries((await this.ctx.storage.get<Record<string, number>>(ORPHANS_KEY)) ?? {}),
+      )
+    const orphansDue = this.orphansDue()
     // Retention runs once it is due, or when it is what the alarm was set for (it comes before any
     // agent idles out or orphan clip is due); alarms set before agents were all retention.
     const forRetention = v2
