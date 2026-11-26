@@ -98,6 +98,7 @@ describe('changesBetween', () => {
 })
 
 describe('listen over MCP', () => {
+  // @scenario collab/agent: Hear a person
   it("answers a person's change and leaves out the agent's own run", async () => {
     const slug = 'funky-otter-mw01'
     const person = await connectBoard(slug)
@@ -140,6 +141,8 @@ describe('listen over MCP', () => {
     person.close()
   })
 
+  // @scenario collab/agent: Someone holding
+  // @scenario collab/agent: Quiet jam
   it('says who is turning what, and answers nothing changed when nothing did', async () => {
     const slug = 'funky-otter-mw02'
     const person = await connectBoard(slug)
@@ -156,6 +159,7 @@ describe('listen over MCP', () => {
     person.close()
   })
 
+  // @scenario collab/agent: No record
   it('answers the board when it has no record of what the agent saw', async () => {
     const slug = 'funky-otter-mw03'
     const ip = newAddress()
@@ -175,6 +179,7 @@ describe('listen over MCP', () => {
     expect(out.body.board.bpm).toBe(90)
   })
 
+  // @scenario collab/agent: Listen past the limit
   it('needs an agentKey, and is not counted toward the call limit', async () => {
     const slug = 'funky-otter-mw04'
     expect((await call('listen', { jam: slug })).body.error).toMatch(/agentKey/)
@@ -196,6 +201,7 @@ describe('listen over MCP', () => {
 })
 
 describe('jam links on another host', () => {
+  // @scenario collab/agent: Link on another host
   it('refuses them, naming the server to add', async () => {
     const out = await call('join', { jam: 'https://jambo.example/jam/funky-otter-mw05' })
     expect(out).toEqual({

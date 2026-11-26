@@ -244,6 +244,7 @@ describe('tabs', () => {
     await expect.element(page.getByRole('tabpanel')).toHaveTextContent('Add custom connector')
   })
 
+  // @scenario ui: Panel of controls
   it('stops Tab on a panel of text, and goes past a panel of controls to its first control', async () => {
     await render(
       <Themed>
@@ -742,6 +743,51 @@ describe('xy pad', () => {
     expect(pad.classList.contains('is-press-focused')).toBe(false)
   })
 
+  // @scenario ui: Watch someone move it
+  it("glides the puck through someone else's uneven moves, without jumping", async () => {
+    const pad = (x: number) => (
+      <Themed>
+        <XYPad
+          live
+          label="Filter"
+          x={x}
+          y={0}
+          heldBy={{ name: 'Misty Yak', color: 'coral' }}
+          xAxis={{ label: 'Cutoff' }}
+          yAxis={{ label: 'Resonance' }}
+          onChange={vi.fn()}
+        />
+      </Themed>
+    )
+    const { container, rerender } = await render(pad(0))
+    const xy = container.querySelector<HTMLElement>('.ui-xy')!
+    const fx = () => Number(xy.style.getPropertyValue('--fx'))
+    expect(fx()).toBe(0)
+    // Where the puck is drawn, each frame, while their moves arrive: two close together, then
+    // a long one after a pause.
+    const seen: number[] = []
+    let sampling = true
+    const sample = () => {
+      seen.push(fx())
+      if (sampling) requestAnimationFrame(sample)
+    }
+    requestAnimationFrame(sample)
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
+    await rerender(pad(0.3))
+    await wait(20)
+    await rerender(pad(0.4))
+    await wait(150)
+    await rerender(pad(1))
+    await expect.poll(fx).toBe(1)
+    sampling = false
+    // It passes through the positions between, only ever forward, a small step a frame.
+    expect(seen.some((v) => v > 0 && v < 0.3)).toBe(true)
+    expect(seen.some((v) => v > 0.4 && v < 1)).toBe(true)
+    const steps = seen.slice(1).map((v, i) => v - seen[i]!)
+    expect(Math.min(...steps)).toBeGreaterThanOrEqual(0)
+    expect(Math.max(...steps)).toBeLessThan(0.3)
+  })
+
   it('applies a live drag as it moves, and puts it back on Escape', async () => {
     const onChange = vi.fn()
     await render(
@@ -874,6 +920,32 @@ describe('touchpad', () => {
     await expect
       .element(page.getByRole('slider', { name: 'Filter cutoff' }))
       .toHaveAttribute('aria-valuenow', String(x))
+  })
+
+  // @scenario ui: Play a pad after the XY pad
+  it('plays Z just after a drag on the touchpad, and shows no focus rim on the touchpad', async () => {
+    session = makeSession('Groovy Otter')
+    const { screen } = await renderJam(
+      <>
+        <Master />
+        <Deck slug={SLUG} />
+      </>,
+      session,
+    )
+    const hit = vi.spyOn(session.engine, 'hitPad')
+    const at = await commands.mouseDown('.console-touchpad .ui-xy-surface')
+    await commands.mouseMove(at.x - 30, at.y, 3)
+    await commands.mouseUp()
+    await expect.element(page.getByRole('slider', { name: 'Filter cutoff' })).toHaveFocus()
+    const xy = screen.container.querySelector<HTMLElement>('.console-touchpad .ui-xy')!
+    const surface = xy.querySelector<HTMLElement>('.ui-xy-surface')!
+    const unfocused = getComputedStyle(surface).boxShadow
+
+    await userEvent.keyboard('z')
+    // Z is the bottom row's first pad.
+    expect(hit).toHaveBeenCalledExactlyOnceWith('r3c0')
+    expect(xy.classList.contains('is-press-focused')).toBe(true)
+    expect(getComputedStyle(surface).boxShadow).toBe(unfocused)
   })
 })
 
