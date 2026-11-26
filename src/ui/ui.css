@@ -1138,16 +1138,18 @@
   opacity: 0.45;
   cursor: default;
 }
-/* Focus: the rim inside the visible part of the tab, not the part tucked under the card. */
+/* Focus: the rim round the visible part of the tab, open at its foot, where the tab meets the
+   card: the box reaches 2px into the card and that 2px (the rim's bottom edge) is clipped off. */
 :root[data-theme] .ui-tab:focus-visible {
   outline: none;
 }
 :root[data-theme] .ui-tab:focus-visible::after {
   content: '';
   position: absolute;
-  inset: 0 0 var(--tab-tuck);
+  inset: 0 0 calc(var(--tab-tuck) - 2px);
   border-radius: inherit;
   box-shadow: inset 0 0 0 2px var(--focus);
+  clip-path: inset(0 0 2px);
   pointer-events: none;
 }
 /* A copy of every tab, laid out but never seen, for Tabs to measure. */
@@ -1258,10 +1260,6 @@
   background: var(--ui-c, var(--accent-2));
   opacity: 0.55;
   pointer-events: none;
-  /* Eased as the puck is, so they move together. */
-  transition:
-    left 0.08s,
-    bottom 0.08s;
 }
 :root[data-theme] .ui-xy-lines::before {
   top: 6px;
@@ -1305,17 +1303,10 @@
     0 4px 7px -2px var(--cap-drop),
     0 0 10px -2px color-mix(in srgb, var(--ui-c, var(--accent-2)) 60%, transparent);
   translate: -50% 50%;
-  transition:
-    left 0.08s,
-    bottom 0.08s;
   pointer-events: none;
 }
-:root[data-theme] .ui-xy.is-dragging .ui-xy-puck,
-:root[data-theme] .ui-xy.is-dragging .ui-xy-lines::before,
-:root[data-theme] .ui-xy.is-dragging .ui-xy-lines::after {
-  transition: none;
-}
-/* The values (or whoever else holds it), above the puck. */
+/* The values (or whoever else holds it), above the puck. The puck, its lines and the bubble
+   follow --fx and --fy, which XYPad glides itself (no CSS easing on them). */
 :root[data-theme] .ui-xy-bubble {
   position: absolute;
   left: calc(var(--xy-inset) + var(--fx) * var(--travel));
@@ -1336,14 +1327,6 @@
     transform 0.12s;
   pointer-events: none;
   z-index: 1;
-}
-/* Outside a drag it eases with the puck, so they move together. */
-:root[data-theme] .ui-xy:not(.is-dragging) .ui-xy-bubble {
-  transition:
-    opacity 0.12s,
-    transform 0.12s,
-    left 0.08s,
-    bottom 0.08s;
 }
 :root[data-theme] .ui-xy.is-dragging .ui-xy-bubble,
 :root[data-theme] .ui-xy.is-held .ui-xy-bubble {
@@ -1378,12 +1361,8 @@
   cursor: not-allowed;
 }
 @media (prefers-reduced-motion: reduce) {
-  /* The puck jumps without easing; the bubble just appears. */
-  :root[data-theme] .ui-xy-puck,
-  :root[data-theme] .ui-xy-lines::before,
-  :root[data-theme] .ui-xy-lines::after,
-  :root[data-theme] .ui-xy-bubble,
-  :root[data-theme] .ui-xy:not(.is-dragging) .ui-xy-bubble {
+  /* The bubble just appears (and XYPad puts the puck down without gliding). */
+  :root[data-theme] .ui-xy-bubble {
     transition: none;
   }
 }

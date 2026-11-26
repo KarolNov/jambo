@@ -255,9 +255,9 @@
         "src/ds/**",
         "DESIGN.md"
       ],
-      "specVersion": "fcf6d769e425e41c",
+      "specVersion": "6db822da5712574b",
       "anchorsFiles": {
-        "DESIGN.md": "33e2df21877f",
+        "DESIGN.md": "df9e5444f6b9",
         "src/ds/Showcase.tsx": "e9b5efb46142",
         "src/ds/catalogue.tsx": "fe792f3b82e8",
         "src/ds/ds.css": "9d7aeb63a6f8",
@@ -267,8 +267,8 @@
         "src/theme/theme.ts": "d344ee870e57",
         "src/ui/Menu.tsx": "2d9775cf6df9",
         "src/ui/Pad.tsx": "2ec906c70a2d",
-        "src/ui/Tabs.tsx": "d6e2be73a1b0",
-        "src/ui/XYPad.tsx": "475e80f5a6da",
+        "src/ui/Tabs.tsx": "6808a3ec37ee",
+        "src/ui/XYPad.tsx": "f1678c06c339",
         "src/ui/controls.tsx": "bd1046171465",
         "src/ui/fader.ts": "fb99326fdaf5",
         "src/ui/hapticGate.ts": "66c140b29280",
@@ -278,9 +278,9 @@
         "src/ui/scrub.ts": "2c7e503fa0bf",
         "src/ui/scrubSteps.ts": "31558f8043fa",
         "src/ui/tabFit.ts": "9c71b760a6cb",
-        "src/ui/ui.css": "f8e834103de0"
+        "src/ui/ui.css": "c273a6f0e8ad"
       },
-      "syncedCommit": "98dbfac5b4a24fd64e3a2f94b10bee72328b3680"
+      "syncedCommit": "1a4e2252cb4ad0c19fb17b5160b92d3ff6a24538"
     }
   },
   "changes": {

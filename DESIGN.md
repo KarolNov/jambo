@@ -163,7 +163,8 @@ stays where it is let go. Escape mid-drag puts it back where the drag started (a
 again when live). ← → move X a step and ↑ ↓ move Y, whichever axis has focus (held together, one of each moves it
 diagonally; a move of the other axis is announced), Shift for ten;
 Page Up/Down, Home and End move the focused axis. `home` marks a position (where it is off).
-While someone else holds it, its puck and lines turn their colour, with no outline. Screen readers hear a group named `label` with two sliders. Size it with `--xy` (default 200px,
+A move it didn't follow a drag to (a key, a peer's drag, a reset) glides there, so a peer's
+moves read smoothly. While someone else holds it, its puck and lines turn their colour, with no outline. Screen readers hear a group named `label` with two sliders. Size it with `--xy` (default 200px,
 never wider than its container); leave room above for the bubble.
 
 - Use for two parameters played together by feel, such as a touchpad mode's X and Y. Make it
@@ -229,7 +230,8 @@ Folder tabs over one panel (`TabsProps`, each tab a `Tab`: `id`, `label`, `conte
 label's colour eases. Tabs that don't fit go behind a "+N" tab that opens a menu of them
 (`src/ui/tabFit.ts`); the selected tab always shows, in place of the last one that fits. ← →
 move through every tab, shown or not, and select as they go, Home and End jump to the ends, and
-Tab moves on to "+N", then into the panel. Pass `value` and `onChange` to control it, or
+Tab moves on to "+N", then into the panel (its first control, or the panel itself when it has
+none). Pass `value` and `onChange` to control it, or
 `defaultValue` to let it keep the selection. A tab's `dot` puts a dot in `--ui-c` after its label
 to say its content is on (a touchpad mode away from 0/0): give it what screen readers hear ("on"),
 or `''` to keep its room without showing it, so tabs don't change width as dots come and go.
