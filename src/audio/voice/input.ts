@@ -39,8 +39,9 @@ function loadCapture(ctx: BaseAudioContext): Promise<void> {
 }
 
 /**
- * The microphone with the browser's echo cancellation, noise suppression and automatic gain off:
- * a voice is an instrument here, and those would duck and colour it. Asks for permission the
+ * The microphone with the browser's noise suppression and automatic gain on, so room noise is
+ * cleared and a quiet or distant voice still comes through, and its echo cancellation off, which
+ * would duck the voice whenever the jam plays. Not configurable for now. Asks for permission the
  * first time; throws a `MicError` when it can't be had.
  */
 async function openMic(): Promise<MediaStream> {
@@ -49,8 +50,8 @@ async function openMic(): Promise<MediaStream> {
     return await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false,
+        noiseSuppression: true,
+        autoGainControl: true,
         channelCount: 1,
       },
     })

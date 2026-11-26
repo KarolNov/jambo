@@ -143,7 +143,7 @@ describe('recording a sound', () => {
   }
 
   // @scenario audio/voice: Record onto a pad
-  it('records with the browser’s processing off, then keeps it on the pad as an upload', async () => {
+  it('records with the browser’s noise suppression and auto gain on, then keeps it on the pad as an upload', async () => {
     const id = uploadId(20)
     let posted: Uint8Array | undefined
     mockServer((url, init) => {
@@ -171,8 +171,8 @@ describe('recording a sound', () => {
     await expect.element(dialog().getByRole('button', { name: 'Stop' })).toBeVisible()
     expect(mic.asked[0]!.audio).toMatchObject({
       echoCancellation: false,
-      noiseSuppression: false,
-      autoGainControl: false,
+      noiseSuppression: true,
+      autoGainControl: true,
     })
     await expect
       .poll(() => Number(dialog().getByRole('meter').element().getAttribute('aria-valuenow')))
