@@ -1,6 +1,9 @@
 import { UPLOADS } from '../../../shared/sounds'
 import captureUrl from './capture.worklet.ts?worker&url'
-import { estimateLatency, type Latency, readLatency } from './latency'
+import { findClicks, loopbackClick, MAX_ROUND_TRIP } from './dsp/loopback'
+import { DEFAULT_KEY, type Key, keyName } from './dsp/tune'
+import { estimateLatency, type Latency, readLatency, withMeasured } from './latency'
+import { loadRoundTrip, saveRoundTrip } from './prefs'
 import { buildRack, type PresetId } from './presets'
 
 /** The name `capture.worklet.ts` registers its processor under. */
@@ -25,6 +28,10 @@ export class MicError extends Error {
     super(MIC_MESSAGES[problem])
   }
 }
+
+/** The loopback test's clicks: how many, and how far apart in seconds. */
+const CLICKS = 5
+const CLICK_SPACING = 0.35
 
 /** The capture worklet, loaded once per context. */
 const loaded = new WeakMap<BaseAudioContext, Promise<void>>()
@@ -78,7 +85,10 @@ export class VoiceInput {
   private monitorGain: GainNode
   /** The monitored preset's chain, fed from its own input node so all of it can be let go. */
   private rack?: { input: AudioNode; output: AudioNode }
-  private rackPreset?: PresetId
+  /** What the monitored chain was built for: its preset and key. */
+  private rackFor?: string
+  /** The context frame the current recording's first sample was captured at, once known. */
+  private startFrame?: number
   /** Counts `monitor` calls, so one overtaken while it built does nothing. */
   private monitorCalls = 0
 
@@ -99,8 +109,8 @@ export class VoiceInput {
     }
   }
 
-  /** The delays this browser reports for this microphone. */
-  readonly latency: Latency
+  /** The delays this browser reports for this microphone, or the loopback test measured. */
+  latency: Latency
   private readonly source: MediaStreamAudioSourceNode
   private readonly capture: AudioWorkletNode
 
@@ -121,11 +131,15 @@ export class VoiceInput {
     this.monitorGain = ctx.createGain()
     this.monitorGain.gain.value = 0
     this.monitorGain.connect(ctx.destination)
-    this.latency = estimateLatency(readLatency(ctx, stream.getAudioTracks()[0]))
+    this.latency = withMeasured(
+      estimateLatency(readLatency(ctx, stream.getAudioTracks()[0])),
+      loadRoundTrip(),
+    )
     this.capture.port.onmessage = (
-      e: MessageEvent<{ samples?: Float32Array; level?: number; stopped?: true }>,
+      e: MessageEvent<{ started?: number; samples?: Float32Array; level?: number; stopped?: true }>,
     ) => {
-      const { samples, level, stopped } = e.data
+      const { started, samples, level, stopped } = e.data
+      if (started !== undefined) this.startFrame = started
       if (samples) this.take(samples)
       if (level !== undefined) for (const l of this.levelListeners) l(level)
       if (stopped) this.stopped?.()
@@ -148,19 +162,23 @@ export class VoiceInput {
     return () => this.levelListeners.delete(listener)
   }
 
-  /** Hears the voice through `preset` while `on`; off, nothing reaches the speakers. */
-  async monitor(on: boolean, preset: PresetId) {
+  /**
+   * Hears the voice through `preset` (tuned to `key`) while `on`; off, nothing reaches the
+   * speakers.
+   */
+  async monitor(on: boolean, preset: PresetId, key: Key = DEFAULT_KEY) {
     const call = ++this.monitorCalls
-    if (on && this.rackPreset !== preset) {
+    const rackFor = `${preset} ${keyName(key)}`
+    if (on && this.rackFor !== rackFor) {
       const input = this.ctx.createGain()
       this.source.connect(input)
-      const output = await buildRack(this.ctx, preset, input)
+      const output = await buildRack(this.ctx, preset, input, key)
       const rack = { input, output }
       // A later call has moved on while this one built: it decides, so drop this one entirely.
       if (call !== this.monitorCalls) return this.dropRack(rack)
       this.dropRack(this.rack)
       this.rack = rack
-      this.rackPreset = preset
+      this.rackFor = rackFor
       output.connect(this.monitorGain)
     }
     this.monitorGain.gain.setTargetAtTime(on ? 1 : 0, this.ctx.currentTime, 0.01)
@@ -177,6 +195,7 @@ export class VoiceInput {
   start() {
     this.chunks = []
     this.frames = 0
+    this.startFrame = undefined
     this.capture.port.postMessage('start')
   }
 
@@ -196,6 +215,47 @@ export class VoiceInput {
       }
       this.capture.port.postMessage('stop')
     })
+  }
+
+  /**
+   * The loopback latency test: plays a few clicks through the speakers, listens for them through
+   * the microphone, and keeps the round trip in this browser. Resolves with it in seconds, or
+   * undefined when the clicks weren't heard clearly (headphones on, speakers off, a noisy room).
+   * Silences the monitor while it runs, and must not run while recording.
+   */
+  async measureRoundTrip(): Promise<number | undefined> {
+    const ctx = this.ctx
+    const rate = ctx.sampleRate
+    const monitorLevel = this.monitorGain.gain.value
+    this.monitorGain.gain.cancelScheduledValues(ctx.currentTime)
+    this.monitorGain.gain.value = 0
+    const click = ctx.createBuffer(1, loopbackClick(rate).length, rate)
+    click.copyToChannel(loopbackClick(rate) as Float32Array<ArrayBuffer>, 0)
+    const level = ctx.createGain()
+    level.gain.value = 0.5
+    level.connect(ctx.destination)
+    this.start()
+    const first = ctx.currentTime + 0.3
+    const emits: number[] = []
+    for (let i = 0; i < CLICKS; i++) {
+      const when = first + i * CLICK_SPACING
+      const src = ctx.createBufferSource()
+      src.buffer = click
+      src.connect(level)
+      src.start(when)
+      emits.push(Math.round(when * rate))
+    }
+    const listen = first + (CLICKS - 1) * CLICK_SPACING + MAX_ROUND_TRIP + 0.1 - ctx.currentTime
+    await new Promise((r) => setTimeout(r, listen * 1000))
+    const recording = await this.stop()
+    level.disconnect()
+    this.monitorGain.gain.value = monitorLevel
+    if (this.startFrame === undefined) return undefined
+    const roundTrip = findClicks(recording, rate, this.startFrame, emits)
+    if (roundTrip === undefined) return undefined
+    saveRoundTrip(roundTrip)
+    this.latency = withMeasured(this.latency, roundTrip)
+    return roundTrip
   }
 
   private take(samples: Float32Array) {

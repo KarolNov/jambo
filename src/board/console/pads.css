@@ -177,6 +177,7 @@
   gap: 12px;
 }
 :root[data-theme] .console-sounds .voice-settings,
+:root[data-theme] .console-sounds .voice-latency,
 :root[data-theme] .console-sounds .voice-take {
   display: flex;
   flex-wrap: wrap;

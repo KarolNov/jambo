@@ -1,16 +1,41 @@
 import { useEffect, useRef, useState } from 'react'
 import { prepareBuffer, type Prepared, UploadError } from '../audio/upload'
 import { MAX_SECONDS, MicError, VoiceInput } from '../audio/voice/input'
+import { type Key, keyName, NOTE_NAMES, type Scale } from '../audio/voice/dsp/tune'
 import type { Latency } from '../audio/voice/latency'
-import { loadMonitor, loadPreset, saveMonitor, savePreset } from '../audio/voice/prefs'
-import { isPreset, PRESETS, type PresetId } from '../audio/voice/presets'
+import {
+  loadKey,
+  loadMonitor,
+  loadPreset,
+  loadRoundTrip,
+  saveKey,
+  saveMonitor,
+  savePreset,
+} from '../audio/voice/prefs'
+import { isPreset, PRESETS, type PresetId, rackDelay, usesKey } from '../audio/voice/presets'
 import { renderVoice } from '../audio/voice/render'
 import { Button, Select, Switch } from '../ui'
 import { useSession } from './session'
 
-type Phase = 'idle' | 'opening' | 'recording' | 'rendering' | 'done'
+type Phase = 'idle' | 'opening' | 'recording' | 'rendering' | 'done' | 'testing'
 
 const PRESET_GROUPS = [{ options: PRESETS.map((p) => ({ value: p.id, label: p.name })) }]
+
+const SCALES: Scale[] = ['major', 'minor']
+const KEY_GROUPS = SCALES.map((scale) => ({
+  label: scale === 'major' ? 'Major' : 'Minor',
+  options: NOTE_NAMES.map((_, root) => ({
+    value: keyName({ root, scale }),
+    label: keyName({ root, scale }),
+  })),
+}))
+const keyOf = (name: string): Key | undefined => {
+  for (const scale of SCALES) {
+    const root = NOTE_NAMES.findIndex((_, r) => keyName({ root: r, scale }) === name)
+    if (root >= 0) return { root, scale }
+  }
+  return undefined
+}
 
 /**
  * Records a voice in the upload dialog: pick a preset, optionally monitor through it, record up to
@@ -29,7 +54,9 @@ export function Recorder({
   const { engine } = useSession()
   const [phase, setPhase] = useState<Phase>('idle')
   const [preset, setPreset] = useState<PresetId>(loadPreset)
+  const [key, setKey] = useState<Key>(loadKey)
   const [monitor, setMonitor] = useState(loadMonitor)
+  const [roundTrip, setRoundTrip] = useState(loadRoundTrip)
   const [level, setLevel] = useState(0)
   const [elapsed, setElapsed] = useState(0)
   const [latency, setLatency] = useState<Latency>()
@@ -42,8 +69,8 @@ export function Recorder({
   const decoding = useRef(false)
   // False once the dialog has closed, so a recording still opening lets go of the microphone.
   const alive = useRef(true)
-  const latest = useRef({ preset, monitor, onPrepared })
-  latest.current = { preset, monitor, onPrepared }
+  const latest = useRef({ preset, key, monitor, onPrepared })
+  latest.current = { preset, key, monitor, onPrepared }
 
   const stopListening = () => {
     playback.current?.stop()
@@ -77,7 +104,7 @@ export function Recorder({
     const rate = voice.sampleRate
     release()
     try {
-      const rendered = await renderVoice(take, rate, latest.current.preset)
+      const rendered = await renderVoice(take, rate, latest.current.preset, latest.current.key)
       const p = await prepareBuffer(rendered, 'recording')
       setPrepared(p)
       latest.current.onPrepared(p)
@@ -104,7 +131,7 @@ export function Recorder({
       setLatency(voice.latency)
       voice.onLevel(setLevel)
       // The switch may have moved while the microphone opened.
-      await voice.monitor(latest.current.monitor, preset)
+      await voice.monitor(latest.current.monitor, preset, latest.current.key)
       if (!alive.current) return
       voice.start()
       setElapsed(0)
@@ -153,27 +180,75 @@ export function Recorder({
     savePreset(id)
   }
 
+  const pickKey = (name: string) => {
+    const k = keyOf(name)
+    if (!k) return
+    setKey(k)
+    saveKey(k)
+  }
+
   const toggleMonitor = (on: boolean) => {
     setMonitor(on)
     saveMonitor(on)
-    void input.current?.monitor(on, preset)
+    void input.current?.monitor(on, preset, key)
+  }
+
+  /** The loopback test: opens the microphone just for it, plays clicks, listens for them. */
+  const testDelay = async () => {
+    stopListening()
+    setError(undefined)
+    setPhase('testing')
+    try {
+      await engine.unlock()
+      const ctx = engine.audioContext
+      if (!ctx) throw new MicError('unavailable')
+      const voice = await VoiceInput.open(ctx)
+      if (!alive.current) return voice.close()
+      input.current = voice
+      const measured = await voice.measureRoundTrip()
+      if (!alive.current) return
+      if (measured === undefined) {
+        setError(
+          "Couldn't hear the clicks. Take off headphones, turn the speakers up, and try again somewhere quiet.",
+        )
+      } else {
+        setRoundTrip(measured)
+        setLatency(voice.latency)
+      }
+    } catch (e) {
+      setError(e instanceof MicError ? e.message : "Couldn't run the delay test")
+    }
+    release()
+    setPhase(prepared ? 'done' : 'idle')
   }
 
   const recording = phase === 'recording'
-  const busy = phase === 'opening' || phase === 'rendering'
+  const busy = phase === 'opening' || phase === 'rendering' || phase === 'testing'
+  const delayMs = (latency?.roundTrip ?? roundTrip ?? 0) * 1000
+  const heardLate = Math.round(
+    delayMs + rackDelay(preset, engine.audioContext?.sampleRate ?? 48_000) * 1000,
+  )
   return (
     <div className="voice-recorder" aria-label="Record your voice" role="group">
       <div className="voice-settings">
         {/* Fixed once recording starts: the whole take renders through one preset. */}
         {recording || busy || disabled ? (
-          <span className="voice-preset">{PRESETS.find((p) => p.id === preset)?.name}</span>
+          <span className="voice-preset">
+            {PRESETS.find((p) => p.id === preset)?.name}
+            {usesKey(preset) && ` · ${keyName(key)}`}
+          </span>
         ) : (
-          <Select
-            label="Voice preset"
-            value={preset}
-            groups={PRESET_GROUPS}
-            onChange={pickPreset}
-          />
+          <>
+            <Select
+              label="Voice preset"
+              value={preset}
+              groups={PRESET_GROUPS}
+              onChange={pickPreset}
+            />
+            {usesKey(preset) && (
+              <Select label="Key" value={keyName(key)} groups={KEY_GROUPS} onChange={pickKey} />
+            )}
+          </>
         )}
         <Switch variant="slide" checked={monitor} onChange={toggleMonitor} disabled={disabled}>
           Monitor
@@ -182,11 +257,23 @@ export function Recorder({
       {monitor && (
         <p className="muted voice-hint">
           Use headphones: with speakers the mic hears itself and feeds back.
-          {latency && latency.roundTrip > 0 && (
-            <> You'll hear yourself about {Math.round(latency.roundTrip * 1000)} ms late.</>
-          )}
+          {heardLate > 0 && <> You'll hear yourself about {heardLate} ms late.</>}
         </p>
       )}
+      <div className="voice-latency">
+        <span className="muted">
+          {phase === 'testing'
+            ? 'Listening for clicks: keep the speakers on and the room quiet…'
+            : roundTrip !== undefined
+              ? `Delay: ${Math.round(roundTrip * 1000)} ms, measured.`
+              : latency && latency.roundTrip > 0
+                ? `Delay: about ${Math.round(latency.roundTrip * 1000)} ms, estimated.`
+                : 'Delay: estimated from your browser.'}
+        </span>
+        <Button onClick={() => void testDelay()} disabled={recording || busy || disabled}>
+          {roundTrip !== undefined ? 'Test again' : 'Test delay'}
+        </Button>
+      </div>
       <div className="voice-take">
         <Button
           tone="danger"
