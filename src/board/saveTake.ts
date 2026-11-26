@@ -24,44 +24,79 @@ export interface SavedClips {
   reason?: string
 }
 
+/** How long to wait before trying an upload again after the jam says too many, in ms. */
+const RETRY_MS = 10_000
+/** How many times an upload is tried while the jam says too many: about a minute, its window. */
+const TRIES = 7
+
+/** Uploads a clip, waiting and trying again while the jam's clip rate limit refuses it. */
+async function uploadPatiently(...args: Parameters<typeof uploadClip>) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await uploadClip(...args)
+    } catch (e) {
+      if (!(e instanceof UploadError) || e.status !== 429 || attempt >= TRIES) throw e
+      await new Promise((r) => setTimeout(r, RETRY_MS))
+    }
+  }
+}
+
 /**
  * Stores a take's voice clips for its track: each is cut to the loop (`bars` at `bpm`), rendered
  * through its preset, trimmed and levelled like any recording, uploaded as a clip, and waited for
  * until this board lists it, so the track never names a sound it can't see. A clip's hit keeps the
  * beat it was sung on, moved by the silence the trim took off its start. A clip that fails is left
- * out and counted; one that falls wholly outside the loop is dropped, as a pad hit there would be.
+ * out and counted, as are the latest clips past the track's `room` for more hits; one that falls
+ * wholly outside the loop is dropped, as a pad hit there would be, and so is one that is silent.
+ * Uploads go one at a time, waiting out the jam's clip rate limit.
  */
 export async function saveClips(
   clips: readonly SungClip[],
-  take: { bars: number; bpm: number; trackName: string },
+  take: { bars: number; bpm: number; trackName: string; room: number },
   jam: { slug: string; me: Identity; store: JamSession['store'] },
 ): Promise<SavedClips> {
   const length = take.bars * BEATS_PER_BAR
   const beat = beatSeconds(take.bpm)
-  const kept = clips.flatMap((c) => {
-    const span = clipSpan(c.beat, c.samples.length / c.rate, length, take.bpm)
-    return span ? [{ clip: c, span }] : []
-  })
-  const results = await Promise.allSettled(
-    kept.map(async ({ clip, span }, i): Promise<SoundHit> => {
+  const inLoop = clips
+    .flatMap((c) => {
+      const span = clipSpan(c.beat, c.samples.length / c.rate, length, take.bpm)
+      return span ? [{ clip: c, span }] : []
+    })
+    .sort((a, b) => a.span.beat - b.span.beat)
+  const room = Math.max(0, take.room)
+  const kept = inLoop.slice(0, room)
+  const prepared = await Promise.allSettled(
+    kept.map(async ({ clip, span }) => {
       const from = Math.round(span.skip * clip.rate)
       const raw = clip.samples.subarray(from, from + Math.round(span.keep * clip.rate))
       const rendered = await renderVoice(raw, clip.rate, clip.preset, clip.key)
-      const prepared = await prepareBuffer(rendered, 'recording')
-      const at = span.beat + prepared.trimmedStart / beat
-      const { id } = await uploadClip(jam.slug, prepared, clipName(take.trackName, i + 1), jam.me)
-      await listed(jam.store, id)
-      return { soundId: id, beat: Math.min(at, length - 1e-6) }
+      // Nothing audible was sung: there is no clip to keep, and nothing went wrong.
+      if (rendered.getChannelData(0).every((s) => s === 0)) return undefined
+      const sample = await prepareBuffer(rendered, 'recording')
+      return { sample, at: span.beat + sample.trimmedStart / beat }
     }),
   )
   const hits: SoundHit[] = []
-  let lost = 0
-  let reason: string | undefined
-  for (const r of results) {
-    if (r.status === 'fulfilled') hits.push(r.value)
-    else {
-      lost++
-      reason ??= r.reason instanceof UploadError ? r.reason.message : undefined
+  let lost = inLoop.length - kept.length
+  let reason: string | undefined = lost ? 'the track has no room for more hits' : undefined
+  const lose = (e: unknown) => {
+    lost++
+    reason ??= e instanceof UploadError ? e.message : undefined
+  }
+  let n = 0
+  for (const p of prepared) {
+    if (p.status === 'rejected') {
+      lose(p.reason)
+      continue
+    }
+    if (!p.value) continue
+    const { sample, at } = p.value
+    try {
+      const { id } = await uploadPatiently(jam.slug, sample, clipName(take.trackName, ++n), jam.me)
+      await listed(jam.store, id)
+      hits.push({ soundId: id, beat: Math.min(at, length - 1e-6) })
+    } catch (e) {
+      lose(e)
     }
   }
   return { hits, lost, ...(reason ? { reason } : {}) }

@@ -46,7 +46,6 @@ export function useTransport(slug: string) {
       return
     }
     const id = newId()
-    engine.claim(id)
     const name = takeName(me.name, tracks.values())
     let hits: Hit[] = take.hits
     let lost: string | undefined
@@ -56,12 +55,15 @@ export function useTransport(slug: string) {
         const sung = await take.clips
         const saved = await saveClips(
           sung,
-          { bars: take.bars, bpm: take.bpm, trackName: name },
+          {
+            bars: take.bars,
+            bpm: take.bpm,
+            trackName: name,
+            room: LIMITS.hitsPerTrack - hits.length,
+          },
           { slug, me, store: jam.store },
         )
-        hits = [...hits, ...saved.hits]
-          .sort((a, b) => a.beat - b.beat)
-          .slice(0, LIMITS.hitsPerTrack)
+        hits = [...hits, ...saved.hits].sort((a, b) => a.beat - b.beat)
         lost = lostMessage(saved, hits.length > 0)
       } finally {
         setSaving(false)
@@ -70,6 +72,10 @@ export function useTransport(slug: string) {
         setMessage(lost ?? 'Nothing recorded')
         return
       }
+    } else {
+      // Added at once, the take also plays what its second cycle has already passed. One that
+      // waited for its clips plays from where its loop is now, as anyone else's track does.
+      engine.claim(id)
     }
     const r = board.addTrack(id, {
       name,
