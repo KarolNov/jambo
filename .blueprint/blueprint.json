@@ -142,6 +142,7 @@
         "!src/audio/samples.ts",
         "!src/audio/synth.ts",
         "!src/audio/upload.ts",
+        "!src/audio/voice/**",
         "shared/clock.ts",
         "shared/looper.ts",
         "src/board/console/Deck.tsx",
@@ -282,6 +283,12 @@
         "src/ui/ui.css": "c273a6f0e8ad"
       },
       "syncedCommit": "1a4e2252cb4ad0c19fb17b5160b92d3ff6a24538"
+    },
+    "audio/voice": {
+      "ref": null,
+      "anchors": [
+        "src/audio/voice/**"
+      ]
     }
   },
   "changes": {
@@ -384,6 +391,13 @@
         "https://github.com/KarolNov/jambo/pull/69",
         "https://github.com/KarolNov/jambo/pull/71"
       ]
+    },
+    "voice": {
+      "brief": "https://app.notion.com/p/42443cce21f28180ad75d39879942a53",
+      "review": "https://app.notion.com/p/42443cce21f2811786aed6eb1a737377",
+      "tickets": "https://app.notion.com/p/42443cce21f2811786aed6eb1a737377",
+      "status": "approved",
+      "baseCommit": "1e8b0fbdb3cc0f075c7b6c932caf8a2af7b4757e"
     }
   },
   "tests": {
