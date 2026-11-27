@@ -10,6 +10,11 @@ export interface LiveTransport {
   send(frame: Uint8Array): void
   /** Calls `listener` with each frame of someone else's voice, by the voice id the room granted them. */
   onFrame(listener: (voice: string, frame: Uint8Array) => void): () => void
+  /**
+   * Stops receiving one voice (`on` false), or starts again: a muted voice is unsubscribed, so its
+   * frames stop coming at all. Every voice is received until it is turned off here.
+   */
+  listen(voice: string, on: boolean): void
   /** Stops sending and listening. */
   close(): void
 }

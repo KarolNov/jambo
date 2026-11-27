@@ -1,11 +1,12 @@
 import { BPM } from '../../../shared/board/schema'
 import { encodeFrame, LIVE, type LiveFrame, liveDelayMs, parseFrame } from '../../../shared/live'
 import type { Engine } from '../engine'
-import type { Key } from '../voice/dsp/tune'
-import { VoiceInput } from '../voice/input'
+import { type Key, keyName } from '../voice/dsp/tune'
+import type { VoiceInput } from '../voice/input'
 import { type PresetId, rackDelay } from '../voice/presets'
+import type { VoiceLease } from '../voice/shared'
 import { canEncode, LiveEncoder } from './encoder'
-import { LiveListener, type Played } from './listener'
+import { canDecode, LiveListener, type Played } from './listener'
 import type { LiveSlot, SlotAnswer, SlotEnd } from './slot'
 import type { LiveTransport } from './transport'
 
@@ -32,17 +33,30 @@ const ENDED: Record<SlotEnd, string | undefined> = {
   stopped: undefined,
 }
 
-/** How this client sings live: through which preset and key. */
+/** Why singing live can't start in this browser at all. */
+export const CANT_ENCODE = "This browser can't sing live."
+
+/** What a listener's Who's here says when this browser can't play live voices. */
+export const CANT_DECODE = "This browser can't play live voices."
+
+/** How this client sings live: through which preset and key, and whether it hears itself. */
 export interface LiveOptions {
   preset: PresetId
   key: Key
+  /** Monitor through the preset while live, with no delay (never a bar late). */
+  monitor?: boolean
 }
 
-/** The singer's side while live: the microphone, its preset, and the encoder. */
+/** The singer's side while live: its hold on the microphone, its preset's chain, and the encoder. */
 interface Singing {
+  lease: VoiceLease<VoiceInput>
   voice: VoiceInput
+  /** The preset's chain into `bus`, swapped when the preset or key changes. */
   rack: { drop(): void }
+  /** What the encoder captures: whichever chain is current. */
+  bus: GainNode
   encoder: LiveEncoder
+  options: LiveOptions
 }
 
 /**
@@ -58,6 +72,10 @@ export class Live {
   private readonly sweep = setInterval(() => this.closeIdle(), 1_000)
   /** Why singing stopped by itself, if it did, for the readout. */
   error?: string
+  /** Voices this listener has muted, by voice id. */
+  private muted = new Set<string>()
+  /** Counts `retune` calls, so one overtaken while its chain built does nothing. */
+  private tunes = 0
   private changeListeners = new Set<() => void>()
   private stopTransport: () => void
   private stopSlot?: () => void
@@ -83,6 +101,65 @@ export class Live {
   /** Whether this client is singing live (or starting to). */
   get live() {
     return this.singing !== undefined
+  }
+
+  /** Whether this browser can encode a live voice (it may still listen without). */
+  static canSing(sampleRate = 48_000): Promise<boolean> {
+    return canEncode(sampleRate)
+  }
+
+  /** Whether this browser can play others' live voices. */
+  static canListen(): boolean {
+    return canDecode()
+  }
+
+  /** Whether `voice` is muted here. */
+  isMuted(voice: string) {
+    return this.muted.has(voice)
+  }
+
+  /**
+   * Mutes or unmutes `voice` for this listener only: muted, it is unsubscribed from the transport
+   * and whatever of it was queued stops at once; unmuted, it plays again from its next on-time frame.
+   */
+  mute(voice: string, on: boolean) {
+    if (on === this.muted.has(voice)) return
+    if (on) this.muted.add(voice)
+    else this.muted.delete(voice)
+    this.transport.listen(voice, !on)
+    if (on) {
+      void this.listeners.get(voice)?.then((l) => l?.close())
+      this.listeners.delete(voice)
+      this.heard.delete(voice)
+    }
+    this.emit()
+  }
+
+  /** Turns hearing yourself on or off while live. */
+  setMonitor(on: boolean) {
+    const current = this.singing
+    void current?.then((s) => {
+      if (!s || this.singing !== current) return
+      s.options = { ...s.options, monitor: on }
+      s.lease.monitor(on ? { preset: s.options.preset, key: s.options.key } : undefined)
+    })
+  }
+
+  /** Sings through another preset or key from now on, staying live. */
+  retune(preset: PresetId, key: Key) {
+    const current = this.singing
+    const call = ++this.tunes
+    void current?.then(async (s) => {
+      if (!s || (s.options.preset === preset && keyName(s.options.key) === keyName(key))) return
+      const rack = await s.voice.liveRack(preset, key)
+      // Stopped, or retuned again, while it built.
+      if (this.singing !== current || call !== this.tunes) return rack.drop()
+      rack.output.connect(s.bus)
+      s.rack.drop()
+      s.rack = rack
+      s.options = { ...s.options, preset, key }
+      if (s.options.monitor) s.lease.monitor({ preset, key })
+    })
   }
 
   /** Frames dropped here so far, across every voice. */
@@ -128,20 +205,26 @@ export class Live {
     }
   }
 
-  private async startSinging(ctx: AudioContext, { preset, key }: LiveOptions): Promise<Singing> {
-    if (!(await canEncode(ctx.sampleRate))) throw new Error("This browser can't sing live.")
+  private async startSinging(ctx: AudioContext, options: LiveOptions): Promise<Singing> {
+    if (!(await canEncode(ctx.sampleRate))) throw new Error(CANT_ENCODE)
     const answer = await this.slot?.request()
     if (answer && !answer.granted) throw new Error(REFUSED[answer.why])
+    // The microphone a take's clips use too: holding M while live sings into both.
+    const lease = this.engine.leaseVoice()
     let voice: VoiceInput
     try {
-      voice = await VoiceInput.open(ctx)
+      voice = await lease.voice
     } catch (e) {
+      lease.release()
       this.slot?.release()
       throw e
     }
     try {
-      const rack = await voice.liveRack(preset, key)
-      const encoder: LiveEncoder = await LiveEncoder.open(ctx, rack.output, {
+      const rack = await voice.liveRack(options.preset, options.key)
+      const bus = ctx.createGain()
+      rack.output.connect(bus)
+      let singing: Singing | undefined
+      const encoder: LiveEncoder = await LiveEncoder.open(ctx, bus, {
         onError: (e) => {
           // Only if it is still the encoder singing now.
           void this.singing?.then((s) => {
@@ -150,7 +233,9 @@ export class Live {
             void this.stopSinging()
           })
         },
-        delay: () => voice.latency.roundTrip + rackDelay(preset, ctx.sampleRate),
+        delay: () =>
+          voice.latency.roundTrip +
+          rackDelay(singing?.options.preset ?? options.preset, ctx.sampleRate),
         timing: () => this.engine.liveTiming(),
         onFrame: (frame) => {
           this.transport.send(encodeFrame(frame))
@@ -158,9 +243,11 @@ export class Live {
           this.stats.lastSent = frame
         },
       })
-      return { voice, rack, encoder }
+      singing = { lease, voice, rack, bus, encoder, options }
+      if (options.monitor) lease.monitor({ preset: options.preset, key: options.key })
+      return singing
     } catch (e) {
-      voice.close()
+      lease.release()
       this.slot?.release()
       throw e
     }
@@ -179,14 +266,15 @@ export class Live {
     if (!s) return
     s.encoder.close()
     s.rack.drop()
-    s.voice.close()
+    s.bus.disconnect()
+    s.lease.release()
   }
 
   private onFrame(voice: string, bytes: Uint8Array) {
     const frame = parseFrame(bytes)
     const ctx = this.engine.audioContext
     const output = this.engine.liveInput
-    if (!frame || !ctx || !output) return
+    if (!frame || !ctx || !output || this.muted.has(voice)) return
     this.heard.set(voice, performance.now())
     let listener = this.listeners.get(voice)
     if (!listener) {

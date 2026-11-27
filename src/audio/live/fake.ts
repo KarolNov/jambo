@@ -9,6 +9,9 @@ import type { LiveTransport } from './transport'
  */
 export class FakeTransport implements LiveTransport {
   private listeners = new Set<(voice: string, frame: Uint8Array) => void>()
+  /** Voices not listened to. The room relays every frame over the one connection, so they are
+   * dropped here, as they arrive. */
+  private muted = new Set<string>()
 
   constructor(private readonly provider: YProvider) {
     provider.on('custom-message', this.onMessage)
@@ -25,6 +28,11 @@ export class FakeTransport implements LiveTransport {
     }
   }
 
+  listen(voice: string, on: boolean) {
+    if (on) this.muted.delete(voice)
+    else this.muted.add(voice)
+  }
+
   close() {
     this.provider.off('custom-message', this.onMessage)
     this.listeners.clear()
@@ -32,7 +40,7 @@ export class FakeTransport implements LiveTransport {
 
   private onMessage = (message: string) => {
     const msg = parseRelayMessage(message)
-    if (!msg?.v) return
+    if (!msg?.v || this.muted.has(msg.v)) return
     const frame = fromBase64(msg.f)
     if (frame) for (const l of this.listeners) l(msg.v, frame)
   }

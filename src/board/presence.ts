@@ -105,6 +105,25 @@ export function usePeople(awareness: Awareness, me: Person): Person[] {
   return people
 }
 
+const sameLive = (a: LiveVoice[], b: LiveVoice[]) =>
+  a.length === b.length &&
+  a.every((v, i) => v.voice === b[i]!.voice && v.name === b[i]!.name && v.color === b[i]!.color)
+
+/** Who is live (see `listLive`), re-rendering only when that changes. */
+export function useLive(awareness: Awareness): LiveVoice[] {
+  const [live, setLive] = useState(() => listLive(awareness.getStates().values()))
+  useEffect(() => {
+    const onChange = () => {
+      const next = listLive(awareness.getStates().values())
+      setLive((was) => (sameLive(was, next) ? was : next))
+    }
+    awareness.on('change', onChange)
+    onChange()
+    return () => awareness.off('change', onChange)
+  }, [awareness])
+  return live
+}
+
 /** A loop's knob or fader as presence names it: `track.<trackId>.<control>`. See `CONTROL_KEYS`. */
 export const controlKey = CONTROL_KEYS.track
 
