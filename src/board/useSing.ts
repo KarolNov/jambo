@@ -129,7 +129,8 @@ const LIVE_MIC: Record<MicProblem, string> = {
  * beside Sing, and everyone else hears them a bar later. The first time in a browser it asks them
  * to confirm headphones (`asking`, answered with `confirm` or `cancel`), and remembers it. Says why
  * it can't go on (`error`: a full jam, the microphone) or why it went off by itself (the hour, a
- * dropped connection), and `unsupported` where this browser can't encode a live voice. `monitor`
+ * dropped connection), `unsupported` where this browser can't encode a live voice, and
+ * `unavailable` where live voice isn't set up (no Realtime credentials in this Worker). `monitor`
  * hears yourself through the preset, at once, while live or singing a take; remembered here.
  * Undefined in tests without live voice.
  */
@@ -204,6 +205,7 @@ export function useLiveMic() {
     starting,
     asking,
     unsupported: canSing === false,
+    unavailable: live.available === false,
     error: error ?? live.error,
     monitor,
     toggle,

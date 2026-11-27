@@ -15,6 +15,11 @@ export interface LiveTransport {
    * frames stop coming at all. Every voice is received until it is turned off here.
    */
   listen(voice: string, on: boolean): void
+  /**
+   * Publishes this client's voice as the live slot `voice` the room granted, or stops (undefined).
+   * Frames sent while nothing is published go nowhere.
+   */
+  publish(voice: string | undefined): void
   /** Stops sending and listening. */
   close(): void
 }

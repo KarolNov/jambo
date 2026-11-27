@@ -209,3 +209,35 @@ export function toLiveVoice(v: unknown): LiveVoice | undefined {
   if (typeof l?.voice !== 'string' || l.voice.length === 0 || !color || !name) return undefined
   return { voice: l.voice, name, color }
 }
+
+/**
+ * How live voice travels in this Worker, as `GET /api/live` answers: `realtime` (Cloudflare Realtime
+ * DataChannels), `fake` (relayed through the room, local Workers only), or `none` where neither is
+ * set up (a deployed Worker without Realtime credentials).
+ */
+export type LiveTransportKind = 'realtime' | 'fake' | 'none'
+
+export const toTransportKind = (v: unknown): LiveTransportKind =>
+  v === 'realtime' || v === 'fake' ? v : 'none'
+
+/** What the mic control says where live voice isn't set up. */
+export const LIVE_UNAVAILABLE = "Live voice isn't available here."
+
+/**
+ * Every live voice's DataChannel delivery: unordered, never retransmitted. A late frame is useless
+ * (the jitter buffer drops it), so nothing waits for one. Both ends and the Realtime API must agree.
+ */
+export const CHANNEL_POLICY = { ordered: false, maxRetransmits: 0 } as const
+
+/**
+ * The session route's calls, under `/api/jams/:slug/live/`. Every call names the caller's private
+ * seat key; all but `session` carry the session and the ticket `session` gave for it.
+ */
+export const LIVE_CALLS = ['session', 'answer', 'publish', 'subscribe', 'close'] as const
+export type LiveCall = (typeof LIVE_CALLS)[number]
+
+/** A session description, as WebRTC and the Realtime API pass it. */
+export interface Description {
+  type: 'offer' | 'answer'
+  sdp: string
+}

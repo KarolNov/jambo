@@ -272,3 +272,17 @@ test("a browser that can't encode a live voice has its mic control disabled, and
   await goLive(a.page)
   await expect.poll(() => playedCount(b.page), { timeout: 15_000 }).toBeGreaterThan(20)
 })
+
+// @scenario collab/live-voice: Unsupported browser
+test("where live voice isn't set up, the mic control is disabled and says so", async ({
+  browser,
+}) => {
+  // A deployed Worker without Realtime credentials answers `none`, as this one is told to.
+  const a = await person(browser, async (c) => {
+    await c.route('**/api/live', (route) => route.fulfill({ json: { transport: 'none' } }))
+  })
+  const link = await startJam(a.page)
+  await join(a.page, link)
+  await expect(liveMic(a.page)).toBeDisabled()
+  await expect(liveMic(a.page)).toHaveAccessibleDescription("Live voice isn't available here.")
+})

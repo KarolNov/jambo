@@ -1,5 +1,12 @@
 import { BPM } from '../../../shared/board/schema'
-import { encodeFrame, LIVE, type LiveFrame, liveDelayMs, parseFrame } from '../../../shared/live'
+import {
+  encodeFrame,
+  LIVE,
+  LIVE_UNAVAILABLE,
+  type LiveFrame,
+  liveDelayMs,
+  parseFrame,
+} from '../../../shared/live'
 import type { Engine } from '../engine'
 import { type Key, keyName } from '../voice/dsp/tune'
 import type { VoiceInput } from '../voice/input'
@@ -79,17 +86,28 @@ export class Live {
   private changeListeners = new Set<() => void>()
   private stopTransport: () => void
   private stopSlot?: () => void
+  /**
+   * Whether live voice is set up where this jam is served: undefined until known, false where the
+   * Worker has neither Realtime credentials nor the local fake relay.
+   */
+  available?: boolean
   /** Frames sent, and the last few that played here, for the `?debug` readout and e2e tests. */
   readonly stats = { sent: 0, lastSent: undefined as LiveFrame | undefined, played: [] as Played[] }
 
   /**
    * `slot` is the room's say over who sings: without one (tests), singing needs no slot.
+   * `available` says whether live voice is set up here at all (see `available`).
    */
   constructor(
     private readonly engine: Engine,
     private readonly transport: LiveTransport,
     private readonly slot?: LiveSlot,
+    available: Promise<boolean> = Promise.resolve(true),
   ) {
+    void available.then((on) => {
+      this.available = on
+      this.emit()
+    })
     this.stopTransport = transport.onFrame((voice, bytes) => this.onFrame(voice, bytes))
     this.stopSlot = slot?.onEnd((why) => {
       if (!this.singing) return
@@ -206,9 +224,12 @@ export class Live {
   }
 
   private async startSinging(ctx: AudioContext, options: LiveOptions): Promise<Singing> {
+    if (this.available === false) throw new Error(LIVE_UNAVAILABLE)
     if (!(await canEncode(ctx.sampleRate))) throw new Error(CANT_ENCODE)
     const answer = await this.slot?.request()
     if (answer && !answer.granted) throw new Error(REFUSED[answer.why])
+    // Published from the grant on, so listeners can subscribe while the microphone opens.
+    if (answer) this.transport.publish(answer.voice)
     // The microphone a take's clips use too: holding M while live sings into both.
     const lease = this.engine.leaseVoice()
     let voice: VoiceInput
@@ -216,7 +237,7 @@ export class Live {
       voice = await lease.voice
     } catch (e) {
       lease.release()
-      this.slot?.release()
+      this.unpublish()
       throw e
     }
     try {
@@ -248,7 +269,7 @@ export class Live {
       return singing
     } catch (e) {
       lease.release()
-      this.slot?.release()
+      this.unpublish()
       throw e
     }
   }
@@ -257,9 +278,15 @@ export class Live {
     const singing = this.singing
     if (!singing) return
     this.singing = undefined
-    this.slot?.release()
+    this.unpublish()
     this.emit()
     this.close(await singing?.catch(() => undefined))
+  }
+
+  /** Stops publishing and gives the slot back. */
+  private unpublish() {
+    this.transport.publish(undefined)
+    this.slot?.release()
   }
 
   private close(s: Singing | undefined) {

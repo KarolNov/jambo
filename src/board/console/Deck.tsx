@@ -1,5 +1,6 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { BPM } from '../../../shared/board'
+import { LIVE_UNAVAILABLE } from '../../../shared/live'
 import type { RecorderState } from '../../audio/engine'
 import { CANT_ENCODE } from '../../audio/live/live'
 import { PRESETS } from '../../audio/voice/presets'
@@ -126,8 +127,14 @@ function LiveMic() {
           className="console-live-mic"
           aria-pressed={mic.on}
           aria-busy={mic.starting}
-          aria-describedby={mic.unsupported ? 'console-live-unsupported' : undefined}
-          disabled={mic.unsupported || mic.asking}
+          aria-describedby={
+            mic.unavailable
+              ? 'console-live-unavailable'
+              : mic.unsupported
+                ? 'console-live-unsupported'
+                : undefined
+          }
+          disabled={mic.unavailable || mic.unsupported || mic.asking}
           onClick={mic.toggle}
         >
           <span className="console-live-led" aria-hidden />
@@ -144,10 +151,16 @@ function LiveMic() {
           Monitor
         </Switch>
       </div>
-      {mic.unsupported && (
-        <p id="console-live-unsupported" className="console-hint">
-          {CANT_ENCODE}
+      {mic.unavailable ? (
+        <p id="console-live-unavailable" className="console-hint">
+          {LIVE_UNAVAILABLE}
         </p>
+      ) : (
+        mic.unsupported && (
+          <p id="console-live-unsupported" className="console-hint">
+            {CANT_ENCODE}
+          </p>
+        )
       )}
       {mic.monitor && tip.shown && (
         <p className="console-hint" role="status">

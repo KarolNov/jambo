@@ -2,8 +2,8 @@ import { Provider, useAtomValue } from 'jotai'
 import { useEffect, useState } from 'react'
 import { JamClock } from '../audio/clock'
 import { Engine } from '../audio/engine'
-import { FakeTransport } from '../audio/live/fake'
 import { Live } from '../audio/live/live'
+import { PickedTransport } from '../audio/live/pick'
 import { LiveSlot } from '../audio/live/slot'
 import { SampleLoader } from '../audio/samples'
 import { Console } from './console/Console'
@@ -23,10 +23,12 @@ export function Jam({ slug }: { slug: string }) {
     const jam = openJam(slug)
     const clock = new JamClock(jam.provider)
     const engine = new Engine(clock, new SampleLoader(slug))
-    // Only the fake transport so far: the room relays it in local dev and e2e, nowhere else.
-    const slot = new LiveSlot(jam.provider)
-    const live = new Live(engine, new FakeTransport(jam.provider), slot)
     const me = new Me(identity())
+    // Realtime where the Worker has its credentials; the room's fake relay on a local Worker.
+    const slot = new LiveSlot(jam.provider)
+    const transport = new PickedTransport(slug, jam.provider, me.key)
+    const available = transport.kind.then((kind) => kind !== 'none')
+    const live = new Live(engine, transport, slot, available)
     setSession({ jam, engine, me, board: makeBoard(jam, me), live })
     const stop = onStatus(jam.provider, setStatus)
     const unseat = takeSeat(jam.provider, me)

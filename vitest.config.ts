@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
 import { commands } from './vitest.commands.ts'
+import { fakeRealtime, TEST_REALTIME_TOKEN } from './vitest.realtime.ts'
 
 export default defineConfig({
   test: {
@@ -10,7 +11,16 @@ export default defineConfig({
       // Inside the Workers runtime (Miniflare) against wrangler.jsonc: the real Hono app,
       // the real Board Durable Object, isolated storage per test file.
       {
-        plugins: [cloudflareTest({ wrangler: { configPath: './wrangler.jsonc' } })],
+        // Realtime is stubbed (`vitest.realtime.ts`) under a test token: no real app is called.
+        plugins: [
+          cloudflareTest({
+            wrangler: { configPath: './wrangler.jsonc' },
+            miniflare: {
+              bindings: { REALTIME_APP_TOKEN: TEST_REALTIME_TOKEN },
+              outboundService: fakeRealtime,
+            },
+          }),
+        ],
         test: {
           name: 'workers',
           include: ['test/**/*.test.ts'],

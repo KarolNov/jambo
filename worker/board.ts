@@ -51,7 +51,7 @@ import { assignSeat, parseSeatMessage, type Seat, seated } from '../shared/seats
 import { CLIPS, newUploadId, PAUSED_MESSAGES, UPLOADS } from '../shared/sounds'
 import { parseUploadWav } from '../shared/wav'
 import { type AgentHello, type AgentView, type PresentAgent, Roster, toView } from './agent/roster'
-import { relaysFake } from './live'
+import { type LiveSource, relaysFake } from './live'
 import { quota } from './quota'
 
 const SNAPSHOT_KEY = 'doc'
@@ -104,7 +104,11 @@ const FAKE_LIVE_KEY = 'fakeLive'
  * (never the seat's id, which is private); `since` is when it was granted (ms).
  */
 const LIVE_KEY = 'live'
-type LiveSlot = { voice: string; since: number }
+/**
+ * A held live slot. `source` is where its voice is published on Realtime (the singer's session and
+ * channel name), once the session route has published it; private to the room and the Worker.
+ */
+type LiveSlot = { voice: string; since: number; source?: LiveSource }
 type SeatState = {
   [SEAT_KEY]?: Seat
   [FAKE_LIVE_KEY]?: true
@@ -384,6 +388,42 @@ export class Board extends YServer<Env> {
         this.sendCustomMessage(c, out)
   }
 
+  /**
+   * The live session route asking about the person seated under the private `key`: whether they
+   * are seated in this jam now, and the voice of the live slot they hold, if any.
+   */
+  async liveSeat(key: string): Promise<{ seated: boolean; voice?: string }> {
+    const first = this.connectionsOf(key).next().value
+    if (!first) return { seated: false }
+    return { seated: true, voice: this.slots().get(key)?.voice }
+  }
+
+  /**
+   * Records where the person seated under `key` publishes the slot `voice` on Realtime, so
+   * listeners can subscribe to it. False when they no longer hold that slot.
+   */
+  async livePublished(key: string, voice: string, source: LiveSource): Promise<boolean> {
+    if (this.slots().get(key)?.voice !== voice) return false
+    for (const c of this.connectionsOf(key))
+      c.setState((prev: SeatState | null) =>
+        prev?.[LIVE_KEY] ? { ...prev, [LIVE_KEY]: { ...prev[LIVE_KEY], source } } : { ...prev },
+      )
+    return true
+  }
+
+  /**
+   * Where a seated person (under `key`) can subscribe to the live `voice`: its source; `own` for
+   * their own voice; `pending` while it is live but not yet published; `gone` when it isn't live.
+   */
+  async liveSource(key: string, voice: string): Promise<LiveSource | 'own' | 'pending' | 'gone'> {
+    for (const [seatId, slot] of this.slots()) {
+      if (slot.voice !== voice) continue
+      if (seatId === key) return 'own'
+      return slot.source ?? 'pending'
+    }
+    return 'gone'
+  }
+
   /** People's seats, from their connections; `except` leaves one connection out. */
   private peopleSeats(except?: string): Seat[] {
     const seats: Seat[] = []
@@ -404,7 +444,11 @@ export class Board extends YServer<Env> {
     connection.setState((prev: SeatState | null) => {
       const { [LIVE_KEY]: _, ...rest } = prev ?? {}
       return slot
-        ? { ...rest, [SEAT_KEY]: seat, [LIVE_KEY]: { voice: slot.voice, since: slot.since } }
+        ? {
+            ...rest,
+            [SEAT_KEY]: seat,
+            [LIVE_KEY]: { voice: slot.voice, since: slot.since, source: slot.source },
+          }
         : { ...rest, [SEAT_KEY]: seat }
     })
     this.sendCustomMessage(connection, seated(seat))

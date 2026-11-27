@@ -33,6 +33,9 @@ export class FakeTransport implements LiveTransport {
     else this.muted.add(voice)
   }
 
+  /** Nothing to do: the room relays only a slot holder's frames, whichever voice that is. */
+  publish() {}
+
   close() {
     this.provider.off('custom-message', this.onMessage)
     this.listeners.clear()
