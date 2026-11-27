@@ -107,9 +107,12 @@ function People() {
   useSeat(me) // your own entry reads `me`, so re-render when the room seats you
   const people = usePeople(jam.awareness, me)
   // From the room's own list only: names are unique in a jam, so they match people to voices.
-  const voices = new Map(useLive(jam.awareness).map((v) => [v.name, v.voice]))
+  const liveList = useLive(jam.awareness)
+  const voices = new Map(liveList.map((v) => [v.name, v.voice]))
   const [, changed] = useReducer((n: number) => n + 1, 0)
   useEffect(() => live?.subscribe(changed), [live])
+  // Mutes are by person: tell live voice whose voice is whose as it changes.
+  useEffect(() => live?.setLive(new Map(liveList.map((v) => [v.name, v.voice]))), [live, liveList])
   const swatch = useSwatch()
   const named = namesPeople(people.length)
   const othersLive = people.some((p) => p.id !== me.id && p.name && voices.has(p.name))
@@ -120,7 +123,7 @@ function People() {
           const name = personName(p, me.id)
           const voice = !p.agent && p.name ? voices.get(p.name) : undefined
           const label = p.agent ? `${name}, an AI agent` : voice ? `${name}, live` : name
-          const muted = voice !== undefined && !!live?.isMuted(voice)
+          const muted = voice !== undefined && !!p.name && !!live?.isMuted(p.name)
           const classes = [p.agent && 'is-agent', voice && 'is-live', muted && 'is-muted']
           return (
             <li
@@ -139,7 +142,7 @@ function People() {
                   className="console-person-mute"
                   label={`Mute ${p.name}`}
                   aria-pressed={muted}
-                  onClick={() => live.mute(voice, !muted)}
+                  onClick={() => p.name && live.mute(p.name, !muted)}
                 >
                   <SpeakerIcon muted={muted} />
                 </IconButton>

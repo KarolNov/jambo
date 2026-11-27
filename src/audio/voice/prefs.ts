@@ -35,7 +35,21 @@ export const savePreset = (id: PresetId) => write(PRESET_KEY, id)
 /** Whether monitoring was last on here; off by default, since speakers feed back. */
 export const loadMonitor = () => read(MONITOR_KEY) === '1'
 
-export const saveMonitor = (on: boolean) => write(MONITOR_KEY, on ? '1' : '0')
+const monitorListeners = new Set<(on: boolean) => void>()
+
+/** Remembers the monitor here, and tells every Monitor switch on the page (`onMonitor`). */
+export function saveMonitor(on: boolean) {
+  write(MONITOR_KEY, on ? '1' : '0')
+  for (const l of monitorListeners) l(on)
+}
+
+/** Calls `listener` whenever the monitor is turned on or off here; returns the unsubscribe. */
+export function onMonitor(listener: (on: boolean) => void): () => void {
+  monitorListeners.add(listener)
+  return () => {
+    monitorListeners.delete(listener)
+  }
+}
 
 /**
  * Whether someone here has confirmed they sing live with headphones on: asked once per browser,

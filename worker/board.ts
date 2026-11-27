@@ -51,7 +51,7 @@ import { assignSeat, parseSeatMessage, type Seat, seated } from '../shared/seats
 import { CLIPS, newUploadId, PAUSED_MESSAGES, UPLOADS } from '../shared/sounds'
 import { parseUploadWav } from '../shared/wav'
 import { type AgentHello, type AgentView, type PresentAgent, Roster, toView } from './agent/roster'
-import { type LiveSource, relaysFake } from './live'
+import { type LiveSource, relaysFake, SLOT_IDLE_MS } from './live'
 import { quota } from './quota'
 
 const SNAPSHOT_KEY = 'doc'
@@ -99,9 +99,9 @@ const SEAT_KEY = 'seat'
 /** Set on connections made to a local Worker: the room relays fake live frames between them. */
 const FAKE_LIVE_KEY = 'fakeLive'
 /**
- * Where a person's live slot lives: on every connection holding their seat, so it lasts while any
- * of their tabs is connected and goes with the last. `voice` is the public id their frames carry
- * (never the seat's id, which is private); `since` is when it was granted (ms).
+ * Where a person's live slot lives: on the one connection (tab) that asked for it, so it goes when
+ * that tab stops or closes. `voice` is the public id their frames carry (never the seat's id, which
+ * is private); `since` is when it was granted (ms).
  */
 const LIVE_KEY = 'live'
 /**
@@ -205,6 +205,8 @@ export class Board extends YServer<Env> {
   private orphans = new Map<string, number>()
   /** The live voices last published in the room's state, to publish again only on a change. */
   private publishedLive = '[]'
+  /** When the fake relay last passed on a frame from each slot-holding connection (ms), by id. */
+  private heard = new Map<string, number>()
 
   override async onLoad() {
     const saved = await this.ctx.storage.get<Uint8Array>(SNAPSHOT_KEY)
@@ -284,11 +286,9 @@ export class Board extends YServer<Env> {
     return super.onError(connection, error)
   }
 
-  /**
-   * A connection went: when it held a slot that none of its person's other connections still
-   * holds, the slot is free, and everyone hears so.
-   */
+  /** A connection went: when it held a slot, the slot is free, and everyone hears so. */
   private leftLive(connection: Connection<SeatState>) {
+    this.heard.delete(connection.id)
     if (!connection.state?.[LIVE_KEY]) return
     this.publishRoom()
     this.ctx.waitUntil(this.schedule())
@@ -326,41 +326,70 @@ export class Board extends YServer<Env> {
   /**
    * A seated person asks to go live: grants them a slot while fewer than `LIVE.maxVoices` are held,
    * else answers full. Messages are handled one at a time and this does no I/O before deciding, so
-   * two asking for the last slot at once get one grant and one full. Asking again while live
-   * answers the slot they hold.
+   * two asking for the last slot at once get one grant and one full. Asking again from the tab
+   * that is live answers the slot it holds; asking from another of their tabs moves the slot (and
+   * its hour) to that tab under a new voice, and stops the old tab, so one person never sings two
+   * streams under one voice.
    */
   private grantSlot(connection: Connection<SeatState>) {
     const seat = connection.state?.[SEAT_KEY]
     if (!seat) return this.sendCustomMessage(connection, slotStop('unseated'))
+    this.expireIdle()
+    const own = connection.state?.[LIVE_KEY]
+    if (own) return this.sendCustomMessage(connection, slotGrant(own.voice))
     const slots = this.slots()
     const held = slots.get(seat.id)
-    if (held) return this.sendCustomMessage(connection, slotGrant(held.voice))
-    if (slots.size >= LIVE.maxVoices) return this.sendCustomMessage(connection, slotFull())
-    const slot: LiveSlot = { voice: crypto.randomUUID(), since: Date.now() }
-    for (const c of this.connectionsOf(seat.id))
-      c.setState((prev: SeatState | null) => ({ ...prev, [LIVE_KEY]: slot }))
+    if (!held && slots.size >= LIVE.maxVoices) return this.sendCustomMessage(connection, slotFull())
+    if (held)
+      for (const c of this.connectionsOf(seat.id)) {
+        if (!c.state?.[LIVE_KEY]) continue
+        this.dropSlot(c)
+        this.sendCustomMessage(c, slotStop('asked'))
+      }
+    const slot: LiveSlot = { voice: crypto.randomUUID(), since: held?.since ?? Date.now() }
+    connection.setState((prev: SeatState | null) => ({ ...prev, [LIVE_KEY]: slot }))
     this.sendCustomMessage(connection, slotGrant(slot.voice))
     this.publishRoom()
     this.ctx.waitUntil(this.schedule())
   }
 
-  /** Frees the slot `connection`'s person holds, telling each of their connections why. */
-  private stopSlot(connection: Connection<SeatState>, why: 'asked' | 'hour') {
+  /** Takes the slot off `connection`, saying nothing. */
+  private dropSlot(connection: Connection<SeatState>) {
+    this.heard.delete(connection.id)
+    connection.setState((prev: SeatState | null) => {
+      const { [LIVE_KEY]: _, ...rest } = prev ?? {}
+      return rest
+    })
+  }
+
+  /** Frees the slot `connection`'s person holds, telling the connection holding it why. */
+  private stopSlot(connection: Connection<SeatState>, why: 'asked' | 'hour' | 'idle') {
     const seat = connection.state?.[SEAT_KEY]
     if (!seat) return
     let held = false
     for (const c of this.connectionsOf(seat.id)) {
       if (!c.state?.[LIVE_KEY]) continue
       held = true
-      c.setState((prev: SeatState | null) => {
-        const { [LIVE_KEY]: _, ...rest } = prev ?? {}
-        return rest
-      })
+      this.dropSlot(c)
       this.sendCustomMessage(c, slotStop(why))
     }
     if (!held) return
     this.publishRoom()
     this.ctx.waitUntil(this.schedule())
+  }
+
+  /**
+   * Ends the slots of fake-relay connections the relay has passed no frame from for
+   * `SLOT_IDLE_MS` (counted from the grant until the first frame), so a stalled or silent singer
+   * gives their place back. Other connections send no frames through the room, so it can't tell.
+   */
+  private expireIdle() {
+    const now = Date.now()
+    for (const c of this.getConnections<SeatState>()) {
+      const slot = c.state?.[LIVE_KEY]
+      if (!slot || !c.state?.[FAKE_LIVE_KEY]) continue
+      if (now - (this.heard.get(c.id) ?? slot.since) > SLOT_IDLE_MS) this.stopSlot(c, 'idle')
+    }
   }
 
   /** When the first live slot reaches `LIVE.maxMs`, if any is held. */
@@ -387,6 +416,7 @@ export class Board extends YServer<Env> {
     const seat = connection.state?.[SEAT_KEY]
     const slot = connection.state?.[LIVE_KEY]
     if (!seat || !slot || !connection.state?.[FAKE_LIVE_KEY]) return
+    this.heard.set(connection.id, Date.now())
     const out = relayIn(slot.voice, frame)
     // Not to the singer's own connections: their other tabs hold the same seat.
     for (const c of this.getConnections<SeatState>())
@@ -450,27 +480,20 @@ export class Board extends YServer<Env> {
     // Agents hold seats too: nobody shares a name with one, nor a colour while one is free.
     const others = [...this.peopleSeats(connection.id), ...this.roster.seats()]
     const seat = assignSeat(others, key, usual)
-    // A tab opened while its person is live holds their slot too, so it lasts while any is open.
-    const slot = this.slots().get(seat.id)
+    // Only the tab that asked holds a slot: a new tab, or a reconnect, doesn't take one up. This
+    // connection keeps its own while it is still the same person's.
+    const live = (connection as Connection<SeatState>).state?.[LIVE_KEY]
+    const keep =
+      live !== undefined && (connection as Connection<SeatState>).state?.[SEAT_KEY]?.id === seat.id
+    if (live && !keep) this.heard.delete(connection.id)
     // Merged in: y-partyserver keeps its own fields in the connection's state.
     connection.setState((prev: SeatState | null) => {
       const { [LIVE_KEY]: _, ...rest } = prev ?? {}
-      return slot
-        ? {
-            ...rest,
-            [SEAT_KEY]: seat,
-            [LIVE_KEY]: {
-              voice: slot.voice,
-              since: slot.since,
-              source: slot.source,
-              rev: slot.rev,
-            },
-          }
-        : { ...rest, [SEAT_KEY]: seat }
+      return keep ? { ...rest, [SEAT_KEY]: seat, [LIVE_KEY]: live } : { ...rest, [SEAT_KEY]: seat }
     })
     this.sendCustomMessage(connection, seated(seat))
-    // A live person's name or colour may have changed with it.
-    if (slot) this.publishRoom()
+    // A live person's name or colour may have changed with it, or their slot gone.
+    if (live) this.publishRoom()
   }
 
   /** Who is in the jam, as an agent reads it: people once each, then agents. */
@@ -687,6 +710,7 @@ export class Board extends YServer<Env> {
       [...this.getConnections()].length > 0
     if (!needed()) return this.stopAgentRefresh()
     this.agentRefresh ??= setInterval(() => {
+      this.expireIdle()
       if (JSON.stringify(this.liveVoices()) !== this.publishedLive) return this.publishRoom()
       if (!needed()) return this.stopAgentRefresh()
       this.setRoomState({ ...this.document.awareness.getLocalState() })

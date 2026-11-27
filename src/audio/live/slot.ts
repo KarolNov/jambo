@@ -7,10 +7,11 @@ export type SlotAnswer =
   | { granted: false; why: 'full' | 'unseated' | 'offline' }
 
 /**
- * Why a held slot ended without this client giving it back: its hour ran out, the connection
- * dropped, or another tab of this person stopped it.
+ * Why a held slot ended without this client giving it back: its hour ran out, the room heard no
+ * frame from it for a while, the connection dropped, or another tab of this person stopped it or
+ * took it over.
  */
-export type SlotEnd = 'hour' | 'dropped' | 'stopped'
+export type SlotEnd = 'hour' | 'idle' | 'dropped' | 'stopped'
 
 /**
  * This client's live slot, asked of the jam's room over the board connection (see `shared/live.ts`).
@@ -91,7 +92,8 @@ export class LiveSlot {
     else if (m.s === 'stop') {
       if (m.why === 'unseated') this.answer({ granted: false, why: 'unseated' })
       else if (m.why === 'hour') this.end('hour')
-      // `asked`: the room confirming a release, or another tab of this person stopping.
+      else if (m.why === 'idle') this.end('idle')
+      // `asked`: the room confirming a release, or another tab of this person taking the slot.
       else this.end('stopped')
     }
   }
