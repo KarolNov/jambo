@@ -126,6 +126,7 @@ describe('jitter buffer', () => {
     expect(j.size).toBe(1)
   })
 
+  // @scenario collab/live-voice: Slow network
   it('drops a frame more than a bar old when it arrives', () => {
     const j = new JitterBuffer(since)
     const stamp = since + 500

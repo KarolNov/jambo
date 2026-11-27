@@ -454,6 +454,32 @@ describe('recording a sound', () => {
     }
   })
 
+  // @scenario collab/live-voice: Robot live
+  it('sends a live voice through the chosen preset, as a take would keep it', async () => {
+    toneMic()
+    const ctx = new AudioContext()
+    await ctx.resume()
+    const input = await VoiceInput.open(ctx)
+    try {
+      // What the live encoder captures: the preset's chain apart from the monitor's.
+      const rack = await input.liveRack('robot')
+      const tap = ctx.createAnalyser()
+      tap.fftSize = 8192
+      rack.output.connect(tap)
+      await new Promise((r) => setTimeout(r, 600))
+      const sent = new Float32Array(tap.fftSize)
+      tap.getFloatTimeDomainData(sent)
+      // The 440 Hz voice goes out ring-modulated (sidebands 70 Hz either side), as in a Robot take.
+      const rate = ctx.sampleRate
+      expect(powerAt(sent, rate, 510) / powerAt(sent, rate, 440)).toBeGreaterThan(0.1)
+      expect(powerAt(sent, rate, 370) / powerAt(sent, rate, 440)).toBeGreaterThan(0.1)
+      rack.drop()
+    } finally {
+      input.close()
+      await ctx.close()
+    }
+  })
+
   it('remembers the monitor setting and advises headphones', async () => {
     mockServer()
     await renderJam(<Deck slug={SLUG} />, session)
