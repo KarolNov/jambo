@@ -23,8 +23,13 @@ export function Debug() {
   }, [])
   useEffect(() => {
     if (!live) return
-    Object.assign(window, { __jamboLive: live })
-    return live.subscribe(() => setFrame((f) => f + 1))
+    const w = window as unknown as { __jamboLive?: unknown }
+    w.__jamboLive = live
+    const stop = live.subscribe(() => setFrame((f) => f + 1))
+    return () => {
+      stop()
+      if (w.__jamboLive === live) delete w.__jamboLive
+    }
   }, [live])
   const { offset, rtt } = engine.clock
   const next = engine.nextDownbeat()
@@ -52,11 +57,11 @@ export function Debug() {
               variant="slide"
               checked={live.live}
               onChange={toggle}
-              disabled={!engine.ready || !timing}
+              disabled={!live.live && (!engine.ready || !timing)}
             >
               Sing live (debug)
             </Switch>
-            {error && <span role="alert"> {error}</span>}
+            {(error ?? live.error) && <span role="alert"> {error ?? live.error}</span>}
           </dd>
           <dt>live sent</dt>
           <dd>{live.stats.sent}</dd>

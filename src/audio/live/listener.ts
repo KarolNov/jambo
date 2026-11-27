@@ -122,7 +122,11 @@ export class LiveListener {
   }
 
   private onDecoded(data: AudioData) {
-    const frame = this.decoding.shift()
+    // By timestamp where it came through; frames before it gave no output and are dropped.
+    // Otherwise by order.
+    const i = this.decoding.findIndex((f) => Math.round(f.stamp * 1000) === data.timestamp)
+    if (i > 0) this.jitter.dropped += i
+    const frame = i >= 0 ? this.decoding.splice(0, i + 1).at(-1) : this.decoding.shift()
     const t = this.timing()
     try {
       if (!frame || !t) return

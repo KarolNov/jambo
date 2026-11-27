@@ -17,6 +17,8 @@ export const LIVE = {
   maxMs: 60 * 60 * 1000,
   /** One frame of voice, in ms (an Opus frame). */
   frameMs: 20,
+  /** Opus's encoder lookahead (312 samples at 48 kHz): decoded audio lags its input by this, in ms. */
+  codecDelayMs: 6.5,
   /** The encoder's target bitrate, in bits a second. */
   bitrate: 32_000,
   /** The largest encoded payload a frame may carry, in bytes: far above Opus at 32 kbps. */

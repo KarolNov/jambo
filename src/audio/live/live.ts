@@ -1,4 +1,5 @@
-import { encodeFrame, type LiveFrame, parseFrame } from '../../../shared/live'
+import { BPM } from '../../../shared/board/schema'
+import { encodeFrame, LIVE, type LiveFrame, liveDelayMs, parseFrame } from '../../../shared/live'
 import type { Engine } from '../engine'
 import type { Key } from '../voice/dsp/tune'
 import { VoiceInput } from '../voice/input'
@@ -9,6 +10,12 @@ import type { LiveTransport } from './transport'
 
 /** How many played frames the readout keeps. */
 const KEEP_PLAYED = 200
+
+/**
+ * How long a voice goes without a frame before its listener is closed, in ms: longer than a bar at
+ * the slowest tempo, so whatever it still had queued has played.
+ */
+const IDLE_MS = liveDelayMs(BPM.min) + 2_000
 
 /** How this client sings live: through which preset and key. */
 export interface LiveOptions {
@@ -31,6 +38,13 @@ interface Singing {
 export class Live {
   private singing?: Promise<Singing | undefined>
   private listeners = new Map<string, Promise<LiveListener | undefined>>()
+  /** When each voice's last frame arrived (performance.now() ms), for closing idle listeners. */
+  private heard = new Map<string, number>()
+  private readonly sweep = setInterval(() => this.closeIdle(), 1_000)
+  /** Stops singing once it has been live for `LIVE.maxMs`. */
+  private limit?: ReturnType<typeof setTimeout>
+  /** Why singing stopped by itself, if it did, for the readout. */
+  error?: string
   private changeListeners = new Set<() => void>()
   private stopTransport: () => void
   /** Frames sent, and the last few that played here, for the `?debug` readout and e2e tests. */
@@ -77,11 +91,13 @@ export class Live {
     if (this.singing || !ctx || !this.engine.liveTiming()) return
     const starting = this.startSinging(ctx, options)
     this.singing = starting
+    this.error = undefined
     this.emit()
     try {
-      const s = await starting
-      // Turned off while it started.
-      if (this.singing !== starting) this.close(s)
+      await starting
+      // Turned off while it started: `stopSinging` took it, and closes it.
+      if (this.singing !== starting) return
+      this.limit = setTimeout(() => void this.stopSinging(), LIVE.maxMs)
     } catch (e) {
       if (this.singing === starting) this.singing = undefined
       this.emit()
@@ -94,7 +110,15 @@ export class Live {
     const voice = await VoiceInput.open(ctx)
     try {
       const rack = await voice.liveRack(preset, key)
-      const encoder = await LiveEncoder.open(ctx, rack.output, {
+      const encoder: LiveEncoder = await LiveEncoder.open(ctx, rack.output, {
+        onError: (e) => {
+          // Only if it is still the encoder singing now.
+          void this.singing?.then((s) => {
+            if (s?.encoder !== encoder) return
+            this.error = e.message
+            void this.stopSinging()
+          })
+        },
         delay: () => voice.latency.roundTrip + rackDelay(preset, ctx.sampleRate),
         timing: () => this.engine.liveTiming(),
         onFrame: (frame) => {
@@ -113,6 +137,7 @@ export class Live {
   private async stopSinging() {
     const singing = this.singing
     this.singing = undefined
+    clearTimeout(this.limit)
     this.emit()
     this.close(await singing?.catch(() => undefined))
   }
@@ -129,6 +154,7 @@ export class Live {
     const ctx = this.engine.audioContext
     const output = this.engine.liveInput
     if (!frame || !ctx || !output) return
+    this.heard.set(voice, performance.now())
     let listener = this.listeners.get(voice)
     if (!listener) {
       listener = LiveListener.open(
@@ -140,7 +166,7 @@ export class Live {
           this.stats.played.push(p)
           if (this.stats.played.length > KEEP_PLAYED) this.stats.played.shift()
         },
-      )
+      ).catch(() => undefined)
       // A voice whose listener couldn't start is tried again on its next frame.
       void listener.then((l) => {
         if (!l && this.listeners.get(voice) === listener) this.listeners.delete(voice)
@@ -152,12 +178,25 @@ export class Live {
     void listener.then((l) => l?.push(frame))
   }
 
+  /** Closes the listeners of voices that have stopped sending. */
+  private closeIdle() {
+    const now = performance.now()
+    for (const [voice, at] of this.heard) {
+      if (now - at < IDLE_MS) continue
+      this.heard.delete(voice)
+      void this.listeners.get(voice)?.then((l) => l?.close())
+      this.listeners.delete(voice)
+    }
+  }
+
   dispose() {
+    clearInterval(this.sweep)
     this.stopTransport()
     this.transport.close()
     void this.stopSinging()
     for (const l of this.listeners.values()) void l.then((x) => x?.close())
     this.listeners.clear()
+    this.heard.clear()
     this.changeListeners.clear()
   }
 }

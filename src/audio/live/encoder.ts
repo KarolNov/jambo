@@ -23,6 +23,15 @@ export async function canEncode(sampleRate: number): Promise<boolean> {
 /** The jam's timing as the encoder needs it: room → audio shift and tempo; undefined unsynced. */
 export type LiveTiming = () => { shift: number; bpm: number } | undefined
 
+interface LiveEncoderOptions {
+  /** Seconds between what the singer heard and their voice reaching the encoder. */
+  delay: () => number
+  timing: LiveTiming
+  onFrame: (frame: LiveFrame) => void
+  /** The encoder failed and has closed: no more frames come. */
+  onError: (error: Error) => void
+}
+
 /**
  * A singer's live encoder: captures `input` (the voice after its preset) through the capture
  * worklet, encodes it as 20 ms Opus frames with WebCodecs, and stamps each with the room time it
@@ -41,7 +50,7 @@ export class LiveEncoder {
   static async open(
     ctx: AudioContext,
     input: AudioNode,
-    options: { delay: () => number; timing: LiveTiming; onFrame: (frame: LiveFrame) => void },
+    options: LiveEncoderOptions,
   ): Promise<LiveEncoder> {
     await loadCapture(ctx)
     return new LiveEncoder(ctx, input, options)
@@ -50,15 +59,14 @@ export class LiveEncoder {
   private constructor(
     private readonly ctx: AudioContext,
     private readonly input: AudioNode,
-    private readonly options: {
-      delay: () => number
-      timing: LiveTiming
-      onFrame: (frame: LiveFrame) => void
-    },
+    private readonly options: LiveEncoderOptions,
   ) {
     this.encoder = new AudioEncoder({
       output: (chunk) => this.onChunk(chunk),
-      error: () => this.close(),
+      error: (e) => {
+        this.close()
+        this.options.onError(e)
+      },
     })
     this.encoder.configure(config(ctx.sampleRate))
     this.capture = new AudioWorkletNode(ctx, CAPTURE_PROCESSOR, {
@@ -103,7 +111,12 @@ export class LiveEncoder {
     if (!timing) return
     const payload = new Uint8Array(chunk.byteLength)
     chunk.copyTo(payload)
-    const stamp = liveStamp(chunk.timestamp / 1e6, this.options.delay(), timing.shift)
+    // Opus's lookahead delays what decodes from this chunk: stamp it that much earlier.
+    const stamp = liveStamp(
+      chunk.timestamp / 1e6,
+      this.options.delay() + LIVE.codecDelayMs / 1000,
+      timing.shift,
+    )
     this.options.onFrame({ seq: this.seq++, stamp, bpm: timing.bpm, payload })
   }
 

@@ -16,7 +16,7 @@ import {
 } from '../shared/live'
 import { barMs } from '../shared/looper'
 import { DECODE_MS, JitterBuffer, LEAD_MS } from '../src/audio/live/jitter'
-import { relaysFake } from '../worker/live'
+import { LiveVoices, relaysFake, VOICE_IDLE_MS } from '../worker/live'
 
 const frame = (seq: number, stamp: number, bpm = 100): LiveFrame => ({
   seq,
@@ -164,5 +164,25 @@ describe('jitter buffer', () => {
     const due = j.due(since + 20 + bar, 100)
     expect(due.map((f) => f.seq)).toEqual([2])
     expect(j.dropped).toBe(1)
+  })
+})
+
+describe("the room's live voices", () => {
+  it('admits at most LIVE.maxVoices at once, and another once one stops', () => {
+    const v = new LiveVoices()
+    for (const id of ['a', 'b', 'c']) expect(v.admit(id, 0)).toBe(true)
+    expect(v.admit('d', 10)).toBe(false)
+    expect(v.admit('a', 20)).toBe(true)
+    // b and c go quiet; a keeps singing.
+    expect(v.admit('a', VOICE_IDLE_MS)).toBe(true)
+    expect(v.admit('d', VOICE_IDLE_MS + 21)).toBe(true)
+  })
+
+  it('stops a voice after LIVE.maxMs, until it has been quiet and starts again', () => {
+    const v = new LiveVoices()
+    let t = 0
+    for (; t <= LIVE.maxMs; t += 1_000) expect(v.admit('a', t)).toBe(true)
+    expect(v.admit('a', t)).toBe(false)
+    expect(v.admit('a', t + VOICE_IDLE_MS + 1)).toBe(true)
   })
 })

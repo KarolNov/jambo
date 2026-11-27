@@ -42,7 +42,7 @@ import { assignSeat, parseSeatMessage, type Seat, seated } from '../shared/seats
 import { CLIPS, newUploadId, PAUSED_MESSAGES, UPLOADS } from '../shared/sounds'
 import { parseUploadWav } from '../shared/wav'
 import { type AgentHello, type AgentView, type PresentAgent, Roster, toView } from './agent/roster'
-import { relaysFake } from './live'
+import { LiveVoices, relaysFake } from './live'
 import { quota } from './quota'
 
 const SNAPSHOT_KEY = 'doc'
@@ -178,6 +178,8 @@ export class Board extends YServer<Env> {
   private readonly wakers = new Set<() => void>()
   /** Clips nothing names, and since when (ms); mirrored in storage under ORPHANS_KEY. */
   private orphans = new Map<string, number>()
+  /** Who is singing live through the fake relay, for the jam's live limits. */
+  private liveVoices = new LiveVoices()
 
   override async onLoad() {
     const saved = await this.ctx.storage.get<Uint8Array>(SNAPSHOT_KEY)
@@ -251,9 +253,12 @@ export class Board extends YServer<Env> {
   private relayLive(connection: Connection<SeatState>, frame: string) {
     const seat = connection.state?.[SEAT_KEY]
     if (!seat || !connection.state?.[FAKE_LIVE_KEY]) return
+    if (!this.liveVoices.admit(seat.id, Date.now())) return
     const out = relayIn(seat.id, frame)
+    // Not to the singer's own connections: their other tabs hold the same seat.
     for (const c of this.getConnections<SeatState>())
-      if (c.id !== connection.id && c.state?.[FAKE_LIVE_KEY]) this.sendCustomMessage(c, out)
+      if (c.state?.[SEAT_KEY]?.id !== seat.id && c.state?.[FAKE_LIVE_KEY])
+        this.sendCustomMessage(c, out)
   }
 
   /** People's seats, from their connections; `except` leaves one connection out. */
