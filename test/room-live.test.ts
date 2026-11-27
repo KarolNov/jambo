@@ -150,6 +150,7 @@ describe('live slots and leaving', () => {
 })
 
 describe('live slots and tabs', () => {
+  // @scenario collab/room: Another tab takes over
   it('moves a slot to another tab of its person that asks, under a new voice', async () => {
     const slug = 'funky-otter-vc09'
     const a = await person(slug, 'k0', 'Misty Yak')

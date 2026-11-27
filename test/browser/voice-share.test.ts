@@ -79,6 +79,7 @@ describe('SharedVoice', () => {
     await expect(mic.lease().voice).resolves.toBeInstanceOf(FakeInput)
   })
 
+  // @scenario audio/voice: Monitor live
   it("monitors through the latest wish, and falls back to live's when a clip ends", async () => {
     const { mic, opened } = shared()
     const live = mic.lease()

@@ -32,12 +32,16 @@ The auto-tune presets SHALL correct the voice to a key and scale (major or minor
 
 ### Requirement: Monitor
 
-While recording, someone SHALL be able to hear themselves through the chosen preset, exactly as it will be saved. Monitoring SHALL be off by default, each browser SHALL remember the setting, and turning it on SHALL advise headphones.
+While recording or singing live, someone SHALL be able to hear themselves through the chosen preset, exactly as it will be saved or as others hear it, with no added delay. Monitoring SHALL be off by default, each browser SHALL remember the setting, and turning it on SHALL advise headphones.
 
 - **Scenario: Hear the preset**
   - **GIVEN** monitoring on and Chipmunk picked
   - **WHEN** someone records
   - **THEN** they hear themselves as a chipmunk while singing, and the saved sound matches what they heard
+- **Scenario: Monitor live**
+  - **GIVEN** monitoring on and someone live
+  - **WHEN** they sing
+  - **THEN** they hear themselves at once through the preset, never a bar late
 
 ### Requirement: Record a sound
 

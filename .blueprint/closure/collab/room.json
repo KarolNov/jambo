@@ -97,6 +97,12 @@
       "hash": "c468471135c8",
       "whole": false
     },
+    "shared/live.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "17049d4e3783",
+      "whole": false
+    },
     "shared/looper.ts": {
       "distance": 2,
       "via": [],
@@ -161,6 +167,12 @@
       "distance": 1,
       "via": [],
       "hash": "1d797b63f037",
+      "whole": false
+    },
+    "worker/live.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "30bd7bbb0513",
       "whole": false
     }
   },
@@ -1083,6 +1095,104 @@
       "hash": "a5c9ee31de5c"
     },
     {
+      "file": "shared/live.ts",
+      "symbol": "HEADER",
+      "distance": 1,
+      "via": [],
+      "hash": "0749491c1d99"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "LIVE",
+      "distance": 1,
+      "via": [],
+      "hash": "9c42a7c7309f"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "LiveRelayMessage",
+      "distance": 1,
+      "via": [],
+      "hash": "01bde672b503"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "LiveStopReason",
+      "distance": 1,
+      "via": [],
+      "hash": "ecd778398638"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "LiveVoice",
+      "distance": 1,
+      "via": [],
+      "hash": "0330ee5fe89d"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "MAX_RELAYED",
+      "distance": 1,
+      "via": [],
+      "hash": "e2920add785d"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "STOP_REASONS",
+      "distance": 1,
+      "via": [],
+      "hash": "921f2a086877"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "SlotMessage",
+      "distance": 1,
+      "via": [],
+      "hash": "d11276ba29d0"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "parseRelayMessage",
+      "distance": 1,
+      "via": [],
+      "hash": "bcf834958dc6"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "parseSlotMessage",
+      "distance": 1,
+      "via": [],
+      "hash": "4e81d8c05563"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "relayIn",
+      "distance": 1,
+      "via": [],
+      "hash": "3d652475cc9a"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "slotFull",
+      "distance": 1,
+      "via": [],
+      "hash": "8561ba7eb93a"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "slotGrant",
+      "distance": 1,
+      "via": [],
+      "hash": "d65df0da64d3"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "slotStop",
+      "distance": 1,
+      "via": [],
+      "hash": "071c1476d378"
+    },
+    {
       "file": "shared/looper.ts",
       "symbol": "REPEAT_SLICES",
       "distance": 2,
@@ -1690,6 +1800,55 @@
       "distance": 1,
       "via": [],
       "hash": "30045d30f43d"
+    },
+    {
+      "file": "worker/live.ts",
+      "symbol": "AppEnv",
+      "distance": 1,
+      "via": [],
+      "hash": "3f84dbe6e7da"
+    },
+    {
+      "file": "worker/live.ts",
+      "symbol": "LOCAL_HOSTS",
+      "distance": 1,
+      "via": [],
+      "hash": "0218ef7129af"
+    },
+    {
+      "file": "worker/live.ts",
+      "symbol": "LiveEnv",
+      "distance": 1,
+      "via": [],
+      "hash": "9c131338f1eb"
+    },
+    {
+      "file": "worker/live.ts",
+      "symbol": "LiveSource",
+      "distance": 1,
+      "via": [],
+      "hash": "49198ca2ba3d"
+    },
+    {
+      "file": "worker/live.ts",
+      "symbol": "SLOT_IDLE_MS",
+      "distance": 1,
+      "via": [],
+      "hash": "2d95c353c956"
+    },
+    {
+      "file": "worker/live.ts",
+      "symbol": "live",
+      "distance": 1,
+      "via": [],
+      "hash": "d6dd3c76371d"
+    },
+    {
+      "file": "worker/live.ts",
+      "symbol": "relaysFake",
+      "distance": 1,
+      "via": [],
+      "hash": "88f91f6946f5"
     }
   ],
   "external": [

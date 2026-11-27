@@ -273,7 +273,7 @@ test("a browser that can't encode a live voice has its mic control disabled, and
   await expect.poll(() => playedCount(b.page), { timeout: 15_000 }).toBeGreaterThan(20)
 })
 
-// @scenario collab/live-voice: Unsupported browser
+// @scenario collab/live-voice: Not set up here
 test("where live voice isn't set up, the mic control is disabled and says so", async ({
   browser,
 }) => {

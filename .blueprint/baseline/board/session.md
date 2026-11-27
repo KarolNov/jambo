@@ -78,7 +78,7 @@ The board SHALL link to the about page, where people learn how to play and how t
 
 ### Requirement: Who's here
 
-The board SHALL list everyone connected to the jam and every agent present, one entry per identity, each as a dot in their colour, with this person first and marked as you, and each agent's dot with a glow, and its name with a superscript AI in its colour. Others SHALL list a person only once the room has seated them, so nobody is shown with a name or colour someone else holds. While three or fewer are here each dot SHALL carry its name; past three, only the dots, each naming its person or agent in a tooltip. A client older than names SHALL show by its colour name. Agents SHALL come only from the room's list: a browser SHALL NOT be able to show one.
+The board SHALL list everyone connected to the jam and every agent present, one entry per identity, each as a dot in their colour, with this person first and marked as you, and each agent's dot with a glow, and its name with a superscript AI in its colour. Others SHALL list a person only once the room has seated them, so nobody is shown with a name or colour someone else holds. While three or fewer are here each dot SHALL carry its name; past three, only the dots, each naming its person or agent in a tooltip. A client older than names SHALL show by its colour name. Agents SHALL come only from the room's list: a browser SHALL NOT be able to show one. A person who is live SHALL show a live mark on their dot, from the room's list only, with a control to mute them for this listener.
 
 - **Scenario: Someone joins**
   - **GIVEN** one person in a jam
@@ -100,6 +100,9 @@ The board SHALL list everyone connected to the jam and every agent present, one 
 - **Scenario: Browser posing as an agent**
   - **WHEN** a browser announces itself with an agent's id or lists agents in its own presence
   - **THEN** nobody's list shows them as an agent
+- **Scenario: Someone goes live**
+  - **WHEN** Misty Yak turns their mic on
+  - **THEN** within a couple of seconds everyone's list shows a live mark on Misty Yak's dot, and it goes when they stop
 
 ### Requirement: Who's turning a control
 
