@@ -13,6 +13,7 @@ import {
 import { hello, parseSeatMessage } from '../shared/seats'
 import { listLive } from '../src/board/presence'
 import type { Board } from '../worker/board'
+import { SLOT_IDLE_MS } from '../worker/live'
 import { connectBoard, until } from './client'
 
 type Client = Awaited<ReturnType<typeof connectBoard>>
@@ -105,7 +106,7 @@ describe('live slots', () => {
 describe('live slots and leaving', () => {
   // @scenario collab/room: Slot freed on leave
   // @scenario collab/live-voice: Singer drops
-  it('frees a slot when its holder’s last connection closes, and a fourth can go live', async () => {
+  it('frees a slot when the tab holding it closes, and a fourth can go live', async () => {
     const slug = 'funky-otter-vc05'
     const a = await person(slug, 'k0', 'Misty Yak')
     const b = await person(slug, 'k1', 'Groovy Otter')
@@ -113,14 +114,12 @@ describe('live slots and leaving', () => {
     const d = await person(slug, 'k3', 'Sunny Owl')
     for (const p of [a, b, c]) await goLive(p)
     await until(() => liveSeenBy(d).length === 3)
-    // A second tab of Misty Yak's holds their slot too, so closing the first keeps it.
+    // A second tab of Misty Yak's that never asked doesn't hold the slot: closing the live tab
+    // frees it.
     const a2 = await person(slug, 'k0', 'Misty Yak')
     a.close()
-    await new Promise((r) => setTimeout(r, 100))
-    expect(liveSeenBy(d)).toContain('Misty Yak')
-    expect(await goLive(d)).toBe('full')
-    a2.close()
     await until(() => sameNames(d, ['Groovy Otter', 'Mellow Fox']))
+    a2.close()
     expect(await goLive(d)).toMatch(/^[0-9a-f-]{36}$/)
     // Coming back doesn't resume live: they ask again, and the jam is full now.
     const back = await person(slug, 'k0', 'Misty Yak')
@@ -147,6 +146,30 @@ describe('live slots and leaving', () => {
     )
     expect(liveSeenBy(listener)).toEqual(['Groovy Otter'])
     for (const p of [poser, singer, listener]) p.close()
+  })
+})
+
+describe('live slots and tabs', () => {
+  it('moves a slot to another tab of its person that asks, under a new voice', async () => {
+    const slug = 'funky-otter-vc09'
+    const a = await person(slug, 'k0', 'Misty Yak')
+    const a2 = await person(slug, 'k0', 'Misty Yak')
+    const b = await person(slug, 'k1', 'Groovy Otter')
+    const first = await goLive(a)
+    await until(() => sameNames(b, ['Misty Yak']))
+    const second = await goLive(a2)
+    expect(second).toMatch(/^[0-9a-f-]{36}$/)
+    expect(second).not.toBe(first)
+    // The first tab is told to stop; the person is still live once, on the new voice.
+    await until(() => slotMessages(a).some((m) => m.s === 'stop' && m.why === 'asked'))
+    await until(() => listLive(b.awareness.getStates().values())[0]?.voice === second)
+    expect(liveSeenBy(b)).toEqual(['Misty Yak'])
+    // Closing the old tab leaves the slot with the new one.
+    a.close()
+    await new Promise((r) => setTimeout(r, 100))
+    expect(liveSeenBy(b)).toEqual(['Misty Yak'])
+    a2.close()
+    b.close()
   })
 })
 
@@ -187,6 +210,20 @@ describe('live slots and the hour', () => {
 })
 
 describe('the fake relay and slots', () => {
+  it('frees a slot no frame has come through for a while, saying why', async () => {
+    const slug = 'funky-otter-vc10'
+    const a = await person(slug, 'k0', 'Misty Yak', 'localhost')
+    const b = await person(slug, 'k1', 'Groovy Otter', 'localhost')
+    await goLive(a)
+    await ageSlots(slug, SLOT_IDLE_MS + 1)
+    // The next ask frees it first.
+    expect(await goLive(b)).toMatch(/^[0-9a-f-]{36}$/)
+    await until(() => slotMessages(a).some((m) => m.s === 'stop' && m.why === 'idle'))
+    await until(() => sameNames(b, ['Groovy Otter']))
+    a.close()
+    b.close()
+  })
+
   it('relays only a slot holder’s frames, named by their voice, never their key', async () => {
     const slug = 'funky-otter-vc08'
     const a = await person(slug, 'secret-key', 'Misty Yak', 'localhost')

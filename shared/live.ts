@@ -153,17 +153,17 @@ export function parseRelayMessage(message: string): LiveRelayMessage | undefined
  * Live slots: the room hands out the jam's `LIVE.maxVoices` slots over the board connection. A
  * seated person asks with `request` and gets `grant` (naming the voice id their frames will carry)
  * or `full`; they give it back with `stop`. The room sends `stop` too, saying why, when it ends a
- * slot itself: `asked` (they stopped), `hour` (`LIVE.maxMs` ran out) or `unseated` (they asked
- * before the room seated them).
+ * slot itself: `asked` (they stopped), `hour` (`LIVE.maxMs` ran out), `idle` (no frame came for a
+ * while) or `unseated` (they asked before the room seated them).
  */
-export type LiveStopReason = 'asked' | 'hour' | 'unseated'
+export type LiveStopReason = 'asked' | 'hour' | 'idle' | 'unseated'
 export type SlotMessage =
   | { t: 'slot'; s: 'request' }
   | { t: 'slot'; s: 'grant'; v: string }
   | { t: 'slot'; s: 'full' }
   | { t: 'slot'; s: 'stop'; why?: LiveStopReason }
 
-const STOP_REASONS: readonly LiveStopReason[] = ['asked', 'hour', 'unseated']
+const STOP_REASONS: readonly LiveStopReason[] = ['asked', 'hour', 'idle', 'unseated']
 
 export const slotRequest = () => JSON.stringify({ t: 'slot', s: 'request' })
 export const slotGrant = (voice: string) => JSON.stringify({ t: 'slot', s: 'grant', v: voice })

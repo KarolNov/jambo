@@ -36,6 +36,7 @@ const REFUSED: Record<Extract<SlotAnswer, { granted: false }>['why'], string> = 
 /** What singing live says when the room ended it. */
 const ENDED: Record<SlotEnd, string | undefined> = {
   hour: 'Live voice stops after an hour: turn it on again to carry on.',
+  idle: 'Live voice stopped: the jam heard nothing from it for a while.',
   dropped: 'Live voice stopped: the connection to the jam dropped.',
   stopped: undefined,
 }
@@ -261,7 +262,7 @@ export class Live {
       // Turned off while it started: `stopSinging` took it, and closes it.
       if (this.singing !== starting) return
     } catch (e) {
-      // Turned off while it started: stopping it is why it failed, so there is nothing to say.
+      // Turned off while it started (which gives the slot back, settling its request): no error.
       if (this.singing !== starting) return
       this.singing = undefined
       this.emit()

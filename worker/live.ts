@@ -251,3 +251,9 @@ live.post('/jams/:slug/live/:call', async (c) => {
   }
   return c.notFound()
 })
+
+/**
+ * How long a fake-relay slot may go without a frame before the room frees it, in ms: long enough
+ * for a first microphone prompt, after which a singing voice sends a frame every few ms.
+ */
+export const SLOT_IDLE_MS = 30_000
