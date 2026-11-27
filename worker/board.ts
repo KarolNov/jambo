@@ -36,11 +36,13 @@ import {
 } from '../shared/board'
 import { seedBoard } from '../shared/board/seed'
 import { parseClockMessage, pong } from '../shared/clock'
+import { parseRelayMessage, relayIn } from '../shared/live'
 import type { ColorName } from '../shared/colors'
 import { assignSeat, parseSeatMessage, type Seat, seated } from '../shared/seats'
 import { CLIPS, newUploadId, PAUSED_MESSAGES, UPLOADS } from '../shared/sounds'
 import { parseUploadWav } from '../shared/wav'
 import { type AgentHello, type AgentView, type PresentAgent, Roster, toView } from './agent/roster'
+import { relaysFake } from './live'
 import { quota } from './quota'
 
 const SNAPSHOT_KEY = 'doc'
@@ -85,7 +87,9 @@ const ROOM: Origin = { kind: 'system', id: 'room' }
 
 /** Where a connection's seat (who holds it, and their colour here) lives in its state. */
 const SEAT_KEY = 'seat'
-type SeatState = { [SEAT_KEY]?: Seat } & Record<string, unknown>
+/** Set on connections made to a local Worker: the room relays fake live frames between them. */
+const FAKE_LIVE_KEY = 'fakeLive'
+type SeatState = { [SEAT_KEY]?: Seat; [FAKE_LIVE_KEY]?: true } & Record<string, unknown>
 
 /** Where an upload's audio lives in R2: under the jam's prefix, so a jam's audio can go at once. */
 export const soundPrefix = (slug: string) => `jams/${slug}/`
@@ -219,6 +223,8 @@ export class Board extends YServer<Env> {
 
   override onConnect(connection: Connection, ctx: ConnectionContext) {
     super.onConnect(connection, ctx)
+    if (relaysFake(ctx.request.url))
+      connection.setState((prev: SeatState | null) => ({ ...prev, [FAKE_LIVE_KEY]: true }))
     // A visit keeps the jam's audio for another retention period.
     this.ctx.waitUntil(this.keepSounds())
     // Someone is here to see the agents now: keep their state fresh.
@@ -233,7 +239,21 @@ export class Board extends YServer<Env> {
     // A client saying who it is: seat it with a name nobody else in the jam has, and a colour
     // nobody else has while one is free.
     const seat = parseSeatMessage(message)
-    if (seat?.t === 'hello') this.seat(connection, seat.key, seat)
+    if (seat?.t === 'hello') return this.seat(connection, seat.key, seat)
+    const live = parseRelayMessage(message)
+    if (live) this.relayLive(connection as Connection<SeatState>, live.f)
+  }
+
+  /**
+   * The fake live transport: passes a seated person's frame on to everyone else connected, naming
+   * it by their seat. Only between connections to a local Worker (see `worker/live.ts`).
+   */
+  private relayLive(connection: Connection<SeatState>, frame: string) {
+    const seat = connection.state?.[SEAT_KEY]
+    if (!seat || !connection.state?.[FAKE_LIVE_KEY]) return
+    const out = relayIn(seat.id, frame)
+    for (const c of this.getConnections<SeatState>())
+      if (c.id !== connection.id && c.state?.[FAKE_LIVE_KEY]) this.sendCustomMessage(c, out)
   }
 
   /** People's seats, from their connections; `except` leaves one connection out. */

@@ -7,7 +7,7 @@ import { loadRoundTrip, type RoundTripSetup, saveRoundTrip } from './prefs'
 import { buildRack, type PresetId } from './presets'
 
 /** The name `capture.worklet.ts` registers its processor under. */
-const CAPTURE_PROCESSOR = 'jambo-voice-capture'
+export const CAPTURE_PROCESSOR = 'jambo-voice-capture'
 
 /** The longest recording: a voice is kept under the same limit as an upload. */
 export const MAX_SECONDS = UPLOADS.maxSeconds
@@ -33,9 +33,9 @@ export class MicError extends Error {
 const CLICKS = 5
 const CLICK_SPACING = 0.35
 
-/** The capture worklet, loaded once per context. */
+/** The capture worklet, loaded once per context; live voice captures its encoder's input with it too. */
 const loaded = new WeakMap<BaseAudioContext, Promise<void>>()
-function loadCapture(ctx: BaseAudioContext): Promise<void> {
+export function loadCapture(ctx: BaseAudioContext): Promise<void> {
   let load = loaded.get(ctx)
   if (!load) {
     load = ctx.audioWorklet.addModule(captureUrl)
@@ -198,6 +198,18 @@ export class VoiceInput {
       output.connect(this.monitorGain)
     }
     this.monitorGain.gain.setTargetAtTime(on ? 1 : 0, this.ctx.currentTime, 0.01)
+  }
+
+  /**
+   * Builds `preset`'s chain (tuned to `key`) from the microphone for live voice, apart from the
+   * monitor's: its output is what others hear. `drop` lets it go.
+   */
+  async liveRack(preset: PresetId, key: Key = DEFAULT_KEY) {
+    const input = this.ctx.createGain()
+    this.source.connect(input)
+    const output = await buildRack(this.ctx, preset, input, key)
+    const rack = { input, output }
+    return { output, drop: () => this.dropRack(rack) }
   }
 
   private dropRack(rack?: { input: AudioNode; output: AudioNode }) {

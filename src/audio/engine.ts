@@ -188,6 +188,8 @@ export class Engine {
   private master?: GainNode
   /** The master stage everything but the clicks plays through. */
   private chain?: MasterChain
+  /** Where live voices play in: mono, at full level, straight into the master stage. */
+  private live?: GainNode
   /** The board's master knobs, kept for when audio starts. */
   private masterSound: MasterSound = MASTER_SOUND_DEFAULTS
   /** The shared room every loop's reverb send feeds. */
@@ -268,6 +270,25 @@ export class Engine {
     return this.ctx && isLive(this.ctx) ? this.ctx : undefined
   }
 
+  /**
+   * The input live voices play into once audio has started: the master stage, so master effects
+   * apply to them, and none of any track's knobs.
+   */
+  get liveInput(): AudioNode | undefined {
+    return this.live
+  }
+
+  /**
+   * The jam's timing for live voice, once audio has started and the clock is agreed: the shift
+   * from room ms to this context's seconds, the grid's tempo, and the room time being scheduled
+   * now (the context's current time, on that shift).
+   */
+  liveTiming(): { shift: number; bpm: number; now: number } | undefined {
+    const ctx = this.ctx
+    if (!ctx || !this.ensureShift()) return undefined
+    return { shift: this.shift!, bpm: this.bpm, now: audioToRoom(ctx.currentTime, this.shift!) }
+  }
+
   /** Whether this client has agreed its clock with the jam; recording waits for it. */
   get synced() {
     return this.clock.synced
@@ -300,6 +321,8 @@ export class Engine {
     const reverb = ctx.createConvolver()
     reverb.buffer = impulse
     reverb.connect(chain.input)
+    const live = ctx.createGain()
+    live.connect(chain.input)
     const echo = ctx.createDelay(echoSeconds(BPM.min))
     echo.delayTime.value = echoSeconds(this.bpm)
     const feedback = ctx.createGain()
@@ -311,6 +334,7 @@ export class Engine {
     this.ctx = ctx
     this.master = master
     this.chain = chain
+    this.live = live
     this.reverb = reverb
     this.echo = echo
     // The tempo and the master settings may have changed while the kit rendered.

@@ -445,8 +445,9 @@
       "brief": "https://app.notion.com/p/42443cce21f2819aaea6c0c983637ea8",
       "review": "https://app.notion.com/p/42443cce21f281049bf1de7ce88b1eaa",
       "tickets": "https://app.notion.com/p/42443cce21f281049bf1de7ce88b1eaa",
-      "status": "approved",
-      "baseCommit": "45a2edeb77213d6e75cbfbdfa8e8953193bf77f9"
+      "status": "building",
+      "baseCommit": "45a2edeb77213d6e75cbfbdfa8e8953193bf77f9",
+      "branch": "kn/live-voice-2-fake-64c70a"
     }
   },
   "tests": {
