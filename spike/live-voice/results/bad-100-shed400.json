@@ -1,0 +1,94 @@
+{
+  "profile": "bad",
+  "shedBytes": 400,
+  "conditions": {
+    "latency": 400,
+    "downloadThroughput": 50000,
+    "uploadThroughput": 12500,
+    "packetLoss": 8,
+    "packetQueueLength": 0,
+    "packetReordering": true
+  },
+  "seconds": 60,
+  "bpm": 100,
+  "setupMs": 9768,
+  "channels": {
+    "pub": {
+      "ordered": false,
+      "maxRetransmits": 0,
+      "id": 2
+    },
+    "sub": {
+      "ordered": false,
+      "maxRetransmits": 0,
+      "id": 1
+    }
+  },
+  "sender": {
+    "frames": 3000,
+    "sent": 3000,
+    "shed": 1026,
+    "maxBufferedBytes": 505,
+    "encoderLagMs": {
+      "n": 3000,
+      "min": 0.1,
+      "p50": 3.5,
+      "p95": 6.5,
+      "p99": 6.9,
+      "max": 11.7
+    }
+  },
+  "listener": {
+    "barMs": 2400,
+    "sent": 3000,
+    "received": 1654,
+    "lost": 1346,
+    "lossPct": 44.9,
+    "lateArrivals": 0,
+    "lateDecode": 0,
+    "played": 1654,
+    "decoded": 1654,
+    "decoderOutputs": 1654,
+    "tsMismatch": 1653,
+    "playedPct": 55.1,
+    "reordered": 0,
+    "jitterMs": 211.3,
+    "oneWayMs": {
+      "n": 1654,
+      "min": 821.5,
+      "p50": 827.8,
+      "p95": 1351.6,
+      "p99": 1533.2,
+      "max": 1600.4
+    },
+    "stampToArriveMs": {
+      "n": 1654,
+      "min": 842.9,
+      "p50": 852.6,
+      "p95": 1376.6,
+      "p99": 1558.7,
+      "max": 1625.5
+    },
+    "playbackHeadroomMs": {
+      "n": 1654,
+      "min": 190.6,
+      "p50": 197.2,
+      "p95": 198.1,
+      "p99": 198.4,
+      "max": 199.1
+    },
+    "kbpsPayload": 21.5,
+    "audioState": "running",
+    "outputLatencyMs": 32
+  },
+  "ice": {
+    "singer": {
+      "rttMs": 822,
+      "remote": "141.101.90.0:1473 udp"
+    },
+    "listener": {
+      "rttMs": 821,
+      "remote": "141.101.90.0:1473 udp"
+    }
+  }
+}

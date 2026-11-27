@@ -1,0 +1,87 @@
+{
+  "profile": "normal",
+  "shedBytes": 0,
+  "conditions": null,
+  "seconds": 60,
+  "bpm": 240,
+  "setupMs": 1764,
+  "channels": {
+    "pub": {
+      "ordered": false,
+      "maxRetransmits": 0,
+      "id": 2
+    },
+    "sub": {
+      "ordered": false,
+      "maxRetransmits": 0,
+      "id": 1
+    }
+  },
+  "sender": {
+    "frames": 3000,
+    "sent": 3000,
+    "shed": 0,
+    "maxBufferedBytes": 181,
+    "encoderLagMs": {
+      "n": 3000,
+      "min": 0.2,
+      "p50": 3.5,
+      "p95": 6.1,
+      "p99": 6.4,
+      "max": 8.3
+    }
+  },
+  "listener": {
+    "barMs": 1000,
+    "sent": 3000,
+    "received": 3000,
+    "lost": 0,
+    "lossPct": 0,
+    "lateArrivals": 0,
+    "lateDecode": 0,
+    "played": 3000,
+    "decoded": 3000,
+    "decoderOutputs": 3000,
+    "tsMismatch": 78,
+    "playedPct": 100,
+    "reordered": 0,
+    "jitterMs": 0.7,
+    "oneWayMs": {
+      "n": 3000,
+      "min": 4.9,
+      "p50": 6.8,
+      "p95": 8.2,
+      "p99": 9.6,
+      "max": 45.3
+    },
+    "stampToArriveMs": {
+      "n": 3000,
+      "min": 25.8,
+      "p50": 30.3,
+      "p95": 33.3,
+      "p99": 34.6,
+      "max": 70.6
+    },
+    "playbackHeadroomMs": {
+      "n": 3000,
+      "min": 191,
+      "p50": 196.9,
+      "p95": 197.5,
+      "p99": 197.7,
+      "max": 199.4
+    },
+    "kbpsPayload": 39.4,
+    "audioState": "running",
+    "outputLatencyMs": 32
+  },
+  "ice": {
+    "singer": {
+      "rttMs": 9,
+      "remote": "141.101.90.0:1473 udp"
+    },
+    "listener": {
+      "rttMs": 13,
+      "remote": "141.101.90.0:1473 udp"
+    }
+  }
+}
