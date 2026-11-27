@@ -199,15 +199,21 @@ export interface LiveVoice {
   voice: string
   name: string
   color: ColorName
+  /**
+   * How many times the voice has been published on Realtime, once it has: a listener subscribed to
+   * an earlier publish (before the singer reconnected) subscribes again when it goes up.
+   */
+  rev?: number
 }
 
 /** One published live voice, if it reads as one. */
 export function toLiveVoice(v: unknown): LiveVoice | undefined {
-  const l = v as { voice?: unknown; name?: unknown; color?: unknown } | null
+  const l = v as { voice?: unknown; name?: unknown; color?: unknown; rev?: unknown } | null
   const color = toColorName(l?.color)
   const name = toName(l?.name)
   if (typeof l?.voice !== 'string' || l.voice.length === 0 || !color || !name) return undefined
-  return { voice: l.voice, name, color }
+  const rev = Number.isSafeInteger(l.rev) && (l.rev as number) > 0 ? (l.rev as number) : undefined
+  return rev ? { voice: l.voice, name, color, rev } : { voice: l.voice, name, color }
 }
 
 /**

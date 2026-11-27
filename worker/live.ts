@@ -138,8 +138,8 @@ type Body = {
 
 /**
  * The live session route, under /api/jams/:slug/live, and `GET /api/live` (which transport this
- * Worker offers). Each call is refused, in this order: a malformed jam (404); past `LIVE_SESSIONS`
- * from one address (429); not seated in the jam now (403); publishing without a live slot (403);
+ * Worker offers). Each call is refused, in this order: a malformed jam (404); past its budget from
+ * one address (429: `LIVE_SESSIONS` for `session`, `LIVE_CHANNELS` for the rest); not seated in the jam now (403); publishing without a live slot (403);
  * no Realtime credentials (503); a session or ticket that isn't the caller's (403). Only then does
  * it call Realtime.
  */
@@ -152,7 +152,10 @@ live.post('/jams/:slug/live/:call', async (c) => {
   const call = c.req.param('call')
   if (!isJamSlug(slug) || !LIVE_CALLS.includes(call as LiveCall)) return c.notFound()
   const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
-  if (!(await c.env.LIVE_SESSIONS.limit({ key: ip })).success)
+  // Opening a session is the costly call; the channel calls are many (a subscribe per live voice,
+  // for each person behind one address), so they have a budget of their own.
+  const limiter = call === 'session' ? c.env.LIVE_SESSIONS : c.env.LIVE_CHANNELS
+  if (!(await limiter.limit({ key: ip })).success)
     return c.json({ error: 'Too many live voice requests, try again in a minute' }, 429)
   const body = (await c.req.json().catch(() => ({}))) as Body
   if (!isText(body.key, 64)) return c.json({ error: 'Who are you?' }, 400)
@@ -198,9 +201,14 @@ live.post('/jams/:slug/live/:call', async (c) => {
         dataChannels: [{ location: 'local', dataChannelName: channel, ...CHANNEL_POLICY }],
       })
       const id = channelId(out)
-      // The slot may have ended while Realtime answered: then nobody can subscribe to it.
-      if (!(await board.livePublished(key, voice, { session, channel })))
+      // The slot may have ended while Realtime answered: then nobody can subscribe to it, and the
+      // channel is closed again, since the browser never learns its id.
+      if (!(await board.livePublished(key, voice, { session, channel }))) {
+        await realtime(creds, 'PUT', `${path}/datachannels/close`, {
+          dataChannels: [{ id }],
+        }).catch(() => undefined)
         return c.json({ error: 'Not live' }, 403)
+      }
       return c.json({ id, voice }, 201)
     }
 

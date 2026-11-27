@@ -209,4 +209,10 @@ describe('live slot messages', () => {
     expect(toLiveVoice({ name: 'Misty Yak', color: 'teal' })).toBeUndefined()
     expect(toLiveVoice(null)).toBeUndefined()
   })
+
+  it('reads how many times a live voice was published, once it was', () => {
+    const v = { voice: 'v1', name: 'Misty Yak', color: 'teal' }
+    expect(toLiveVoice({ ...v, rev: 2 })).toEqual({ ...v, rev: 2 })
+    for (const rev of [0, -1, 1.5, '2', null]) expect(toLiveVoice({ ...v, rev })).toEqual(v)
+  })
 })

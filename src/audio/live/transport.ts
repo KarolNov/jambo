@@ -20,6 +20,8 @@ export interface LiveTransport {
    * Frames sent while nothing is published go nowhere.
    */
   publish(voice: string | undefined): void
+  /** Calls `listener` when publishing this client's voice failed for good: nobody hears it. */
+  onPublishFailed(listener: () => void): () => void
   /** Stops sending and listening. */
   close(): void
 }

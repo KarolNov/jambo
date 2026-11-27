@@ -15,7 +15,7 @@ export const MAX_BUFFERED = 400
 const GATHER_MS = 3_000
 /** How long a connection may take to come up before it is given up, in ms. */
 const CONNECT_MS = 30_000
-/** Waits between tries at a voice that is live but not yet published, in ms. */
+/** Waits between tries at publishing or subscribing after a failure, in ms. */
 const RETRY_MS = [500, 1_000, 2_000, 4_000, 8_000]
 
 /** A connection to Realtime: one peer connection and its session, opened through the Worker. */
@@ -27,11 +27,28 @@ interface Connection {
 
 /** A voice this client receives: its channel once subscribed. */
 interface Subscription {
+  /** The voice's publish count as last listed (`LiveVoice.rev`), 0 before it is published. */
+  rev: number
+  /** Whether a subscribe is under way for it. */
+  trying?: boolean
   channel?: RTCDataChannel
   id?: number
+  /** The connection `id` was allocated on. */
+  on?: Connection
   /** Set when it should stop: muted, gone, or the transport closed. */
   ended?: boolean
 }
+
+/** The voice this client publishes, and its channel once open. */
+interface Publishing {
+  voice: string
+  channel?: RTCDataChannel
+  id?: number
+  /** The connection `id` was allocated on. */
+  on?: Connection
+}
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 class RouteError extends Error {
   constructor(
@@ -52,12 +69,15 @@ class RouteError extends Error {
 export class RealtimeTransport implements LiveTransport {
   private listeners = new Set<(voice: string, frame: Uint8Array) => void>()
   private connection?: Promise<Connection>
+  /** The connection once open, until it drops: channel ids are only closed on the one they're on. */
+  private current?: Connection
   /** Realtime API calls on one session go one at a time, as it asks. */
   private queue: Promise<unknown> = Promise.resolve()
   private subs = new Map<string, Subscription>()
   private muted = new Set<string>()
   /** The voice this client publishes now, and its channel once open. */
-  private publishing?: { voice: string; channel?: RTCDataChannel; id?: number }
+  private publishing?: Publishing
+  private failedListeners = new Set<() => void>()
   private closed = false
   /** Frames dropped on a full channel instead of sent, for the `?debug` readout. */
   dropped = 0
@@ -101,61 +121,103 @@ export class RealtimeTransport implements LiveTransport {
     if (this.publishing?.voice === voice) return
     const was = this.publishing
     this.publishing = voice ? { voice } : undefined
-    if (was) this.closeChannel(was.channel, was.id)
-    if (voice) void this.startPublishing(voice)
+    if (was) this.closeChannel(was.channel, was.id, was.on)
+    if (this.publishing) void this.startPublishing(this.publishing)
+  }
+
+  onPublishFailed(listener: () => void) {
+    this.failedListeners.add(listener)
+    return () => {
+      this.failedListeners.delete(listener)
+    }
   }
 
   close() {
     this.closed = true
     this.awareness.off('change', this.reconcile)
     this.listeners.clear()
+    this.failedListeners.clear()
     for (const voice of [...this.subs.keys()]) this.unsubscribe(voice, false)
     this.publishing?.channel?.close()
     this.publishing = undefined
     void this.connection?.then((c) => c.pc.close()).catch(() => undefined)
     this.connection = undefined
+    this.current = undefined
   }
 
-  /** Subscribes to every voice listed live that isn't heard yet, and drops those gone. */
+  /**
+   * Subscribes to every voice listed live that isn't heard yet, again to one published anew (its
+   * `rev` went up: the singer reconnected, or published for the first time), and drops those gone.
+   */
   private reconcile = () => {
     if (this.closed) return
-    const live = new Set(listLive(this.awareness.getStates().values()).map((l) => l.voice))
+    const live = new Map(
+      listLive(this.awareness.getStates().values()).map((l) => [l.voice, l.rev ?? 0]),
+    )
     for (const voice of [...this.subs.keys()]) if (!live.has(voice)) this.unsubscribe(voice, false)
-    for (const voice of live) {
-      if (this.subs.has(voice) || this.muted.has(voice) || this.publishing?.voice === voice)
-        continue
-      const sub: Subscription = {}
-      this.subs.set(voice, sub)
-      void this.subscribe(voice, sub)
+    for (const [voice, rev] of live) {
+      if (this.muted.has(voice) || this.publishing?.voice === voice) continue
+      const sub = this.subs.get(voice)
+      if (!sub) {
+        const fresh: Subscription = { rev }
+        this.subs.set(voice, fresh)
+        void this.subscribe(voice, fresh)
+      } else if (sub.rev !== rev) {
+        sub.rev = rev
+        // One under way reads the new `rev` when it answers, and asks again.
+        if (!sub.trying) void this.subscribe(voice, sub)
+      }
     }
   }
 
   private async subscribe(voice: string, sub: Subscription) {
-    for (let attempt = 0; ; attempt++) {
-      if (sub.ended) return
+    sub.trying = true
+    try {
+      await this.trySubscribe(voice, sub)
+    } finally {
+      sub.trying = false
+    }
+  }
+
+  private async trySubscribe(voice: string, sub: Subscription) {
+    for (let attempt = 0; !sub.ended;) {
+      const asked = sub.rev
+      // Whatever channel it held came from an earlier publish, and carries nothing now.
+      this.dropChannel(sub)
       try {
         const c = await this.connect()
         if (sub.ended) return
         const { id } = await this.call<{ id: number }>('subscribe', { voice }, c)
-        sub.id = id
-        if (sub.ended) return this.closeChannel(undefined, id)
+        if (sub.ended) return this.closeChannel(undefined, id, c)
         const channel = this.openChannel(c, voice, id)
-        sub.channel = channel
+        Object.assign(sub, { id, on: c, channel })
         channel.onmessage = (e: MessageEvent<ArrayBuffer>) => {
-          if (sub.ended) return
+          if (sub.ended || sub.channel !== channel) return
           const bytes = new Uint8Array(e.data)
           for (const l of this.listeners) l(voice, bytes)
         }
-        return
+        // Published again while this was asked for: ask again, for the new one.
+        if (sub.rev === asked) return
       } catch (e) {
-        // No longer live, or this client's own voice: nothing to hear. Anything else (not yet
-        // published, not seated yet, a network error) is tried again a little later.
-        if (e instanceof RouteError && e.status === 404) break
-        if (attempt >= RETRY_MS.length) break
-        await new Promise((r) => setTimeout(r, RETRY_MS[attempt]))
+        // No longer live, or this client's own voice: nothing to hear.
+        if (e instanceof RouteError && e.status === 404) return
+        // Live but not published yet: its publish lists a new `rev`, and that asks again.
+        if (e instanceof RouteError && e.status === 409) {
+          if (sub.rev === asked) return
+          continue
+        }
+        // Anything else (not seated yet, a network error) is tried again a little later; past the
+        // last try it stays listed, and is asked for again when the voice is next published.
+        if (attempt >= RETRY_MS.length) return
+        await wait(RETRY_MS[attempt++]!)
       }
     }
-    // Leave it listed as subscribed, so it isn't asked for again until it goes and comes back.
+  }
+
+  /** Lets go of the channel `sub` holds, if any. */
+  private dropChannel(sub: Subscription) {
+    this.closeChannel(sub.channel, sub.id, sub.on)
+    sub.channel = sub.id = sub.on = undefined
   }
 
   private unsubscribe(voice: string, tellRealtime = true) {
@@ -164,20 +226,36 @@ export class RealtimeTransport implements LiveTransport {
     this.subs.delete(voice)
     sub.ended = true
     // A muted voice is really unsubscribed, so its frames stop coming and cost nothing.
-    if (tellRealtime) this.closeChannel(sub.channel, sub.id)
+    if (tellRealtime) this.closeChannel(sub.channel, sub.id, sub.on)
     else sub.channel?.close()
   }
 
-  private async startPublishing(voice: string) {
-    try {
-      const c = await this.connect()
-      if (this.publishing?.voice !== voice) return
-      const { id } = await this.call<{ id: number }>('publish', {}, c)
-      if (this.publishing?.voice !== voice) return this.closeChannel(undefined, id)
-      this.publishing.id = id
-      this.publishing.channel = this.openChannel(c, `voice-${voice}`, id)
-    } catch (e) {
-      console.warn('live: could not publish', e)
+  /**
+   * Publishes `p` until it is replaced or published, trying again after a failure; past the last
+   * try, tells `onPublishFailed`, since a singer nobody hears must not look live.
+   */
+  private async startPublishing(p: Publishing) {
+    for (let attempt = 0; this.publishing === p; attempt++) {
+      try {
+        const c = await this.connect()
+        if (this.publishing !== p) return
+        const { id } = await this.call<{ id: number }>('publish', {}, c)
+        if (this.publishing !== p) return this.closeChannel(undefined, id, c)
+        p.id = id
+        p.on = c
+        p.channel = this.openChannel(c, `voice-${p.voice}`, id)
+        return
+      } catch (e) {
+        if (this.publishing !== p) return
+        // The slot ended: Live hears that from the room.
+        if (e instanceof RouteError && e.status === 403 && e.message === 'Not live') return
+        if (attempt >= RETRY_MS.length) {
+          console.warn('live: could not publish', e)
+          for (const l of this.failedListeners) l()
+          return
+        }
+        await wait(RETRY_MS[attempt]!)
+      }
     }
   }
 
@@ -188,12 +266,19 @@ export class RealtimeTransport implements LiveTransport {
     return channel
   }
 
-  /** Closes a channel here, and on Realtime once it was allocated there. */
-  private closeChannel(channel: RTCDataChannel | undefined, id: number | undefined) {
+  /**
+   * Closes a channel here, and on Realtime once it was allocated there: on the connection `on` it
+   * was allocated on, while that is still the one open. Ids are per session, so an id from a
+   * dropped connection may name another channel on the new one; the dropped session's are gone.
+   */
+  private closeChannel(
+    channel: RTCDataChannel | undefined,
+    id: number | undefined,
+    on: Connection | undefined,
+  ) {
     channel?.close()
-    const c = this.connection
-    if (id === undefined || !c || this.closed) return
-    void c.then((conn) => this.call('close', { ids: [id] }, conn)).catch(() => undefined)
+    if (id === undefined || !on || this.closed || on !== this.current) return
+    void this.call('close', { ids: [id] }, on).catch(() => undefined)
   }
 
   /** The connection to Realtime, opening it the first time and after one drops. */
@@ -227,6 +312,11 @@ export class RealtimeTransport implements LiveTransport {
       pc.close()
       throw e
     }
+    if (this.closed) {
+      pc.close()
+      throw new Error('live: closed')
+    }
+    this.current = c
     pc.addEventListener('connectionstatechange', () => {
       if (pc.connectionState !== 'failed' && pc.connectionState !== 'closed') return
       void this.reconnect(c)
@@ -239,6 +329,7 @@ export class RealtimeTransport implements LiveTransport {
     if (this.closed || (await this.connection?.catch(() => undefined)) !== c) return
     c.pc.close()
     this.connection = undefined
+    this.current = undefined
     for (const voice of [...this.subs.keys()]) this.unsubscribe(voice, false)
     const voice = this.publishing?.voice
     this.publishing = undefined

@@ -32,13 +32,15 @@
   // Uploaded sounds' audio, at jams/<slug>/<soundId>.wav. The board doc only lists them.
   "r2_buckets": [{ "binding": "SOUND_FILES", "bucket_name": "jambo-sounds" }],
   // Per client address: uploads and removals, 10 a minute; uncached downloads, 120 a minute;
-  // agent tool calls over MCP, 20 a minute; live voice session calls, 20 a minute.
+  // agent tool calls over MCP, 20 a minute; live voice sessions opened, 20 a minute, and their
+  // channel calls (answer, publish, subscribe, close), 240 a minute.
   "ratelimits": [
     { "name": "SOUND_WRITES", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
     { "name": "SOUND_READS", "namespace_id": "1003", "simple": { "limit": 120, "period": 60 } },
     { "name": "AGENT_RUNS", "namespace_id": "1005", "simple": { "limit": 20, "period": 60 } },
     { "name": "CLIP_WRITES", "namespace_id": "1007", "simple": { "limit": 30, "period": 60 } },
     { "name": "LIVE_SESSIONS", "namespace_id": "1009", "simple": { "limit": 20, "period": 60 } },
+    { "name": "LIVE_CHANNELS", "namespace_id": "1011", "simple": { "limit": 240, "period": 60 } },
   ],
   "observability": { "enabled": true },
   // Pull-request previews (Workers Builds runs `wrangler preview`). Each preview gets its own
@@ -61,6 +63,7 @@
       { "name": "AGENT_RUNS", "namespace_id": "1006", "simple": { "limit": 20, "period": 60 } },
       { "name": "CLIP_WRITES", "namespace_id": "1008", "simple": { "limit": 30, "period": 60 } },
       { "name": "LIVE_SESSIONS", "namespace_id": "1010", "simple": { "limit": 20, "period": 60 } },
+      { "name": "LIVE_CHANNELS", "namespace_id": "1012", "simple": { "limit": 240, "period": 60 } },
     ],
     "observability": { "enabled": true },
   },

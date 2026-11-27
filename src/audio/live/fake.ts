@@ -36,6 +36,11 @@ export class FakeTransport implements LiveTransport {
   /** Nothing to do: the room relays only a slot holder's frames, whichever voice that is. */
   publish() {}
 
+  /** Never: there is nothing to publish. */
+  onPublishFailed() {
+    return () => {}
+  }
+
   close() {
     this.provider.off('custom-message', this.onMessage)
     this.listeners.clear()

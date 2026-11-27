@@ -2,6 +2,7 @@ import { env, exports } from 'cloudflare:workers'
 import { describe, expect, it } from 'vitest'
 import { parseSlotMessage, slotRequest } from '../shared/live'
 import { hello, parseSeatMessage } from '../shared/seats'
+import { listLive } from '../src/board/presence'
 import { liveTransport } from '../worker/live'
 import { connectBoard, until } from './client'
 
@@ -153,6 +154,29 @@ describe('live sessions', () => {
     listener.close()
   })
 
+  it('lists a new publish of a live voice, so listeners subscribe to it again', async () => {
+    const slug = 'funky-otter-rs08'
+    const ip = newAddress()
+    const singer = await person(slug, 'k-s', 'Misty Yak')
+    const listener = await person(slug, 'k-l', 'Groovy Otter')
+    const revOf = (voice: string) =>
+      listLive(listener.awareness.getStates().values()).find((l) => l.voice === voice)?.rev
+    const voice = await goLive(singer)
+    await until(() => listLive(listener.awareness.getStates().values()).length === 1)
+    expect(revOf(voice)).toBeUndefined()
+    const first = await openSession(slug, 'k-s', ip)
+    expect((await call(slug, 'publish', { key: 'k-s', ...first }, ip)).status).toBe(201)
+    await until(() => revOf(voice) === 1)
+    // The singer's connection dropped: they publish again on a new session.
+    const second = await openSession(slug, 'k-s', ip)
+    expect((await call(slug, 'publish', { key: 'k-s', ...second }, ip)).status).toBe(201)
+    await until(() => revOf(voice) === 2)
+    const l = await openSession(slug, 'k-l', ip)
+    expect((await call(slug, 'subscribe', { key: 'k-l', ...l, voice }, ip)).status).toBe(201)
+    singer.close()
+    listener.close()
+  })
+
   it('refuses the 21st call from one address within a minute', async () => {
     const slug = 'funky-otter-rs07'
     const seated = await person(slug, 'k-a', 'Misty Yak')
@@ -166,6 +190,29 @@ describe('live sessions', () => {
       if (minute() !== start && attempt === 0) continue
       expect(statuses.slice(0, 20)).toEqual(Array(20).fill(201))
       expect(statuses[20]).toBe(429)
+      break
+    }
+    seated.close()
+  })
+
+  it('counts channel calls apart from sessions, so many listeners behind one address fit', async () => {
+    const slug = 'funky-otter-rs09'
+    const seated = await person(slug, 'k-a', 'Misty Yak')
+    for (let attempt = 0; ; attempt++) {
+      const ip = newAddress()
+      const start = minute()
+      const { session, ticket } = await openSession(slug, 'k-a', ip)
+      for (let i = 0; i < 19; i++) await call(slug, 'session', { key: 'k-a' }, ip)
+      // Sessions are spent for this minute; channel calls are not.
+      const statuses: number[] = []
+      for (let i = 0; i < 30; i++)
+        statuses.push(
+          (await call(slug, 'close', { key: 'k-a', session, ticket, ids: [1] }, ip)).status,
+        )
+      const session21 = (await call(slug, 'session', { key: 'k-a' }, ip)).status
+      if (minute() !== start && attempt === 0) continue
+      expect(statuses).toEqual(Array(30).fill(204))
+      expect(session21).toBe(429)
       break
     }
     seated.close()

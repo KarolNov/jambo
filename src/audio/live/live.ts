@@ -40,6 +40,15 @@ const ENDED: Record<SlotEnd, string | undefined> = {
   stopped: undefined,
 }
 
+/** What singing live says when its voice couldn't be published, so nobody would hear it. */
+export const PUBLISH_FAILED = "Live voice stopped: couldn't reach the live voice service."
+
+/** What singing live says when it is asked to start before this jam knows whether it can. */
+export const STILL_CHECKING = 'Live voice is still starting: try again in a moment.'
+
+/** How long starting to sing waits to learn whether live voice is set up here, in ms. */
+const AVAILABLE_WAIT_MS = 3_000
+
 /** Why singing live can't start in this browser at all. */
 export const CANT_ENCODE = "This browser can't sing live."
 
@@ -85,7 +94,9 @@ export class Live {
   private tunes = 0
   private changeListeners = new Set<() => void>()
   private stopTransport: () => void
+  private stopFailed: () => void
   private stopSlot?: () => void
+  private readonly availability: Promise<boolean>
   /**
    * Whether live voice is set up where this jam is served: undefined until known, false where the
    * Worker has neither Realtime credentials nor the local fake relay.
@@ -104,11 +115,17 @@ export class Live {
     private readonly slot?: LiveSlot,
     available: Promise<boolean> = Promise.resolve(true),
   ) {
+    this.availability = available
     void available.then((on) => {
       this.available = on
       this.emit()
     })
     this.stopTransport = transport.onFrame((voice, bytes) => this.onFrame(voice, bytes))
+    this.stopFailed = transport.onPublishFailed(() => {
+      if (!this.singing) return
+      this.error = PUBLISH_FAILED
+      void this.stopSinging()
+    })
     this.stopSlot = slot?.onEnd((why) => {
       if (!this.singing) return
       this.error = ENDED[why]
@@ -224,7 +241,15 @@ export class Live {
   }
 
   private async startSinging(ctx: AudioContext, options: LiveOptions): Promise<Singing> {
-    if (this.available === false) throw new Error(LIVE_UNAVAILABLE)
+    // Not before the Worker says live voice is set up here: else the voice would go nowhere.
+    const available =
+      this.available ??
+      (await Promise.race([
+        this.availability,
+        new Promise<undefined>((r) => setTimeout(r, AVAILABLE_WAIT_MS)),
+      ]))
+    if (available === undefined) throw new Error(STILL_CHECKING)
+    if (!available) throw new Error(LIVE_UNAVAILABLE)
     if (!(await canEncode(ctx.sampleRate))) throw new Error(CANT_ENCODE)
     const answer = await this.slot?.request()
     if (answer && !answer.granted) throw new Error(REFUSED[answer.why])
@@ -340,6 +365,7 @@ export class Live {
   dispose() {
     clearInterval(this.sweep)
     this.stopTransport()
+    this.stopFailed()
     this.transport.close()
     this.stopSlot?.()
     void this.stopSinging()

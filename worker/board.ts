@@ -107,8 +107,9 @@ const LIVE_KEY = 'live'
 /**
  * A held live slot. `source` is where its voice is published on Realtime (the singer's session and
  * channel name), once the session route has published it; private to the room and the Worker.
+ * `rev` counts those publishes, and is public, so listeners follow a singer who published again.
  */
-type LiveSlot = { voice: string; since: number; source?: LiveSource }
+type LiveSlot = { voice: string; since: number; source?: LiveSource; rev?: number }
 type SeatState = {
   [SEAT_KEY]?: Seat
   [FAKE_LIVE_KEY]?: true
@@ -314,7 +315,12 @@ export class Board extends YServer<Env> {
   private liveVoices(): LiveVoice[] {
     return [...this.slots().values()]
       .sort((a, b) => a.since - b.since)
-      .map((s) => ({ voice: s.voice, name: s.seat.name, color: s.seat.color }))
+      .map((s) => ({
+        voice: s.voice,
+        name: s.seat.name,
+        color: s.seat.color,
+        ...(s.rev ? { rev: s.rev } : {}),
+      }))
   }
 
   /**
@@ -403,11 +409,17 @@ export class Board extends YServer<Env> {
    * listeners can subscribe to it. False when they no longer hold that slot.
    */
   async livePublished(key: string, voice: string, source: LiveSource): Promise<boolean> {
-    if (this.slots().get(key)?.voice !== voice) return false
+    const slot = this.slots().get(key)
+    if (slot?.voice !== voice) return false
+    // A new publish (the singer reconnected) is a new source: listeners see `rev` go up.
+    const rev = (slot.rev ?? 0) + 1
     for (const c of this.connectionsOf(key))
       c.setState((prev: SeatState | null) =>
-        prev?.[LIVE_KEY] ? { ...prev, [LIVE_KEY]: { ...prev[LIVE_KEY], source } } : { ...prev },
+        prev?.[LIVE_KEY]
+          ? { ...prev, [LIVE_KEY]: { ...prev[LIVE_KEY], source, rev } }
+          : { ...prev },
       )
+    this.publishRoom()
     return true
   }
 
@@ -447,7 +459,12 @@ export class Board extends YServer<Env> {
         ? {
             ...rest,
             [SEAT_KEY]: seat,
-            [LIVE_KEY]: { voice: slot.voice, since: slot.since, source: slot.source },
+            [LIVE_KEY]: {
+              voice: slot.voice,
+              since: slot.since,
+              source: slot.source,
+              rev: slot.rev,
+            },
           }
         : { ...rest, [SEAT_KEY]: seat }
     })
