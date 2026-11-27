@@ -56,9 +56,9 @@
         "src/App.tsx": "2ea3aba66dd9",
         "src/about/About.tsx": "f55514fbec86",
         "src/about/about.css": "9fa4c0fbea95",
-        "worker/index.ts": "7006ed34cbe2"
+        "worker/index.ts": "1362170c1eda"
       },
-      "syncedCommit": "ca1f3e644456744767bf5b034ac30e2d3c75a00c"
+      "syncedCommit": "afd8252ac9aa73da3e68583104647a50681957a9"
     },
     "collab/room": {
       "ref": "https://app.notion.com/p/41c43cce21f281d4ab70f882592071ed",
@@ -162,18 +162,18 @@
         "shared/clock.ts": "1dd908e91d40",
         "shared/looper.ts": "8c718b44be19",
         "src/audio/clock.ts": "c0378e84a7cb",
-        "src/audio/engine.ts": "28de659e9b21",
+        "src/audio/engine.ts": "3d62e7cea8eb",
         "src/audio/knobs.ts": "ea6bb3369d92",
         "src/audio/session.ts": "2e1ec86333d1",
-        "src/board/Debug.tsx": "80d7db772bb5",
-        "src/board/console/Deck.tsx": "23e1b0706a4b",
+        "src/board/Debug.tsx": "7b64b2416cce",
+        "src/board/console/Deck.tsx": "75eef45d2316",
         "src/board/console/Mixer.tsx": "c2d0a0933212",
         "src/board/console/loops.ts": "140203edb326",
         "src/board/transport.ts": "897ff66d671f",
         "src/board/useEngineState.ts": "f06f1956d95d",
         "src/board/useTransport.ts": "ec04141bcfaf"
       },
-      "syncedCommit": "b94a8d68dc6195e139c4c4557b17035a5fa57607"
+      "syncedCommit": "afd8252ac9aa73da3e68583104647a50681957a9"
     },
     "board/pads": {
       "ref": "https://app.notion.com/p/41c43cce21f281bda9efd3b21006661c",
@@ -190,7 +190,7 @@
         "src/board/listed.ts": "a3920add1dc7",
         "src/board/typing.ts": "9749aa39cc94"
       },
-      "syncedCommit": "b94a8d68dc6195e139c4c4557b17035a5fa57607"
+      "syncedCommit": "afd8252ac9aa73da3e68583104647a50681957a9"
     },
     "audio/sounds": {
       "ref": "https://app.notion.com/p/41c43cce21f2810f8bb0f1ed9935a67d",
@@ -226,7 +226,7 @@
         "src/board/console/Master.tsx": "b757365e6ca4",
         "src/board/console/master.css": "101fab5087ed"
       },
-      "syncedCommit": "ca1f3e644456744767bf5b034ac30e2d3c75a00c"
+      "syncedCommit": "afd8252ac9aa73da3e68583104647a50681957a9"
     },
     "collab/agent": {
       "ref": "https://app.notion.com/p/41d43cce21f2814bbbb8ef7ccde6b7e2",
