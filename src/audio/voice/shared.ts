@@ -34,7 +34,8 @@ export interface VoiceLease<V extends SharedInput> {
  */
 export class SharedVoice<V extends SharedInput> {
   private opening?: Promise<V>
-  private holders = 0
+  /** How many leases hold each opening: one that failed may still be held while the next opens. */
+  private holders = new Map<Promise<V>, number>()
   /** Each lease's monitor wish, latest last. */
   private wishes = new Map<object, MonitorWish>()
 
@@ -42,12 +43,12 @@ export class SharedVoice<V extends SharedInput> {
 
   /** Whether the microphone is held (open or opening). */
   get held() {
-    return this.holders > 0
+    return this.holders.size > 0
   }
 
   lease(): VoiceLease<V> {
     const opening = (this.opening ??= this.start())
-    this.holders++
+    this.holders.set(opening, (this.holders.get(opening) ?? 0) + 1)
     const self = {}
     let released = false
     return {
@@ -62,11 +63,11 @@ export class SharedVoice<V extends SharedInput> {
         if (released) return
         released = true
         const had = this.wishes.delete(self)
-        this.holders--
-        if (this.holders > 0) {
-          if (had) void this.applyMonitor(opening)
-          return
-        }
+        const left = (this.holders.get(opening) ?? 1) - 1
+        if (left > 0) this.holders.set(opening, left)
+        else this.holders.delete(opening)
+        if (had && this.opening) void this.applyMonitor(this.opening)
+        if (left > 0) return
         if (this.opening === opening) this.opening = undefined
         opening.then(
           (v) => v.close(),
