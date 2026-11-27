@@ -1,6 +1,7 @@
 /**
  * Live voice, as the Worker and the client share it: the jam's limits, the wire format of one
- * stamped frame of a voice, and the messages the fake transport relays through the room.
+ * stamped frame of a voice, the messages the fake transport relays through the room, and the live
+ * slots the room hands out.
  *
  * A singer stamps every frame with the room time it was sung at (the jam clock, corrected for
  * their round trip); every listener plays it at stamp + one bar at the jam's tempo, so it lands on
@@ -8,7 +9,9 @@
  */
 import { BPM } from './board/schema'
 import { audioToRoom, roomToAudio } from './clock'
+import { type ColorName, toColorName } from './colors'
 import { barMs } from './looper'
+import { toName } from './names'
 
 export const LIVE = {
   /** Live voices a jam may have at once. */
@@ -123,8 +126,8 @@ const MAX_RELAYED = Math.ceil((HEADER + LIVE.maxPayload) / 3) * 4
 /**
  * The fake transport's messages over the board connection (local dev and e2e only): a singer
  * sends `{ t: 'live', f }` with a frame as base64, and the room relays it to everyone else as
- * `{ t: 'live', v, f }`, `v` naming whose voice it is (their seat's id, set by the room, never
- * by the sender).
+ * `{ t: 'live', v, f }`, `v` naming whose voice it is (the voice id the room granted their slot,
+ * set by the room, never by the sender).
  */
 export type LiveRelayMessage = { t: 'live'; f: string; v?: string }
 
@@ -144,4 +147,65 @@ export function parseRelayMessage(message: string): LiveRelayMessage | undefined
   } catch {
     return undefined
   }
+}
+
+/**
+ * Live slots: the room hands out the jam's `LIVE.maxVoices` slots over the board connection. A
+ * seated person asks with `request` and gets `grant` (naming the voice id their frames will carry)
+ * or `full`; they give it back with `stop`. The room sends `stop` too, saying why, when it ends a
+ * slot itself: `asked` (they stopped), `hour` (`LIVE.maxMs` ran out) or `unseated` (they asked
+ * before the room seated them).
+ */
+export type LiveStopReason = 'asked' | 'hour' | 'unseated'
+export type SlotMessage =
+  | { t: 'slot'; s: 'request' }
+  | { t: 'slot'; s: 'grant'; v: string }
+  | { t: 'slot'; s: 'full' }
+  | { t: 'slot'; s: 'stop'; why?: LiveStopReason }
+
+const STOP_REASONS: readonly LiveStopReason[] = ['asked', 'hour', 'unseated']
+
+export const slotRequest = () => JSON.stringify({ t: 'slot', s: 'request' })
+export const slotGrant = (voice: string) => JSON.stringify({ t: 'slot', s: 'grant', v: voice })
+export const slotFull = () => JSON.stringify({ t: 'slot', s: 'full' })
+export const slotStop = (why?: LiveStopReason) =>
+  JSON.stringify(why ? { t: 'slot', s: 'stop', why } : { t: 'slot', s: 'stop' })
+
+/** A slot message, or undefined for anything else. */
+export function parseSlotMessage(message: string): SlotMessage | undefined {
+  if (!message.startsWith('{"t":"slot"')) return undefined
+  try {
+    const m = JSON.parse(message) as { s?: unknown; v?: unknown; why?: unknown }
+    if (m.s === 'request') return { t: 'slot', s: 'request' }
+    if (m.s === 'full') return { t: 'slot', s: 'full' }
+    if (m.s === 'grant' && typeof m.v === 'string' && m.v.length > 0 && m.v.length <= 64)
+      return { t: 'slot', s: 'grant', v: m.v }
+    if (m.s === 'stop') {
+      const why = STOP_REASONS.find((r) => r === m.why)
+      return why ? { t: 'slot', s: 'stop', why } : { t: 'slot', s: 'stop' }
+    }
+  } catch {
+    // Not JSON: not a slot message.
+  }
+  return undefined
+}
+
+/**
+ * Someone live, as the room publishes them in its own state (`live` beside `agents`): the voice id
+ * their frames carry, and their name and colour as the room seated them. Names are unique in a jam,
+ * so a listener matches a person to their voice by name.
+ */
+export interface LiveVoice {
+  voice: string
+  name: string
+  color: ColorName
+}
+
+/** One published live voice, if it reads as one. */
+export function toLiveVoice(v: unknown): LiveVoice | undefined {
+  const l = v as { voice?: unknown; name?: unknown; color?: unknown } | null
+  const color = toColorName(l?.color)
+  const name = toName(l?.name)
+  if (typeof l?.voice !== 'string' || l.voice.length === 0 || !color || !name) return undefined
+  return { voice: l.voice, name, color }
 }

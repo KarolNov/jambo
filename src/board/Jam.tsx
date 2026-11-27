@@ -4,6 +4,7 @@ import { JamClock } from '../audio/clock'
 import { Engine } from '../audio/engine'
 import { FakeTransport } from '../audio/live/fake'
 import { Live } from '../audio/live/live'
+import { LiveSlot } from '../audio/live/slot'
 import { SampleLoader } from '../audio/samples'
 import { Console } from './console/Console'
 import { type ConnectionStatus, onStatus, openJam } from './doc'
@@ -23,7 +24,8 @@ export function Jam({ slug }: { slug: string }) {
     const clock = new JamClock(jam.provider)
     const engine = new Engine(clock, new SampleLoader(slug))
     // Only the fake transport so far: the room relays it in local dev and e2e, nowhere else.
-    const live = new Live(engine, new FakeTransport(jam.provider))
+    const slot = new LiveSlot(jam.provider)
+    const live = new Live(engine, new FakeTransport(jam.provider), slot)
     const me = new Me(identity())
     setSession({ jam, engine, me, board: makeBoard(jam, me), live })
     const stop = onStatus(jam.provider, setStatus)
@@ -34,6 +36,7 @@ export function Jam({ slug }: { slug: string }) {
       unseat()
       stop()
       live.dispose()
+      slot.dispose()
       engine.dispose()
       clock.dispose()
       jam.destroy()

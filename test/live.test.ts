@@ -10,13 +10,19 @@ import {
   liveStamp,
   parseFrame,
   parseRelayMessage,
+  parseSlotMessage,
   relayIn,
   relayOut,
+  slotFull,
+  slotGrant,
+  slotRequest,
+  slotStop,
   toBase64,
+  toLiveVoice,
 } from '../shared/live'
 import { barMs } from '../shared/looper'
 import { DECODE_MS, JitterBuffer, LEAD_MS } from '../src/audio/live/jitter'
-import { LiveVoices, relaysFake, VOICE_IDLE_MS } from '../worker/live'
+import { relaysFake } from '../worker/live'
 
 const frame = (seq: number, stamp: number, bpm = 100): LiveFrame => ({
   seq,
@@ -167,22 +173,40 @@ describe('jitter buffer', () => {
   })
 })
 
-describe("the room's live voices", () => {
-  it('admits at most LIVE.maxVoices at once, and another once one stops', () => {
-    const v = new LiveVoices()
-    for (const id of ['a', 'b', 'c']) expect(v.admit(id, 0)).toBe(true)
-    expect(v.admit('d', 10)).toBe(false)
-    expect(v.admit('a', 20)).toBe(true)
-    // b and c go quiet; a keeps singing.
-    expect(v.admit('a', VOICE_IDLE_MS)).toBe(true)
-    expect(v.admit('d', VOICE_IDLE_MS + 21)).toBe(true)
+describe('live slot messages', () => {
+  it('round-trip through their parser', () => {
+    expect(parseSlotMessage(slotRequest())).toEqual({ t: 'slot', s: 'request' })
+    expect(parseSlotMessage(slotGrant('v1'))).toEqual({ t: 'slot', s: 'grant', v: 'v1' })
+    expect(parseSlotMessage(slotFull())).toEqual({ t: 'slot', s: 'full' })
+    expect(parseSlotMessage(slotStop())).toEqual({ t: 'slot', s: 'stop' })
+    expect(parseSlotMessage(slotStop('hour'))).toEqual({ t: 'slot', s: 'stop', why: 'hour' })
   })
 
-  it('stops a voice after LIVE.maxMs, until it has been quiet and starts again', () => {
-    const v = new LiveVoices()
-    let t = 0
-    for (; t <= LIVE.maxMs; t += 1_000) expect(v.admit('a', t)).toBe(true)
-    expect(v.admit('a', t)).toBe(false)
-    expect(v.admit('a', t + VOICE_IDLE_MS + 1)).toBe(true)
+  it('refuse anything else', () => {
+    for (const m of [
+      '{"t":"slot","s":"take"}',
+      '{"t":"slot","s":"grant"}',
+      '{"t":"slot","s":"grant","v":""}',
+      '{"t":"slot"',
+      relayOut(new Uint8Array([1])),
+      'ping',
+    ])
+      expect(parseSlotMessage(m)).toBeUndefined()
+    // An unknown reason still stops.
+    expect(parseSlotMessage('{"t":"slot","s":"stop","why":"bored"}')).toEqual({
+      t: 'slot',
+      s: 'stop',
+    })
+  })
+
+  it('read a published live voice only when it is whole', () => {
+    expect(toLiveVoice({ voice: 'v1', name: 'Misty Yak', color: 'teal' })).toEqual({
+      voice: 'v1',
+      name: 'Misty Yak',
+      color: 'teal',
+    })
+    expect(toLiveVoice({ voice: 'v1', color: 'teal' })).toBeUndefined()
+    expect(toLiveVoice({ name: 'Misty Yak', color: 'teal' })).toBeUndefined()
+    expect(toLiveVoice(null)).toBeUndefined()
   })
 })

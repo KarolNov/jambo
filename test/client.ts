@@ -13,10 +13,11 @@ const CUSTOM = '__YPS:'
 
 /**
  * A minimal Yjs client over the Worker's own fetch: the same y-protocols sync and awareness
- * messages YProvider sends. Good enough to prove two peers converge through a Board.
+ * messages YProvider sends. Good enough to prove two peers converge through a Board. `host` is the
+ * one the request names: `localhost` connects as to a local Worker.
  */
-export async function connectBoard(slug: string) {
-  const res = await exports.default.fetch(`http://jambo.test${boardPath(slug)}`, {
+export async function connectBoard(slug: string, host = 'jambo.test') {
+  const res = await exports.default.fetch(`http://${host}${boardPath(slug)}`, {
     headers: { Upgrade: 'websocket' },
   })
   const ws = res.webSocket

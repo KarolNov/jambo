@@ -6,6 +6,7 @@ import { VoiceInput } from '../voice/input'
 import { type PresetId, rackDelay } from '../voice/presets'
 import { canEncode, LiveEncoder } from './encoder'
 import { LiveListener, type Played } from './listener'
+import type { LiveSlot, SlotAnswer, SlotEnd } from './slot'
 import type { LiveTransport } from './transport'
 
 /** How many played frames the readout keeps. */
@@ -16,6 +17,20 @@ const KEEP_PLAYED = 200
  * the slowest tempo, so whatever it still had queued has played.
  */
 const IDLE_MS = liveDelayMs(BPM.min) + 2_000
+
+/** What singing live says when the room has no slot for it. */
+const REFUSED: Record<Extract<SlotAnswer, { granted: false }>['why'], string> = {
+  full: `This jam is full of live voices (${LIVE.maxVoices} at once).`,
+  unseated: 'Not in the jam yet: try again in a moment.',
+  offline: 'Not connected to the jam.',
+}
+
+/** What singing live says when the room ended it. */
+const ENDED: Record<SlotEnd, string | undefined> = {
+  hour: 'Live voice stops after an hour: turn it on again to carry on.',
+  dropped: 'Live voice stopped: the connection to the jam dropped.',
+  stopped: undefined,
+}
 
 /** How this client sings live: through which preset and key. */
 export interface LiveOptions {
@@ -41,20 +56,28 @@ export class Live {
   /** When each voice's last frame arrived (performance.now() ms), for closing idle listeners. */
   private heard = new Map<string, number>()
   private readonly sweep = setInterval(() => this.closeIdle(), 1_000)
-  /** Stops singing once it has been live for `LIVE.maxMs`. */
-  private limit?: ReturnType<typeof setTimeout>
   /** Why singing stopped by itself, if it did, for the readout. */
   error?: string
   private changeListeners = new Set<() => void>()
   private stopTransport: () => void
+  private stopSlot?: () => void
   /** Frames sent, and the last few that played here, for the `?debug` readout and e2e tests. */
   readonly stats = { sent: 0, lastSent: undefined as LiveFrame | undefined, played: [] as Played[] }
 
+  /**
+   * `slot` is the room's say over who sings: without one (tests), singing needs no slot.
+   */
   constructor(
     private readonly engine: Engine,
     private readonly transport: LiveTransport,
+    private readonly slot?: LiveSlot,
   ) {
     this.stopTransport = transport.onFrame((voice, bytes) => this.onFrame(voice, bytes))
+    this.stopSlot = slot?.onEnd((why) => {
+      if (!this.singing) return
+      this.error = ENDED[why]
+      void this.stopSinging()
+    })
   }
 
   /** Whether this client is singing live (or starting to). */
@@ -81,8 +104,9 @@ export class Live {
   }
 
   /**
-   * Starts or stops singing live. Starting opens the microphone (asking the first time) and throws
-   * a `MicError` when it can't be had, or an Error when this browser can't encode a live voice.
+   * Starts or stops singing live. Starting asks the room for a live slot, then opens the microphone
+   * (asking the first time); it throws an Error when the room has no slot to give or this browser
+   * can't encode a live voice, and a `MicError` when the microphone can't be had.
    * Does nothing until audio has started and the clock is agreed.
    */
   async sing(on: boolean, options: LiveOptions): Promise<void> {
@@ -97,7 +121,6 @@ export class Live {
       await starting
       // Turned off while it started: `stopSinging` took it, and closes it.
       if (this.singing !== starting) return
-      this.limit = setTimeout(() => void this.stopSinging(), LIVE.maxMs)
     } catch (e) {
       if (this.singing === starting) this.singing = undefined
       this.emit()
@@ -107,7 +130,15 @@ export class Live {
 
   private async startSinging(ctx: AudioContext, { preset, key }: LiveOptions): Promise<Singing> {
     if (!(await canEncode(ctx.sampleRate))) throw new Error("This browser can't sing live.")
-    const voice = await VoiceInput.open(ctx)
+    const answer = await this.slot?.request()
+    if (answer && !answer.granted) throw new Error(REFUSED[answer.why])
+    let voice: VoiceInput
+    try {
+      voice = await VoiceInput.open(ctx)
+    } catch (e) {
+      this.slot?.release()
+      throw e
+    }
     try {
       const rack = await voice.liveRack(preset, key)
       const encoder: LiveEncoder = await LiveEncoder.open(ctx, rack.output, {
@@ -130,14 +161,16 @@ export class Live {
       return { voice, rack, encoder }
     } catch (e) {
       voice.close()
+      this.slot?.release()
       throw e
     }
   }
 
   private async stopSinging() {
     const singing = this.singing
+    if (!singing) return
     this.singing = undefined
-    clearTimeout(this.limit)
+    this.slot?.release()
     this.emit()
     this.close(await singing?.catch(() => undefined))
   }
@@ -193,6 +226,7 @@ export class Live {
     clearInterval(this.sweep)
     this.stopTransport()
     this.transport.close()
+    this.stopSlot?.()
     void this.stopSinging()
     for (const l of this.listeners.values()) void l.then((x) => x?.close())
     this.listeners.clear()

@@ -3,6 +3,7 @@ import type { Awareness } from 'y-protocols/awareness'
 import { AGENT_AUTHOR_PREFIX, isAgentAuthor } from '../../shared/agent'
 import { CONTROL_KEYS } from '../../shared/board'
 import { type ColorName, toColorName } from '../../shared/colors'
+import { type LiveVoice, toLiveVoice } from '../../shared/live'
 import { toName } from '../../shared/names'
 import type { Me } from './seat'
 
@@ -34,6 +35,23 @@ const toAgent = (v: unknown): Person | undefined => {
   const name = toName(a?.name)
   if (typeof a?.id !== 'string' || !color || !name) return undefined
   return { id: AGENT_AUTHOR_PREFIX + a.id, name, color, agent: true }
+}
+
+/**
+ * Who is live, from the room's own state only (the one state with no person), so a browser can't
+ * show anyone as live: each voice once, as the room publishes them.
+ */
+export function listLive(states: Iterable<unknown>): LiveVoice[] {
+  const live = new Map<string, LiveVoice>()
+  for (const state of states) {
+    const s = state as { person?: unknown; live?: unknown } | null
+    if (s?.person || !Array.isArray(s?.live)) continue
+    for (const raw of s.live) {
+      const voice = toLiveVoice(raw)
+      if (voice && !live.has(voice.voice)) live.set(voice.voice, voice)
+    }
+  }
+  return [...live.values()]
 }
 
 /**

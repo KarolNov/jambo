@@ -8,7 +8,7 @@
 export interface LiveTransport {
   /** Sends one of this client's frames (`encodeFrame`'s bytes) to everyone listening. */
   send(frame: Uint8Array): void
-  /** Calls `listener` with each frame of someone else's voice, by their seat's id. */
+  /** Calls `listener` with each frame of someone else's voice, by the voice id the room granted them. */
   onFrame(listener: (voice: string, frame: Uint8Array) => void): () => void
   /** Stops sending and listening. */
   close(): void
