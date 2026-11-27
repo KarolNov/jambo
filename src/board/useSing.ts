@@ -10,6 +10,7 @@ import {
   loadKey,
   loadMonitor,
   loadPreset,
+  onMonitor,
   saveHeadphones,
   saveMonitor,
   savePreset,
@@ -144,6 +145,15 @@ export function useLiveMic() {
   const [canSing, setCanSing] = useState<boolean>()
 
   useEffect(() => live?.subscribe(changed), [live])
+  // Either Monitor switch (here or the recorder's) turns it on or off for both, and for live voice.
+  useEffect(
+    () =>
+      onMonitor((on) => {
+        setMonitor(on)
+        live?.setMonitor(on)
+      }),
+    [live],
+  )
   useEffect(() => {
     let on = true
     void Live.canSing(engine.audioContext?.sampleRate).then((can) => on && setCanSing(can))
@@ -159,6 +169,12 @@ export function useLiveMic() {
     setStarting(true)
     try {
       await engine.unlock()
+      // Checked again at the real context's rate: before audio started it could only guess.
+      const rate = engine.audioContext?.sampleRate
+      if (rate !== undefined && !(await Live.canSing(rate))) {
+        setCanSing(false)
+        return
+      }
       if (!engine.liveTiming()) {
         setError('Still syncing with the jam: try again in a moment.')
         return
@@ -195,9 +211,8 @@ export function useLiveMic() {
   }
 
   const toggleMonitor = (on: boolean) => {
-    setMonitor(on)
+    // `onMonitor` sets it here and for live voice.
     saveMonitor(on)
-    live.setMonitor(on)
   }
 
   return {

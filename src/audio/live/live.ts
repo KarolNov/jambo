@@ -88,7 +88,11 @@ export class Live {
   private readonly sweep = setInterval(() => this.closeIdle(), 1_000)
   /** Why singing stopped by itself, if it did, for the readout. */
   error?: string
-  /** Voices this listener has muted, by voice id. */
+  /** People this listener has muted, by name: a mute follows them to each new voice id. */
+  private mutedPeople = new Set<string>()
+  /** Who is live, by name, as the room lists them: each one's voice id. */
+  private voiceOf = new Map<string, string>()
+  /** The voice ids muted now: the muted people's current voices. */
   private muted = new Set<string>()
   /** Counts `retune` calls, so one overtaken while its chain built does nothing. */
   private tunes = 0
@@ -148,26 +152,49 @@ export class Live {
     return canDecode()
   }
 
-  /** Whether `voice` is muted here. */
-  isMuted(voice: string) {
-    return this.muted.has(voice)
+  /** Whether `person` (by name) is muted here. */
+  isMuted(person: string) {
+    return this.mutedPeople.has(person)
   }
 
   /**
-   * Mutes or unmutes `voice` for this listener only: muted, it is unsubscribed from the transport
-   * and whatever of it was queued stops at once; unmuted, it plays again from its next on-time frame.
+   * Mutes or unmutes `person` (by name) for this listener only, whichever voice id they sing under
+   * now or later: muted, their voice is unsubscribed from the transport and whatever of it was
+   * queued stops at once; unmuted, it plays again from its next on-time frame.
    */
-  mute(voice: string, on: boolean) {
-    if (on === this.muted.has(voice)) return
-    if (on) this.muted.add(voice)
-    else this.muted.delete(voice)
-    this.transport.listen(voice, !on)
-    if (on) {
+  mute(person: string, on: boolean) {
+    if (on === this.mutedPeople.has(person)) return
+    if (on) this.mutedPeople.add(person)
+    else this.mutedPeople.delete(person)
+    this.syncMuted()
+    this.emit()
+  }
+
+  /** Who is live now, name to voice id, from the room's list: muted people's new voices stay muted. */
+  setLive(voices: Map<string, string>) {
+    this.voiceOf = voices
+    this.syncMuted()
+  }
+
+  private syncMuted() {
+    const want = new Set<string>()
+    for (const person of this.mutedPeople) {
+      const voice = this.voiceOf.get(person)
+      if (voice) want.add(voice)
+    }
+    for (const voice of this.muted) {
+      if (want.has(voice)) continue
+      this.muted.delete(voice)
+      this.transport.listen(voice, true)
+    }
+    for (const voice of want) {
+      if (this.muted.has(voice)) continue
+      this.muted.add(voice)
+      this.transport.listen(voice, false)
       void this.listeners.get(voice)?.then((l) => l?.close())
       this.listeners.delete(voice)
       this.heard.delete(voice)
     }
-    this.emit()
   }
 
   /** Turns hearing yourself on or off while live. */
@@ -234,7 +261,9 @@ export class Live {
       // Turned off while it started: `stopSinging` took it, and closes it.
       if (this.singing !== starting) return
     } catch (e) {
-      if (this.singing === starting) this.singing = undefined
+      // Turned off while it started: stopping it is why it failed, so there is nothing to say.
+      if (this.singing !== starting) return
+      this.singing = undefined
       this.emit()
       throw e
     }

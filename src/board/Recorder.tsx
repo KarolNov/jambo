@@ -8,6 +8,7 @@ import {
   loadMonitor,
   loadPreset,
   loadRoundTrip,
+  onMonitor,
   saveKey,
   saveMonitor,
   savePreset,
@@ -51,11 +52,13 @@ export function Recorder({
   /** The dialog is uploading: hold still. */
   disabled: boolean
 }) {
-  const { engine } = useSession()
+  const { engine, live } = useSession()
   const [phase, setPhase] = useState<Phase>('idle')
   const [preset, setPreset] = useState<PresetId>(loadPreset)
   const [key, setKey] = useState<Key>(loadKey)
   const [monitor, setMonitor] = useState(loadMonitor)
+  // The console's Monitor switch and this one are the same setting.
+  useEffect(() => onMonitor(setMonitor), [])
   const [roundTrip, setRoundTrip] = useState(loadRoundTrip)
   const [level, setLevel] = useState(0)
   const [elapsed, setElapsed] = useState(0)
@@ -185,6 +188,8 @@ export function Recorder({
     if (!k) return
     setKey(k)
     saveKey(k)
+    // Live keeps singing, tuned to the new key from now on.
+    live?.retune(loadPreset(), k)
   }
 
   const toggleMonitor = (on: boolean) => {
