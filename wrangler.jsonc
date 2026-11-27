@@ -28,7 +28,7 @@
   // REALTIME_APP_TOKEN secret (`wrangler secret put REALTIME_APP_TOKEN`); where it isn't set, live
   // voice isn't available (local Workers use the fake relay instead). Not in secrets.required, so
   // previews without it still deploy.
-  "vars": { "SOUND_BUDGET_PERCENT": "24", "REALTIME_APP_ID": "bb675acc1b179d3f5d76d17b53b45d39" },
+  "vars": { "SOUND_BUDGET_PERCENT": "24", "REALTIME_APP_ID": "187514afc9e3468ac58e74de3721dad8" },
   // Uploaded sounds' audio, at jams/<slug>/<soundId>.wav. The board doc only lists them.
   "r2_buckets": [{ "binding": "SOUND_FILES", "bucket_name": "jambo-sounds" }],
   // Per client address: uploads and removals, 10 a minute; uncached downloads, 120 a minute;
@@ -52,7 +52,7 @@
     },
     "vars": {
       "SOUND_BUDGET_PERCENT": "0.1",
-      "REALTIME_APP_ID": "bb675acc1b179d3f5d76d17b53b45d39",
+      "REALTIME_APP_ID": "187514afc9e3468ac58e74de3721dad8",
     },
     "r2_buckets": [{ "binding": "SOUND_FILES", "bucket_name": "jambo-sounds-preview" }],
     "ratelimits": [
