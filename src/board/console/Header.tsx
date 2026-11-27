@@ -1,9 +1,10 @@
-import { type CSSProperties, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useEffect, useReducer, useRef, useState } from 'react'
+import { CANT_DECODE, Live } from '../../audio/live/live'
 import { ThemeToggle } from '../../theme/ThemeToggle'
 import { IconButton } from '../../ui'
 import { useSwatch } from '../colors'
 import type { ConnectionStatus } from '../doc'
-import { usePeople } from '../presence'
+import { useLive, usePeople } from '../presence'
 import { useSeat } from '../seat'
 import { useSession } from '../session'
 import { AiMark } from './AiMark'
@@ -97,33 +98,75 @@ function ShareButton({ slug }: { slug: string }) {
 
 /**
  * Everyone in the jam as a dot in their colour, you first; named while there are few. Agents' dots
- * glow, and their names carry a superscript AI.
+ * glow, and their names carry a superscript AI. Whoever the room lists as live has a live mark on
+ * their dot, and everyone else live a button to mute them here only. Where this browser can't play
+ * live voices, it says so while anyone else is live.
  */
 function People() {
-  const { jam, me } = useSession()
+  const { jam, me, live } = useSession()
   useSeat(me) // your own entry reads `me`, so re-render when the room seats you
   const people = usePeople(jam.awareness, me)
+  // From the room's own list only: names are unique in a jam, so they match people to voices.
+  const voices = new Map(useLive(jam.awareness).map((v) => [v.name, v.voice]))
+  const [, changed] = useReducer((n: number) => n + 1, 0)
+  useEffect(() => live?.subscribe(changed), [live])
   const swatch = useSwatch()
   const named = namesPeople(people.length)
+  const othersLive = people.some((p) => p.id !== me.id && p.name && voices.has(p.name))
   return (
-    <ul className={`console-people ${named ? '' : 'is-crowded'}`} aria-label="Who's here">
-      {people.map((p) => {
-        const name = personName(p, me.id)
-        const label = p.agent ? `${name}, an AI agent` : name
-        return (
-          <li
-            key={p.id}
-            title={label}
-            aria-label={label}
-            className={p.agent ? 'is-agent' : undefined}
-            style={{ '--c': swatch(p.color) } as CSSProperties}
-          >
-            <span className="console-person" aria-hidden />
-            <span className="console-person-name">{name}</span>
-            {p.agent && <AiMark />}
-          </li>
-        )
-      })}
-    </ul>
+    <>
+      <ul className={`console-people ${named ? '' : 'is-crowded'}`} aria-label="Who's here">
+        {people.map((p) => {
+          const name = personName(p, me.id)
+          const voice = !p.agent && p.name ? voices.get(p.name) : undefined
+          const label = p.agent ? `${name}, an AI agent` : voice ? `${name}, live` : name
+          const muted = voice !== undefined && !!live?.isMuted(voice)
+          const classes = [p.agent && 'is-agent', voice && 'is-live', muted && 'is-muted']
+          return (
+            <li
+              key={p.id}
+              title={label}
+              aria-label={label}
+              className={classes.filter(Boolean).join(' ') || undefined}
+              style={{ '--c': swatch(p.color) } as CSSProperties}
+            >
+              <span className="console-person" aria-hidden />
+              <span className="console-person-name">{name}</span>
+              {p.agent && <AiMark />}
+              {voice && live && p.id !== me.id && (
+                <IconButton
+                  size="sm"
+                  className="console-person-mute"
+                  label={`Mute ${p.name}`}
+                  aria-pressed={muted}
+                  onClick={() => live.mute(voice, !muted)}
+                >
+                  <SpeakerIcon muted={muted} />
+                </IconButton>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+      {othersLive && !Live.canListen() && (
+        <span className="console-people-note" role="status">
+          {CANT_DECODE}
+        </span>
+      )}
+    </>
+  )
+}
+
+/** A speaker, struck through while muted. */
+function SpeakerIcon({ muted }: { muted: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+      {muted ? (
+        <path d="m16 9.5 5 5m0-5-5 5" />
+      ) : (
+        <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+      )}
+    </svg>
   )
 }

@@ -1,11 +1,13 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { BPM } from '../../../shared/board'
+import { LIVE_UNAVAILABLE } from '../../../shared/live'
 import type { RecorderState } from '../../audio/engine'
+import { CANT_ENCODE } from '../../audio/live/live'
 import { PRESETS } from '../../audio/voice/presets'
 import { Button, IconButton, ScrubField, Select, Switch } from '../../ui'
 import { useSwatch } from '../colors'
 import { useSession } from '../session'
-import { CLIPS_FULL, useSing } from '../useSing'
+import { CLIPS_FULL, useLiveMic, useSing } from '../useSing'
 import { useTransport } from '../useTransport'
 import { SoundEditor } from './Pads'
 import { TakeLane } from './TakeLane'
@@ -101,7 +103,92 @@ function Sing({ phase }: { phase: RecorderState['phase'] }) {
           {sing.error}
         </p>
       )}
+      <LiveMic />
     </div>
+  )
+}
+
+/** What the monitor advises as it is turned on. */
+const MONITOR_HINT = 'Use headphones: with speakers the mic hears itself and feeds back.'
+
+/**
+ * The live mic, under Sing: on, everyone hears you a bar later through the preset picked above;
+ * its light is lit while you are live. The first time in a browser it asks about headphones first.
+ * Beside it, Monitor: hear yourself through the preset at once, live or singing a take.
+ */
+function LiveMic() {
+  const mic = useLiveMic()
+  const tip = useTip()
+  if (!mic) return null
+  return (
+    <>
+      <div className="console-sing-row">
+        <Button
+          className="console-live-mic"
+          aria-pressed={mic.on}
+          aria-busy={mic.starting}
+          aria-describedby={
+            mic.unavailable
+              ? 'console-live-unavailable'
+              : mic.unsupported
+                ? 'console-live-unsupported'
+                : undefined
+          }
+          disabled={mic.unavailable || mic.unsupported || mic.asking}
+          onClick={mic.toggle}
+        >
+          <span className="console-live-led" aria-hidden />
+          Live mic
+        </Button>
+        <Switch
+          variant="slide"
+          checked={mic.monitor}
+          onChange={(on) => {
+            mic.toggleMonitor(on)
+            if (on) tip.show()
+          }}
+        >
+          Monitor
+        </Switch>
+      </div>
+      {mic.unavailable ? (
+        <p id="console-live-unavailable" className="console-hint">
+          {LIVE_UNAVAILABLE}
+        </p>
+      ) : (
+        mic.unsupported && (
+          <p id="console-live-unsupported" className="console-hint">
+            {CANT_ENCODE}
+          </p>
+        )
+      )}
+      {mic.monitor && tip.shown && (
+        <p className="console-hint" role="status">
+          {MONITOR_HINT}
+        </p>
+      )}
+      {mic.asking && (
+        <div className="console-live-ask" role="group" aria-label="Headphones">
+          <p className="console-hint">
+            Singing live needs headphones: through speakers, your mic sends the jam back to everyone
+            a bar late. Are you wearing headphones?
+          </p>
+          <div className="console-sing-row">
+            <Button tone="primary" onClick={mic.confirm}>
+              I'm wearing headphones
+            </Button>
+            <Button tone="quiet" onClick={mic.cancel}>
+              Not now
+            </Button>
+          </div>
+        </div>
+      )}
+      {mic.error && (
+        <p className="console-message" role="alert">
+          {mic.error}
+        </p>
+      )}
+    </>
   )
 }
 

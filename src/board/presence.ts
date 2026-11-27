@@ -3,6 +3,7 @@ import type { Awareness } from 'y-protocols/awareness'
 import { AGENT_AUTHOR_PREFIX, isAgentAuthor } from '../../shared/agent'
 import { CONTROL_KEYS } from '../../shared/board'
 import { type ColorName, toColorName } from '../../shared/colors'
+import { type LiveVoice, toLiveVoice } from '../../shared/live'
 import { toName } from '../../shared/names'
 import type { Me } from './seat'
 
@@ -34,6 +35,23 @@ const toAgent = (v: unknown): Person | undefined => {
   const name = toName(a?.name)
   if (typeof a?.id !== 'string' || !color || !name) return undefined
   return { id: AGENT_AUTHOR_PREFIX + a.id, name, color, agent: true }
+}
+
+/**
+ * Who is live, from the room's own state only (the one state with no person), so a browser can't
+ * show anyone as live: each voice once, as the room publishes them.
+ */
+export function listLive(states: Iterable<unknown>): LiveVoice[] {
+  const live = new Map<string, LiveVoice>()
+  for (const state of states) {
+    const s = state as { person?: unknown; live?: unknown } | null
+    if (s?.person || !Array.isArray(s?.live)) continue
+    for (const raw of s.live) {
+      const voice = toLiveVoice(raw)
+      if (voice && !live.has(voice.voice)) live.set(voice.voice, voice)
+    }
+  }
+  return [...live.values()]
 }
 
 /**
@@ -85,6 +103,25 @@ export function usePeople(awareness: Awareness, me: Person): Person[] {
     return () => awareness.off('change', onChange)
   }, [awareness, me])
   return people
+}
+
+const sameLive = (a: LiveVoice[], b: LiveVoice[]) =>
+  a.length === b.length &&
+  a.every((v, i) => v.voice === b[i]!.voice && v.name === b[i]!.name && v.color === b[i]!.color)
+
+/** Who is live (see `listLive`), re-rendering only when that changes. */
+export function useLive(awareness: Awareness): LiveVoice[] {
+  const [live, setLive] = useState(() => listLive(awareness.getStates().values()))
+  useEffect(() => {
+    const onChange = () => {
+      const next = listLive(awareness.getStates().values())
+      setLive((was) => (sameLive(was, next) ? was : next))
+    }
+    awareness.on('change', onChange)
+    onChange()
+    return () => awareness.off('change', onChange)
+  }, [awareness])
+  return live
 }
 
 /** A loop's knob or fader as presence names it: `track.<trackId>.<control>`. See `CONTROL_KEYS`. */

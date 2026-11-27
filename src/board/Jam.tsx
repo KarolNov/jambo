@@ -2,6 +2,9 @@ import { Provider, useAtomValue } from 'jotai'
 import { useEffect, useState } from 'react'
 import { JamClock } from '../audio/clock'
 import { Engine } from '../audio/engine'
+import { Live } from '../audio/live/live'
+import { PickedTransport } from '../audio/live/pick'
+import { LiveSlot } from '../audio/live/slot'
 import { SampleLoader } from '../audio/samples'
 import { Console } from './console/Console'
 import { type ConnectionStatus, onStatus, openJam } from './doc'
@@ -21,7 +24,12 @@ export function Jam({ slug }: { slug: string }) {
     const clock = new JamClock(jam.provider)
     const engine = new Engine(clock, new SampleLoader(slug))
     const me = new Me(identity())
-    setSession({ jam, engine, me, board: makeBoard(jam, me) })
+    // Realtime where the Worker has its credentials; the room's fake relay on a local Worker.
+    const slot = new LiveSlot(jam.provider)
+    const transport = new PickedTransport(slug, jam.provider, me.key)
+    const available = transport.kind.then((kind) => kind !== 'none')
+    const live = new Live(engine, transport, slot, available)
+    setSession({ jam, engine, me, board: makeBoard(jam, me), live })
     const stop = onStatus(jam.provider, setStatus)
     const unseat = takeSeat(jam.provider, me)
     const leave = joinPresence(jam.awareness, me)
@@ -29,6 +37,8 @@ export function Jam({ slug }: { slug: string }) {
       leave()
       unseat()
       stop()
+      live.dispose()
+      slot.dispose()
       engine.dispose()
       clock.dispose()
       jam.destroy()

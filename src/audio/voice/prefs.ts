@@ -6,6 +6,7 @@ const PRESET_KEY = 'jambo.voice.preset'
 const MONITOR_KEY = 'jambo.voice.monitor'
 const TUNE_KEY = 'jambo.voice.key'
 const ROUND_TRIP_KEY = 'jambo.voice.roundTrip'
+const HEADPHONES_KEY = 'jambo.voice.headphones'
 
 function read(key: string): string | null {
   try {
@@ -35,6 +36,14 @@ export const savePreset = (id: PresetId) => write(PRESET_KEY, id)
 export const loadMonitor = () => read(MONITOR_KEY) === '1'
 
 export const saveMonitor = (on: boolean) => write(MONITOR_KEY, on ? '1' : '0')
+
+/**
+ * Whether someone here has confirmed they sing live with headphones on: asked once per browser,
+ * since without them a live mic sends the jam back to everyone a bar late.
+ */
+export const loadHeadphones = () => read(HEADPHONES_KEY) === '1'
+
+export const saveHeadphones = () => write(HEADPHONES_KEY, '1')
 
 /** The key auto-tune last tuned to here, else C major. */
 export function loadKey(): Key {

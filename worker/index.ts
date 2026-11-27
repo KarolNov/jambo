@@ -3,6 +3,7 @@ import { partyserverMiddleware } from 'hono-party'
 import { BOARD_CLASS } from '../shared/parties'
 import { isJamSlug, newJamSlug } from '../shared/slug'
 import { handleMcp } from './agent/mcp'
+import { live } from './live'
 import { quota } from './quota'
 import { sounds } from './sounds'
 
@@ -23,6 +24,9 @@ app.get('/api/sounds/status', async (c) => c.json(await quota(c.env).status()))
 
 // A jam's uploaded sounds: upload, fetch and remove.
 app.route('/api/jams', sounds)
+
+// Live voice: which transport this Worker offers, and the Realtime session route.
+app.route('/api', live)
 
 // Board WebSockets: /parties/board/:slug, one Board Durable Object per slug.
 // onBeforeConnect is the one gate every connection passes; accounts would be checked here too.

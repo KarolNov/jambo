@@ -246,3 +246,25 @@
     var(--raise-sm),
     inset 0 0 0 2px var(--focus);
 }
+
+/* Live: a ring in the status light's green around the dot, from the room's list only. Muted here,
+   the ring dims. */
+:root[data-theme] .console-people .is-live .console-person {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--ok),
+    0 0 8px 2px color-mix(in oklab, var(--ok), transparent 50%);
+}
+:root[data-theme] .console-people .is-live.is-muted .console-person {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px color-mix(in oklab, var(--ok), transparent 60%);
+}
+/* The mute button sits close to its person's name, and stays when the list is only dots. */
+:root[data-theme] .console-people .console-person-mute {
+  margin-left: -2px;
+}
+:root[data-theme] .console-people-note {
+  font-size: 12px;
+  color: var(--muted);
+}

@@ -236,3 +236,25 @@
   top: 5px;
   bottom: 5px;
 }
+
+/* The live mic: its light is lit, as a status light, while this person is live. */
+:root[data-theme] .console-live-mic {
+  flex: 1;
+}
+:root[data-theme] .console-live-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  opacity: 0.5;
+}
+:root[data-theme] .console-live-mic[aria-pressed='true'] .console-live-led {
+  background: var(--ok);
+  opacity: 1;
+  box-shadow: 0 0 6px 1px color-mix(in oklab, var(--ok), transparent 40%);
+}
+:root[data-theme] .console-live-ask {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

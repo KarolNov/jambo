@@ -39,7 +39,8 @@ import type { SampleLoader } from './samples'
 import { click, renderKit } from './synth'
 import { keepAwake, preferPlayback } from './session'
 import type { Key } from './voice/dsp/tune'
-import { MAX_SECONDS, VoiceInput } from './voice/input'
+import { MAX_SECONDS, MicError, VoiceInput } from './voice/input'
+import { SharedVoice, type VoiceLease } from './voice/shared'
 import type { PresetId } from './voice/presets'
 
 const LOOKAHEAD = 0.12 // seconds of audio scheduled ahead
@@ -188,6 +189,8 @@ export class Engine {
   private master?: GainNode
   /** The master stage everything but the clicks plays through. */
   private chain?: MasterChain
+  /** Where live voices play in: mono, at full level, straight into the master stage. */
+  private live?: GainNode
   /** The board's master knobs, kept for when audio starts. */
   private masterSound: MasterSound = MASTER_SOUND_DEFAULTS
   /** The shared room every loop's reverb send feeds. */
@@ -230,8 +233,13 @@ export class Engine {
   private takeHits: Hit[] = []
   /** Counts takes, so a Sing hold that outlives its take does nothing. */
   private takeCount = 0
-  /** The microphone, opened by the take's first Sing and closed when the take ends. */
-  private voice?: Promise<VoiceInput>
+  /** The one microphone, shared by a take's clips and live voice (`leaseVoice`). */
+  private readonly mic = new SharedVoice(() => {
+    const ctx = this.audioContext
+    return ctx ? VoiceInput.open(ctx) : Promise.reject(new MicError('unavailable'))
+  })
+  /** The take's hold on the microphone: taken as the take starts, let go when it ends. */
+  private voice?: VoiceLease<VoiceInput>
   /** The Sing hold in progress, if any. */
   private hold?: Hold
   /** The take's clips: their marks for the lane, and each one's capture once its hold ends. */
@@ -268,6 +276,25 @@ export class Engine {
     return this.ctx && isLive(this.ctx) ? this.ctx : undefined
   }
 
+  /**
+   * The input live voices play into once audio has started: the master stage, so master effects
+   * apply to them, and none of any track's knobs.
+   */
+  get liveInput(): AudioNode | undefined {
+    return this.live
+  }
+
+  /**
+   * The jam's timing for live voice, once audio has started and the clock is agreed: the shift
+   * from room ms to this context's seconds, the grid's tempo, and the room time being scheduled
+   * now (the context's current time, on that shift).
+   */
+  liveTiming(): { shift: number; bpm: number; now: number } | undefined {
+    const ctx = this.ctx
+    if (!ctx || !this.ensureShift()) return undefined
+    return { shift: this.shift!, bpm: this.bpm, now: audioToRoom(ctx.currentTime, this.shift!) }
+  }
+
   /** Whether this client has agreed its clock with the jam; recording waits for it. */
   get synced() {
     return this.clock.synced
@@ -300,6 +327,8 @@ export class Engine {
     const reverb = ctx.createConvolver()
     reverb.buffer = impulse
     reverb.connect(chain.input)
+    const live = ctx.createGain()
+    live.connect(chain.input)
     const echo = ctx.createDelay(echoSeconds(BPM.min))
     echo.delayTime.value = echoSeconds(this.bpm)
     const feedback = ctx.createGain()
@@ -311,6 +340,7 @@ export class Engine {
     this.ctx = ctx
     this.master = master
     this.chain = chain
+    this.live = live
     this.reverb = reverb
     this.echo = echo
     // The tempo and the master settings may have changed while the kit rendered.
@@ -696,11 +726,7 @@ export class Engine {
     this.emit()
     let voice: VoiceInput
     try {
-      const opening = (this.voice ??= VoiceInput.open(ctx))
-      opening.catch(() => {
-        if (this.voice === opening) this.voice = undefined
-      })
-      voice = await opening
+      voice = await this.takeVoice().voice
       // Clips share the microphone: the last one must have finished before this one starts, so a
       // new press ends its tail.
       this.cutTail?.()
@@ -712,7 +738,7 @@ export class Engine {
     }
     // Let go, or the take ended, while the microphone opened.
     if (this.hold !== hold || hold.take !== this.takeCount) return
-    void voice.monitor(hold.monitor, hold.preset, hold.key)
+    this.voice?.monitor(hold.monitor ? { preset: hold.preset, key: hold.key } : undefined)
     voice.start()
     const start = this.take()?.beat ?? 0
     hold.mark = { start }
@@ -728,12 +754,28 @@ export class Engine {
   async warmVoice(): Promise<void> {
     const ctx = this.audioContext
     if (!ctx || this.recorder.phase === 'idle') return
-    if (this.voice) return void (await this.voice)
-    const opening = (this.voice = VoiceInput.open(ctx))
-    opening.catch(() => {
-      if (this.voice === opening) this.voice = undefined
+    await this.takeVoice().voice
+  }
+
+  /** The take's lease on the microphone, taken now if it has none; dropped if it can't be had. */
+  private takeVoice(): VoiceLease<VoiceInput> {
+    if (this.voice) return this.voice
+    const lease = this.mic.lease()
+    this.voice = lease
+    lease.voice.catch(() => {
+      lease.release()
+      if (this.voice === lease) this.voice = undefined
     })
-    await opening
+    return lease
+  }
+
+  /**
+   * A hold on the microphone the take's clips use, for live voice: one input serves both, so
+   * singing live and holding M share it, and it stays open while either holds it. Release it when
+   * done; the microphone closes once nothing holds it.
+   */
+  leaseVoice(): VoiceLease<VoiceInput> {
+    return this.mic.lease()
   }
 
   /** Whether a Sing hold is in progress. */
@@ -747,13 +789,14 @@ export class Engine {
     if (!hold) return
     this.hold = undefined
     this.emit()
-    const opening = this.voice
+    const lease = this.voice
     const mark = hold.mark
-    if (!opening || !mark) return
+    if (!lease || !mark) return
     mark.end = this.take()?.beat ?? mark.start
     const bpm = this.bpm
-    const done = opening.then(async (voice): Promise<SungClip | undefined> => {
-      void voice.monitor(false, hold.preset, hold.key)
+    const done = lease.voice.then(async (voice): Promise<SungClip | undefined> => {
+      // Back to what live voice wants to hear, if it is singing; else off.
+      lease.monitor(undefined)
       await this.tail(voice.latency.input + SING_TAIL)
       // A suspended context never answers the stop: the clip is lost rather than the take.
       const samples = await Promise.race([
@@ -796,15 +839,9 @@ export class Engine {
     const done = Promise.all(clips.map((c) => c.done.catch(() => undefined))).then((sung) =>
       sung.filter((c) => c !== undefined),
     )
-    const opening = this.voice
+    const lease = this.voice
     this.voice = undefined
-    void done.finally(
-      () =>
-        void opening?.then(
-          (v) => v.close(),
-          () => undefined,
-        ),
-    )
+    void done.finally(() => lease?.release())
     return { count: clips.length, done }
   }
 
