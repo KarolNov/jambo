@@ -37,6 +37,12 @@
       "hash": "c468471135c8",
       "whole": false
     },
+    "shared/live.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "50553fdf4c78",
+      "whole": false
+    },
     "shared/looper.ts": {
       "distance": 1,
       "via": [],
@@ -70,13 +76,55 @@
     "src/audio/engine.ts": {
       "distance": 1,
       "via": [],
-      "hash": "28de659e9b21",
+      "hash": "3d62e7cea8eb",
       "whole": false
     },
     "src/audio/knobs.ts": {
       "distance": 3,
       "via": [],
       "hash": "ea6bb3369d92",
+      "whole": false
+    },
+    "src/audio/live/encoder.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "9b95d7f86b19",
+      "whole": false
+    },
+    "src/audio/live/jitter.ts": {
+      "distance": 3,
+      "via": [],
+      "hash": "7ca008a84a8b",
+      "whole": false
+    },
+    "src/audio/live/listener.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "2c1c595b51ec",
+      "whole": false
+    },
+    "src/audio/live/live.ts": {
+      "distance": 1,
+      "via": [],
+      "hash": "5fda0e8dc851",
+      "whole": false
+    },
+    "src/audio/live/playback.ts": {
+      "distance": 3,
+      "via": [],
+      "hash": "6d338a55fd08",
+      "whole": false
+    },
+    "src/audio/live/slot.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "bd2e643d6ec1",
+      "whole": false
+    },
+    "src/audio/live/transport.ts": {
+      "distance": 2,
+      "via": [],
+      "hash": "9d5389c15599",
       "whole": false
     },
     "src/audio/master.ts": {
@@ -142,7 +190,7 @@
     "src/board/session.ts": {
       "distance": 1,
       "via": [],
-      "hash": "74ea6cbdbb7f",
+      "hash": "1b0b18083042",
       "whole": false
     },
     "src/board/typing.ts": {
@@ -359,7 +407,7 @@
     {
       "file": "shared/board/schema.ts",
       "symbol": "BPM",
-      "distance": 3,
+      "distance": 2,
       "via": [],
       "hash": "dbf903af9d86"
     },
@@ -728,6 +776,118 @@
       "hash": "a5c9ee31de5c"
     },
     {
+      "file": "shared/live.ts",
+      "symbol": "HEADER",
+      "distance": 2,
+      "via": [],
+      "hash": "0749491c1d99"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "LIVE",
+      "distance": 2,
+      "via": [],
+      "hash": "9c42a7c7309f"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "LIVE_UNAVAILABLE",
+      "distance": 2,
+      "via": [],
+      "hash": "5080e0e9ec2c"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "LiveFrame",
+      "distance": 2,
+      "via": [],
+      "hash": "3738c89f330d"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "LiveStopReason",
+      "distance": 3,
+      "via": [],
+      "hash": "4cdf38f637e2"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "STOP_REASONS",
+      "distance": 3,
+      "via": [],
+      "hash": "38664e09c220"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "SlotMessage",
+      "distance": 3,
+      "via": [],
+      "hash": "d11276ba29d0"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "VERSION",
+      "distance": 2,
+      "via": [],
+      "hash": "73449cf959d2"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "encodeFrame",
+      "distance": 2,
+      "via": [],
+      "hash": "aeae25c9873e"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "liveDelayMs",
+      "distance": 2,
+      "via": [],
+      "hash": "e4e462804964"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "livePlayAt",
+      "distance": 3,
+      "via": [],
+      "hash": "a9d798d246ab"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "liveStamp",
+      "distance": 3,
+      "via": [],
+      "hash": "ead68d49c92e"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "parseFrame",
+      "distance": 2,
+      "via": [],
+      "hash": "4a2ec5128532"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "parseSlotMessage",
+      "distance": 3,
+      "via": [],
+      "hash": "4e81d8c05563"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "slotRequest",
+      "distance": 3,
+      "via": [],
+      "hash": "9a960e0ecdf4"
+    },
+    {
+      "file": "shared/live.ts",
+      "symbol": "slotStop",
+      "distance": 3,
+      "via": [],
+      "hash": "071c1476d378"
+    },
+    {
       "file": "shared/looper.ts",
       "symbol": "EARLY_HIT_BEATS",
       "distance": 3,
@@ -1089,7 +1249,7 @@
       "symbol": "Engine",
       "distance": 2,
       "via": [],
-      "hash": "a4044c195c4b"
+      "hash": "018155eec04f"
     },
     {
       "file": "src/audio/engine.ts",
@@ -1463,6 +1623,251 @@
       "hash": "6472aa1e75e7"
     },
     {
+      "file": "src/audio/live/encoder.ts",
+      "symbol": "LiveEncoder",
+      "distance": 2,
+      "via": [],
+      "hash": "80853ad4ee34"
+    },
+    {
+      "file": "src/audio/live/encoder.ts",
+      "symbol": "LiveEncoderOptions",
+      "distance": 2,
+      "via": [],
+      "hash": "e2402747c8d7"
+    },
+    {
+      "file": "src/audio/live/encoder.ts",
+      "symbol": "LiveTiming",
+      "distance": 2,
+      "via": [],
+      "hash": "34f5c74f1195"
+    },
+    {
+      "file": "src/audio/live/encoder.ts",
+      "symbol": "canEncode",
+      "distance": 2,
+      "via": [],
+      "hash": "f6dcc68d8f0b"
+    },
+    {
+      "file": "src/audio/live/encoder.ts",
+      "symbol": "config",
+      "distance": 2,
+      "via": [],
+      "hash": "406c1c59fb6a"
+    },
+    {
+      "file": "src/audio/live/jitter.ts",
+      "symbol": "Arrival",
+      "distance": 3,
+      "via": [],
+      "hash": "95d64aaca90a"
+    },
+    {
+      "file": "src/audio/live/jitter.ts",
+      "symbol": "DECODE_MS",
+      "distance": 3,
+      "via": [],
+      "hash": "09a921bbd63a"
+    },
+    {
+      "file": "src/audio/live/jitter.ts",
+      "symbol": "JitterBuffer",
+      "distance": 3,
+      "via": [],
+      "hash": "0af965007db6"
+    },
+    {
+      "file": "src/audio/live/jitter.ts",
+      "symbol": "LEAD_MS",
+      "distance": 3,
+      "via": [],
+      "hash": "93072cf37841"
+    },
+    {
+      "file": "src/audio/live/listener.ts",
+      "symbol": "DRAIN_MS",
+      "distance": 2,
+      "via": [],
+      "hash": "702230c48d76"
+    },
+    {
+      "file": "src/audio/live/listener.ts",
+      "symbol": "ListenTiming",
+      "distance": 2,
+      "via": [],
+      "hash": "aa362c2f3e0d"
+    },
+    {
+      "file": "src/audio/live/listener.ts",
+      "symbol": "LiveListener",
+      "distance": 2,
+      "via": [],
+      "hash": "a560f2c18af1"
+    },
+    {
+      "file": "src/audio/live/listener.ts",
+      "symbol": "Played",
+      "distance": 2,
+      "via": [],
+      "hash": "fb1def775816"
+    },
+    {
+      "file": "src/audio/live/listener.ts",
+      "symbol": "canDecode",
+      "distance": 2,
+      "via": [],
+      "hash": "afc3a7e14e7d"
+    },
+    {
+      "file": "src/audio/live/listener.ts",
+      "symbol": "resample",
+      "distance": 2,
+      "via": [],
+      "hash": "fde750b56588"
+    },
+    {
+      "file": "src/audio/live/live.ts",
+      "symbol": "AVAILABLE_WAIT_MS",
+      "distance": 1,
+      "via": [],
+      "hash": "1e2ca9ff4baa"
+    },
+    {
+      "file": "src/audio/live/live.ts",
+      "symbol": "CANT_ENCODE",
+      "distance": 1,
+      "via": [],
+      "hash": "61ea4175ad28"
+    },
+    {
+      "file": "src/audio/live/live.ts",
+      "symbol": "ENDED",
+      "distance": 1,
+      "via": [],
+      "hash": "9739407ef5b8"
+    },
+    {
+      "file": "src/audio/live/live.ts",
+      "symbol": "IDLE_MS",
+      "distance": 1,
+      "via": [],
+      "hash": "3491c438ac00"
+    },
+    {
+      "file": "src/audio/live/live.ts",
+      "symbol": "KEEP_PLAYED",
+      "distance": 1,
+      "via": [],
+      "hash": "0e83567b5eb4"
+    },
+    {
+      "file": "src/audio/live/live.ts",
+      "symbol": "Live",
+      "distance": 1,
+      "via": [],
+      "hash": "8d6e7784ed52"
+    },
+    {
+      "file": "src/audio/live/live.ts",
+      "symbol": "LiveOptions",
+      "distance": 1,
+      "via": [],
+      "hash": "8e19c5c736b2"
+    },
+    {
+      "file": "src/audio/live/live.ts",
+      "symbol": "PUBLISH_FAILED",
+      "distance": 1,
+      "via": [],
+      "hash": "5752b84d6856"
+    },
+    {
+      "file": "src/audio/live/live.ts",
+      "symbol": "REFUSED",
+      "distance": 1,
+      "via": [],
+      "hash": "6d2e47c1dc5b"
+    },
+    {
+      "file": "src/audio/live/live.ts",
+      "symbol": "STILL_CHECKING",
+      "distance": 1,
+      "via": [],
+      "hash": "eb28c6a63e30"
+    },
+    {
+      "file": "src/audio/live/live.ts",
+      "symbol": "Singing",
+      "distance": 1,
+      "via": [],
+      "hash": "c2d06de21bd2"
+    },
+    {
+      "file": "src/audio/live/playback.ts",
+      "symbol": "LivePlayback",
+      "distance": 3,
+      "via": [],
+      "hash": "d209f4700dad"
+    },
+    {
+      "file": "src/audio/live/playback.ts",
+      "symbol": "PLAYBACK_PROCESSOR",
+      "distance": 3,
+      "via": [],
+      "hash": "6a41c6c3fbec"
+    },
+    {
+      "file": "src/audio/live/playback.ts",
+      "symbol": "PlaybackEvent",
+      "distance": 3,
+      "via": [],
+      "hash": "48dfc7c1e145"
+    },
+    {
+      "file": "src/audio/live/playback.ts",
+      "symbol": "loadPlayback",
+      "distance": 3,
+      "via": [],
+      "hash": "d926c0b7d53a"
+    },
+    {
+      "file": "src/audio/live/playback.ts",
+      "symbol": "loaded",
+      "distance": 3,
+      "via": [],
+      "hash": "825a49957505"
+    },
+    {
+      "file": "src/audio/live/slot.ts",
+      "symbol": "LiveSlot",
+      "distance": 2,
+      "via": [],
+      "hash": "84e74abf6729"
+    },
+    {
+      "file": "src/audio/live/slot.ts",
+      "symbol": "SlotAnswer",
+      "distance": 2,
+      "via": [],
+      "hash": "316206624e1f"
+    },
+    {
+      "file": "src/audio/live/slot.ts",
+      "symbol": "SlotEnd",
+      "distance": 2,
+      "via": [],
+      "hash": "89985e5f8576"
+    },
+    {
+      "file": "src/audio/live/transport.ts",
+      "symbol": "LiveTransport",
+      "distance": 2,
+      "via": [],
+      "hash": "960e5dd4e20e"
+    },
+    {
       "file": "src/audio/master.ts",
       "symbol": "CRUSHER_PROCESSOR",
       "distance": 3,
@@ -1761,7 +2166,7 @@
       "symbol": "Session",
       "distance": 1,
       "via": [],
-      "hash": "a3d210a35ad3"
+      "hash": "e1bf29139b11"
     },
     {
       "file": "src/board/session.ts",

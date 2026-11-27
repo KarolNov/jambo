@@ -173,3 +173,23 @@ Uploaded sounds SHALL use at most a fixed share of R2's monthly free tier (10 GB
   - **GIVEN** last month's write budget was used up
   - **WHEN** a new month starts
   - **THEN** uploads are open again, and stored bytes still count
+
+### Requirement: Live slots
+
+The room SHALL hand out each jam's live voice slots: it SHALL give one to a seated person who asks while one is free, SHALL refuse while none is, and SHALL never hold more than 3, even when several ask at the same moment. It SHALL free a slot when its holder stops, after 1 hour, or when their last connection to the jam closes. It SHALL publish who holds a slot to everyone connected, and a browser SHALL NOT be able to show someone as live.
+
+- **Scenario: Slot freed on leave**
+  - **GIVEN** three people live
+  - **WHEN** one closes the jam
+  - **THEN** within a few seconds the others see two live, and a fourth person can go live
+- **Scenario: Browser posing as live**
+  - **WHEN** a browser announces itself as live in its own presence
+  - **THEN** nobody's list shows it as live
+
+### Requirement: Live sessions
+
+The room's live session endpoint SHALL open a live voice connection only for a person seated in a well-formed jam, SHALL let only a slot holder publish a voice, and SHALL refuse more than 20 new live sessions and more than 240 channel requests a minute from one address.
+
+- **Scenario: Not seated**
+  - **WHEN** someone asks for a live session for a jam they aren't seated in
+  - **THEN** they are refused and nothing is opened
