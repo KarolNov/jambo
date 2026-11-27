@@ -471,7 +471,8 @@
         "https://github.com/KarolNov/jambo/pull/89",
         "https://github.com/KarolNov/jambo/pull/90",
         "https://github.com/KarolNov/jambo/pull/91"
-      ]
+      ],
+      "pr": "https://github.com/KarolNov/jambo/pull/95"
     }
   },
   "tests": {
