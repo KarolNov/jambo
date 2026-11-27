@@ -100,7 +100,7 @@
     "shared/live.ts": {
       "distance": 1,
       "via": [],
-      "hash": "50553fdf4c78",
+      "hash": "17049d4e3783",
       "whole": false
     },
     "shared/looper.ts": {
@@ -172,7 +172,7 @@
     "worker/live.ts": {
       "distance": 1,
       "via": [],
-      "hash": "bbac9b9141b6",
+      "hash": "30bd7bbb0513",
       "whole": false
     }
   },
@@ -1120,7 +1120,7 @@
       "symbol": "LiveStopReason",
       "distance": 1,
       "via": [],
-      "hash": "4cdf38f637e2"
+      "hash": "ecd778398638"
     },
     {
       "file": "shared/live.ts",
@@ -1141,7 +1141,7 @@
       "symbol": "STOP_REASONS",
       "distance": 1,
       "via": [],
-      "hash": "38664e09c220"
+      "hash": "921f2a086877"
     },
     {
       "file": "shared/live.ts",
@@ -1828,6 +1828,13 @@
       "distance": 1,
       "via": [],
       "hash": "49198ca2ba3d"
+    },
+    {
+      "file": "worker/live.ts",
+      "symbol": "SLOT_IDLE_MS",
+      "distance": 1,
+      "via": [],
+      "hash": "2d95c353c956"
     },
     {
       "file": "worker/live.ts",

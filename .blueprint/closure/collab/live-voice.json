@@ -130,7 +130,7 @@
     "src/audio/voice/prefs.ts": {
       "distance": 2,
       "via": [],
-      "hash": "e89fc04f455b",
+      "hash": "2ec4a05a0d2f",
       "whole": false
     },
     "src/audio/voice/presets.ts": {
@@ -142,7 +142,7 @@
     "src/audio/voice/shared.ts": {
       "distance": 1,
       "via": [],
-      "hash": "37c6bb23cd05",
+      "hash": "2a7bb812b1b6",
       "whole": false
     },
     "src/board/presence.ts": {
@@ -1761,7 +1761,7 @@
       "symbol": "SharedVoice",
       "distance": 2,
       "via": [],
-      "hash": "55181d30839c"
+      "hash": "aa18622aa127"
     },
     {
       "file": "src/audio/voice/shared.ts",

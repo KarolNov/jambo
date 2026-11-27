@@ -46,7 +46,7 @@
     "shared/live.ts": {
       "distance": 1,
       "via": [],
-      "hash": "50553fdf4c78",
+      "hash": "17049d4e3783",
       "whole": false
     },
     "shared/looper.ts": {
@@ -130,7 +130,7 @@
     "src/audio/live/live.ts": {
       "distance": 1,
       "via": [],
-      "hash": "5fda0e8dc851",
+      "hash": "8165ea4cda16",
       "whole": false
     },
     "src/audio/live/pick.ts": {
@@ -154,7 +154,7 @@
     "src/audio/live/slot.ts": {
       "distance": 1,
       "via": [],
-      "hash": "bd2e643d6ec1",
+      "hash": "b5bb7cb01cd7",
       "whole": false
     },
     "src/audio/live/transport.ts": {
@@ -226,7 +226,7 @@
     "src/audio/voice/prefs.ts": {
       "distance": 3,
       "via": [],
-      "hash": "e89fc04f455b",
+      "hash": "2ec4a05a0d2f",
       "whole": false
     },
     "src/audio/voice/presets.ts": {
@@ -238,7 +238,7 @@
     "src/audio/voice/shared.ts": {
       "distance": 2,
       "via": [],
-      "hash": "37c6bb23cd05",
+      "hash": "2a7bb812b1b6",
       "whole": false
     },
     "src/board/connection.ts": {
@@ -977,7 +977,7 @@
       "symbol": "LiveStopReason",
       "distance": 2,
       "via": [],
-      "hash": "4cdf38f637e2"
+      "hash": "ecd778398638"
     },
     {
       "file": "shared/live.ts",
@@ -1005,7 +1005,7 @@
       "symbol": "STOP_REASONS",
       "distance": 2,
       "via": [],
-      "hash": "38664e09c220"
+      "hash": "921f2a086877"
     },
     {
       "file": "shared/live.ts",
@@ -1985,7 +1985,7 @@
       "symbol": "ENDED",
       "distance": 1,
       "via": [],
-      "hash": "9739407ef5b8"
+      "hash": "35e2cd00b1b8"
     },
     {
       "file": "src/audio/live/live.ts",
@@ -2006,7 +2006,7 @@
       "symbol": "Live",
       "distance": 1,
       "via": [],
-      "hash": "8d6e7784ed52"
+      "hash": "2d7640f3392a"
     },
     {
       "file": "src/audio/live/live.ts",
@@ -2188,7 +2188,7 @@
       "symbol": "LiveSlot",
       "distance": 1,
       "via": [],
-      "hash": "84e74abf6729"
+      "hash": "18b8cf513b95"
     },
     {
       "file": "src/audio/live/slot.ts",
@@ -2202,7 +2202,7 @@
       "symbol": "SlotEnd",
       "distance": 1,
       "via": [],
-      "hash": "89985e5f8576"
+      "hash": "2030e9703df4"
     },
     {
       "file": "src/audio/live/transport.ts",
@@ -2846,7 +2846,7 @@
       "symbol": "SharedVoice",
       "distance": 2,
       "via": [],
-      "hash": "55181d30839c"
+      "hash": "aa18622aa127"
     },
     {
       "file": "src/audio/voice/shared.ts",

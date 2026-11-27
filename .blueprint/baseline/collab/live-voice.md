@@ -56,7 +56,7 @@ A jam SHALL have at most 3 live voices at once. While it has 3, someone turning 
 
 ### Requirement: Mute a live voice
 
-Each listener SHALL be able to mute and unmute any live voice for themselves only, from Who's here. Muting SHALL NOT change what anyone else hears.
+Each listener SHALL be able to mute and unmute any live voice for themselves only, from Who's here. Muting SHALL NOT change what anyone else hears. A muted person SHALL stay muted for that listener when they go live again.
 
 - **Scenario: Mute for me**
   - **GIVEN** Misty Yak live and two listeners

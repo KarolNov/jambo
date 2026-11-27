@@ -176,7 +176,7 @@ Uploaded sounds SHALL use at most a fixed share of R2's monthly free tier (10 GB
 
 ### Requirement: Live slots
 
-The room SHALL hand out each jam's live voice slots: it SHALL give one to a seated person who asks while one is free, SHALL refuse while none is, and SHALL never hold more than 3, even when several ask at the same moment. It SHALL free a slot when its holder stops, after 1 hour, or when their last connection to the jam closes. It SHALL publish who holds a slot to everyone connected, and a browser SHALL NOT be able to show someone as live.
+The room SHALL hand out each jam's live voice slots: it SHALL give one to a seated person who asks while one is free, SHALL refuse while none is, and SHALL never hold more than 3, even when several ask at the same moment. It SHALL free a slot when its holder stops, after 1 hour, or when the tab that asked for it closes. Another tab of the same person asking SHALL take the slot over, and the first tab SHALL stop singing. It SHALL publish who holds a slot to everyone connected, and a browser SHALL NOT be able to show someone as live.
 
 - **Scenario: Slot freed on leave**
   - **GIVEN** three people live
@@ -185,6 +185,10 @@ The room SHALL hand out each jam's live voice slots: it SHALL give one to a seat
 - **Scenario: Browser posing as live**
   - **WHEN** a browser announces itself as live in its own presence
   - **THEN** nobody's list shows it as live
+- **Scenario: Another tab takes over**
+  - **GIVEN** Misty Yak live in one tab
+  - **WHEN** they turn their mic on in a second tab of the jam
+  - **THEN** the second tab sings, the first stops, and the jam still counts one live voice
 
 ### Requirement: Live sessions
 
